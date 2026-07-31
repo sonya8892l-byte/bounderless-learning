@@ -1,0 +1,169 @@
+# 中国规范研究员
+
+> 核心问题：中国现有材料分别处于什么规范层级，何时生效，能支持怎样的本地建议？
+
+## 基本信息
+- 排序：2
+- 地点：资料空间
+- 地理围栏：课程资料与教师批准检索范围
+- 类型：核心角色
+- 选择说明：建立中国规范地图，核对法律效力日期，研究深圳标准与实践。
+- 角色卡图：assets/placeholders/role-card.svg
+- 角色徽章图：assets/placeholders/badge.svg
+- 收集物：规范章
+- 收集物图：assets/placeholders/token.svg
+
+## 任务列表
+
+### 任务1：建立规范检索框架
+- id：china-frame-norms
+- 阶段：Phase 1 问题界定
+- 地点：教育空间
+- 位置模式：none
+- 建议时长：1课时
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：先区分层级、效力与研究问题，再开展检索
+- 通过条件：形成规范层级图和五字段来源登记规则
+
+#### Step 1：区分材料层级
+- id：china-sort-materials
+- 小步目标：避免把倡议、指引、标准和法律混写
+- 学生行动：将候选材料按制定主体、形式和效力初步分类，未知项保留待核
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：至少6条材料分类，含2条待核理由
+- 功能模块：A03(规范层级图)
+- 工具参数：{"builder":{"mode":"hierarchy","prompt":"按法律、法规/规章、标准、指引、机构规则、倡议分类；不确定时标待核。","minimumItems":6,"categories":["法律","法规或规章","标准","设计指引","机构规则","倡议","待核"]}}
+- 知识引用：K-07
+- 引导引用：guidance/china-norm-researcher.md#任务1
+- 限制引用：restrictions.md#法律效力
+- 评估引用：evaluation.md#S1
+- 脚手架引用：scaffolds/china-norm-researcher.md#任务1
+- 常见误区：政府网站出现的材料都标成法律
+- 最大尝试：3
+- 失败处理：逐项追问谁制定、叫什么、用什么形式发布
+- 教师介入：层级判断涉及专业法律问题
+- 通过后：step:china-set-record-fields
+
+#### Step 2：制定效力登记表
+- id：china-set-record-fields
+- 小步目标：让每份规范可追溯且可更新
+- 学生行动：确定名称、机关、文号/版本、公布日、施行日、范围、强制性和访问日字段
+- 位置：none
+- 完成方式：tool_result
+- 证据要求：字段齐全并指定人工核验人
+- 功能模块：A01(规范登记表)
+- 工具参数：{"text":{"fields":[{"id":"protocol","label":"规范登记字段与核验流程","type":"long_text","required":true,"minLength":100},{"id":"reviewer","label":"人工核验人/岗位","type":"short_text","required":true}]}}
+- 知识引用：K-07, K-22
+- 引导引用：guidance/china-norm-researcher.md#任务1
+- 限制引用：restrictions.md#法律效力
+- 评估引用：evaluation.md#E3
+- 脚手架引用：scaffolds/china-norm-researcher.md#任务1
+- 常见误区：只有发布日期，没有施行日期
+- 最大尝试：2
+- 失败处理：提示公布和生效可能是两个时间
+- 教师介入：指定核验人缺失
+- 通过后：role-stage:china-build-map
+
+### 任务2：核验中国规范与深圳实践
+- id：china-build-map
+- 阶段：Phase 3 中国规范与域外比较
+- 地点：资料空间
+- 位置模式：none
+- 建议时长：2周
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：核验野生动物保护法、生态环境法典时间状态和深圳地方标准
+- 通过条件：三类核心材料原文、效力、范围和人工签注完整
+
+#### Step 1：核对法律时间状态
+- id：china-verify-laws
+- 小步目标：准确表达当前法与已公布待施行法典
+- 学生行动：定位原文，记录公布/修订日、施行日、相关条文、范围和当前状态
+- 位置：none
+- 完成方式：teacher_confirm
+- 证据要求：野生动物保护法与生态环境法典分别登记；截至调查日的状态清楚
+- 功能模块：A01(原文摘录), A08(人工核验)
+- 工具参数：{"text":{"fields":[{"id":"wildlife-law","label":"野生动物保护法原文与效力记录","type":"long_text","required":true,"minLength":100},{"id":"code","label":"生态环境法典原文与时间状态","type":"long_text","required":true,"minLength":100}]},"teacher_confirm":{"prompt":"核对官方原文、条号、公布/施行日期、调查日状态和适用范围。","required":true}}
+- 知识引用：K-08, K-09
+- 引导引用：guidance/china-norm-researcher.md#任务2
+- 限制引用：restrictions.md#法律与公共表达
+- 评估引用：evaluation.md#E3
+- 脚手架引用：scaffolds/china-norm-researcher.md#任务2
+- 常见误区：把已公布待施行写成调查日现行
+- 最大尝试：1
+- 失败处理：保留“效力待核”，不进入确定性条款依据
+- 教师介入：必须
+- 通过后：step:china-study-shenzhen
+
+#### Step 2：重建深圳实践链
+- id：china-study-shenzhen
+- 小步目标：区分调查、研讨、征求意见、标准与实践
+- 学生行动：用官方材料建立时间线，提取DB4403/T 616—2025的范围、措施和用语
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：至少5个时间节点；标准含文号、发布日期、实施日、适用范围和3类措施
+- 功能模块：A03(政策时间线), A01(原文摘录)
+- 工具参数：{"builder":{"mode":"timeline","prompt":"连接调查、研讨、征求意见、地方标准和实践，分别标效力。","minimumItems":5},"text":{"fields":[{"id":"standard-extract","label":"深圳标准原文摘录与范围","type":"long_text","required":true,"minLength":160}]}}
+- 知识引用：K-10, K-11
+- 引导引用：guidance/china-norm-researcher.md#任务2
+- 限制引用：restrictions.md#法律效力
+- 评估引用：evaluation.md#E3
+- 脚手架引用：scaffolds/china-norm-researcher.md#任务2
+- 常见误区：仍引用征求意见稿数字，却标成现行标准
+- 最大尝试：3
+- 失败处理：要求逐项写材料标题、日期和效力
+- 教师介入：标准原文版本不一致
+- 通过后：role-stage:china-deliver-map
+
+### 任务3：交付规范地图
+- id：china-deliver-map
+- 阶段：Phase 5 起草听证与修订
+- 地点：教育空间
+- 位置模式：none
+- 建议时长：1课时
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：说明哪些材料提供原则、技术参考或本地程序依据
+- 通过条件：规范地图、可引用结论、不可推出事项和更新提示完整
+
+#### Step 1：制作规范地图与边界
+- id：china-compose-norm-map
+- 小步目标：让起草组知道每份材料能支持到哪里
+- 学生行动：按层级呈现材料，并为每份写“可支持/不能直接推出/需更新”
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：至少5份材料有三类边界说明和来源编号
+- 功能模块：A03(规范地图)
+- 工具参数：{"builder":{"mode":"norm_map","prompt":"每份材料记录层级、效力、范围、可支持、不能直接推出和更新条件。","minimumItems":5}}
+- 知识引用：K-07, K-08, K-09, K-10
+- 引导引用：guidance/china-norm-researcher.md#任务3
+- 限制引用：restrictions.md#法律效力
+- 评估引用：evaluation.md#E3
+- 脚手架引用：scaffolds/china-norm-researcher.md#任务3
+- 常见误区：从保护原则直接推出具体点距或处罚
+- 最大尝试：3
+- 失败处理：将超出材料的句子改成课程建议选择
+- 教师介入：存在具体权利义务或责任判断
+- 通过后：step:china-review-clauses
+
+#### Step 2：审查条款效力表述
+- id：china-review-clauses
+- 小步目标：避免建议稿把参考依据写成强制本地要求
+- 学生行动：抽查至少5条条款，标注现行依据、借鉴依据、课程选择或待核
+- 位置：none
+- 完成方式：teacher_confirm
+- 证据要求：5条以上审查记录，法律与标准结论由人工签注
+- 功能模块：A05(条款审查), A08(教师确认)
+- 工具参数：{"team":{"mode":"clause_review","prompt":"逐条标注现行依据、借鉴依据、课程选择或待核。","minimumEntries":5},"teacher_confirm":{"prompt":"确认条款未冒充现行法律义务或正式法律意见。","required":true}}
+- 知识引用：K-07, K-23
+- 引导引用：guidance/china-norm-researcher.md#任务3
+- 限制引用：restrictions.md#法律与公共表达
+- 评估引用：evaluation.md#S5
+- 脚手架引用：scaffolds/china-norm-researcher.md#任务3
+- 常见误区：用“依法必须”描述课程自拟措施
+- 最大尝试：1
+- 失败处理：改写为建议用语并保留待核
+- 教师介入：必须
+- 通过后：role:complete

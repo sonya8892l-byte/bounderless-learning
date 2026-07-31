@@ -10,7 +10,7 @@ const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
 test('课程编译器生成六角色、知识、限制和工具实例', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   assert.equal(course.roles.length, 6);
   assert.equal(course.knowledge.length, 19);
   assert.equal(course.roles.flatMap((role) => role.tools).length, 18);
@@ -26,7 +26,7 @@ test('课程编译器生成六角色、知识、限制和工具实例', async ()
 });
 
 test('未解锁知识会脱敏，完成任务后才可出现精确值', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const role = course.roles.find((item) => item.id === 'dragon-counter');
   const session = { roleId: role.id, phaseNumber: 2, completedTaskIds: [], events: [] };
   const locked = retrieveKnowledge({ course, role, session, query: '螭首数量' });
@@ -39,7 +39,7 @@ test('未解锁知识会脱敏，完成任务后才可出现精确值', async ()
 });
 
 test('模拟结果必须在事件完成后解锁，真相反例不会对普通角色公开', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const simulation = course.restrictions.find((item) => item.name === '暴雨模拟结果');
   assert.equal(restrictionUnlocked(simulation, { phaseNumber: 4, completedTaskIds: [], events: [] }), false);
   assert.equal(restrictionUnlocked(simulation, { phaseNumber: 4, completedTaskIds: [], events: ['xuanji-simulation:completed'] }), true);
@@ -54,7 +54,7 @@ test('模拟结果必须在事件完成后解锁，真相反例不会对普通�
 });
 
 test('第二门课程可从课程配置解析新角色、工具和角色解锁条件', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   assert.deepEqual(course.publicLesson.mapCenter, [116.3953, 40.0071]);
   assert.equal(course.publicLesson.venue, '中国共产党历史展览馆');
   assert.equal(course.roles.length, 5);
@@ -135,7 +135,7 @@ test('第二门课程可从课程配置解析新角色、工具和角色解锁�
 });
 
 test('普通问候不会误命中课程知识', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const role = course.roles[0];
   const entries = retrieveKnowledge({
     course,

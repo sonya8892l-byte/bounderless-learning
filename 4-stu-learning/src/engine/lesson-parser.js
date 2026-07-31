@@ -427,6 +427,8 @@ export function parseLesson(source) {
     duration: courseInfo['时长'] || '',
     grades: courseInfo['适用年级'] || '',
     groupRule: courseInfo['分组'] || '',
+    level: courseInfo['课程层级'] || '',
+    levelCode: courseInfo['层级代码'] || '',
     coreQuestion: clean(sectionAfter(courseMarkdown, '## 核心问题').split('\n').find(Boolean) || ''),
     persona: {
       name: PLATFORM_COMPANION.name,

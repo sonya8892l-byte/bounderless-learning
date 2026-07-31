@@ -91,10 +91,16 @@ for (const lessonId of lessonIds) {
 
   await rm(publicDirectory, { recursive: true, force: true });
   await mkdir(publicDirectory, { recursive: true });
-  await cp(assetDirectory, resolve(publicDirectory, 'assets'), {
-    recursive: true,
-    force: true,
-  });
+  const publicAssetDirectory = resolve(publicDirectory, 'assets');
+  try {
+    await cp(assetDirectory, publicAssetDirectory, {
+      recursive: true,
+      force: true,
+    });
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    await mkdir(publicAssetDirectory, { recursive: true });
+  }
 
   const source = {
     id: lessonId,

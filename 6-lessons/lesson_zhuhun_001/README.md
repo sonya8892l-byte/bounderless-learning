@@ -1,4 +1,4 @@
-# 《故宫600年不积水的秘密》课程配置手册
+# 《得意之笔·四渡赤水》课程配置手册
 
 > 课程目录 ID：`lesson_zhuhun_001`  
 > 主题模板：`zhuhun`  
@@ -6,219 +6,226 @@
 > 通用提交规范：[COURSE-SUBMISSION-SPEC.md](../COURSE-SUBMISSION-SPEC.md)  
 > 对话与小步协议：[dialogue-runtime-protocol.md](../../4-stu-learning/docs/dialogue-runtime-protocol.md)
 
-这份 README 面向课程设计、教研、素材和实施团队，说明本课程全套文件如何配置、文件之间如何绑定，以及当前运行时已经接入到什么程度。
+这份 README 面向课程设计、党史教研、素材、实施和技术验收团队，说明本课程全套文件怎样配置、怎样形成五个角色的独立智能体体验，以及怎样在同一套平台底座上调用 A01–A07 通用工具。
 
-课程内容只维护在本目录。`4-stu-learning/src/generated/` 和 `4-stu-learning/public/lessons/` 都是编译产物，课程团队不要直接编辑。
+课程内容只维护在本目录。`4-stu-learning/src/generated/` 和 `4-stu-learning/public/lessons/` 是同步产物，重新同步时会被覆盖。
 
 ## 1. 平台提供与课程团队提交
 
 ### 1.1 平台统一提供
 
-- 学生端小程序式页面壳、角色领取页、我的任务、小组页和时间银行入口；
-- AI 学习同伴“絮絮”的名称、基础形象、待机动画和对话动画；
-- 对话状态、流式输出、意图判断、待回答问题、主动提醒和异常恢复；
-- A01–A07 活动工具注册表、工具调度和通用交互组件；
-- 高德地图加载、导航入口、位置状态基座；
-- 教师求助、教师通知、暂停、恢复、证据复核等通用能力；
-- 课程 Markdown 解析、公开字段裁剪、防剧透脱敏和课程素材同步。
+- 学生端小程序式页面壳、角色领取、任务对话、小组页和时间银行；
+- 统一 AI 学习同伴“絮絮”的名称、基础形象和平台动画；
+- 意图理解、历史对话、待回答问题、打断恢复、主动提醒和流式输出；
+- A01–A07 活动工具注册表、统一工具调度和结果回传；
+- 高德地图、位置上下文、导航入口和到达状态基座；
+- 教师求助、教师通知、暂停、恢复、证据复核和安全升级；
+- 课程编译、公开字段裁剪、防剧透关键词脱敏和素材同步；
+- 会话、任务进度、时间银行和教师指令的运行状态。
 
 ### 1.2 本课程团队提交
 
-- 课程名称、核心问题、学段、场地、时长和课程叙事；
-- 六个治水官的名称、说明、地点、角色任务和收集物；
-- 六个课程阶段及每个阶段的 AI 行为提示；
-- 每个角色阶段的小步、工具参数、证据要求和通过条件；
-- 课程知识、来源、角色可见范围和揭示时机；
-- 引导、脚手架、防剧透限制、评估标准和课程目标；
-- 时间银行题目、答案、奖励和解锁阶段；
-- 课程背景、角色卡、徽章、密符、地图、任务图和课程媒体。
+- 课程主题、核心问题、史料范围、适用学段、场地和时长；
+- 地图参谋、情报参谋、决策参谋、示形参谋、通讯兵五个角色；
+- 六个课程 Phase 的内容、时长、场地、模式和阶段行为；
+- 每个角色的 `task-1`～`task-3`，以及总计 46 个结构化 Step；
+- 每个 Step 的学生行动、位置、工具、公开参数、证据要求和通过后；
+- 党史知识、资料来源、角色权限、揭示时机和史料边界；
+- 任务 guidance、L0–L4 scaffolds、防剧透 restrictions、evaluation 和 objectives；
+- 时间银行题目、答案、奖励、解锁阶段；
+- 课程封面、背景、角色卡、徽章、五层战图、任务底图、视频占位和场馆授权信息。
 
 ### 1.3 课程团队不要配置
 
-- 絮絮的名称、平台头像和平台动画路径；
-- 模型名称、模型密钥、地图密钥和服务地址；
+- 絮絮的名字、平台头像、基础动画和平台安全规则；
+- 模型密钥、地图密钥、接口域名、上传存储和教师权限；
 - `open_task_tool`、`show_navigation`、`retrieve_course_knowledge`、`call_teacher` 等智能体内部工具；
-- 教师权限、会话存储、SSE、上传接口和安全底线。
+- 真实冲突、跟踪、规避监管或伤害行为的现实行动方案。
 
-课程只需要配置 A01–A07 活动能力。智能体会在当前状态允许时，通过统一调度器打开对应课程工具。
+本课程只配置教学活动和历史推演内容。历史战术工具限定在课程情境中使用。
 
 ## 2. 当前运行时接入状态
 
-| 内容 | 当前状态 | 配置时的处理方式 |
+| 内容 | 当前状态 | 本课配置要求 |
 |---|---|---|
-| `course.md`、`phases.md`、`roles/*.md` | 已解析并用于学生端和服务端 | 可按本文语法维护 |
-| A01–A07 工具注册表 | 已接入解析器、十种前端 renderer 和服务端基础 validator | 使用 `功能模块` 与 JSON `工具参数` |
-| 结构化 Step | 已解析 | 新增或重做任务时优先使用 |
-| 本课现有 18 个任务 | 仍以旧版 `引导步骤` 为主 | 可运行；后续逐角色迁移为结构化 Step |
-| `knowledge/*.md` | 已进入服务端检索 | 必须填写来源、角色和揭示时机 |
-| `guidance/*.md` | 已按角色和任务序号装配 | 当前主要提取任务段中的简短引导语 |
-| `scaffolds/*.md` | 已按角色和任务序号装配 | 当前自动使用 L1–L3；L0、L4保留为课程设计内容 |
-| `restrictions.md` | 已用于输出防剧透和公开包脱敏 | 解除条件只使用本文列出的格式 |
-| `prompts/*.md` | 已按 Phase 装配 | 当前每轮只取阶段文件前部的有限内容 |
-| `evaluation.md` | 平台已支持作为 `ai_evaluation` 验收上下文 | 本课现有兼容任务尚未逐步改成结构化 AI 验收 |
-| `objectives.md` | 课程资料已保留 | 尚未进入运行时解析；`目标关联`目前是记录字段 |
-| Step 中的知识/引导/限制/评估/脚手架引用 | 部分接入 | 知识引用用于定向检索，角色 guidance/scaffold 按任务装配；精确标题定位仍待完善 |
-| photo/audio/text/sketch/quiz/builder/simulation/team/media/scanner | 已有前端操作与基础结果校验 | 上线前仍需逐任务验证参数和失败恢复 |
-| `ai_evaluation`、`teacher_confirm`、`location_event`、`compound` | 已进入平台状态机 | AI 通过/重试已可用；本课迁移后仍需教师确认、位置与复合规则专项验收 |
-| 时间银行选择题、开放题、照片打卡、定位签到、余额与赠时 | 已接入 | 照片已接相机选择与上传；定位已接设备 GPS 和半径校验；目标物视觉识别、停留时长仍需补充 |
+| 课程、阶段、角色 | 已解析 | 可直接维护 Markdown |
+| A01–A07 工具注册表 | 已接入解析器、十种前端 renderer 和服务端基础 validator | Step 使用标准模块和 JSON 参数 |
+| 结构化 Step | 已解析 | 本课 15 个角色阶段全部按结构化 Step 配置 |
+| Step 工具合并 | 已接入编译器 | 当前按角色阶段合并工具并去重 |
+| Step 级工具验收 | 已接入基础校验 | 每个 Step 仍需做成功、失败、重试和恢复回归 |
+| 课程知识检索 | 已接入服务端 | 必须配置角色名、来源和 revealTiming |
+| 防剧透输出检查 | 已接入 | restrictions 四列表格必须覆盖关键路线和结论 |
+| guidance | 已按角色和任务序号装配 | 当前运行时主要抽取短提示，完整规则仍需人工验收 |
+| scaffolds | 已按角色和任务序号装配 | 当前自动提示主要读取 L1–L3 |
+| phase prompts | 已按 Phase 装配 | 每轮只加载当前阶段文件前部的有限内容 |
+| evaluation | 已进入 `ai_evaluation` 验收上下文 | 模型结合 B5 原文、Step 要求、当前 Step 限制、课程知识和工具结果返回通过/重试 |
+| objectives | 课程资料已保留 | 尚未进入运行时解析 |
+| `知识引用` | 已接入 | 按 `K-NN` 定向检索，并继续受角色和 `revealTiming` 约束 |
+| `限制引用` | 已接入精确定位 | `restrictions.md#标题` 解析到同名表格行或二、三级标题；当前 Step 的最小限制片段进入对话和 AI 验收 |
+| `引导引用`、`脚手架引用` | 已按角色和任务序号装配 | 当前按同角色文件中的任务顺序读取；引用字符串保留，尚未按 `#标题` 单独定位 |
+| `评估引用` | 部分接入 | 引用标签进入 AI 验收，同时加载完整 `evaluation.md`；按标题只抽取单条量规仍待开发 |
+| `ai_evaluation`、`teacher_confirm`、`location_event`、`compound` | 已进入服务端状态机 | 本课图片、实物识别、画板与开放表达使用 AI 通过/重试；其他模式仍需逐任务端到端验收 |
+| 时间银行选择题、开放题、照片打卡、定位签到、余额、赠时 | 已接入 | 照片已接相机选择与上传；定位已接设备 GPS 和半径校验；目标物视觉识别、停留时长仍需补充 |
 
-配置文件可以提前保留未来字段。上线验收仍以当前代码真实返回的状态为准。
+工具 UI、工具结果和服务端 validator 应按上线版本再次核对。本文件明确区分配置已解析与教学验收已执行。
 
 ## 3. 完整目录与逐文件作用
 
 ```text
 lesson_zhuhun_001/
-├── README.md                   # 本手册
-├── course.md                   # 课程身份、角色体系、视觉素材、絮絮本课身份
-├── phases.md                   # Phase 1–6 的名称、时长、地点、触发和流程
-├── objectives.md               # K/S/C 课程目标体系；当前供教研和人工评估使用
-├── evaluation.md               # 课程评估标准；供结构化 ai_evaluation 使用
-├── restrictions.md             # 防剧透、跨角色隔离和解除条件
-├── time-bank.md                # 时间银行规则、题目、答案和奖励
-├── assets-checklist.md         # 素材来源、完成度、授权和占位状态
-├── roles/                      # 角色、角色阶段、Step、位置、工具和通过条件
-│   ├── dragon-counter.md
-│   ├── slope-surveyor.md
-│   ├── ditch-finder.md
-│   ├── river-guide.md
-│   ├── moat-guard.md
-│   └── truth-seeker.md
-├── guidance/                   # 各角色、各任务的 AI 引导目标和禁止行为
-│   ├── dragon-counter.md
-│   ├── slope-surveyor.md
-│   ├── ditch-finder.md
-│   ├── river-guide.md
-│   ├── moat-guard.md
-│   └── truth-seeker.md
-├── scaffolds/                  # 各角色、各任务的 L0–L4 分层帮助
-│   ├── dragon-counter.md
-│   ├── slope-surveyor.md
-│   ├── ditch-finder.md
-│   ├── river-guide.md
-│   ├── moat-guard.md
-│   └── truth-seeker.md
-├── knowledge/                  # 服务端知识条目；按主题拆分
-│   ├── chishou.md              # 螭首、台基和排水口知识
-│   ├── slope-design.md         # 地面坡度和高差设计
-│   ├── drainage-ditches.md     # 明沟、暗沟和沟网
-│   ├── inner-river.md          # 内金水河及水流路径
-│   ├── moat-system.md          # 护城河和外围水系
-│   └── overall-system.md       # 综合排水系统与证据整合
-├── prompts/                    # 文件名中的数字绑定 Phase
-│   ├── phase1-immersive.md     # Phase 1 沉浸叙事
-│   ├── phase2-field.md         # Phase 2 现场采证
-│   ├── phase3-deduction.md     # Phase 3 推理推演
-│   ├── phase4-xuanji.md        # Phase 4 璇玑时刻
-│   ├── phase5-summary.md       # Phase 5 总结汇报
-│   └── phase6-ending.md        # Phase 6 尾声
+├── README.md                     # 本手册
+├── course.md                     # 课程身份、五角色体系、视觉素材、史料边界
+├── phases.md                     # Phase 1–6 编排
+├── objectives.md                 # K/S/C 目标；当前用于教研和人工评估
+├── evaluation.md                 # B5 评估表；供 ai_evaluation 结构化通过/重试
+├── restrictions.md               # 路线、决策、璇玑情境和史料边界
+├── time-bank.md                  # 时间银行规则、题目、答案和奖励
+├── assets-checklist.md           # 素材状态、来源、授权和占位说明
+├── roles/
+│   ├── map-strategist.md         # 地图参谋：地形层
+│   ├── intelligence-strategist.md # 情报参谋：情报层
+│   ├── decision-strategist.md    # 决策参谋：决策层
+│   ├── feint-strategist.md       # 示形参谋：行动层
+│   └── signaler.md               # 通讯兵：视角层
+├── guidance/                     # 各角色、各任务的 AI 引导规则
+│   ├── map-strategist.md
+│   ├── intelligence-strategist.md
+│   ├── decision-strategist.md
+│   ├── feint-strategist.md
+│   └── signaler.md
+├── scaffolds/                    # 各角色、各任务的 L0–L4 分层帮助
+│   ├── map-strategist.md
+│   ├── intelligence-strategist.md
+│   ├── decision-strategist.md
+│   ├── feint-strategist.md
+│   └── signaler.md
+├── knowledge/
+│   ├── context-and-timeline.md   # 时间线与历史语境
+│   ├── crossings.md              # 四次渡河与路线证据
+│   ├── terrain.md                # 川黔滇地形、水系和交通
+│   ├── intelligence.md           # 情报、不确定性和信息边界
+│   ├── decision-and-governance.md # 决策比较、授权和组织
+│   └── perspectives-and-evidence.md # 多视角、基层记录和证据表达
+├── prompts/                      # 文件名中的数字绑定 Phase
+│   ├── phase1-briefing.md        # Phase 1 局势入场
+│   ├── phase2-evidence.md        # Phase 2 展陈采证
+│   ├── phase3-deduction.md       # Phase 3 四渡推演
+│   ├── phase4-xuanji.md          # Phase 4 璇玑时刻
+│   ├── phase5-summary.md         # Phase 5 得意何在
+│   └── phase6-ending.md          # Phase 6 归档与尾声
 └── assets/
-    ├── backgrounds/            # 课程封面、聊天背景、转场、证书
-    ├── companion/              # 历史副本；当前运行时使用平台统一絮絮素材
-    ├── maps/                   # 导航图、排水剖面、河道路径
-    ├── roles/                  # 角色卡与角色徽章
-    ├── tasks/                  # 任务专用图片
-    ├── tokens/                 # 六枚密符图
-    └── videos/                 # 导入和推演媒体或占位图
+    ├── backgrounds/              # 封面、聊天、转场和证书
+    ├── logos/                    # 场馆标识及授权素材
+    ├── maps/                     # 场馆导航图
+    ├── roles/                    # 五套角色卡与徽章
+    ├── tasks/                    # 六张课程任务图与推演材料
+    ├── tokens/                   # 五层战图图层
+    └── videos/                   # 开场和推演媒体占位
 ```
 
-`guidance/` 和 `scaffolds/` 中的文件名必须与 `roles/` 的角色 slug 完全一致。上面的树列出全部 Markdown 配置文件；二进制素材逐项见第 17 节和 `assets-checklist.md`。
+上面的树列出全部 Markdown 配置文件；二进制素材逐项见第 17 节和 `assets-checklist.md`。`guidance/`、`scaffolds/` 与 `roles/` 通过相同 slug 绑定。
 
-## 4. ID 与绑定规则
+## 4. ID、文件名与绑定规则
 
-### 4.1 ID 规则总表
+### 4.1 ID 总表
 
-| 对象 | 本课格式 | 来源与用途 |
+| 对象 | 本课格式 | 绑定位置 |
 |---|---|---|
-| 课程 ID | `lesson_zhuhun_001` | 目录名、URL参数、会话课程 ID |
-| 主题 | `zhuhun` | `course.md / 主题模板`，选择主题 CSS |
-| Phase ID | `phase-1`～`phase-6` | 由 `phases.md` 的 `Phase N` 自动生成 |
-| 角色 ID | `dragon-counter` 等 | 由 `roles/{slug}.md` 文件名生成 |
-| 角色阶段 ID | `task-1`～`task-3` | 当前建议在角色文件中显式填写 |
-| Step ID | 语义化 kebab-case | 必须在课程内稳定，示例 `dragon-photo-context` |
-| 知识 ID | `K-01`～`K-19` | `knowledge/*.md` 二级标题 |
-| 目标/量规 ID | `K1`～`K6`、`S1`～`S6`、`C1`～`C5` | `objectives.md`、`evaluation.md`、角色 `目标关联` |
-| 时间银行 ID | `tb-01`～`tb-10` | `time-bank.md` 任务池 |
-| 工具实例 ID | `{roleId}:{taskId}:primary` | 编译器生成，课程团队不要手写 |
+| 课程 ID | `lesson_zhuhun_001` | 目录名、URL、会话课程 ID |
+| 主题 | `zhuhun` | `course.md / 主题模板` |
+| Phase ID | `phase-1`～`phase-6` | 由 `Phase N` 标题生成 |
+| 角色 ID | 五个英文 slug | `roles/{slug}.md` 文件名 |
+| 角色阶段 ID | 每个角色固定 `task-1`～`task-3` | 完成记录、限制解除、工具实例 |
+| Step ID | 语义化 kebab-case | 当前课程共 46 个稳定 ID |
+| 知识 ID | `K-01`～`K-21` | 服务端检索与当前 Step 的 `知识引用` |
+| 目标/量规 ID | `K1`～`K6`、`S1`～`S6`、`C1`～`C6` | objectives、evaluation、角色 `目标关联` |
+| 时间银行 ID | `tb-01`～`tb-10` | 时间银行完成记录 |
+| 工具实例 ID | `{roleId}:{taskId}:primary` | 编译器自动生成 |
 
-知识 ID 带连字符和两位数字，例如 `K-03`；目标 ID 不带连字符，例如 `K3`。两套编号用途不同，不能互换。
+知识 ID 带连字符和两位数字，例如 `K-10`；目标 ID 不带连字符，例如 `K1`。两套编号用途不同，不能互换。
 
-### 4.2 角色绑定
-
-以数龙官为例：
+### 4.2 角色文件绑定
 
 ```text
-roles/dragon-counter.md
-guidance/dragon-counter.md
-scaffolds/dragon-counter.md
-knowledge 条目中的 roles: 数龙官
-restrictions.md 中的“数龙官完成任务2后”
+roles/map-strategist.md
+guidance/map-strategist.md
+scaffolds/map-strategist.md
+knowledge 条目中的 roles: 地图参谋
+restrictions.md 中的“地图参谋完成任务N后”
 ```
 
-角色显示名改变时，需要同步检查知识条目的 `roles` 和限制表中的解除条件。
+五组文件均按此规则绑定。文件名 slug 变更会产生新的角色 ID，并使旧会话、guidance、scaffolds 和限制解除失去关联。
 
 ### 4.3 任务序号绑定
 
-当前 guidance、scaffolds 和角色限制均依赖任务序号：
+当前 restrictions 从“角色显示名完成任务N后”中读取角色和序号，再定位该角色的第 N 个任务，检查完成记录 `{roleId}:{taskId}`。因此：
 
-```text
-roles/dragon-counter.md       ### 任务2：算其数
-guidance/dragon-counter.md    ## 任务2：算其数
-scaffolds/dragon-counter.md   ## 或 ### 任务2：算其数
-restrictions.md               数龙官完成任务2后
-```
-
-因此本课角色阶段 ID 保持 `task-1`、`task-2`、`task-3`。调整任务顺序时，四处内容必须一起检查。
+- 角色阶段显式填写 `id：task-1`、`id：task-2`、`id：task-3`；
+- guidance 和 scaffolds 使用同样的任务序号；
+- 调整角色任务顺序时同步修改 restrictions；
+- Step 使用语义 ID，不占用 `task-N`。
 
 ### 4.4 Phase 绑定
 
 ```text
-phases.md                     ## Phase 2：现场采证
-运行时                         phase-2
-prompts/phase2-field.md       阶段提示词
-course.md                     任务阶段：phase-2
-time-bank.md                  unlock_after: phase2-start
+phases.md                     ## Phase 3：四渡推演
+运行时                         phase-3
+prompts/phase3-deduction.md   阶段提示词
+time-bank.md                  unlock_after: phase3-start
 ```
 
-角色任务里的 `阶段：Phase 2 现场采证` 当前作为课程文案保存。课程总阶段推进仍由场次状态和教师指令控制。
+`course.md / 任务阶段` 当前为 `phase-2`，表示角色领取后进入展陈采证。
 
 ## 5. `course.md` 配置
 
-### 5.1 有效结构
+### 5.1 基本信息
 
 ```md
-# 故宫600年不积水的秘密
+# 得意之笔·四渡赤水
 
-> 故宫排水智慧 · 跨学科研学课例
+> 在中国共产党历史展览馆，用证据完成一场战略推演
 
 ## 基本信息
 - 系列：铸魂
 - 系列代码：zhuhun
 - 主题模板：zhuhun
-- 场地：故宫博物院（中轴线区域）
-- 时长：6小时（含午休）
-- 适用年级：小学高年级 / 初中 / 高中
-- 分组：6人一组，每人一个角色
+- 场地：中国共产党历史展览馆
+- 时长：5.5小时（含参观、午休与集合）
+- 适用年级：小学中高年级 / 初中 / 高中
+- 分组：5人一组，每人一个推演角色
+```
 
+学生端会读取系列、主题、场地、坐标中心、时长、学段和分组。`坐标中心` 同时作为教师端场次地图的初始中心；`编号`、`最大并行组数` 当前作为课程说明保留。
+
+### 5.2 絮絮本课身份
+
+```md
 ## 智能体人设
-- 本课身份：故宫排水探究学习同伴
-- 性格：亲切、好奇、尊重证据
-- 语气：少年感、清晰、一次只引导一个行动
+- 本课身份：协助展开地图、整理电文的电子参谋员
+- 性格：冷静、尊重证据，愿意承认信息不足
+- 语气：战略推演中节奏沉着，不煽情、不催促
+```
 
+课程可以定义本课身份、课程语气和教学边界。名称、基础形象和动画由平台统一提供。
+
+### 5.3 五角色体系
+
+```md
 ## 学生端角色体系
-- collectionName：治水官
+- collectionName：推演角色
 - itemName：身份
-- 选择眉题：{roleCount}种身份 · {roleCount}段证据
-- 选择标题：选择你的{collectionName}身份
-- 选择说明：每位成员负责一个系统环节。集齐{roleCount}枚{collectionItemName}，才能解锁{unlockTarget}。
-- collectionItemName：密符
-- collectionPanelName：小组密符
+- 选择眉题：{roleCount}种推演身份 · {roleCount}层战图证据
+- 选择标题：选择你的推演身份
+- 选择说明：每位成员负责一种观察视角。集齐{roleCount}层{collectionItemName}，共同还原四渡赤水的决策链。
+- collectionItemName：战图图层
+- collectionPanelName：五层战图
 - unlockTarget：璇玑时刻
 - 任务阶段：phase-2
 ```
 
-`collectionName` 等英文键区分大小写。角色选择文案支持 `{roleCount}`、`{collectionName}`、`{itemName}`、`{collectionItemName}`、`{unlockTarget}`。
+英文键区分大小写。文案支持 `{roleCount}`、`{collectionName}`、`{itemName}`、`{collectionItemName}`、`{unlockTarget}`。
 
-### 5.2 视觉素材
+### 5.4 视觉素材
 
 ```md
 ## 学生端视觉素材
@@ -226,415 +233,481 @@ time-bank.md                  unlock_after: phase2-start
 - 对话背景：assets/backgrounds/chat-bg.png
 - 阶段转场：assets/backgrounds/phase-transition.png
 - 完课证书：assets/backgrounds/certificate-bg.png
-- 导航地图：assets/maps/navigation-map.png
-- 导入占位图：assets/videos/video-storm-coming.png
-- 推演占位图：assets/videos/video-simulation.png
+- 导航地图：assets/maps/museum-navigation.png
+- 导入占位图：assets/videos/video-opening.jpg
+- 推演占位图：assets/videos/video-strategy-table.jpg
 ```
 
-路径相对于课程目录。统一写成 `assets/...`，区分大小写。
+路径统一写为 `assets/...`。课程视觉素材不改变平台絮絮 IP。
 
-`名字`、`智能体待机动画`、`智能体对话动画` 等历史字段不会覆盖平台统一 IP。当前目录中的 `assets/companion/*.webm` 不参与平台絮絮渲染。
+### 5.5 史料边界
 
-### 5.3 当前未读取字段
+`course.md` 中的叙事框架、五层战图机制和史料边界目前属于课程说明，解析器不会将这些段落自动转成限制规则。关键边界需要同步写入：
 
-`编号`、`坐标中心`、`最大并行组数`、口头禅、特殊行为、叙事框架和密符机制可以作为课程说明保留，当前解析器不会用它们直接控制运行状态。
+- `restrictions.md` 四列表格；
+- 对应角色 guidance 的绝对禁止；
+- 相关 knowledge 的 content、source 与 revealTiming；
+- 阶段 prompt 文件开头。
 
 ## 6. `phases.md` 与阶段提示词
 
 ### 6.1 Phase 语法
 
 ```md
-## Phase 2：现场采证
-- 时长：90min
-- 模式：个人（按角色分散）
-- 地点：故宫各区域（由角色决定）
-- 功能模块：A01(多模态采集), A02(答题评测), A07(扫码识别)
-- 触发条件：Phase 1 结束 + 教师确认
-- 结束条件：教师手动推进 或 时间耗尽
+## Phase 3：四渡推演
+- 时长：60min
+- 模式：小组协作
+- 地点：馆内教育空间或返程后的学习空间
+- 功能模块：A03(拼合搭建), A04(兵棋推演), A05(讨论记录)
+- 触发条件：Phase 2结束
+- 结束条件：完成四轮决策与证据复盘
 
 ### 流程
-1. AI根据角色显示目标区域
-2. 每个角色完成3个角色阶段
-3. 完成后获得密符
+1. 五层战图叠合
+2. 系统依次冻结在四个时点
+3. 每轮只开放当时已经掌握的情报
 ```
 
-标题必须使用 `## Phase N：名称`。运行时自动生成 `phase-N`。
+标题必须使用 `## Phase N：名称`。流程使用 `1.` 开头的有序列表。
 
 ### 6.2 本课阶段对照
 
 | Phase ID | 名称 | 时长 | 阶段提示词 |
 |---|---|---:|---|
-| `phase-1` | 沉浸叙事 | 20min | `prompts/phase1-immersive.md` |
-| `phase-2` | 现场采证 | 90min | `prompts/phase2-field.md` |
-| `phase-3` | 推理推演 | 40min | `prompts/phase3-deduction.md` |
+| `phase-1` | 局势入场 | 25min | `prompts/phase1-briefing.md` |
+| `phase-2` | 展陈采证 | 120min | `prompts/phase2-evidence.md` |
+| `phase-3` | 四渡推演 | 60min | `prompts/phase3-deduction.md` |
 | `phase-4` | 璇玑时刻 | 30min | `prompts/phase4-xuanji.md` |
-| `phase-5` | 总结汇报 | 20min | `prompts/phase5-summary.md` |
-| `phase-6` | 尾声 | 10min | `prompts/phase6-ending.md` |
+| `phase-5` | 得意何在 | 30min | `prompts/phase5-summary.md` |
+| `phase-6` | 归档与尾声 | 10min | `prompts/phase6-ending.md` |
 
-提示词文件名必须符合 `prompts/phase数字-名称.md`。编译器根据文件名中的数字绑定 Phase。
+prompt 文件必须符合 `prompts/phase数字-名称.md`。运行时只按数字绑定。
 
-阶段提示词当前按需进入模型上下文，且只截取文件前部的有限内容。最重要的阶段目标、泄题边界和絮絮行为放在文件开头；详细教案仍可保留在后文供课程团队查看。
+阶段提示词当前只截取文件前部的有限内容。每个文件开头优先写：阶段目标、本阶段可见史料、禁止提前透露内容、絮絮本阶段角色和教师推进条件。
 
 ## 7. `roles/*.md` 配置
 
 ### 7.1 角色基本信息
 
 ```md
-# 🐲 数龙官
+# 🗺️ 地图参谋
 
-> 核心问题：千龙吐水的“千”究竟有多大？
+> 核心问题：山脉、河流与渡口怎样改变一支队伍可以选择的路？
 
 ## 基本信息
 - 排序：1
-- 地点：三大殿三台（太和殿·中和殿·保和殿）
-- 地理围栏：中心(116.3972, 39.9171) 半径100m
+- 地点：长征路线地图与模型展区
+- 地理围栏：中国共产党历史展览馆课程动线内
 - 类型：核心角色
-- 选择说明：追踪螭首的形态与数量，判断“千龙吐水”的“千”究竟有多大。
-- 角色卡图：assets/roles/role-card-dragon-counter.png
-- 角色徽章图：assets/roles/badge-dragon-counter.png
-- 收集物：Y
-- 收集物图：assets/tokens/mifu-Y.png
+- 选择说明：负责读懂川黔滇地形，把河流、渡口、山地和敌我位置整理成可推演的战场底图。
+- 角色卡图：assets/roles/role-card-map-strategist.png
+- 角色徽章图：assets/roles/badge-map-strategist.png
+- 收集物：地形层
+- 收集物图：assets/tokens/layer-terrain.png
 ```
 
-必填字段：`选择说明`、`角色卡图`、`角色徽章图`、`收集物`、`收集物图`。
+必填字段为 `选择说明`、`角色卡图`、`角色徽章图`、`收集物`、`收集物图`。
 
-`地理围栏` 当前可从“中心(经度, 纬度) 半径Nm”提取坐标和半径。没有坐标时会降级为地点展示和手动确认。
+本课当前角色 `地理围栏` 是场馆动线文字，没有经纬度，运行时会作为 `point` 地点处理，主要提供导航和手动到达确认。正式启用 GPS 围栏时，需要提交合法坐标、半径、精度要求和停留时间。
 
-### 7.2 角色阶段字段
+### 7.2 角色阶段
 
 ```md
-### 角色阶段1：观其形
+### 任务1：定坐标
 - id：task-1
-- 阶段：Phase 2 现场采证
-- 配置：识别螭首的位置、形态和出水口
+- 阶段：Phase 2 展陈采证
+- 配置：确认地图展项，采集水系证据，并在底图中标出可确认内容
 - 位置模式：inherit_role
-- 地点：
-- 坐标：
-- 围栏半径：
 - 到达验证：manual
 - 最短停留：0min
-- 建议时长：15min
+- 建议时长：20min
 - 无操作提醒：3min
 - 提醒冷却：2min
 - 最大主动提醒：2
 - 推进方式：auto_after_validation
-- 完成方式：tool_result
-- 功能模块：A01(拍照采集)
-- 工具参数：{"photo":{"minCount":5,"maxCount":8,"recognition":"course-evidence"}}
-- 证据要求：5张照片覆盖全景、侧面和出水口细节
-- 通过条件：至少5张有效照片 + 观察说明
-- 目标关联：K3, S4, C1
-- AI引导方向：引导学生注意材质、出水口和排列规律
+- 完成方式：compound
+- 功能模块：A07(实物识别), A01(拍照采集), A01(画板标注)
+- 证据要求：完成展项确认、至少2张来源照片和1张标注图
+- 通过条件：三个必做 Step 完成
+- 目标关联：K1, S1, S3
+- AI引导方向：先确认地图方位与来源，再进行空间判断
 ```
 
-位置模式：
+任务 ID 保持 `task-1`～`task-3`。位置模式支持 `inherit_role`、`none`、`point`、`geofence`、`route`、`area`。
 
-- `inherit_role` 或 `inherit`：继承角色地点和围栏；
-- `none`：无需位置；
-- `point`：显示地点和导航，手动确认；
-- `geofence`：按坐标、精度、半径和停留时间判断；
-- `route`、`area`：字段可解析，使用前需要完成对应位置能力专项验收。
+## 8. 结构化 Step 配置
 
-完成方式支持 `user_confirm`、`tool_result`、`ai_evaluation`、`teacher_confirm`、`location_event`、`compound`。当前主任务默认使用 `tool_result`。
-
-### 7.3 旧版 `引导步骤`
-
-本课当前角色文件使用：
+### 8.1 标准模板
 
 ```md
-- 引导步骤：先观察一处螭首；换角度记录连接方式；补齐全景和细节照片
-```
-
-解析器会按分号、换行或句号切成最多 5 个兼容小步，并自动生成 `{task-id}-step-N`。兼容小步统一按 `user_confirm` 处理，无法为每一步精确绑定不同工具和证据。因此，后续修改任务时建议迁移为结构化 Step。
-
-## 8. 结构化 Step
-
-### 8.1 推荐语法
-
-```md
-#### Step 1：拍摄螭首与台基全景
-- id：dragon-photo-context
-- 小步目标：确认螭首在台基排水结构中的位置
-- 学生行动：选择一处螭首，拍一张同时包含螭首、出水口和台基边缘的全景
+#### Step 2：采集水系证据
+- id：map-capture-water-system
+- 小步目标：获得可复核的地图和水系照片
+- 学生行动：拍一张地图全景，再拍一张河流名称或图例局部
 - 位置：inherit
 - 完成方式：tool_result
 - 功能模块：A01(拍照采集)
-- 工具参数：{"minCount":1,"maxCount":2,"recognition":"course-evidence"}
-- 证据要求：照片同时包含螭首、出水口和台基边缘
-- 知识引用：K-03
-- 引导引用：guidance/dragon-counter.md#任务1
-- 限制引用：restrictions.md#核心数据限制
-- 评估引用：evaluation.md#S4
-- 脚手架引用：scaffolds/dragon-counter.md#任务1
-- 常见误区：只拍花纹局部，无法判断螭首所在位置
+- 工具参数：{"photo":{"minCount":2,"maxCount":4,"accept":"image/*","recognition":"map-source-and-waterway"}}
+- 证据要求：至少2张照片，并保留展项标题或说明牌
+- 知识引用：K-10, K-11
+- 引导引用：guidance/map-strategist.md#任务1
+- 限制引用：restrictions.md#核心路线限制
+- 评估引用：evaluation.md#S1, evaluation.md#S3
+- 脚手架引用：scaffolds/map-strategist.md#任务1
+- 常见误区：只拍地图局部，无法确认地图来源和方位
 - 最大尝试：3
-- 失败处理：升一级脚手架后重新拍摄
-- 教师介入：连续3次无法获得有效照片
-- 通过后：step:dragon-photo-detail
+- 失败处理：提示调整角度并保留“待核”字段
+- 教师介入：展项不可拍摄或无法找到指定区域
+- 通过后：step:map-annotate-water-system
 ```
 
-### 8.2 必填约定
+### 8.2 配置原则
 
-- 显式填写稳定 `id`；
-- 一步只安排一个主要学生行动；
-- 每一步都填写 `位置`，可用 `inherit` 或 `none`；
-- 工具步骤填写 `完成方式` 和 `证据要求`；
+- 每个 Step 显式填写唯一 `id`；
+- 每步只安排一个主要行动；
+- 所有 Step 都写 `位置`，现场步骤通常使用 `inherit`；
+- 只需结构校验的工具操作写 `tool_result`，需要判断图片、画板或开放表达质量时写 `ai_evaluation`；简单阅读确认可写 `user_confirm`；
+- `证据要求` 描述学生可理解的达标条件；
 - `通过后` 指向 `step:{nextStepId}`、`role-stage:task-N` 或 `role-stage:complete`；
-- Step ID 不随文案调整而改变。
+- 工具参数区分公开交互键与平台支持的私有验证键；
+- 史实答案、标准路线、评分阈值和扫码预期值放服务端私有配置。
 
-当前运行时按 Step 数组顺序推进，`通过后` 已保留但尚未作为通用分支图执行。知识、引导、限制、评估和脚手架引用也尚未自动解析对应文件条目。
+当前运行时按 Step 数组顺序推进；`通过后` 已解析，通用条件分支尚未执行。知识引用已用于当前小步检索；限制引用已按 `restrictions.md#标题` 精确解析并进入对话与 AI 验收；角色 guidance/scaffold 按任务序号装配。评估引用目前作为标签进入验收并配合完整 B5 文件，按标题抽取单条量规仍待开发。
 
-除知识条目的 `K-NN` 外，引用建议统一写成 `相对文件路径#标题或量规编号`，并与目标文件的标题保持一致。当前解析器把引用当作元数据保存，未来接入解析器时可以直接定位。
+除知识条目的 `K-NN` 外，引用统一写成 `相对文件路径#标题或量规编号`。保持真实路径和标题一致，便于当前验收上下文和后续精确装配稳定使用。
 
-## 9. A01–A07 活动工具与 `工具参数`
+### 8.3 完成方式状态
+
+| completionMode | 适用场景 | 当前说明 |
+|---|---|---|
+| `user_confirm` | 阅读、观看、低风险观察 | 已有直接确认流程 |
+| `tool_result` | 拍照、录音、表单、画板、扫码 | 通过活动工具结果推进 |
+| `ai_evaluation` | 开放表达、图片或示意图评分 | 已调用真实模型并返回结构化通过/重试；未通过停留原 Step，达到最大尝试次数后建议呼叫老师 |
+| `teacher_confirm` | 开放成果、集体展示 | 字段已解析，需教师端验收链路测试 |
+| `location_event` | GPS、围栏和停留 | 服务端有状态模型，学生端真实 GPS 仍需验收 |
+| `compound` | 多个条件组合 | 建议用于角色阶段，组合规则需按任务配置 validator |
+
+## 9. A01–A07 活动工具与 JSON
 
 ### 9.1 工具注册表
 
-| 模块 | `功能模块`示例 | 解析后的工具 ID | 课程配置重点 |
+| 模块 | 课程写法 | 工具 ID | 主要公开配置 |
 |---|---|---|---|
-| A01 | `A01(拍照采集)` | `photo` | 张数、接受格式、识别目的 |
-| A01 | `A01(语音记录)` | `audio` | 最短/最长录音、语言、转写 |
-| A01 | `A01(文字表单)` | `text` | 字段、类型、必填、占位文案 |
-| A01 | `A01(画板标注)` | `sketch` | 画布、颜色、底图 |
-| A02 | `A02(单选题)` | `quiz` | 题型、题目、公开选项 |
-| A03 | `A03(拼合搭建)` | `builder` | 模式、材料、分区和连线 |
-| A04 | `A04(沙盘推演)` | `simulation` | 回合、资源、选择和指标 |
-| A05 | `A05(组内讨论)` | `team` | 讨论/投票/分工、最低参与量 |
-| A06 | `A06(沉浸媒体)` | `media` | 类型、URL、海报、完成要求 |
-| A07 | `A07(扫码识别)` | `scanner` | 二维码/实物、提示和手动兜底 |
+| A01 | `A01(拍照采集)` | `photo` | minCount、maxCount、accept、prompt |
+| A01 | `A01(语音记录)` | `audio` | minSeconds、maxSeconds、language、transcribe |
+| A01 | `A01(文字表单)` | `text` | fields 数组、字段类型、required、placeholder |
+| A01 | `A01(画板标注)` | `sketch` | width、height、backgroundImage、brushColors、prompt |
+| A02 | `A02(单选/多选/排序/开放题)` | `quiz` | type、question、options、公开反馈 |
+| A03 | `A03(拼合/流程/证据墙)` | `builder` | mode、items、zones、connections、prompt |
+| A04 | `A04(沙盘推演)` | `simulation` | rounds、resources、choices、metrics、prompt |
+| A05 | `A05(讨论/投票/分工)` | `team` | mode、prompt、minimumEntries、roles |
+| A06 | `A06(沉浸媒体)` | `media` | type、url、poster、title、requireCompletion |
+| A07 | `A07(扫码/实物识别)` | `scanner` | mode、allowManualEntry、prompt |
 
-`A01(多模态采集)` 会展开为 photo、audio、text、sketch 四种工具。课程需要更聚焦的操作时，应明确写具体能力。
+### 9.2 单工具 JSON
 
-工具之间默认互相独立。拍照、扫码、语音、文字等能力只有在课程 `功能模块` 中被显式声明时才会渲染；例如只写 `A01(拍照采集)` 时只出现拍照工具，扫码必须单独写 `A07(扫码识别)`。
-
-### 9.2 单工具参数
-
-Step 只配置一个工具时，可以直接填写该工具配置：
+Step 只调用一个工具时可以直接写配置，也可以保留工具 ID 外层。本课统一保留工具 ID 外层，便于审计：
 
 ```md
-- 功能模块：A01(拍照采集)
-- 工具参数：{"minCount":3,"maxCount":6,"accept":"image/*","recognition":"course-evidence"}
+- 功能模块：A01(画板标注)
+- 工具参数：{"sketch":{"width":720,"height":520,"backgroundImage":"assets/tasks/terrain-map.svg","brushColors":["#8d211f","#245c4f","#1f2937"],"prompt":"红色实线表示史料可确认，绿色虚线表示推演。"}}
 ```
 
-### 9.3 多工具参数
+### 9.3 多工具 JSON
 
-角色阶段同时配置多种工具时，使用工具 ID 作为一级键：
+角色阶段同时声明多工具时，必须使用工具 ID 作为一级键：
 
 ```md
-- 功能模块：A01(拍照采集), A02(开放问答)
-- 工具参数：{"photo":{"minCount":3,"maxCount":6},"quiz":{"type":"open_response","question":"说明你的估算方法"}}
+- 功能模块：A01(拍照采集), A01(文字表单), A02(开放题)
+- 工具参数：{"photo":{"minCount":2},"text":{"fields":[{"id":"source","label":"来源","type":"short_text","required":true}]},"quiz":{"type":"open_response","question":"说明你的判断依据"}}
 ```
 
-当前编译器会合并角色阶段和所有 Step 的工具，并按工具 ID 去重，形成一个角色阶段活动工具实例。Step 级独立调用和独立验收仍需要按任务回归验证。
+编译器会合并角色阶段和 Step 工具，并按工具 ID 去重。当前仍以一个角色阶段 activity 实例向学生端调度。
 
-### 9.4 参数公开与私有边界
+### 9.4 私有答案边界
 
-课程源中的 `工具参数` 可以同时包含公开交互配置和平台支持的私有验证配置：
+课程源允许在 `工具参数` 中配置服务端校验需要的私有字段。同步脚本和服务端工具编译器当前会删除公开工具配置中的：
 
-- 公开：题干、公开选项、字段名、底图、张数、录音时长、回合数和学生提示；
-- 私有：`answer`、`answers`、`expectedResults`、`correctMapping`、`validConnections`、`explanation`、`retryMessage`、`evaluationPrompt`，以及 choice 中的 `score`、`correct`。
-
-同步脚本和服务端工具编译器会从学生端公开配置中删除上述私有键，同时在服务端课程对象中保留它们用于基础校验。原始 `toolParameters` 字符串也不会下发浏览器。
-
-不要自创未经脱敏器登记的私有键，也不要写入 API Key、教师评语、学生隐私或模型 System Prompt。每次新增验证字段后，都要先更新公开字段裁剪测试。
-
-当前服务端可校验客观 quiz、数值容差、builder 映射、scanner 预期结果和十种工具的基础完成条件。平台已为结构化 `ai_evaluation` 接入文字/图片/画板的真实模型验收，并在未通过时停留原 Step；本课旧版任务需要先迁移成结构化 Step 才能逐项启用。
-
-### 9.5 照片数量
-
-不要只依赖中文文案推断张数。推荐显式配置：
-
-```json
-{"photo":{"minCount":5,"maxCount":8}}
+```text
+answer, answers, expectedResults, correctMapping, validConnections,
+explanation, retryMessage, evaluationPrompt,
+choices[].score, choices[].correct
 ```
 
-兼容提取只稳定识别“至少5张”“最少5张”“≥5张”等表达。
+原始 `toolParameters` 字符串也不会写入浏览器课程包。私有字段仍保留在服务端课程对象，用于 quiz、builder、scanner 等基础 validator。
 
-## 10. 本课角色、任务、工具和素材对照
+不要自创未经裁剪器登记的私有字段。新增验证字段时，需要同步更新 `sanitizeTool`、`publicTool` 和防泄漏测试。
 
-### 10.1 六个角色
+本课上线前仍必须检查：
 
-| 排序 | role ID | 显示名 | 收集物 | 角色卡 / 徽章 / 收集物图 |
+```text
+4-stu-learning/src/generated/lesson-public.js
+```
+
+文件中不能出现任何任务答案、未解锁路线、内部评分规则和扫码预期值。
+
+## 10. 本课五角色、三任务与 46 个 Step
+
+### 10.1 角色和素材
+
+| 排序 | role ID | 角色 | 图层 | 角色卡 / 徽章 / 图层图 |
 |---:|---|---|---|---|
-| 1 | `dragon-counter` | 数龙官 | Y | `role-card-dragon-counter.png` / `badge-dragon-counter.png` / `mifu-Y.png` |
-| 2 | `slope-surveyor` | 测坡官 | I | `role-card-slope-surveyor.png` / `badge-slope-surveyor.png` / `mifu-I.png` |
-| 3 | `ditch-finder` | 寻沟官 | N | `role-card-ditch-finder.png` / `badge-ditch-finder.png` / `mifu-N.png` |
-| 4 | `river-guide` | 引河官 | S | `role-card-river-guide.png` / `badge-river-guide.png` / `mifu-S.png` |
-| 5 | `moat-guard` | 护城官 | H | `role-card-moat-guard.png` / `badge-moat-guard.png` / `mifu-H.png` |
-| 6 | `truth-seeker` | 真相官 | U | `role-card-truth-seeker.png` / `badge-truth-seeker.png` / `mifu-U.png` |
+| 1 | `map-strategist` | 地图参谋 | 地形层 | `role-card-map-strategist.png` / `badge-map-strategist.png` / `layer-terrain.png` |
+| 2 | `intelligence-strategist` | 情报参谋 | 情报层 | `role-card-intelligence-strategist.png` / `badge-intelligence-strategist.png` / `layer-intelligence.png` |
+| 3 | `decision-strategist` | 决策参谋 | 决策层 | `role-card-decision-strategist.png` / `badge-decision-strategist.png` / `layer-decision.png` |
+| 4 | `feint-strategist` | 示形参谋 | 行动层 | `role-card-feint-strategist.png` / `badge-feint-strategist.png` / `layer-action.png` |
+| 5 | `signaler` | 通讯兵 | 视角层 | `role-card-signaler.png` / `badge-signaler.png` / `layer-perspective.png` |
 
-六枚密符按角色排序组成 `Y-I-N-S-H-U`。显示名称、密符名称和解锁目标均来自课程配置。
+### 10.2 地图参谋：9 Steps
 
-### 10.2 当前任务工具
+| task | 任务 | Step ID | 工具 |
+|---|---|---|---|
+| `task-1` | 定坐标 | `map-locate-exhibit` | scanner |
+|  |  | `map-capture-water-system` | photo |
+|  |  | `map-annotate-water-system` | sketch |
+| `task-2` | 布态势 | `map-place-situation-cards` | builder |
+|  |  | `map-mark-evidence-boundary` | sketch |
+|  |  | `map-explain-terrain-constraint` | text |
+| `task-3` | 拟路线 | `map-draw-candidate-route` | sketch |
+|  |  | `map-complete-route-matrix` | text |
+|  |  | `map-check-route-evidence` | quiz |
 
-| 角色 | task | 任务名 | 当前解析工具 | 任务图 |
-|---|---|---|---|---|
-| 数龙官 | `task-1` | 观其形 | photo | `assets/tasks/chishou-front.jpg` |
-| 数龙官 | `task-2` | 算其数 | photo + quiz | 角色卡回退 |
-| 数龙官 | `task-3` | 验其差 | text + audio | 角色卡回退 |
-| 测坡官 | `task-1` | 察其势 | photo | `assets/maps/drainage-profile.png` |
-| 测坡官 | `task-2` | 量其度 | photo + quiz | 角色卡回退 |
-| 测坡官 | `task-3` | 析其理 | text + sketch | 角色卡回退 |
-| 寻沟官 | `task-1` | 寻其踪 | photo | 角色卡回退 |
-| 寻沟官 | `task-2` | 探其网 | sketch + quiz | 角色卡回退 |
-| 寻沟官 | `task-3` | 绘其图 | sketch + builder | 角色卡回退 |
-| 引河官 | `task-1` | 追其源 | photo | `assets/maps/inner-river-path.png` |
-| 引河官 | `task-2` | 测其流 | photo + audio + quiz | 角色卡回退 |
-| 引河官 | `task-3` | 演其变 | text + simulation | `assets/videos/video-simulation.png` |
-| 护城官 | `task-1` | 观其堤 | photo | 角色卡回退 |
-| 护城官 | `task-2` | 验其深 | photo + audio + quiz | 角色卡回退 |
-| 护城官 | `task-3` | 解其用 | text + quiz | 角色卡回退 |
-| 真相官 | `task-1` | 汇其证 | photo + audio + text + scanner | 角色卡回退 |
-| 真相官 | `task-2` | 辨其伪 | text + quiz | 角色卡回退 |
-| 真相官 | `task-3` | 断其案 | text + audio + builder | 角色卡回退 |
+任务底图：`assets/tasks/terrain-map.svg`。
 
-表中“当前解析工具”来自现有 `功能模块`。任务尚未填写显式工具 JSON 时会使用平台默认参数，上线前应逐任务补足最小张数、字段、题型、底图和完成要求。扫码只在任务明确要求二维码/对象识别时配置，例如真相官收集其他角色证据。
+### 10.3 情报参谋：9 Steps
+
+| task | 任务 | Step ID | 工具 |
+|---|---|---|---|
+| `task-1` | 读电文 | `intel-capture-message` | photo |
+|  |  | `intel-confirm-fields` | text |
+|  |  | `intel-mark-source-boundary` | quiz |
+| `task-2` | 划盲区 | `intel-sort-information` | builder |
+|  |  | `intel-rate-reliability` | text |
+|  |  | `intel-correct-overclaim` | quiz |
+| `task-3` | 测判断 | `intel-select-signal` | quiz |
+|  |  | `intel-run-branches` | simulation |
+|  |  | `intel-record-window-risk` | text |
+
+任务底图：`assets/tasks/intelligence-matrix.svg`。
+
+### 10.4 决策参谋：9 Steps
+
+| task | 任务 | Step ID | 工具 |
+|---|---|---|---|
+| `task-1` | 列方案 | `decision-capture-source` | photo |
+|  |  | `decision-build-options` | text |
+|  |  | `decision-balance-reasons` | quiz |
+| `task-2` | 比风险 | `decision-score-options` | text |
+|  |  | `decision-test-failure` | simulation |
+|  |  | `decision-record-team-decision` | team |
+| `task-3` | 复决策 | `decision-read-new-evidence` | media |
+|  |  | `decision-compare-version` | builder |
+|  |  | `decision-write-revision` | text |
+
+任务材料：任务1–2使用 `assets/tasks/decision-matrix.svg`，任务3使用 `assets/tasks/decision-review-card.svg`。
+
+### 10.5 示形参谋：9 Steps
+
+| task | 任务 | Step ID | 工具 |
+|---|---|---|---|
+| `task-1` | 排行动 | `feint-capture-deployment` | photo |
+|  |  | `feint-order-actions` | quiz |
+|  |  | `feint-source-action-cards` | text |
+| `task-2` | 辨虚实 | `feint-build-signal-chain` | builder |
+|  |  | `feint-add-alternative` | text |
+|  |  | `feint-check-evidence` | quiz |
+| `task-3` | 演反应 | `feint-run-reactions` | simulation |
+|  |  | `feint-discuss-fallback` | team |
+|  |  | `feint-record-robustness` | text |
+
+任务底图：`assets/tasks/feint-route.svg`。
+
+### 10.6 通讯兵：10 Steps
+
+| task | 任务 | Step ID | 工具 |
+|---|---|---|---|
+| `task-1` | 收残讯 | `signal-capture-evidence` | photo |
+|  |  | `signal-sort-known-unknown` | builder |
+|  |  | `signal-mark-evidence-boundary` | quiz |
+| `task-2` | 译行动 | `signal-read-command` | media |
+|  |  | `signal-extract-command` | text |
+|  |  | `signal-retell-command` | audio |
+|  |  | `signal-compare-retelling` | team |
+| `task-3` | 写边界 | `signal-write-draft` | text |
+|  |  | `signal-label-sentences` | builder |
+|  |  | `signal-check-boundary` | quiz |
+
+任务底图：`assets/tasks/limited-message.svg`。
+
+五个角色合计覆盖 photo、audio、text、sketch、quiz、builder、simulation、team、media、scanner 十种工具。课程验收需要覆盖所有十种 renderer 和结果回传。
 
 ## 11. `knowledge/*.md`
 
 ### 11.1 条目语法
 
 ```md
-## K-03 螭首的工程功能
-- topic: 螭首排水功能
+## K-14 信息不对称四象限
+- topic: 信息盲区矩阵
 - content: 课程知识正文
-- tags: 螭首, 排水, 工程, 坡度
-- source: 故宫博物院古建研究
-- roles: 数龙官, 测坡官
-- revealTiming: after_task1
+- tags: 我方已知, 敌方已知, 双方未知, 误判, 四象限
+- source: 课程方法工具《鲁班锁·情报盲区图》
+- roles: 情报参谋, 示形参谋
+- revealTiming: always_available
 ```
 
-字段名使用英文小写，区分大小写：`topic`、`content`、`tags`、`source`、`roles`、`revealTiming`。
+字段名使用英文小写且区分大小写：`topic`、`content`、`tags`、`source`、`roles`、`revealTiming`。
 
-`roles` 使用角色显示名，不使用 role slug。可用 `全角色共享` 或 `全部角色`。
+`roles` 写角色显示名，可使用逗号分隔，也可写 `全角色共享`。揭示时机当前支持：
 
-当前支持的揭示写法：
-
-- `always_available` 或包含 `always`；
+- 包含 `always` 的公开条目；
 - `after_task1`、`after_task2`、`after_task3`；
-- `phase2`、`phase3`、`phase4` 等；
-- 真相官历史兼容规则 `phase2_truth_seeker_task2`。
-
-知识 ID 必须在整门课程内唯一。检索主要依据 topic、title 和 tags，因此标签要覆盖学生可能使用的说法。
+- `phase2`、`phase3`、`phase4`、`phase5` 等。
 
 ### 11.2 本课知识范围
 
-| 文件 | ID | 主要角色/主题 |
+| 文件 | ID | 内容 |
 |---|---|---|
-| `knowledge/chishou.md` | K-01～K-04 | 数龙官、螭首功能与文化 |
-| `knowledge/slope-design.md` | K-05～K-07 | 测坡官、坡度与流向 |
-| `knowledge/drainage-ditches.md` | K-08～K-10 | 寻沟官、明暗沟和分级网络 |
-| `knowledge/inner-river.md` | K-11～K-13 | 引河官、内金水河 |
-| `knowledge/moat-system.md` | K-14～K-16 | 护城官、护城河蓄排 |
-| `knowledge/overall-system.md` | K-17～K-19 | 全景、因势利导、系统边界 |
+| `context-and-timeline.md` | K-01～K-04 | 时空坐标、兵力概括、初始计划、连续调整 |
+| `crossings.md` | K-05～K-09 | 四次渡河和后续脱困行动链 |
+| `terrain.md` | K-10～K-12 | 地形约束、地图读取、路线与目标 |
+| `intelligence.md` | K-13～K-15 | 情报质量、信息盲区、示形条件 |
+| `decision-and-governance.md` | K-16～K-18 | 遵义会议、苟坝会议、指挥机制 |
+| `perspectives-and-evidence.md` | K-19～K-21 | 双视角、失散小战士边界、证据等级 |
 
-精确数值可以保留在服务端知识正文，但必须同时在 `restrictions.md` 中建立保护项和解除条件。
+党史条目必须写明可核验来源。来源存在差异时，在 content 中说明资料边界，不将单一二手表述写成唯一结论。
+
+知识检索先按当前角色和 `revealTiming` 过滤可见条目，再用 title、topic、tags 与当前问题计算相关度。Step 的 `知识引用` 会为对应 ID 增加优先级，但不会绕过角色或揭示时机。学生可能使用的简称、地名和同义表达应进入 tags。
 
 ## 12. `guidance/*.md`
 
-每个角色一个同 slug 文件，并按任务序号分段：
+每个角色一个同 slug 文件：
 
 ```md
-# 数龙官 · 引导规则
+# 地图参谋 · AI引导规则
 
-## 任务1：观其形
+## 任务1：定坐标
 
 ### 引导目标
-帮助学生从无目的观看转为带着问题观察。
+先确认地图方向与来源，再提取空间证据。
 
 ### 引导策略
-- 先问：“你能看到螭首和台基怎样连接吗？”
-- 学生只拍局部时，提醒补一张环境全景。
+- 先问：“你用什么确认地图方向？”
+- 每个标注附展项标题或照片编号。
+- 低置信度文字标“待人工核对”。
 
 ### 绝对禁止
-- 不提前透露螭首总数。
+- 不在学生找到证据前提供四渡完整路线。
+- 不依据模糊照片猜地名或日期。
 ```
 
-当前编译器按第 N 个任务段绑定，标题文字不会参与自动校验。任务顺序调整后要人工核对。
+当前按第 N 个任务段绑定。任务标题只供人阅读，编译器不会核对标题是否一致。
 
-运行时目前会从当前任务 guidance 中抽取简短引导，完整规则尚未逐条编译进每轮 Prompt。关键防剧透仍应写入 `restrictions.md`。
+guidance 当前主要用于提取短提示。必须执行的泄题规则同时写入 restrictions，场馆安全规则同时写入阶段 prompt 和教师实施方案。
 
 ## 13. `scaffolds/*.md`
 
-推荐结构：
-
 ```md
-## 任务1：观其形
+## 任务1：定坐标
 
-| 等级 | AI回应 |
+| 等级 | AI回应策略 |
 |---|---|
-| L0 | 肯定具体观察，不增加提示。 |
-| L1 | “先看看嘴部和台基边缘有什么连接。” |
-| L2 | 提供两个观察点：出水口、台基边缘。 |
-| L3 | 展示一张与答案无关的观察方法示例。 |
-| L4 | 打开半成品记录模板，由学生完成关键判断。 |
+| L0 | 肯定其定位依据，请学生继续记录来源。 |
+| L1 | “先找指北针、经纬线或熟悉的河流名称。” |
+| L2 | 提供方向、图例、河流名称、展项标题四项核对框。 |
+| L3 | 示范读取一处公开图例，再把下一处交给学生。 |
+| L4 | 打开可编辑半成品，无法辨认处保留“待核”。 |
 ```
 
-当前自动提示主要读取 L1–L3 表格行。L0 和 L4仍应保留，供后续运行时和教师调节使用。
+运行时目前主要自动抽取 L1–L3。L0、L4和年级调整继续保留，为后续运行时与教师调节提供内容。
 
-脚手架不能突破 restrictions 的揭示时机。L4也只帮助完成当前操作，不直接给出受保护答案。
+L4不能透露未解锁路线、会议结果、历史人物心理或未核实情境。
 
 ## 14. `restrictions.md`
 
-### 14.1 可执行表格
+### 14.1 可执行限制表
 
 ```md
 | 限制项 | 不可透露的内容 | 保护原因 | 解除条件 |
 |---|---|---|---|
-| 螭首总数 | 1142这个精确数字 | 数龙官需要自行估算 | 数龙官完成任务2后 |
-| 完整水系图 | 五级排水的完整路径 | 小组需要自行拼合 | Phase 4 开始后 |
+| 一渡完整方案 | 受保护路线正文 | 地图参谋需先推演 | 地图参谋完成任务2后 |
+| 后续脱困路径 | 受保护行动链 | 小组需先完成推演 | Phase 5开始后 |
 ```
 
 表格必须恰好四列。当前解除条件支持：
 
 - `角色显示名完成任务N后`；
-- `Phase N 开始后` 或其他包含 `Phase N` 的表达；
-- `模拟运行后`，对应运行事件 `xuanji-simulation:completed`。
+- 包含 `Phase N` 的阶段条件；
+- `模拟运行后`。
 
-角色任务解除先按角色显示名和“任务N”的序号定位第 N 个任务，再检查完成记录 `{roleId}:{taskId}`。本课继续使用 `task-1`～`task-3`，以保持旧会话、工具实例和跨文件引用稳定。
+本课限制依赖：
 
-跨角色隔离、叙事限制和安全限制的普通列表可供课程审查使用；当前结构化防剧透主要读取四列表格。
+- 地图参谋 `task-2`、`task-3`；
+- 示形参谋 `task-2`、`task-3`；
+- 决策参谋 `task-2`；
+- Phase 4、Phase 5。
+
+因此各角色阶段 ID 必须保持 `task-1`～`task-3`。
+
+### 14.2 必须同时维护的边界
+
+- 不生成历史人物未经可靠史料记载的直接引语；
+- 不虚构心理活动、私人对话、伤亡数字和战场细节；
+- “约3万人对约40万人”必须保留“约”和统计边界；
+- 学生方案、课程卡片和 AI 推断不能标成史实；
+- “失散小战士”必须标记“课程情境材料｜史料出处待核”；
+- 战术推演不能转为现实冲突建议；
+- 出现走失、身体不适或危险时停止课程并呼叫老师。
+
+四列表格继续用于声明可按阶段解锁的受保护结论。具名 `##` / `###` 列表章节可以由 Step 使用 `restrictions.md#标题` 精确引用，引用后其最小章节正文会进入当前对话和 AI 验收；没有被引用的列表不会自动进入每轮 Prompt。平台安全和全课程强制边界仍应放在平台规则、对应 phase prompt 或 guidance 中，避免只依赖某个 Step。
 
 ## 15. `evaluation.md` 与 `objectives.md`
 
 ### 15.1 `objectives.md`
 
-本课使用 K、S、C 三类课程目标。角色任务通过 `目标关联` 保存对应编号。
+本课角色任务使用 `目标关联` 记录 K/S/C 编号。`objectives.md` 是课程目标的权威说明。
 
 ```md
 ## 知识领域（K）
-- K3 螭首功能与礼制象征：理解工程与文化双重意义
+- K1 时间与空间：建立课程所需的基本时空坐标
 
 ## 学科能力（S）
-- S4 史料实证（历史）：区分一手证据、二手资料与推测
+- S3 史料实证（历史）：区分展陈、研究、课程材料和推测
 
 ## 核心能力（C）
-- C1 证据意识：用采集证据支撑结论并标明等级
+- C3 证据边界：清楚标记史实、合理推断、未知和情境
+
+## 年级适配
+- 小学中高年级：减少专有名词，突出地图、选择与证据卡
 ```
 
-每条使用 `- 编号 名称：说明`。同一编号只定义一次，角色任务中的 `目标关联` 使用同一编号。
+目标条目使用 `- 编号 名称：说明`，编号在文件内唯一。年级适配可供教研和 Prompt 设计参考，当前不会自动切换工具或评分规则。
 
-当前状态：文件供课程设计、教研复核和人工报告使用，解析器尚未把目标定义转为运行时对象。
+当前状态：文件尚未被解析为运行时对象，不能仅靠目标编号触发工具、知识或评分。
 
 ### 15.2 `evaluation.md`
 
-推荐继续维护：
+推荐维护四类信息：
 
 ```md
 | 目标 | 评估方式 | 证据来源 | 5分标准 |
 |---|---|---|---|
-| K3 螭首功能 | 任务证据与解释 | 照片 + 表单 | 能用证据说明结构和作用 |
+| S1 地图判读 | 标注图与说明 | sketch + text | 方位、图例、来源和边界完整 |
 ```
 
-当前状态：服务端会在结构化 `ai_evaluation` 中携带 `evaluation.md` 原文与 Step 的评估引用，返回 `passed/retry`。本课当前任务仍以兼容引导步骤为主，尚未逐角色配置对应 AI 验收小步。
+当前状态：服务端在 `ai_evaluation` 时携带 B5 原文、Step 的 `评估引用`、精确解析的 `限制引用`、证据要求、课程知识和工具结果，返回结构化 `passed/retry`。当前不会按 `评估引用` 的标题裁剪 B5；达到最大尝试次数会建议教师介入，正式 `teacher_required` 审核队列仍待教师端联调。
 
-客观题答案、数值容差、builder 映射和 scanner 预期结果由课程团队写入已登记的私有 `工具参数`，平台内置 validator 会执行基础校验。开放成果可以通过 `ai_evaluation` 获得 B5 通过/重试和图像语义反馈；教师终审、分维度分数和复杂组合条件仍需专项验收。
+课程团队可以直接通过已登记的私有 `工具参数` 配置：客观题答案、数值容差、builder 正确映射、scanner 预期结果和工具基础完成条件。平台内置 validator 会执行这些规则。
+
+以下能力仍需要平台工程接入或专项验收：
+
+- B5 分维度分数、教师终审和正式审核队列；
+- 开放式 builder 作品的视觉连线与语义判断；
+- 真实小组成员参与和跨设备同步；
+- 教师确认、持续停留位置事件和复杂复合条件。
 
 ## 16. `time-bank.md`
 
-### 16.1 设置语法
-
-设置行不加列表符号：
+### 16.1 设置
 
 ```md
 ## 基本设置
@@ -657,19 +730,18 @@ min_gift_amount: 1min
 gift_target: same_group_only
 ```
 
-### 16.2 任务语法
+设置字段不加列表符号。
 
-任务 ID 必须符合 `tb-数字`，字段使用缩进：
+### 16.2 任务
 
 ```md
-- id: tb-01
+- id: tb-02
   type: quiz
-  question: "题目"
-  options: [选项A, 选项B, 选项C]
-  answer: 选项B
+  question: "四渡赤水主要发生在哪三省交界区域？"
+  options: [川黔滇, 湘鄂赣, 陕甘宁]
+  answer: 川黔滇
   reward: 2min
   unlock_after: phase2-start
-  hint: "提示"
 ```
 
 开放题：
@@ -677,9 +749,9 @@ gift_target: same_group_only
 ```md
 - id: tb-10
   type: quiz
-  question: "写出你的判断和依据。"
+  question: "新证据出现后，你的小组改变过哪一个判断？为什么？"
   answer_type: open_ended
-  min_length: 20
+  min_length: 30
   reward: 3min
   unlock_after: phase3-start
 ```
@@ -687,177 +759,211 @@ gift_target: same_group_only
 照片打卡与定位签到：
 
 ```md
-- id: tb-05
+- id: tb-06
   type: photo_checkpoint
-  description: "找到一处指定展项并拍照"
-  hint: "遵守场馆拍摄规定"
+  description: "找到一项带日期的展项，拍照并记录标题"
+  hint: "照片之外再补一句说明"
   verify: image_and_text
-  reward: 3min
+  reward: 2min
   unlock_after: phase2-start
 
 - id: tb-08
   type: location_checkin
   description: "到达课程集合区域"
-  location: [116.4003, 39.9203]
-  radius: 20m
-  reward: 2min
+  location: [116.3953, 40.0071]
+  radius: 300m
+  reward: 1min
   unlock_after: phase2-start
 ```
 
-当前选择题和开放题可校验。`photo_checkpoint` 会调起相机或图片选择、上传证据；`verify: image_and_text` 还会要求至少 4 个字的补充说明。`verify: image_recognition` 当前只校验照片已上传，尚未判断照片中是否确有课程指定目标物。
+任务 ID 必须为 `tb-数字`。`options` 使用半角逗号分隔。当前选择题、开放题、奖励、总上限和赠时可运行。
 
-`location_checkin` 会请求设备 GPS，并按 `location: [经度, 纬度]`、`radius: 20m` 做距离校验；服务端会把设备定位精度计入容差，上限为 100 米。当前没有停留时长校验，课程团队应结合场馆定位误差设置合理半径，并保留教师现场确认方案。
+`photo_checkpoint` 会调起相机或图片选择并上传证据；`verify: image_and_text` 还要求学生补充至少 4 个字。`verify: image_recognition` 当前只校验照片已上传，尚未判断画面是否包含指定展项。
 
-`answer` 保留在服务端课程包，生成浏览器公开包时会删除。
+`location_checkin` 会读取设备 GPS，并按 `location: [经度, 纬度]` 与 `radius: 300m` 校验距离；服务端会把设备定位精度计入容差，上限为 100 米。当前没有停留时长校验，场馆内测试时需核对坐标系、设备授权和实际漂移，并准备教师确认方案。
 
-## 17. `assets/` 与素材清单
+时间银行 `answer` 会在生成公开课程包时删除。
 
-### 17.1 必须存在的课程级素材
+## 17. `assets/` 与素材台账
 
-| 字段 | 当前路径 |
+### 17.1 课程级素材
+
+| 用途 | 路径 | 当前台账状态 |
+|---|---|---|
+| 课程封面 | `assets/backgrounds/cover.png` | 已复用参考素材 |
+| 对话背景 | `assets/backgrounds/chat-bg.png` | 占位，需正式制作 |
+| 阶段转场 | `assets/backgrounds/phase-transition.png` | 占位 |
+| 完课证书 | `assets/backgrounds/certificate-bg.png` | 占位 |
+| 场馆导航图 | `assets/maps/museum-navigation.png` | 占位，需核对动线与版权 |
+| 开场媒体 | `assets/videos/video-opening.jpg` | 图片占位 |
+| 推演媒体 | `assets/videos/video-strategy-table.jpg` | 图片占位 |
+
+### 17.2 五层战图与任务底图
+
+| 图层/底图 | 路径 |
 |---|---|
-| 课程封面 | `assets/backgrounds/cover.png` |
-| 对话背景 | `assets/backgrounds/chat-bg.png` |
-| 阶段转场 | `assets/backgrounds/phase-transition.png` |
-| 完课证书 | `assets/backgrounds/certificate-bg.png` |
-| 导航地图 | `assets/maps/navigation-map.png` |
-| 导入占位 | `assets/videos/video-storm-coming.png` |
-| 推演占位 | `assets/videos/video-simulation.png` |
+| 地形层 | `assets/tokens/layer-terrain.png` |
+| 情报层 | `assets/tokens/layer-intelligence.png` |
+| 决策层 | `assets/tokens/layer-decision.png` |
+| 行动层 | `assets/tokens/layer-action.png` |
+| 视角层 | `assets/tokens/layer-perspective.png` |
+| 地图任务底图 | `assets/tasks/terrain-map.svg` |
+| 情报矩阵 | `assets/tasks/intelligence-matrix.svg` |
+| 决策矩阵 | `assets/tasks/decision-matrix.svg` |
+| 决策复核情境卡 | `assets/tasks/decision-review-card.svg` |
+| 示形路线 | `assets/tasks/feint-route.svg` |
+| 通讯命令 | `assets/tasks/limited-message.svg` |
 
-### 17.2 角色素材
+文件存在只代表路径可加载。正式状态以 `assets-checklist.md` 为准。
 
-每个角色必须独立提交：
+### 17.3 授权与史料标识
 
-- `assets/roles/role-card-{roleId}.png`；
-- `assets/roles/badge-{roleId}.png`；
-- `assets/tokens/{collection-file}.png`。
+- 展馆照片、展项、地图、电文影印件需要记录来源和展示权限；
+- 历史人物照片不得经过改变事实含义的生成式编辑；
+- 课程情境图标注“情境复原”或“课程插图”；
+- 未核实的“失散小战士”材料不得配真实人物照片；
+- 场馆 logo `assets/logos/cpcmuseum.png` 当前没有学生端课程字段直接引用，使用前确认授权与展示位置；
+- 学生现场照片不得包含其他参观者正脸、证件或私人信息。
 
-任务图可选。缺少任务图时，学生端回退到该角色的角色卡图。
+### 17.4 平台絮絮素材
 
-### 17.3 素材状态
-
-`assets-checklist.md` 是课程团队的制作与授权台账，不参与解析。文件真实存在只表示路径可加载，仍需查看清单中的“正式/占位/待提交”状态。
-
-替换素材时保持文件名和路径不变，可以避免修改 Markdown。展馆、历史图片和地图应记录来源、授权范围和修改说明。
+絮絮待机和对话动画来自平台路径 `/assets/video/xuxu-idle.webm`、`/assets/video/xuxu-talk.webm`，无需复制到 lesson。
 
 ## 18. 公开字段与服务端私有字段
 
-### 18.1 会进入浏览器
+### 18.1 浏览器公开内容
 
-- 课程标题、简介、场地、时长、学段和主题；
-- Phase 的学生可见字段；
-- 角色名称、选择说明、地点和素材；
-- 任务名称、配置、通过条件、Step 行动和证据要求；
-- A01–A07 的公开工具配置；
-- 时间银行题干、选项、提示和奖励；
-- 课程素材文件。
+- 课程、阶段、角色和角色选择文案；
+- 角色地点、任务名称、学生行动、证据要求和通过条件；
+- 角色卡、徽章、图层、任务底图和媒体；
+- A01–A07 的公开 UI 参数；
+- 时间银行题干、选项、提示和奖励。
 
-### 18.2 保留在服务端
+### 18.2 服务端私有内容
 
-- `knowledge/*.md` 正文和来源；
-- `guidance/*.md`、`scaffolds/*.md`、`prompts/*.md`；
-- `restrictions.md`、`evaluation.md`；
-- 时间银行答案和验证字段；
-- 角色关键数据和内部引导方向。
+- 课程知识正文、来源和揭示规则；
+- guidance、scaffolds、phase prompts；
+- restrictions、evaluation；
+- 时间银行答案、验证方式和定位参数；
+- 未解锁路线、会议结论、评分规则和模型内部提示。
 
-### 18.3 禁止写入公开配置
+### 18.3 主任务工具答案
 
-- API Key、账号、学生隐私数据；
-- 正确答案、评分阈值、扫码预期值；
-- 未解锁的精确数据和标准路线；
-- 模型 System Prompt 或教师内部处理说明。
+结构化 Step 可以在课程源中填写服务端验证所需答案。`sanitizeTool` 和 `publicTool` 会剥离已登记的私有键，原始工具参数不会下发浏览器。
 
-同步脚本会根据 `restrictions.md` 对公开字段做关键词脱敏。课程团队仍需人工检查生成文件，防止同义表达或新工具参数造成遗漏。
+这是一套明确字段名单的裁剪机制。任何新增私有字段都必须先扩充裁剪规则和测试，再写入课程源。
+
+上线检查至少搜索：
+
+```text
+"answer"
+"expectedResults"
+1935年1月29日
+1935年2月18日至21日
+1935年3月21日至22日
+失散小战士追赶队伍
+```
+
+不得在浏览器包中出现受保护内容、私有答案、API Key、学生隐私和内部 Prompt。
 
 ## 19. 同步、重启与预览
 
-从本课程目录进入学生端工程：
+从课程目录进入学生端：
 
 ```bash
 cd ../../4-stu-learning
 ```
 
-### 19.1 修改素材后
+### 19.1 修改素材
 
 ```bash
 npm run sync:lessons
 ```
 
-然后浏览器强制刷新。同步命令会重新复制 `assets/`，并覆盖 `4-stu-learning/public/lessons/lesson_zhuhun_001/`。
+同步会重新复制本课 `assets/` 到 `public/lessons/lesson_zhuhun_001/assets/`。随后在浏览器强制刷新。
 
-### 19.2 修改 Markdown 后
+### 19.2 修改 Markdown
 
-开发服务运行中时，先停止旧进程，再启动：
+开发服务正在运行时，停止旧进程后重新启动：
 
 ```bash
 npm run dev
 ```
 
-`predev` 会自动同步课程。Node 服务会缓存已经编译的课程，单独修改 `6-lessons` 不会触发当前 API 进程自动重编译，因此 Markdown 修改后需要重启 API 或整个 `npm run dev`。
+`predev` 会执行课程同步。服务端编译器会缓存已经加载的课程，Markdown 修改后需要重启 API 或整个开发服务。
 
-### 19.3 预览本课
+### 19.3 预览 URL
 
 ```text
 http://127.0.0.1:5173/?lesson=lesson_zhuhun_001&teacherStart=1
 ```
 
-`teacherStart=1` 只用于本地模拟教师已开放角色领取。
+`teacherStart=1` 只用于本地模拟教师开放角色领取。
 
-### 19.4 验证
+### 19.4 验证命令
 
 ```bash
 npm test
 npm run build
 ```
 
-还应人工测试六个角色各自的入场、到达、三个任务、证据不足、重复提交、求助和密符获得流程。
+课程专项测试还应覆盖：五角色入场、46 Step、十种工具、史料防剧透、五层战图、时间银行、教师求助和弱网重试。
 
 ## 20. 上线前检查清单
 
 ### 课程与阶段
 
-- [ ] 目录名保持 `lesson_zhuhun_001`，`主题模板` 为 `zhuhun`。
-- [ ] `任务阶段：phase-2` 在 `phases.md` 中存在。
+- [ ] 课程目录 ID 为 `lesson_zhuhun_001`，主题为 `zhuhun`。
+- [ ] `任务阶段：phase-2` 与 `phases.md` 一致。
 - [ ] Phase 1–6 各有唯一编号和对应 prompt 文件。
-- [ ] 阶段时长、场地、触发条件和教师流程已由实施团队确认。
+- [ ] 推演阶段只开放当时可获得的信息，没有以后见之明代替当时判断。
+- [ ] 开场、采证、推演、璇玑、总结和尾声的教师推进条件已确认。
 
-### 角色与任务
+### 角色、任务与 Step
 
-- [ ] 六个 role slug 与 guidance、scaffolds 文件一一对应。
-- [ ] 知识条目的 `roles` 使用最新角色显示名。
-- [ ] 每个角色的任务 ID 保持 `task-1`、`task-2`、`task-3`。
-- [ ] 新改任务已经使用结构化 Step，并显式配置 Step ID、位置、完成方式和通过后。
-- [ ] 每个小步只要求一个主要行动。
-- [ ] 每个现场任务有位置模式；无需位置时明确写 `none`。
+- [ ] 五个 role slug 与 guidance、scaffolds 一一对应。
+- [ ] 每个角色固定三个任务，ID 为 `task-1`、`task-2`、`task-3`。
+- [ ] 46 个 Step ID 全部唯一且与本 README 对照一致。
+- [ ] 每个 Step 只有一个主要行动，并显式填写位置、完成方式、证据要求和通过后。
+- [ ] 角色显示名变更已同步 knowledge roles 与 restrictions。
+- [ ] guidance、scaffolds 和 roles 的任务顺序一致。
 
-### 工具与证据
+### 十种活动工具
 
-- [ ] 工具均来自 A01–A07 注册表。
-- [ ] 多工具 `工具参数` 使用 photo、audio、text、sketch、quiz、builder、simulation、team、media、scanner 作为一级键。
-- [ ] 拍照任务显式填写 `photo.minCount`。
-- [ ] 答案和内部验证值只使用第 9.4 节已登记的私有键，公开键中没有受保护内容。
-- [ ] `ai_evaluation`、`teacher_confirm`、位置和组合条件已做专项真实验收。
+- [ ] photo：相机、数量、预览、上传和失败重试通过。
+- [ ] audio：录音、时长、权限、播放和转写通过。
+- [ ] text：动态字段、必填、类型和草稿恢复通过。
+- [ ] sketch：底图、笔刷、标注保存和结果提交通过。
+- [ ] quiz：单选、排序、开放题、答案私有化和重试通过。
+- [ ] builder：证据墙、分类、顺序或连接结果通过。
+- [ ] simulation：多分支、回合、指标和记录通过。
+- [ ] team：讨论、参与记录、角色和小组同步通过。
+- [ ] media：媒体加载、播放完成、失败兜底通过。
+- [ ] scanner：扫码/实物识别、权限、结果和手动兜底通过。
 
 ### 知识、限制和评估
 
-- [ ] K-01～K-19 无重复 ID，topic、tags、source、roles、revealTiming 完整。
-- [ ] 所有精确受保护数据都出现在 restrictions 四列表格中。
-- [ ] restrictions 中的角色名和任务序号与角色文件一致。
-- [ ] guidance 和 scaffolds 的任务顺序与 roles 一致。
-- [ ] 自动评分任务已有服务端 validator；没有把 `evaluation.md` 当作已自动执行。
+- [ ] K-01～K-21 无重复 ID，来源、角色和 revealTiming 完整。
+- [ ] 一渡、二渡、三渡、四渡、苟坝结论、后续路径和璇玑情境均受 restrictions 保护。
+- [ ] restrictions 中角色任务解除条件仍对应 `task-N`。
+- [ ] 未核验情境始终显示“课程情境材料｜史料出处待核”。
+- [ ] guidance、scaffolds、prompt 和 restrictions 对直接引语、心理活动和现实战术的边界一致。
+- [ ] 自动评分任务已有服务端 validator，没有把 evaluation 原文当作已执行规则。
 
-### 素材与公开安全
+### 素材与场馆
 
-- [ ] 课程级视觉素材全部可加载。
-- [ ] 六套角色卡、徽章和密符图与角色配置一致。
-- [ ] `assets-checklist.md` 中所有正式上线项已从占位改为完成。
-- [ ] 素材来源、版权、现场拍摄和未成年人隐私要求已经核对。
-- [ ] 生成的 `src/generated/lesson-public.js` 中没有答案、密钥、受保护值和内部提示。
+- [ ] 五套角色卡、徽章、图层和任务底图均已替换正式素材。
+- [ ] 场馆导航图符合真实允许动线。
+- [ ] 所有展馆、地图、电文、照片和 logo 的授权已经记录。
+- [ ] 图片没有虚构史料感，也没有其他参观者正脸和证件。
+- [ ] `assets-checklist.md` 中上线项全部标为完成。
 
-### 技术验证
+### 公开安全与技术
 
 - [ ] 已执行 `npm run sync:lessons`。
 - [ ] Markdown 更新后已重启 API。
+- [ ] 公开课程包不含 quiz answer、扫码预期值、受保护路线和内部评分。
 - [ ] `npm test` 通过。
 - [ ] `npm run build` 通过。
-- [ ] 六个角色至少各完成一轮移动端端到端测试。
+- [ ] 五个角色各完成至少一次移动端端到端测试。
+- [ ] 46 个 Step 和十种工具均有成功、取消、失败、重试和过期结果测试。

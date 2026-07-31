@@ -25,6 +25,49 @@ function memoryStore() {
   };
 }
 
+test('runTurn 可把完整事件交给原子持久化回调，且不重复调用普通 save', async () => {
+  clearCourseCache();
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const store = memoryStore();
+  const ordinarySave = store.save.bind(store);
+  let ordinarySaveCalls = 0;
+  store.save = async (session) => {
+    ordinarySaveCalls += 1;
+    return ordinarySave(session);
+  };
+  const agent = createAgentService({
+    llm: {
+      capabilities: () => ({ nativeTools: true, vision: false }),
+      generate: async () => ({ text: '', toolCalls: [] }),
+    },
+    store,
+    getCourse: async () => course,
+  });
+  const { session } = await agent.createSession({
+    courseId: course.id,
+    roleId: 'dragon-counter',
+    studentId: 'atomic-student',
+    groupId: 'atomic-group',
+  });
+  let persisted = null;
+
+  const result = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'atomic-turn-request',
+    input: { type: 'lifecycle_event', event: 'role_assigned' },
+    async persistSession(value) {
+      persisted = structuredClone(value);
+      await ordinarySave(value.session);
+    },
+  });
+
+  assert.equal(ordinarySaveCalls, 1, 'createSession 后的 turn 不应再走普通 save');
+  assert.ok(persisted.events.some((event) => event.type === 'assistant.completed'));
+  assert.ok(persisted.events.some((event) => event.type === 'state.updated'));
+  assert.deepEqual(persisted.events, result.events);
+  assert.ok(persisted.session.handledRequestIds.includes('atomic-turn-request'));
+});
+
 async function enterFirstStage(agent, session, prefix = 'entry') {
   const result = await agent.runTurn({
     sessionId: session.id,
@@ -53,7 +96,7 @@ async function completeCurrentTaskSteps(agent, session, task, prefix = 'step') {
 
 test('状态机只接受当前工具调用，并在证据提交后推进任务', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const outputs = [
     { text: '证据已记录，继续下一项。', toolCalls: [{ id: 'task-2-call', name: 'open_task_tool', arguments: { toolInstanceId: 'dragon-counter:task-2:primary', reason: '继续采证' } }] },
   ];
@@ -91,7 +134,7 @@ test('状态机只接受当前工具调用，并在证据提交后推进任务',
 
 test('照片数量不足返回课程校验原因，不伪装成模型连接失败', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
     generate: async () => ({ text: '已检查。', toolCalls: [] }),
@@ -143,7 +186,7 @@ test('照片数量不足返回课程校验原因，不伪装成模型连接失�
 
 test('简短问候即时回应，不检索课程或调用模型', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   let modelCalls = 0;
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
@@ -165,7 +208,7 @@ test('简短问候即时回应，不检索课程或调用模型', async () => {
 
 test('静默状态心跳不打扰学生，达到课程阈值后由规则层生成一次提醒', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   let modelCalls = 0;
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
@@ -199,7 +242,7 @@ test('静默状态心跳不打扰学生，达到课程阈值后由规则层生�
 
 test('学生口头说完成不会推进任务，只有通过工具提交才更新状态', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
     generate: async () => ({ text: '收到。请在任务卡里提交证据，我才能帮你检查。', toolCalls: [] }),
@@ -218,7 +261,7 @@ test('学生口头说完成不会推进任务，只有通过工具提交才更�
 
 test('明确位置问题由流程层即时打开导航，不等待模型选择工具', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   let modelCalls = 0;
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
@@ -238,12 +281,27 @@ test('明确位置问题由流程层即时打开导航，不等待模型选择�
 
 test('模型连接失败时返回同伴式降级消息，不抛出整轮错误', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const warnings = [];
+  const upstreamError = Object.assign(new Error('上游拒绝：secret-token-must-not-leak'), {
+    name: 'LLMError',
+    status: 403,
+    body: 'api-key=secret-token-must-not-leak',
+  });
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
-    generate: async () => { throw new Error('上游超时'); },
+    generate: async () => { throw upstreamError; },
   };
-  const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
+  const agent = createAgentService({
+    llm,
+    store: memoryStore(),
+    getCourse: async () => course,
+    logger: {
+      warn(fields, message) {
+        warnings.push({ fields, message });
+      },
+    },
+  });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
   await enterFirstStage(agent, session, 'degraded-entry');
   const result = await agent.runTurn({
@@ -254,11 +312,22 @@ test('模型连接失败时返回同伴式降级消息，不抛出整轮错误',
   const message = result.events.find((event) => event.type === 'assistant.completed');
   assert.equal(message.data.degraded, true);
   assert.match(message.data.text, /我在|连接/);
+  assert.deepEqual(warnings, [{
+    fields: {
+      modelError: {
+        name: 'LLMError',
+        code: null,
+        status: 403,
+      },
+    },
+    message: 'model request degraded',
+  }]);
+  assert.doesNotMatch(JSON.stringify(warnings), /secret-token|api-key/);
 });
 
 test('任务求助直接使用课程脚手架即时回应，不占用模型调用', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   let modelCalls = 0;
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
@@ -281,7 +350,7 @@ test('任务求助直接使用课程脚手架即时回应，不占用模型调�
 
 test('受保护内容在流式分片中被拦截，整轮只调用一次模型', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   let modelCalls = 0;
   const deltas = [];
   const llm = {
@@ -310,7 +379,7 @@ test('受保护内容在流式分片中被拦截，整轮只调用一次模型',
 
 test('时间银行拍照任务必须上传真实证据，不能再用完成按钮直接通过', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const agent = createAgentService({
     llm: { capabilities: () => ({ nativeTools: true }), generate: async () => ({ text: '', toolCalls: [] }) },
     store: memoryStore(),
@@ -330,7 +399,7 @@ test('时间银行拍照任务必须上传真实证据，不能再用完成按�
 
 test('时间银行定位签到按课程坐标和半径校验', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const agent = createAgentService({
     llm: { capabilities: () => ({ nativeTools: true }), generate: async () => ({ text: '', toolCalls: [] }) },
     store: memoryStore(),
@@ -349,7 +418,7 @@ test('时间银行定位签到按课程坐标和半径校验', async () => {
 
 test('结构化小步由服务端校验当前工具结果，空结果不能绕过扫码步骤', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const agent = createAgentService({
     llm: {
       capabilities: () => ({ nativeTools: true, vision: true }),
@@ -401,7 +470,7 @@ test('结构化小步由服务端校验当前工具结果，空结果不能绕�
 
 test('ai_evaluation 小步只有模型验收通过后才推进，并接收画板图像', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const evaluationCalls = [];
   const outputs = [
     { text: '{"passed":true,"feedback":"展项主体与标题可核对。","missing":[]}', toolCalls: [] },

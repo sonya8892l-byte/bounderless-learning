@@ -232,7 +232,22 @@ function evaluationImages(input) {
     .slice(0, 2);
 }
 
-async function evaluateStepSubmission({ llm, course, role, session, task, step, input }) {
+function throwIfAborted(signal) {
+  if (signal?.aborted) {
+    throw signal.reason || new DOMException('请求已取消。', 'AbortError');
+  }
+}
+
+async function evaluateStepSubmission({
+  llm,
+  course,
+  role,
+  session,
+  task,
+  step,
+  input,
+  signal,
+}) {
   const tools = step.tools || [];
   const images = evaluationImages(input);
   const requiresVisualReview = tools.some((tool) => tool.id === 'sketch' || tool.id === 'photo' || (tool.id === 'scanner' && tool.config?.mode === 'object'));
@@ -276,8 +291,10 @@ async function evaluateStepSubmission({ llm, course, role, session, task, step, 
       images,
       jsonMode: true,
       maxRetries: 0,
+      signal,
     });
-  } catch {
+  } catch (error) {
+    if (signal?.aborted || error?.name === 'AbortError') throw error;
     throw new AgentActionError('絮絮暂时没能完成这一步的检查，请保留当前内容稍后重试，或呼叫老师确认。', 'STEP_AI_UNAVAILABLE');
   }
   if (requiresVisualReview && !llm.capabilities().vision) {
@@ -909,7 +926,13 @@ function finalizeToolResult({ session, role, input }) {
   }
 }
 
-export function createAgentService({ llm, store, getCourse, loadEvidence = async () => null }) {
+export function createAgentService({
+  llm,
+  store,
+  getCourse,
+  loadEvidence = async () => null,
+  logger,
+}) {
   async function createSession(input) {
     const course = await getCourse(input.courseId);
     const role = course.roles.find((item) => item.id === input.roleId);
@@ -924,7 +947,15 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
     return { session, course, role };
   }
 
-  async function runTurn({ sessionId, requestId, input, onTextDelta }) {
+  async function runTurn({
+    sessionId,
+    requestId,
+    input,
+    onTextDelta,
+    signal,
+    persistSession,
+  }) {
+    throwIfAborted(signal);
     const session = await store.get(sessionId);
     if (!session) throw new Error('会话不存在或已经失效。');
     if (session.handledRequestIds.includes(requestId)) {
@@ -949,7 +980,9 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
           validateStepCompletion({ task, stepIndex: currentIndex, input, session });
           if (completionMode === 'ai_evaluation') {
             const step = task.steps[currentIndex];
-            const evaluation = await evaluateStepSubmission({ llm, course, role, session, task, step, input });
+            const evaluation = await evaluateStepSubmission({
+              llm, course, role, session, task, step, input, signal,
+            });
             session.taskState.stepAttempts ||= {};
             session.taskState.stepAttempts[step.id] = Number(session.taskState.stepAttempts[step.id] || 0) + 1;
             const maxAttempts = Number(step.maxAttempts || 0);
@@ -1085,7 +1118,9 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
           images,
           jsonMode: shouldUseStructured || needsTurnUnderstanding,
           onTextDelta: canStream ? (text) => deltaGuard.push(text) : undefined,
+          signal,
         });
+        throwIfAborted(signal);
         deltaGuard?.flush();
         if (prelude) result.text = `${prelude}${result.text ? ` ${result.text}` : ''}`;
         if (input.data?.visualAnalysisAvailable && !llm.capabilities().vision) input.data.visualAnalysisAvailable = false;
@@ -1117,7 +1152,15 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
           };
         }
         } catch (error) {
+          if (signal?.aborted || error?.name === 'AbortError') throw error;
           modelFailure = error;
+          logger?.warn?.({
+            modelError: {
+              name: error?.name || 'Error',
+              code: error?.code || null,
+              status: Number.isInteger(error?.status) ? error.status : null,
+            },
+          }, 'model request degraded');
           const prelude = immediatePrelude(decision, role, session);
           streamed = Boolean(prelude);
           result = {
@@ -1227,9 +1270,9 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
       events.push({ type: 'tool.requested', data: { callId: call.id, name: call.name, payload } });
     }
 
+    throwIfAborted(signal);
     session.handledRequestIds.push(requestId);
     session.handledRequestIds = session.handledRequestIds.slice(-100);
-    await store.save(session);
     events.push({
       type: 'state.updated',
       data: {
@@ -1243,6 +1286,11 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
         dialogueState: structuredClone(session.dialogueState),
       },
     });
+    if (persistSession) {
+      await persistSession({ session, events });
+    } else {
+      await store.save(session);
+    }
     return { duplicate: false, session, events, streamed };
   }
 

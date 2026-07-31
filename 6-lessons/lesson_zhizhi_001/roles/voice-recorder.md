@@ -1,0 +1,170 @@
+# 声音记录员
+
+> 核心问题：怎样让动物“开口”，同时不替它编造经历？
+
+## 基本信息
+- 排序：4
+- 地点：动物标本点与安静录音区
+- 地理围栏：国家动物博物馆课程允许动线
+- 类型：核心角色
+- 选择说明：负责把小组证据整理成第一人称脚本，并留下真实的学生声音。
+- 角色卡图：assets/placeholders/role-card.svg
+- 角色徽章图：assets/placeholders/badge.svg
+- 收集物：声音章
+- 收集物图：assets/placeholders/token.svg
+
+## 任务列表
+
+### 任务1：选择脚本证据
+- id：voice-select-evidence
+- 阶段：Phase 4 角色发声
+- 地点：教育空间
+- 位置模式：none
+- 建议时长：8min
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：从小组证据中选出身份、生活、关系、影响和期待五类材料
+- 通过条件：五类材料完整且期待与事实分开
+
+#### Step 1：收集五类材料
+- id：voice-collect-evidence
+- 小步目标：为脚本准备有来源的内容
+- 学生行动：填写身份、生活、关系、影响和期待五栏
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：前四栏有证据编号，期待栏写明“角色期待”
+- 功能模块：A01(文字)
+- 工具参数：{"text":{"fields":[{"id":"identity","label":"身份事实+编号","type":"short_text","required":true},{"id":"life","label":"生活事实+编号","type":"short_text","required":true},{"id":"relation","label":"生态关系+编号","type":"short_text","required":true},{"id":"impact","label":"人类影响+编号","type":"short_text","required":true},{"id":"expectation","label":"角色期待","type":"long_text","required":true}]}}
+- 知识引用：K-04, K-19
+- 引导引用：guidance/voice-recorder.md#任务1
+- 限制引用：restrictions.md#事实与角色表达
+- 评估引用：evaluation.md#S3, evaluation.md#C1
+- 脚手架引用：scaffolds/voice-recorder.md#任务1
+- 常见误区：把“我很伤心”当作标本能够证明的事实
+- 最大尝试：3
+- 失败处理：指出需要改成事实、推断或期待的具体一栏
+- 教师介入：小组关键事实尚未核验
+- 通过后：step:voice-check-boundary
+
+#### Step 2：检查叙述边界
+- id：voice-check-boundary
+- 小步目标：识别适合进入科学角色表达的句子
+- 学生行动：选择最符合证据边界的表达
+- 位置：none
+- 完成方式：tool_result
+- 证据要求：完成选择并阅读反馈
+- 功能模块：A02(单选)
+- 工具参数：{"quiz":{"type":"single_choice","question":"哪一句最适合进入动物第一人称脚本？","options":["我每天都在想念故乡，心里非常孤独","资料显示我依赖连通的山地森林；作为角色，我期待家园少一些阻断","我很可爱，所以人类必须先保护我"],"answer":"资料显示我依赖连通的山地森林；作为角色，我期待家园少一些阻断","explanation":"这句话同时区分了资料事实和角色期待。","retryMessage":"检查哪一句标明了来源，并把价值表达写成期待。"}}
+- 知识引用：K-04, K-19
+- 引导引用：guidance/voice-recorder.md#任务1
+- 限制引用：restrictions.md#事实与角色表达
+- 评估引用：evaluation.md#S3
+- 脚手架引用：scaffolds/voice-recorder.md#任务1
+- 常见误区：把情绪强烈等同于表达准确
+- 最大尝试：3
+- 失败处理：提示检查事实与期待标签
+- 教师介入：无
+- 通过后：role-stage:voice-record-story
+
+### 任务2：完成自述
+- id：voice-record-story
+- 阶段：Phase 4 角色发声
+- 地点：安静录音区
+- 位置模式：point
+- 到达验证：teacher
+- 建议时长：14min
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：写80—150字第一人称脚本并录制30—60秒
+- 通过条件：脚本完整、事实可追溯、录音时长合格
+
+#### Step 1：写脚本初稿
+- id：voice-write-script
+- 小步目标：形成有证据的第一人称表达
+- 学生行动：按五段结构写80—150字脚本
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：包含身份、生活、关系、影响和期待；至少3个证据编号
+- 功能模块：A01(文字)
+- 工具参数：{"text":{"fields":[{"id":"script","label":"动物自述脚本","type":"long_text","required":true,"minLength":80,"maxLength":150,"placeholder":"用自己的话写，事实后标证据编号。"}]}}
+- 知识引用：K-19
+- 引导引用：guidance/voice-recorder.md#任务2
+- 限制引用：restrictions.md#事实与角色表达
+- 评估引用：evaluation.md#S3, evaluation.md#C1
+- 脚手架引用：scaffolds/voice-recorder.md#任务2
+- 常见误区：让AI一次生成整段脚本
+- 最大尝试：3
+- 失败处理：只反馈缺失结构或越界句，不重写全文
+- 教师介入：脚本包含未经核验的敏感保护信息
+- 通过后：step:voice-record-narration
+
+#### Step 2：录制真人旁白
+- id：voice-record-narration
+- 小步目标：留下学生自己的科学表达
+- 学生行动：朗读经核验的脚本，录制30—60秒旁白
+- 位置：inherit
+- 完成方式：tool_result
+- 证据要求：录音30—60秒、中文转写开启、内容与脚本一致
+- 功能模块：A01(录音)
+- 工具参数：{"audio":{"prompt":"用自己的声音朗读经核验的脚本；不要模仿或克隆他人声音。","minSeconds":30,"maxSeconds":60,"language":"zh-CN","transcribe":true}}
+- 知识引用：K-22
+- 引导引用：guidance/voice-recorder.md#任务2
+- 限制引用：restrictions.md#场馆与隐私
+- 评估引用：evaluation.md#S3, evaluation.md#E4
+- 脚手架引用：scaffolds/voice-recorder.md#任务2
+- 常见误区：录入其他参观者对话
+- 最大尝试：2
+- 失败处理：只重录音量或时长不合格的部分
+- 教师介入：录音区不允许停留或出现隐私内容
+- 通过后：role-stage:voice-peer-verify
+
+### 任务3：同伴事实核验
+- id：voice-peer-verify
+- 阶段：Phase 4 角色发声
+- 地点：教育空间
+- 位置模式：none
+- 建议时长：8min
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：邀请同伴逐句核验脚本并记录修改
+- 通过条件：至少1条保留、1条修改或确认无需修改的理由
+
+#### Step 1：提交同伴核验
+- id：voice-peer-review
+- 小步目标：让脚本接受外部检查
+- 学生行动：和展签记录员逐句核对，记录保留、修改和待核意见
+- 位置：none
+- 完成方式：tool_result
+- 证据要求：至少3条核验记录，包含事实来源和角色期待检查
+- 功能模块：A05(团队核验)
+- 工具参数：{"team":{"mode":"review","prompt":"逐句核对事实编号，并单独检查角色期待。","minimumEntries":3,"roles":["声音记录员","展签记录员"],"recordTypes":["保留","修改","待核"],"requiredRecordTypes":["保留","修改"]}}
+- 知识引用：K-21
+- 引导引用：guidance/voice-recorder.md#任务3
+- 限制引用：restrictions.md#发布边界
+- 评估引用：evaluation.md#S4
+- 脚手架引用：scaffolds/voice-recorder.md#任务3
+- 常见误区：只评价声音好不好听
+- 最大尝试：2
+- 失败处理：提醒至少核对一条事实和一条期待
+- 教师介入：同伴意见冲突且无法回到来源
+- 通过后：step:voice-log-ai-use
+
+#### Step 2：记录AI参与
+- id：voice-log-ai-use
+- 小步目标：披露AI在作品中的实际作用
+- 学生行动：勾选AI参与环节，并写下自己修改或拒绝的一项建议
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：AI环节和人工修改记录完整
+- 功能模块：A01(文字)
+- 工具参数：{"text":{"fields":[{"id":"ai-use","label":"AI参与环节","type":"select","options":["未使用","转写","结构整理","字幕或降噪","多项"],"required":true},{"id":"human-change","label":"我修改或拒绝的建议","type":"long_text","required":true,"minLength":10}]}}
+- 知识引用：K-22
+- 引导引用：guidance/voice-recorder.md#任务3
+- 限制引用：restrictions.md#发布边界
+- 评估引用：evaluation.md#C4
+- 脚手架引用：scaffolds/voice-recorder.md#任务3
+- 常见误区：写“AI没有错误”却没有人工复核记录
+- 最大尝试：2
+- 失败处理：追问一项学生亲自确认的内容
+- 教师介入：无
+- 通过后：role:complete

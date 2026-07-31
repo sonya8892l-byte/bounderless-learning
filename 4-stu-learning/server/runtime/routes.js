@@ -21,15 +21,21 @@ const commandSchema = z.object({
   reason: z.string().min(2).max(500),
 });
 
-export async function registerRuntimeRoutes(app, { runtime }) {
+export async function registerRuntimeRoutes(app, {
+  runtime,
+  enableWebsocket = true,
+  enableDemo = true,
+}) {
   const authorize = (request) => runtime.assertTeacherAccess(request.params.runId, actor(request));
-  app.post('/api/teacher/demo', async () => runtime.ensureDemoRun());
+  if (enableDemo) {
+    app.post('/api/teacher/demo', async () => runtime.ensureDemoRun());
+  }
 
   app.get('/api/teacher/runs', async (request) => runtime.listRuns(actor(request)));
 
   app.post('/api/teacher/runs', async (request, reply) => {
     const body = z.object({
-      courseId: z.string().default('lesson_zhuhun_001'),
+      courseId: z.string().default('lesson_gewu_001'),
       className: z.string().min(1).max(100),
       courseVersion: z.string().default('1.0.0'),
       groupCount: z.coerce.number().int().min(1).max(10).default(5),
@@ -88,13 +94,15 @@ export async function registerRuntimeRoutes(app, { runtime }) {
     return result;
   });
 
-  app.get('/api/teacher/runs/:runId/live', { websocket: true, preValidation: authorize }, (socket, request) => {
-    const runId = request.params.runId;
-    const unsubscribe = runtime.realtime.subscribe(runId, socket);
-    socket.send(JSON.stringify({ type: 'realtime.ready', runId, createdAt: new Date().toISOString() }));
-    socket.on('close', unsubscribe);
-    socket.on('error', unsubscribe);
-  });
+  if (enableWebsocket) {
+    app.get('/api/teacher/runs/:runId/live', { websocket: true, preValidation: authorize }, (socket, request) => {
+      const runId = request.params.runId;
+      const unsubscribe = runtime.realtime.subscribe(runId, socket);
+      socket.send(JSON.stringify({ type: 'realtime.ready', runId, createdAt: new Date().toISOString() }));
+      socket.on('close', unsubscribe);
+      socket.on('error', unsubscribe);
+    });
+  }
 
   app.post('/api/student/help', async (request, reply) => {
     const body = z.object({

@@ -179,8 +179,10 @@ function buildToolInstances(role) {
 }
 
 export async function compileCourse({ lessonsRoot, courseId }) {
-  if (CACHE.has(courseId)) return CACHE.get(courseId);
-  const directory = path.resolve(lessonsRoot, courseId);
+  const resolvedLessonsRoot = path.resolve(lessonsRoot);
+  const cacheKey = `${resolvedLessonsRoot}\0${courseId}`;
+  if (CACHE.has(cacheKey)) return CACHE.get(cacheKey);
+  const directory = path.resolve(resolvedLessonsRoot, courseId);
   const files = await collectMarkdown(directory);
   if (!files['course.md']) throw new Error(`课程 ${courseId} 缺少 course.md`);
 
@@ -236,7 +238,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     evaluation: files['evaluation.md'] || '',
     files,
   };
-  CACHE.set(courseId, course);
+  CACHE.set(cacheKey, course);
   return course;
 }
 

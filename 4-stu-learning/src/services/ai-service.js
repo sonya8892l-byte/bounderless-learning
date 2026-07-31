@@ -1,4 +1,39 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+export function resolvePublicApiBase(value) {
+  const configured = String(value || '').trim();
+  const redactedPlaceholder = /^\[[A-Z][A-Z0-9_-]*\]$/.test(configured);
+  return (configured && !redactedPlaceholder ? configured : '/api').replace(/\/$/, '');
+}
+
+const API_BASE = resolvePublicApiBase(import.meta.env?.VITE_API_BASE_URL);
+export const AGENT_TURN_TIMEOUT_MS = 100_000;
+
+export class AgentRequestError extends Error {
+  constructor(message, metadata = {}) {
+    super(message, metadata.cause ? { cause: metadata.cause } : undefined);
+    this.name = 'AgentRequestError';
+    this.status = metadata.status ?? metadata.statusCode ?? null;
+    this.statusCode = metadata.statusCode ?? metadata.status ?? null;
+    this.code = metadata.code || null;
+    this.retryable = Boolean(metadata.retryable);
+    this.leaseExpiresAt = metadata.leaseExpiresAt || null;
+    this.kind = metadata.kind || null;
+    this.details = metadata.details;
+  }
+}
+
+function errorFromResponse(response, body, fallbackMessage) {
+  const status = response.status;
+  return new AgentRequestError(body.error || fallbackMessage, {
+    status,
+    code: body.code || `HTTP_${status}`,
+    retryable: body.retryable ?? (
+      status === 408 || status === 425 || status === 429 || status >= 500
+    ),
+    leaseExpiresAt: body.leaseExpiresAt,
+    kind: body.kind,
+    details: body.details,
+  });
+}
 
 async function jsonRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -6,7 +41,7 @@ async function jsonRequest(path, options = {}) {
     headers: { 'content-type': 'application/json', ...(options.headers || {}) },
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || `请求失败（${response.status}）`);
+  if (!response.ok) throw errorFromResponse(response, body, `请求失败（${response.status}）`);
   return body;
 }
 
@@ -18,7 +53,7 @@ export function getAgentSession(sessionId) {
   return jsonRequest(`/sessions/${encodeURIComponent(sessionId)}`);
 }
 
-function parseEventBlock(block) {
+export function parseEventBlock(block) {
   let type = 'message';
   const data = [];
   for (const line of block.split('\n')) {
@@ -29,37 +64,62 @@ function parseEventBlock(block) {
   return { type, data: JSON.parse(data.join('\n')) };
 }
 
-export async function sendAgentTurn(payload, onEvent = () => {}) {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 25_000);
-  let response;
+export function agentEventReplayKey(event) {
+  if (!event?.type || event.type === 'assistant.delta') return null;
   try {
-    response = await fetch(`${API_BASE}/agent/turn`, {
+    return `${event.type}:${JSON.stringify(event.data ?? null)}`;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeTransportError(error, timedOut) {
+  if (error instanceof AgentRequestError) return error;
+  if (timedOut || error?.name === 'AbortError') {
+    return new AgentRequestError('连接响应超时，请再试一次。', {
+      code: 'AGENT_REQUEST_TIMEOUT',
+      retryable: true,
+      kind: 'connection',
+      cause: error,
+    });
+  }
+  return new AgentRequestError(error?.message || '网络连接中断，请再试一次。', {
+    code: 'AGENT_NETWORK_ERROR',
+    retryable: true,
+    kind: 'connection',
+    cause: error,
+  });
+}
+
+async function sendAgentTurnAttempt(payload, onEvent, { timeoutMs }) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeout = globalThis.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    const response = await fetch(`${API_BASE}/agent/turn`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-  } catch (error) {
-    window.clearTimeout(timeout);
-    if (error.name === 'AbortError') throw new Error('连接响应超时，请再试一次。');
-    throw error;
-  }
-  if (!response.ok) {
-    window.clearTimeout(timeout);
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.error || `智能体请求失败（${response.status}）`);
-  }
-  if (!response.body) {
-    window.clearTimeout(timeout);
-    throw new Error('浏览器不支持流式响应。');
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  const events = [];
-  let agentError = null;
-  try {
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw errorFromResponse(response, body, `智能体请求失败（${response.status}）`);
+    }
+    if (!response.body) {
+      throw new AgentRequestError('浏览器不支持流式响应。', {
+        code: 'AGENT_STREAM_UNSUPPORTED',
+        retryable: false,
+      });
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const events = [];
+    let agentError = null;
     while (true) {
       const { value, done } = await reader.read();
       buffer += decoder.decode(value || new Uint8Array(), { stream: !done }).replaceAll('\r\n', '\n');
@@ -71,26 +131,119 @@ export async function sendAgentTurn(payload, onEvent = () => {}) {
         events.push(event);
         onEvent(event);
         if (event.type === 'agent.error') {
-          agentError = Object.assign(
-            new Error(event.data?.message || '絮絮这次没有连接成功。'),
-            event.data || {},
-          );
+          agentError = new AgentRequestError(event.data?.message || '絮絮这次没有连接成功。', {
+            ...(event.data || {}),
+            status: event.data?.status ?? null,
+          });
         }
       }
       if (done) break;
     }
+    if (buffer.trim()) {
+      const event = parseEventBlock(buffer);
+      if (event) {
+        events.push(event);
+        onEvent(event);
+        if (event.type === 'agent.error') {
+          agentError = new AgentRequestError(event.data?.message || '絮絮这次没有连接成功。', {
+            ...(event.data || {}),
+            status: event.data?.status ?? null,
+          });
+        }
+      }
+    }
+    if (agentError) throw agentError;
+    return events;
   } catch (error) {
-    if (error.name === 'AbortError') throw new Error('连接响应超时，请再试一次。');
-    throw error;
+    throw normalizeTransportError(error, timedOut);
   } finally {
-    window.clearTimeout(timeout);
+    globalThis.clearTimeout(timeout);
   }
-  if (buffer.trim()) {
-    const event = parseEventBlock(buffer);
-    if (event) { events.push(event); onEvent(event); }
+}
+
+function retryDelay(error, retryNumber, {
+  retryBaseDelayMs,
+  maxRetryDelayMs,
+  now,
+}) {
+  const exponentialDelay = Math.min(
+    maxRetryDelayMs,
+    retryBaseDelayMs * (2 ** Math.max(0, retryNumber - 1)),
+  );
+  if (error.status !== 409 || !error.leaseExpiresAt) return exponentialDelay;
+  const untilLeaseExpiry = Date.parse(error.leaseExpiresAt) - now();
+  if (!Number.isFinite(untilLeaseExpiry) || untilLeaseExpiry <= 0) return exponentialDelay;
+  return Math.min(maxRetryDelayMs, Math.max(exponentialDelay, untilLeaseExpiry + 100));
+}
+
+function wait(milliseconds) {
+  if (milliseconds <= 0) return Promise.resolve();
+  return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
+}
+
+function totalTurnTimeoutError() {
+  return new AgentRequestError('连接响应超时，请再试一次。', {
+    code: 'AGENT_REQUEST_TIMEOUT',
+    retryable: true,
+    kind: 'connection',
+  });
+}
+
+export async function sendAgentTurn(payload, onEvent = () => {}, options = {}) {
+  if (!payload?.requestId) {
+    throw new AgentRequestError('智能体请求缺少 requestId。', {
+      code: 'AGENT_REQUEST_ID_REQUIRED',
+      retryable: false,
+    });
   }
-  if (agentError) throw agentError;
-  return events;
+  const {
+    timeoutMs = AGENT_TURN_TIMEOUT_MS,
+    maxTransportRetries = 1,
+    maxPendingRetries = 24,
+    retryBaseDelayMs = 1_000,
+    maxRetryDelayMs = 4_000,
+    now = Date.now,
+  } = options;
+  const deliveredEventKeys = new Set();
+  const deliverEvent = (event) => {
+    const replayKey = agentEventReplayKey(event);
+    if (replayKey && deliveredEventKeys.has(replayKey)) return;
+    if (replayKey) deliveredEventKeys.add(replayKey);
+    onEvent(event);
+  };
+  let transportRetries = 0;
+  let pendingRetries = 0;
+  const deadlineAt = now() + timeoutMs;
+
+  while (true) {
+    const remainingMs = deadlineAt - now();
+    if (remainingMs <= 0) throw totalTurnTimeoutError();
+    try {
+      return await sendAgentTurnAttempt(payload, deliverEvent, { timeoutMs: remainingMs });
+    } catch (error) {
+      const pending = error.retryable && error.status === 409;
+      let delayMs = null;
+      if (pending && pendingRetries < maxPendingRetries) {
+        pendingRetries += 1;
+        delayMs = retryDelay(error, pendingRetries, {
+          retryBaseDelayMs,
+          maxRetryDelayMs,
+          now,
+        });
+      } else if (!pending && error.retryable && transportRetries < maxTransportRetries) {
+        transportRetries += 1;
+        delayMs = retryDelay(error, transportRetries, {
+          retryBaseDelayMs,
+          maxRetryDelayMs,
+          now,
+        });
+      }
+      if (delayMs === null) throw error;
+      const retryBudgetMs = deadlineAt - now();
+      if (retryBudgetMs <= 0) throw totalTurnTimeoutError();
+      await wait(Math.min(delayMs, retryBudgetMs));
+    }
+  }
 }
 
 async function compressEvidenceImage(file) {

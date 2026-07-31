@@ -43,7 +43,7 @@ test('教师场次以小组组织六个角色，不将角色当成小组', async
 test('四渡赤水场次使用中国共产党历史展览馆的课程中心坐标', async (t) => {
   const { directory, service } = await fixture();
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
-  const run = await service.createRun({ courseId: 'lesson_zhuhun_002', className: '四渡赤水研学班' });
+  const run = await service.createRun({ courseId: 'lesson_zhuhun_001', className: '四渡赤水研学班' });
   const snapshot = await service.getSnapshot(run.id);
   assert.deepEqual(snapshot.run.mapCenter, [116.3953, 40.0071]);
   assert.equal(snapshot.run.courseTitle, '得意之笔·四渡赤水');

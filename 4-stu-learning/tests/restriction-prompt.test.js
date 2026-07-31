@@ -49,7 +49,7 @@ function promptFor(course, role, session, includeRestrictions = true) {
 
 test('restrictionRef 精确解析当前 Step 的列表章节', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const role = course.roles.find((item) => item.id === 'signaler');
   const step = role.tasks[0].steps[0];
   const resolved = resolveStepRestrictions(course, step);
@@ -82,7 +82,7 @@ test('三级限制章节在下一个同级标题前结束', () => {
 });
 
 test('Prompt 同时包含未解锁表格名称和当前 Step 引用限制', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const role = course.roles.find((item) => item.id === 'signaler');
   const instructions = promptFor(course, role, sessionAt(0, 0));
 
@@ -95,7 +95,7 @@ test('Prompt 同时包含未解锁表格名称和当前 Step 引用限制', asyn
 });
 
 test('多个 restrictionRef 只注入教学限制与安全限制', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const role = course.roles.find((item) => item.id === 'signaler');
   const instructions = promptFor(course, role, sessionAt(1, 1));
 
@@ -109,7 +109,7 @@ test('多个 restrictionRef 只注入教学限制与安全限制', async () => {
 });
 
 test('表格行引用仅解析对应限制项', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const resolved = resolveStepRestrictions(course, {
     restrictionRef: 'restrictions.md#一渡完整方案',
   });

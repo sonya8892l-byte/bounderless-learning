@@ -1,0 +1,55 @@
+:root {
+  color: #2d2722;
+  background: #2a211c;
+  font-family: "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  --theme-accent: #8d211f;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #2a211c; }
+button, input, select, textarea { font: inherit; }
+
+#toolGallery {
+  width: min(100%, 480px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-bottom: 30px;
+  background: #f5f0e7;
+}
+
+.gallery-hero {
+  padding: 26px 22px 24px;
+  color: #fff8ed;
+  background:
+    radial-gradient(circle at 88% 5%, rgba(232, 191, 115, 0.34), transparent 32%),
+    linear-gradient(145deg, #7f1e1b, #a33127 64%, #6f1717);
+}
+
+.gallery-back { display: inline-flex; align-items: center; gap: 5px; margin-bottom: 34px; color: #f7ddbd; font-size: 12px; text-decoration: none; }
+.gallery-back svg { width: 15px; }
+.gallery-kicker { display: block; margin-bottom: 9px; color: #f1c98d; font-size: 11px; font-weight: 800; letter-spacing: 0.16em; }
+.gallery-hero h1 { max-width: 390px; margin: 0; font-family: "Songti SC", STSong, serif; font-size: 28px; line-height: 1.28; }
+.gallery-hero p { margin: 12px 0 0; color: #f5ded0; font-size: 13px; line-height: 1.65; }
+
+.gallery-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border-bottom: 1px solid #d8cec1; background: #d8cec1; }
+.gallery-tabs a { display: grid; gap: 2px; padding: 13px 3px 11px; color: #786b61; background: #fffaf2; font-size: 12px; text-align: center; text-decoration: none; }
+.gallery-tabs a small { color: #ab9b8d; font-size: 9px; }
+.gallery-tabs a.is-active { color: #8d211f; background: #f8e8df; box-shadow: inset 0 -3px #8d211f; font-weight: 800; }
+
+.gallery-section { padding: 18px 16px 4px; }
+.gallery-section__head { display: grid; gap: 4px; margin: 0 3px 13px; }
+.gallery-section__head span { color: #8d211f; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; }
+.gallery-section__head strong { color: #54483f; font-size: 14px; }
+.gallery-item { margin-bottom: 14px; border-radius: 17px; padding: 10px; background: rgba(255,255,255,.5); box-shadow: 0 8px 24px rgba(68, 48, 35, .07); }
+.gallery-item__meta { display: flex; align-items: center; gap: 7px; padding: 2px 3px 8px; }
+.gallery-item__meta span { border-radius: 6px; padding: 3px 6px; color: #fff; background: #8d211f; font-size: 9px; font-weight: 800; }
+.gallery-item__meta strong { font-size: 12px; }
+.gallery-item__meta em { margin-left: auto; color: #a09286; font-family: ui-monospace, monospace; font-size: 9px; font-style: normal; }
+.gallery-item .activity-tools { margin: 0; }
+.gallery-item .activity-tool { background: #fffefb; }
+.gallery-footer { padding: 20px; color: #94877b; font-size: 10px; text-align: center; }
+
+@media (min-width: 760px) {
+  body { padding: 32px 0; }
+  #toolGallery { overflow: hidden; border-radius: 22px; box-shadow: 0 24px 80px rgba(0,0,0,.35); }
+}

@@ -192,7 +192,7 @@ export function createCourseRunService({ store, getCourse, realtime }) {
   }
 
   async function createRun(input = {}) {
-    const course = await getCourse(input.courseId || 'lesson_zhuhun_001');
+    const course = await getCourse(input.courseId || 'lesson_gewu_001');
     const { groups, participants, center } = makeParticipants(course, Number(input.groupCount || 5));
     const createdAt = nowIso();
     const run = {

@@ -2,6 +2,8 @@ import { fitTeacherMap, mountTeacherMap, resizeTeacherMap } from './amap-service
 
 const API = '/api';
 const TEACHER_ID = 'teacher-demo';
+const configuredRealtimeMode = String(globalThis.__TEACHER_APP_CONFIG__?.REALTIME_MODE || 'polling').trim().toLowerCase();
+const REALTIME_MODE = configuredRealtimeMode === 'websocket' ? 'websocket' : 'polling';
 const HIGH_IMPACT = new Set(['pause', 'advance_phase', 'end_run', 'approve_evidence', 'skip_step', 'emergency_rally']);
 const ACTION_LABELS = {
   send_notice: '发送教师提示', push_knowledge: '推送知识卡', add_time: '追加时间',
@@ -110,7 +112,7 @@ async function refreshSnapshot() {
     state.snapshot = await request(`/teacher/runs/${encodeURIComponent(state.runId)}/snapshot`);
     state.runs = await request('/teacher/runs');
     renderAll();
-    setConnection(true);
+    if (REALTIME_MODE === 'polling') setConnection(true);
     localStorage.setItem(`teacher-snapshot:${state.runId}`, JSON.stringify(state.snapshot));
   } catch (error) {
     const cached = localStorage.getItem(`teacher-snapshot:${state.runId}`);
@@ -127,14 +129,21 @@ function scheduleRefresh() {
 
 function connectRealtime() {
   state.socket?.close();
-  if (!state.runId) return;
+  state.socket = null;
+  if (REALTIME_MODE !== 'websocket' || !state.runId) return;
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(`${protocol}//${location.host}${API}/teacher/runs/${encodeURIComponent(state.runId)}/live`);
   state.socket = socket;
-  socket.addEventListener('open', () => setConnection(true));
+  socket.addEventListener('open', () => {
+    if (state.socket === socket) setConnection(true);
+  });
   socket.addEventListener('message', scheduleRefresh);
-  socket.addEventListener('close', () => setConnection(false));
-  socket.addEventListener('error', () => setConnection(false));
+  socket.addEventListener('close', () => {
+    if (state.socket === socket) setConnection(false);
+  });
+  socket.addEventListener('error', () => {
+    if (state.socket === socket) setConnection(false);
+  });
 }
 
 function setConnection(connected) {
@@ -387,7 +396,13 @@ function newRunDrawer() {
   openDrawer({ eyebrow: '课前准备', title: '创建课程场次', html: `
     <form id="newRunForm">
       <div class="detail-block"><label class="field-label" for="newClassName">班级名称</label><input id="newClassName" name="className" required value="五年级研学班" /></div>
-      <div class="detail-block"><label class="field-label" for="newCourseId">已发布课程</label><select id="newCourseId" name="courseId"><option value="lesson_zhuhun_001">故宫600年不积水的秘密</option><option value="lesson_zhuhun_002">四渡赤水研学课程</option></select></div>
+      <div class="detail-block">
+        <label class="field-label" for="newCourseId">已发布课程</label>
+        <select id="newCourseId" name="courseId">
+          <option value="lesson_gewu_001">格物系列 · 故宫600年不积水的秘密</option>
+          <option value="lesson_zhuhun_001">铸魂系列 · 四渡赤水研学课程</option>
+        </select>
+      </div>
       <div class="detail-block"><label class="field-label" for="newGroupCount">学习小组</label><select id="newGroupCount" name="groupCount"><option value="5">5组 · 30人</option><option value="4">4组 · 24人</option><option value="3">3组 · 18人</option></select></div>
       <button class="primary-button" type="submit">创建并进入课前检查</button>
     </form>` });
@@ -465,7 +480,10 @@ document.addEventListener('change', async (event) => {
   } catch (error) { showToast(error.message); }
 });
 
-window.addEventListener('online', () => { setConnection(true); refreshSnapshot(); });
+window.addEventListener('online', () => {
+  refreshSnapshot();
+  if (REALTIME_MODE === 'websocket') connectRealtime();
+});
 window.addEventListener('offline', () => setConnection(false));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSnapshot(); });
 

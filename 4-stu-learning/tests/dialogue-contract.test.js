@@ -47,7 +47,7 @@ function inertLlm() {
 
 async function harness(llm = inertLlm()) {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const store = memoryStore();
   const agent = createAgentService({ llm, store, getCourse: async () => course });
   const { session } = await agent.createSession({

@@ -8,6 +8,14 @@ export class LLMError extends Error {
   }
 }
 
+export class LLMTimeoutError extends LLMError {
+  constructor(cause) {
+    super('模型响应超时。', { cause });
+    this.name = 'LLMTimeoutError';
+    this.code = 'LLM_TIMEOUT';
+  }
+}
+
 function parseArguments(value) {
   if (typeof value === 'object' && value) return value;
   try { return JSON.parse(value || '{}'); } catch { return {}; }
@@ -153,11 +161,30 @@ export function createLLM({
     return body;
   }
 
-  async function generate({ instructions, messages, tools = [], images = [], jsonMode = false, maxRetries = 0, onTextDelta }) {
+  async function generate({
+    instructions,
+    messages,
+    tools = [],
+    images = [],
+    jsonMode = false,
+    maxRetries = 0,
+    onTextDelta,
+    signal,
+  }) {
     let lastError;
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      if (signal?.aborted) throw signal.reason || new DOMException('请求已取消。', 'AbortError');
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const abortFromCaller = () => controller.abort(
+        signal.reason || new DOMException('请求已取消。', 'AbortError'),
+      );
+      signal?.addEventListener('abort', abortFromCaller, { once: true });
+      if (signal?.aborted) abortFromCaller();
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort(new DOMException('模型响应超时。', 'TimeoutError'));
+      }, timeoutMs);
       try {
         const streamText = Boolean(onTextDelta && !tools.length && !jsonMode);
         const body = requestBody({ instructions, messages, tools, jsonMode, images });
@@ -177,7 +204,9 @@ export function createLLM({
           ) {
             effectiveReasoningEffort = 'none';
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta });
+            return generate({
+              instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta, signal,
+            });
           }
           if (
             latencyOptionsSupported
@@ -186,21 +215,36 @@ export function createLLM({
           ) {
             latencyOptionsSupported = false;
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta });
+            return generate({
+              instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta, signal,
+            });
           }
           if (streamText && [400, 404, 422].includes(response.status)) {
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta: undefined });
+            return generate({
+              instructions,
+              messages,
+              tools,
+              images,
+              jsonMode,
+              maxRetries,
+              onTextDelta: undefined,
+              signal,
+            });
           }
           if (tools.length && nativeToolsSupported && [400, 404, 422].includes(response.status) && toolMode === 'auto') {
             nativeToolsSupported = false;
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries: 1 });
+            return generate({
+              instructions, messages, tools, images, jsonMode, maxRetries: 1, signal,
+            });
           }
           if (images.length && visionSupported && [400, 404, 415, 422].includes(response.status) && visionMode === 'auto') {
             visionSupported = false;
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images: [], jsonMode, maxRetries: 1 });
+            return generate({
+              instructions, messages, tools, images: [], jsonMode, maxRetries: 1, signal,
+            });
           }
           throw new LLMError(`模型接口返回 ${response.status}`, { status: response.status, body: rawText });
         }
@@ -221,12 +265,17 @@ export function createLLM({
         if (streamText && result.text) onTextDelta(result.text);
         return result;
       } catch (error) {
-        lastError = error;
-        const retryable = error.name === 'AbortError' || error.status === 429 || error.status >= 500;
+        if (signal?.aborted) throw signal.reason || error;
+        lastError = timedOut ? new LLMTimeoutError(error) : error;
+        const retryable = lastError instanceof LLMTimeoutError
+          || lastError.name === 'AbortError'
+          || lastError.status === 429
+          || lastError.status >= 500;
         if (!retryable || attempt === maxRetries) break;
         await sleep(500 * (attempt + 1));
       } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', abortFromCaller);
       }
     }
     throw lastError;

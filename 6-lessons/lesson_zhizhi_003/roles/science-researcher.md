@@ -1,0 +1,170 @@
+# 科学证据研究员
+
+> 核心问题：现场观察和科学材料能支持怎样的鸟撞风险判断，边界在哪里？
+
+## 基本信息
+- 排序：1
+- 地点：资料空间与教师批准的建筑外围路线
+- 地理围栏：教师批准路线、时段和替代点
+- 类型：核心角色
+- 选择说明：研究鸟撞机制，设计重复调查，形成风险图和科学证据综述。
+- 角色卡图：assets/placeholders/role-card.svg
+- 角色徽章图：assets/placeholders/badge.svg
+- 收集物：科学章
+- 收集物图：assets/placeholders/token.svg
+
+## 任务列表
+
+### 任务1：设计可复现调查
+- id：science-design-study
+- 阶段：Phase 1 问题界定
+- 地点：教育空间
+- 位置模式：none
+- 建议时长：1课时
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：区分事件与风险变量，提交路线、变量和安全计划
+- 通过条件：机制假设、变量表、记录规则和安全路线经教师确认
+
+#### Step 1：建立机制与变量表
+- id：science-frame-variables
+- 小步目标：把“玻璃危险”拆成可观察变量与有限假设
+- 学生行动：提出两条机制假设，列出事件指标、风险变量、控制记录和可能反证
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：至少2条假设、4个风险变量、2个控制记录和1个可能反证
+- 功能模块：A03(变量表)
+- 工具参数：{"builder":{"mode":"research_variables","prompt":"区分事件指标、风险变量、控制记录和可能反证。","minimumItems":9,"categories":["事件指标","风险变量","控制记录","可能反证"]}}
+- 知识引用：K-01, K-02, K-06
+- 引导引用：guidance/science-researcher.md#任务1
+- 限制引用：restrictions.md#风险点位
+- 评估引用：evaluation.md#S1
+- 脚手架引用：scaffolds/science-researcher.md#任务1
+- 常见误区：把反射照片当作已发生鸟撞
+- 最大尝试：3
+- 失败处理：逐项追问“看到它说明风险，还是说明事件”
+- 教师介入：变量涉及不可安全获取的数据
+- 通过后：step:science-approve-route
+
+#### Step 2：送审路线与记录规则
+- id：science-approve-route
+- 小步目标：确保调查可重复且人身安全
+- 学生行动：提交路线、点位、时段、成人陪同、替代点、天气与零发现记录方式
+- 位置：teacher_approved_route
+- 完成方式：teacher_confirm
+- 证据要求：路线图和安全清单完整；排除屋顶、施工区、车行区和夜间单独调查
+- 功能模块：A01(路线表), A08(教师确认)
+- 工具参数：{"text":{"fields":[{"id":"route","label":"路线、点位、时段与替代点","type":"long_text","required":true,"minLength":100},{"id":"safety","label":"陪同、安全和事件报告流程","type":"long_text","required":true,"minLength":60}]},"teacher_confirm":{"prompt":"踏勘路线并确认时段、陪同、隐私、替代点和鸟类事件报告流程。","required":true}}
+- 知识引用：K-03, K-05
+- 引导引用：guidance/science-researcher.md#任务1
+- 限制引用：restrictions.md#安全、隐私与伦理
+- 评估引用：evaluation.md#E1
+- 脚手架引用：scaffolds/science-researcher.md#任务1
+- 常见误区：只画路线，没有退出条件
+- 最大尝试：1
+- 失败处理：修改高风险点或改用教师提供的替代范围
+- 教师介入：必须
+- 通过后：role-stage:science-run-survey
+
+### 任务2：执行建筑风险调查
+- id：science-run-survey
+- 阶段：Phase 2 科学取证与建筑风险调查
+- 地点：教师批准的建筑外围路线
+- 位置模式：route
+- 到达验证：teacher
+- 建议时长：2—3周
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：按相同规则重复观察，形成去标识数据和风险图
+- 通过条件：至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检
+
+#### Step 1：完成重复记录
+- id：science-collect-observations
+- 小步目标：获得可比较的现场数据
+- 学生行动：按批准路线完成至少3轮，记录日期、时段、天气、点位、风险变量、事件或零发现
+- 位置：inherit
+- 完成方式：ai_evaluation
+- 证据要求：至少3轮完整记录与合规照片；路线变化有理由
+- 功能模块：A01(拍照), A01(调查数据)
+- 工具参数：{"photo":{"prompt":"拍玻璃与环境关系，避开人脸、门牌、工位和无关室内信息。","minCount":3,"maxCount":18},"text":{"fields":[{"id":"survey-log","label":"重复调查记录","type":"long_text","required":true,"minLength":180}]}}
+- 知识引用：K-03, K-04, K-05
+- 引导引用：guidance/science-researcher.md#任务2
+- 限制引用：restrictions.md#安全、隐私与伦理
+- 评估引用：evaluation.md#E1
+- 脚手架引用：scaffolds/science-researcher.md#任务2
+- 常见误区：只记录发现，不记零发现
+- 最大尝试：3
+- 失败处理：补录可确认的元数据；不可补录的明确标记缺失
+- 教师介入：发现鸟类事件、路线风险或隐私照片
+- 通过后：step:science-map-risk
+
+#### Step 2：形成风险图
+- id：science-map-risk
+- 小步目标：把风险变量映射到点位并公开不确定性
+- 学生行动：在示意图标注反射、通透、绿植、照明、事件/零发现和证据强度
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：至少5个点位；高、中、低或未知均有理由和照片/记录编号
+- 功能模块：A01(风险图画板)
+- 工具参数：{"sketch":{"prompt":"在批准路线示意图上标注风险变量、事件/零发现、等级理由和编号。","width":960,"height":640,"backgroundImage":"assets/placeholders/navigation-map.svg","brushColors":["#b91c1c","#d97706","#15803d","#475569"]}}
+- 知识引用：K-02, K-04, K-06
+- 引导引用：guidance/science-researcher.md#任务2
+- 限制引用：restrictions.md#风险点位
+- 评估引用：evaluation.md#E2
+- 脚手架引用：scaffolds/science-researcher.md#任务2
+- 常见误区：没有事件的点位一律标低风险
+- 最大尝试：3
+- 失败处理：提示区分事件记录和代理变量
+- 教师介入：点位可能暴露敏感位置
+- 通过后：role-stage:science-deliver-evidence
+
+### 任务3：交付科学证据线
+- id：science-deliver-evidence
+- 阶段：Phase 5 起草听证与修订
+- 地点：教育空间
+- 位置模式：none
+- 建议时长：1课时
+- 推进方式：auto_after_validation
+- 任务图：assets/placeholders/task.svg
+- 配置：将文献与现场数据转成条款可引用的证据摘要
+- 通过条件：机制、现场模式、局限和措施证据完整，接受一次反证质询
+
+#### Step 1：撰写科学证据摘要
+- id：science-compose-brief
+- 小步目标：说明能判断什么、不能判断什么
+- 学生行动：写机制证据、现场发现、零发现、局限和对措施选择的含义
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：至少6个来源/数据编号；明确事件与风险、相关与因果边界
+- 功能模块：A01(研究摘要)
+- 工具参数：{"text":{"fields":[{"id":"science-brief","label":"科学证据摘要","type":"long_text","required":true,"minLength":300},{"id":"limits","label":"局限与不可判断事项","type":"long_text","required":true,"minLength":80}]}}
+- 知识引用：K-01, K-02, K-06
+- 引导引用：guidance/science-researcher.md#任务3
+- 限制引用：restrictions.md#AI代替研究
+- 评估引用：evaluation.md#E2
+- 脚手架引用：scaffolds/science-researcher.md#任务3
+- 常见误区：为支持规则删去零发现和局限
+- 最大尝试：3
+- 失败处理：要求恢复与结论不一致的证据
+- 教师介入：科学结论超出材料强度
+- 通过后：step:science-defend-evidence
+
+#### Step 2：接受反证质询
+- id：science-defend-evidence
+- 小步目标：检验条款所依赖的科学假设
+- 学生行动：回应一条替代解释或方法质疑，记录维持、修改或待核
+- 位置：none
+- 完成方式：tool_result
+- 证据要求：质疑、回应、处理状态和影响的条款位置齐全
+- 功能模块：A05(同行评议)
+- 工具参数：{"team":{"mode":"peer_review","prompt":"质疑一个变量、推断或推广范围；记录证据化回应。","minimumEntries":2,"recordTypes":["质疑","回应与处置"]}}
+- 知识引用：K-06, K-22
+- 引导引用：guidance/science-researcher.md#任务3
+- 限制引用：restrictions.md#规则模板
+- 评估引用：evaluation.md#E6
+- 脚手架引用：scaffolds/science-researcher.md#任务3
+- 常见误区：用权威身份代替证据回应
+- 最大尝试：2
+- 失败处理：允许降低结论强度或列为待核
+- 教师介入：争议需要科学核验人
+- 通过后：role:complete

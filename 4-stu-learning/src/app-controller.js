@@ -125,6 +125,7 @@ const state = {
       entryStarted: false,
       agentSessionId: null,
       streamingMessageId: null,
+      lastAgentRequestError: null,
       lastLocalActionAt: Date.now(),
       locationStatus: {
         permission: 'unknown',
@@ -300,6 +301,7 @@ function renderLaunch() {
   document.querySelector('#launchMeta').innerHTML = `
     <span><i data-lucide="clock-3"></i>${escapeHtml(lesson.duration)}</span>
     <span><i data-lucide="users"></i>${escapeHtml(lesson.groupRule)}</span>
+    ${lesson.level ? `<span><i data-lucide="layers-3"></i>${escapeHtml(lesson.level)}</span>` : ''}
   `;
   if (!standaloneMode) {
     document.querySelector('[data-action="start-course"] span').textContent = '进入课程导入';
@@ -795,15 +797,19 @@ function applyAgentEvent(event) {
   const roleState = currentRoleState();
   if (event.type === 'stage.started') {
     roleState.messages = roleState.messages.filter((message) => message.type !== 'quick-replies');
-    roleState.messages.push({
-      id: crypto.randomUUID(),
+    const stageMessageId = `stage-${event.data.stageNumber}-${event.data.stageName}`;
+    const stageMessage = {
+      id: stageMessageId,
       type: 'phase',
       stageNumber: event.data.stageNumber,
       stageName: event.data.stageName,
       mainTask: event.data.mainTask,
       location: event.data.location,
       suggestedSeconds: event.data.suggestedSeconds,
-    });
+    };
+    const existingStageIndex = roleState.messages.findIndex((message) => message.id === stageMessageId);
+    if (existingStageIndex >= 0) roleState.messages[existingStageIndex] = stageMessage;
+    else roleState.messages.push(stageMessage);
   }
   if (event.type === 'assistant.delta') {
     roleState.messages = roleState.messages.filter((message) => message.id !== roleState.activeLoadingId);
@@ -826,12 +832,23 @@ function applyAgentEvent(event) {
   if (event.type === 'assistant.completed') {
     roleState.messages = roleState.messages.filter((message) => message.type !== 'quick-replies');
     const streamedMessage = roleState.messages.find((message) => message.id === roleState.streamingMessageId);
+    const completedMessage = event.data.id
+      ? roleState.messages.find((message) => message.id === event.data.id)
+      : null;
     if (streamedMessage) {
-      streamedMessage.id = event.data.id || streamedMessage.id;
-      streamedMessage.text = event.data.text;
-      streamedMessage.source = event.data.source?.label || '';
-      streamedMessage.citations = event.data.source?.citations || [];
+      if (completedMessage && completedMessage !== streamedMessage) {
+        roleState.messages = roleState.messages.filter((message) => message !== streamedMessage);
+      }
+      const targetMessage = completedMessage || streamedMessage;
+      targetMessage.id = event.data.id || targetMessage.id;
+      targetMessage.text = event.data.text;
+      targetMessage.source = event.data.source?.label || '';
+      targetMessage.citations = event.data.source?.citations || [];
       roleState.streamingMessageId = null;
+    } else if (completedMessage) {
+      completedMessage.text = event.data.text;
+      completedMessage.source = event.data.source?.label || '';
+      completedMessage.citations = event.data.source?.citations || [];
     } else {
       roleState.messages.push({
         id: event.data.id || crypto.randomUUID(),
@@ -919,11 +936,27 @@ function applyAgentEvent(event) {
   }
 }
 
-async function runAgentTurn(input, { passive = false, initialEmpty = false, showLoading = !passive && !initialEmpty } = {}) {
+async function runAgentTurn(input, options = {}) {
+  const {
+    passive = false,
+    initialEmpty = false,
+    showLoading = !passive && !initialEmpty,
+    requestId = crypto.randomUUID(),
+  } = options;
   const roleState = currentRoleState();
   if (!roleState.agentSessionId) return;
   if (state.agentBusy) {
-    if (!passive) state.agentQueue.push({ input, options: { passive, initialEmpty, showLoading } });
+    if (!passive) {
+      state.agentQueue.push({
+        input,
+        options: {
+          passive,
+          initialEmpty,
+          showLoading,
+          requestId,
+        },
+      });
+    }
     return;
   }
   state.agentBusy = true;
@@ -939,7 +972,7 @@ async function runAgentTurn(input, { passive = false, initialEmpty = false, show
   try {
     await sendAgentTurn({
       sessionId: roleState.agentSessionId,
-      requestId: crypto.randomUUID(),
+      requestId,
       input,
     }, (event) => {
       if (event.type === 'assistant.delta') {
@@ -970,7 +1003,15 @@ async function runAgentTurn(input, { passive = false, initialEmpty = false, show
         renderLearningShell();
       }
     }
+    roleState.lastAgentRequestError = null;
   } catch (error) {
+    roleState.lastAgentRequestError = {
+      requestId,
+      status: error.status ?? error.statusCode ?? null,
+      code: error.code || null,
+      retryable: Boolean(error.retryable),
+      leaseExpiresAt: error.leaseExpiresAt || null,
+    };
     const isToolSubmission = input.type === 'tool_result';
     const isValidation = error.kind === 'validation' || /^(?:STEP_|EVIDENCE_|TASK_)/.test(error.code || '');
     if (isToolSubmission || isValidation) {
