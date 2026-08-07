@@ -1,0 +1,136 @@
+/**
+ * 角色任务的推进语义（R3-0）。
+ *
+ * ## 为什么需要这个模块
+ *
+ * `推进方式` 有三个值，但改造前只有一个真的会推进：
+ *
+ * ```js
+ * if (task.advanceMode === 'teacher')      input.data.waitingForTeacher = true;   // 全仓零消费
+ * else if (task.advanceMode === 'ai_suggest') input.data.waitingForStudent = true; // 全仓零消费
+ * else session.currentTaskIndex += 1;                                             // 只有这条
+ * ```
+ *
+ * 那两个标记只写在 `input.data` 上——**它是单次回合的载荷，回合结束就没了**，
+ * 而教师指令要等下一次轮询才到。所以学生做完任务后进度永久停住：
+ * 教师端 13 个指令里没有 `advance_task`，`skip_step` 也解不了（它走
+ * `task_step_completed`，小步走完只是回到"等工具结果"，推进的唯一入口仍是
+ * `finalizeToolResult`）。存量已经踩到：`lesson_zhizhi_001` 的
+ * `assembly-speaker`／`id-designer` 各有一个 `推进方式：teacher` 的任务。
+ *
+ * 修法是把"等谁推进"落到**会话**上（`session.pendingAdvance`，跨回合存活），
+ * 并给它两个明确的解除入口：教师指令与学生确认。
+ *
+ * ## 为什么把 completion 的三个字段一起存下来
+ *
+ * `continueAtSameLocation`（下一任务同地点就不再要求重新到达）原本从当次
+ * `pendingCompletion` 读。等待推进时那个对象早已随回合消失，所以要把
+ * 地点与验证方式一起记进 `pendingAdvance`——否则老师推进后学生会被要求
+ * 在同一个地点重新走一遍到达验证。
+ */
+
+/** 当前任务。收敛 `role.tasks[Math.min(session.currentTaskIndex, ...)]` 这个到处重复的表达式。 */
+export function currentTaskOf(role, session) {
+  const tasks = role?.tasks || [];
+  if (!tasks.length) return undefined;
+  const index = Math.min(Number(session?.currentTaskIndex || 0), tasks.length - 1);
+  return tasks[index];
+}
+
+/** 当前任务对应的工具实例。收敛 tools.js 的私有 currentTool ＋ service.js 抄的 3 遍。 */
+export function currentToolOf(role, session) {
+  return role.tools.find((tool) => tool.taskIndex === session.currentTaskIndex);
+}
+
+/** 该任务完成后由谁推进：`teacher`／`student`／`auto`。未知值按 auto，与解析层的回落一致。 */
+export function advanceWaitModeOf(task) {
+  if (task?.advanceMode === 'teacher') return 'teacher';
+  if (task?.advanceMode === 'ai_suggest') return 'student';
+  return 'auto';
+}
+
+/** 记下"已完成，等谁推进"。跨回合存活，等的就是下一次（或下几次）回合里的解除。 */
+export function markPendingAdvance(session, { task, completedId, mode, completion = {} }) {
+  session.pendingAdvance = {
+    mode,
+    taskId: task?.id || '',
+    completedId,
+    // 见模块头：等待期间 pendingCompletion 已消失，同地点续做要靠这两个字段。
+    completedLocationName: completion.completedLocationName || '',
+    completedLocationStatus: completion.completedLocationStatus || '',
+    completedVerification: completion.completedVerification || '',
+    since: new Date().toISOString(),
+  };
+  return session.pendingAdvance;
+}
+
+export function pendingAdvanceOf(session, task) {
+  const pending = session?.pendingAdvance;
+  if (!pending) return null;
+  // 任务已经不是当时那个（比如教师改了阶段又重开），这条等待就失效了，不要挂着。
+  if (task && pending.taskId && pending.taskId !== task.id) return null;
+  return pending;
+}
+
+export function clearPendingAdvance(session) {
+  session.pendingAdvance = null;
+}
+
+/**
+ * 往前推一格。**唯一的写入点**。
+ *
+ * @returns {{ advanced: boolean, nextTask?: object, continueAtSameLocation?: boolean, previousVerification?: string }}
+ */
+export function advanceToNextTask({ role, session, completion = {} }) {
+  const tasks = role?.tasks || [];
+  if (session.currentTaskIndex >= tasks.length - 1) {
+    session.events.push(`${role.id}:all-tasks-completed`);
+    return { advanced: false };
+  }
+  session.currentTaskIndex += 1;
+  const nextTask = tasks[session.currentTaskIndex];
+  return {
+    advanced: true,
+    nextTask,
+    continueAtSameLocation: Boolean(
+      completion.completedLocationStatus === 'arrived'
+      && completion.completedLocationName
+      && nextTask.location?.name === completion.completedLocationName,
+    ),
+    previousVerification: completion.completedVerification,
+  };
+}
+
+/**
+ * 解除一条等待并推进。教师指令与学生确认共用。
+ *
+ * 只做合法性校验，不做教学判断——教师是现场的权威（沿用 T1 的口径）。但两条硬门禁：
+ * ① 必须真的处于等待态；② 等的必须是这个 actor。否则老师一按按钮就能把学生
+ * 推过**还没做**的任务，那不是"干预"，是丢进度。
+ *
+ * @param {'teacher'|'student'} actor 谁在解除
+ * @returns {{ ok: boolean, reason?: string, result?: object }}
+ */
+export function resolvePendingAdvance({ role, session, actor, taskId = '' }) {
+  const task = currentTaskOf(role, session);
+  const pending = pendingAdvanceOf(session, task);
+  if (!pending) {
+    return { ok: false, reason: 'NOT_WAITING' };
+  }
+  if (pending.mode !== actor) {
+    return { ok: false, reason: 'WRONG_ACTOR' };
+  }
+  // 指令带了 taskId 就必须对得上：教师端的指令可能在学生已经换任务之后才轮询到。
+  if (taskId && pending.taskId && taskId !== pending.taskId) {
+    return { ok: false, reason: 'TASK_CHANGED' };
+  }
+  // 等待态本身就是"完成之后"才进入的，这里再核一次已完成记录，防止
+  // pendingAdvance 被别的路径写脏后把学生推过没做的任务。
+  if (pending.completedId && !session.completedTaskIds.includes(pending.completedId)) {
+    return { ok: false, reason: 'NOT_COMPLETED' };
+  }
+
+  const result = advanceToNextTask({ role, session, completion: pending });
+  clearPendingAdvance(session);
+  return { ok: true, result };
+}
