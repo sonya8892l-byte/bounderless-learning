@@ -436,50 +436,6 @@ function askNextOnboarding({ session, task, role }) {
   return question ? askQuestion(session, question) : null;
 }
 
-function applySemanticUnderstanding({ understanding, role, session, course, input }) {
-  const pending = session.dialogueState?.pendingQuestion;
-  if (pending && understanding.answersPendingQuestion && understanding.confidence >= 0.72) {
-    const affirmative = understanding.pendingAnswer === 'yes';
-    const entry = pending.kind === 'arrival'
-      ? { arrived: affirmative, notArrived: !affirmative, ready: false, notReady: false }
-      : { arrived: false, notArrived: false, ready: affirmative, notReady: !affirmative };
-    return workflowResult({
-      decision: {
-        intent: 'pending_answer',
-        pendingResolution: { matched: true, value: affirmative, confidence: understanding.confidence, entry },
-        entry,
-      },
-      role,
-      session,
-      course,
-      input,
-    });
-  }
-  if (understanding.speechAct === 'complaint') {
-    return workflowResult({ decision: { intent: 'conversation_repair' }, role, session, course, input });
-  }
-  if (understanding.speechAct === 'request_navigation') {
-    return workflowResult({ decision: { intent: 'onboarding_navigation' }, role, session, course, input });
-  }
-  if (understanding.speechAct === 'request_teacher') {
-    suspendPendingQuestion(session);
-    return workflowResult({ decision: { intent: 'safety_help' }, role, session, course, input });
-  }
-  if (understanding.speechAct === 'unclear') {
-    return { ...unclearInputReply(session), toolCalls: [] };
-  }
-  if (['greeting', 'emotion', 'course_question', 'social'].includes(understanding.speechAct)) {
-    suspendPendingQuestion(session);
-  }
-  if (understanding.speechAct === 'emotion') setDialogueLifecycle(session, 'EMOTIONAL_SUPPORT');
-  return {
-    text: understanding.reply || '我听见了。你愿意再多说一点吗？',
-    toolCalls: [],
-    dialogueMove: understanding.dialogueMove,
-    quickReplies: [],
-  };
-}
-
 function workflowResult({ decision, role, session, course, input }) {
   const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
   const tool = role.tools.find((item) => item.taskIndex === session.currentTaskIndex);
@@ -1189,23 +1145,16 @@ export function createAgentService({
     if (!decision.silent) {
       if (decision.fastWorkflow) {
         result = workflowResult({ decision, role, session, course, input });
-      } else if (decision.fastPath) {
-        result.text = fastConversationReply(decision.intent, PLATFORM_COMPANION.name, decision.signal);
       } else if (decision.fastGuidance) {
         result.text = immediatePrelude(decision, role, session);
       } else if (decision.intent === 'course_knowledge' && knowledge.length) {
         result.text = knowledgeExcerptReply(knowledge);
       } else {
         try {
-        const needsTurnUnderstanding = Boolean(
-          decision.intent === 'onboarding_unclear'
-          && session.dialogueState?.pendingQuestion,
-        );
         let shouldUseStructured = Boolean(tools.length && !llm.capabilities().nativeTools);
         const canStream = Boolean(
           onTextDelta
           && !tools.length
-          && !needsTurnUnderstanding
           && !['proactive_nudge', 'lifecycle_event'].includes(decision.intent),
         );
         const prelude = canStream ? immediatePrelude(decision, role, session) : '';
@@ -1213,16 +1162,9 @@ export function createAgentService({
           streamed = true;
           onTextDelta(prelude);
         }
-        if (needsTurnUnderstanding && onTextDelta) {
-          streamed = true;
-          onTextDelta('我听见了。');
-        }
-        const baseModelInstructions = prelude
+        const modelInstructions = prelude
           ? `${shouldUseStructured ? toolFallbackInstructions(prompt.instructions, role, session, tools) : prompt.instructions}\n已即时回应学生：“${prelude}” 请紧接着补充，避免重复。`
           : (shouldUseStructured ? toolFallbackInstructions(prompt.instructions, role, session, tools) : prompt.instructions);
-        const modelInstructions = needsTurnUnderstanding
-          ? understandingInstructions(baseModelInstructions, session.dialogueState.pendingQuestion)
-          : baseModelInstructions;
         const deltaGuard = canStream ? guardedDeltaEmitter({
           course,
           session,
@@ -1236,7 +1178,7 @@ export function createAgentService({
           messages: prompt.messages,
           tools,
           images,
-          jsonMode: shouldUseStructured || needsTurnUnderstanding,
+          jsonMode: shouldUseStructured,
           onTextDelta: canStream ? (text) => deltaGuard.push(text) : undefined,
           signal,
         });
@@ -1244,19 +1186,7 @@ export function createAgentService({
         deltaGuard?.flush();
         if (prelude) result.text = `${prelude}${result.text ? ` ${result.text}` : ''}`;
         if (input.data?.visualAnalysisAvailable && !llm.capabilities().vision) input.data.visualAnalysisAvailable = false;
-        if (needsTurnUnderstanding) {
-          const understanding = parseTurnUnderstanding(result.text);
-          if (understanding) {
-            result = applySemanticUnderstanding({ understanding, role, session, course, input });
-          } else {
-            result = {
-              text: '我听见了，不过还没完全理解这句话。你可以换一种说法，我会接着听。',
-              toolCalls: [],
-              dialogueMove: 'clarify_input',
-              quickReplies: session.dialogueState?.pendingQuestion?.quickReplies || [],
-            };
-          }
-        } else if (shouldUseStructured) {
+        if (shouldUseStructured) {
           result = parseStructuredFallback(result.text);
         }
 
@@ -1298,6 +1228,7 @@ export function createAgentService({
           dialogueMove: result.dialogueMove,
         }),
         session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
       );
     }
     const taskIndexBeforeFinalize = session.currentTaskIndex;
@@ -1346,6 +1277,7 @@ export function createAgentService({
           dialogueMove: item.dialogueMove || result.dialogueMove,
         }),
         session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
       );
       session.messages.push({ role: 'assistant', content: timelineText, createdAt: new Date().toISOString() });
       events.push({

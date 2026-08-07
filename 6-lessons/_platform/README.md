@@ -14,7 +14,7 @@
 | `competency-framework.md` | CC 核心能力 / CQ 综合素质标签树 | immutable（课程只引用节点） | draft，无运行行为 |
 | `companion.md` | 絮絮人设：名字与底色锁定，语气侧面可覆盖 | 混合（见下） | **待建**（现硬编码于 `platform-config.js`） |
 | `voice.md` | 流程话术模板（入场/导航/到达/验收/求助/完成），带占位符 | overridable | **待建**（现硬编码于 `service.js`） |
-| `language-levels.md` | 学段表达规范（字数/句式/提问方式） | overridable | **待建**（现硬编码于 `prompt.js`） |
+| `language-levels.md` | 学段表达规范（字数/硬上限/句式） | overridable | **已接入** |
 | `scaffolding.md` | L0–L4 语义定义 + 升降策略 | overridable | **待建**（现散落于 `service.js`） |
 | `tool-defaults.md` | 十种活动工具的缺省参数与提示文案 | overridable | **待建**（现位于 `tool-registry.js`） |
 | `defaults.md` | 时长/提醒/冷却/推进方式等数值缺省 | overridable | **已接入** |

@@ -6,7 +6,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evaluateNudge } from '../server/agent/nudge-policy.js';
 import { clearCourseCache, compileCourse } from '../server/course/compiler.js';
-import { loadPlatformDefaults } from '../server/course/platform-defaults.js';
+import {
+  LANGUAGE_LEVEL_DEFAULTS,
+  PLATFORM_DEFAULT_DEFINITIONS,
+  languageLevelFor,
+  loadPlatformDefaults,
+  resolveLanguageLevels,
+} from '../server/course/platform-defaults.js';
 import { documentEntries, mergeDefaults, parsePlatformDefaultDocument } from '../src/engine/platform-defaults.js';
 import { TASK_DEFAULTS, parseLesson, resolveTaskDefaults } from '../src/engine/lesson-parser.js';
 
@@ -75,11 +81,12 @@ test('缺省层文件缺失时回落到代码常量，并留一条 debug 记录'
   const logged = [];
   const loaded = await loadPlatformDefaults({ lessonsRoot: root, logger: { debug: (line) => logged.push(line) } });
 
-  assert.deepEqual(loaded.missing, ['defaults.md']);
+  assert.deepEqual(loaded.missing, PLATFORM_DEFAULT_DEFINITIONS.map((item) => item.filename));
   assert.equal(loaded.documents.defaults, null);
-  assert.equal(logged.length, 1);
+  assert.equal(logged.length, loaded.missing.length);
   assert.match(logged[0], /_platform\/defaults\.md/);
   assert.deepEqual(resolveTaskDefaults({}), TASK_DEFAULTS);
+  assert.deepEqual(resolveLanguageLevels(null)['初中'], { id: '初中', ...LANGUAGE_LEVEL_DEFAULTS['初中'] });
 });
 
 test('缺省层版本随内容变化，内容不变则版本稳定', async (t) => {

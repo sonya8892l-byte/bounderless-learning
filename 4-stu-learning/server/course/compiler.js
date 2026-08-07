@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseLesson } from '../../src/engine/lesson-parser.js';
 import { compilePlatformRules } from './platform-rules.js';
-import { loadPlatformDefaults } from './platform-defaults.js';
+import { loadPlatformDefaults, resolveLanguageLevels } from './platform-defaults.js';
+import { courseOverrideSection } from '../../src/engine/platform-defaults.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
 
 export {
@@ -243,6 +244,10 @@ export async function compileCourse({ lessonsRoot, courseId }) {
       version: platformDefaults.version,
       missing: platformDefaults.missing,
       warnings: defaultWarnings,
+      languageLevels: resolveLanguageLevels(
+        platformDefaults.documents.languageLevels,
+        courseOverrideSection(files['course.md'], '学段规范'),
+      ),
     },
     publicLesson,
     roles,

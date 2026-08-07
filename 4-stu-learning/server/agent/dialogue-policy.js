@@ -7,6 +7,7 @@ import {
   setPendingQuestion,
   suspendPendingQuestion,
 } from './session-state.js';
+import { languageLevelFor } from '../course/platform-defaults.js';
 
 export function taskRequiresArrival(task) {
   return Boolean(task?.location?.mode && task.location.mode !== 'none');
@@ -90,16 +91,9 @@ export function unclearInputReply(session) {
   };
 }
 
-function gradeLimit(grade = '') {
-  if (/一|二|三年级|低年级/.test(grade)) return 48;
-  if (/四|五|六年级|小学/.test(grade)) return 72;
-  if (/高中|高一|高二|高三/.test(grade)) return 140;
-  return 100;
-}
-
-export function applyGradeResponsePolicy(text, grade) {
+export function applyGradeResponsePolicy(text, grade, languageLevels = null) {
   const value = String(text || '').trim();
-  const limit = gradeLimit(grade);
+  const limit = languageLevelFor(languageLevels, grade).limit;
   if (value.length <= limit) return value;
   const slice = value.slice(0, limit);
   const boundary = Math.max(slice.lastIndexOf('。'), slice.lastIndexOf('！'), slice.lastIndexOf('？'));

@@ -2,6 +2,7 @@ import { runtimeSnapshot } from './session-state.js';
 import { restrictionUnlocked } from '../course/retrieval.js';
 import { resolveStepRestrictions } from '../course/restriction-sections.js';
 import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
+import { languageLevelFor } from '../course/platform-defaults.js';
 
 function currentTask(role, session) {
   return role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
@@ -24,11 +25,9 @@ export function platformRuleInstructions(course) {
   return rules;
 }
 
-function gradeDialoguePolicy(grade = '') {
-  if (/一|二|三年级|低年级/.test(grade)) return '小学低年级：15–30字为主，短句、具体词和二选一问题。';
-  if (/四|五|六年级|小学/.test(grade)) return '小学高年级：30–50字为主，一次只给一个行动和一个观察点。';
-  if (/高中|高一|高二|高三/.test(grade)) return '高中：80–120字为主，可以使用开放问题并要求说明证据。';
-  return '初中：50–80字为主，鼓励先尝试，再按需要给提示。';
+function gradeDialoguePolicy(grade = '', languageLevels = null) {
+  const level = languageLevelFor(languageLevels, grade);
+  return `${level.id}：${level.words}字为主，${level.style}。`;
 }
 
 // 在 L0–L4 内按当前等级取档；缺档时向下取最近的一档（L0 表示不给提示，返回空由调用方回退）。
@@ -123,7 +122,7 @@ export function buildAgentPrompt({ course, session, role, knowledge, input, deci
   const pendingContext = pending
     ? `当前仍等待的问题：${pending.prompt}（${pending.type}）。学生本轮若没有回答它，先回应学生当前表达，不复读该问题，也不修改对应状态。`
     : '当前没有待回答问题。';
-  const learnerContext = `${gradeDialoguePolicy(session.learnerState?.grade || session.grade)} 当前脚手架：L${session.scaffoldLevel}。`;
+  const learnerContext = `${gradeDialoguePolicy(session.learnerState?.grade || session.grade, course?.platformDefaults?.languageLevels)} 当前脚手架：L${session.scaffoldLevel}。`;
 
   const instructions = `
 [平台规则｜最高优先级]

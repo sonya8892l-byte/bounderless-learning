@@ -118,6 +118,13 @@ export function documentEntries(document) {
   return result;
 }
 
+/** 从 course.md 里取出某个覆盖小节的键值表。课程没写这一节时返回空表。 */
+export function courseOverrideSection(courseMarkdown, sectionName) {
+  if (!courseMarkdown || !sectionName) return {};
+  const document = parsePlatformDefaultDocument(courseMarkdown, 'course.md');
+  return { ...(document.sections[sectionName]?.entries || {}) };
+}
+
 function lockedWarning(filename, key) {
   return { file: filename, key, message: `平台缺省层 ${filename} 锁定了「${key}」，课程的覆盖已忽略。` };
 }
