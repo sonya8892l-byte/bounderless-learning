@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,6 +26,34 @@ async function fixture() {
     realtime,
   });
   return { directory, events, service };
+}
+
+function commandInput(snapshot, overrides = {}) {
+  const participant = snapshot.participants[0];
+  return {
+    actorId: 'teacher-demo',
+    idempotencyKey: `idem-${crypto.randomUUID()}`,
+    expectedVersion: snapshot.run.version,
+    action: 'send_notice',
+    target: { scope: 'participant', id: participant.id },
+    payload: {},
+    reason: '测试教师指令',
+    ...overrides,
+  };
+}
+
+async function sendAndRefresh(service, runId, snapshot, overrides = {}) {
+  const result = await service.sendCommand(runId, commandInput(snapshot, overrides));
+  const next = await service.getSnapshot(runId);
+  return { result, snapshot: next };
+}
+
+function participantById(snapshot, participantId) {
+  return snapshot.participants.find((item) => item.id === participantId);
+}
+
+function participantsWithDirective(snapshot, commandId) {
+  return snapshot.participants.filter((item) => item.latestDirective?.commandId === commandId);
 }
 
 test('教师场次以小组组织六个角色，不将角色当成小组', async (t) => {
@@ -131,4 +160,229 @@ test('证据存储在未配置对象存储时使用本地适配器', async (t) =
   assert.equal(store.kind, 'local');
   assert.equal(filename, 'ev_abc123.png');
   assert.equal(found.data.toString(), 'image');
+});
+
+test('applyCommand 第一层：run.* 状态改动', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ className: '指令测试班', groupCount: 3, status: 'draft' });
+  let snapshot = await service.getSnapshot(run.id);
+
+  ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'release_roles', target: { scope: 'all' },
+  }));
+  assert.equal(snapshot.run.rolesReleased, true);
+
+  ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'lock_roles', target: { scope: 'all' },
+  }));
+  assert.equal(snapshot.run.rolesLocked, true);
+
+  ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'start_phase', target: { scope: 'all' },
+  }));
+  assert.equal(snapshot.run.status, 'active');
+
+  ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'pause', target: { scope: 'all' },
+  }));
+  assert.equal(snapshot.run.paused, true);
+
+  ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'resume', target: { scope: 'all' },
+  }));
+  assert.equal(snapshot.run.paused, false);
+
+  const phaseBefore = snapshot.run.phaseIndex;
+  ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'advance_phase',
+    target: { scope: 'all' },
+    payload: { phaseId: 'phase-test-2', phaseName: '测试阶段二' },
+  }));
+  assert.equal(snapshot.run.phaseIndex, phaseBefore + 1);
+  assert.equal(snapshot.run.phaseId, 'phase-test-2');
+  assert.equal(snapshot.run.phaseName, '测试阶段二');
+
+  ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'end_run', target: { scope: 'all' },
+  }));
+  assert.equal(snapshot.run.status, 'completed');
+});
+
+test('applyCommand 第二层：participant.learning.* 状态改动', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ className: '参与者指令班', groupCount: 3 });
+  let snapshot = await service.getSnapshot(run.id);
+  const target = snapshot.participants[0];
+  const before = {
+    timeBalance: target.learning.timeBalance,
+    scaffoldLevel: target.learning.scaffoldLevel,
+    progress: target.learning.progress,
+    insideFence: target.location.insideFence,
+  };
+
+  let result;
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'add_time',
+    target: { scope: 'participant', id: target.id },
+    payload: { amount: 5 },
+  }));
+  assert.equal(participantById(snapshot, target.id).learning.timeBalance, before.timeBalance + 5);
+  assert.equal(participantsWithDirective(snapshot, result.id).length, 1);
+
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'set_scaffold',
+    target: { scope: 'participant', id: target.id },
+    payload: { level: 3 },
+  }));
+  assert.equal(participantById(snapshot, target.id).learning.scaffoldLevel, 3);
+
+  participantById(snapshot, target.id).location.insideFence = false;
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'confirm_arrival',
+    target: { scope: 'participant', id: target.id },
+  }));
+  assert.equal(participantById(snapshot, target.id).location.insideFence, true);
+
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'approve_evidence',
+    target: { scope: 'participant', id: target.id },
+  }));
+  assert.equal(participantById(snapshot, target.id).learning.progress, Math.min(100, before.progress + 12));
+
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'skip_step',
+    target: { scope: 'participant', id: target.id },
+  }));
+  assert.equal(
+    participantById(snapshot, target.id).learning.progress,
+    Math.min(100, before.progress + 12 + 8),
+  );
+});
+
+test('applyCommand：仅写 latestDirective、不改 learning/run 的 6 个 action', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ className: '只留指令班', groupCount: 3 });
+  let snapshot = await service.getSnapshot(run.id);
+  const target = snapshot.participants[1];
+  const baseline = {
+    runVersion: snapshot.run.version,
+    paused: snapshot.run.paused,
+    progress: target.learning.progress,
+    timeBalance: target.learning.timeBalance,
+    scaffoldLevel: target.learning.scaffoldLevel,
+    insideFence: target.location.insideFence,
+  };
+
+  for (const action of [
+    'remove_time',
+    'send_notice',
+    'push_knowledge',
+    'reject_evidence',
+    'switch_alternative',
+    'emergency_rally',
+  ]) {
+    const { result, snapshot: next } = await sendAndRefresh(service, run.id, snapshot, {
+      action,
+      target: { scope: 'participant', id: target.id },
+      payload: action === 'send_notice'
+        ? { text: '请继续任务' }
+        : action === 'emergency_rally'
+          ? { rallyPoint: '集合点', message: '请集合' }
+          : {},
+    });
+    snapshot = next;
+    const updated = participantById(snapshot, target.id);
+    assert.equal(updated.latestDirective?.commandId, result.id);
+    assert.equal(updated.latestDirective?.action, action);
+    assert.equal(updated.learning.progress, baseline.progress);
+    assert.equal(updated.learning.timeBalance, baseline.timeBalance);
+    assert.equal(updated.learning.scaffoldLevel, baseline.scaffoldLevel);
+    assert.equal(updated.location.insideFence, baseline.insideFence);
+  }
+});
+
+test('target.scope 四种取值只影响目标范围内的 participant', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ className: '范围测试班', groupCount: 3 });
+  let snapshot = await service.getSnapshot(run.id);
+  const participant = snapshot.participants[0];
+  const groupId = participant.groupId;
+  const roleId = participant.roleId;
+  const groupMembers = snapshot.participants.filter((item) => item.groupId === groupId);
+  const roleMembers = snapshot.participants.filter((item) => item.roleId === roleId);
+  assert.ok(groupMembers.length > 1);
+  assert.ok(roleMembers.length > 1);
+
+  let result;
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'send_notice',
+    target: { scope: 'all' },
+    payload: { text: '全班广播' },
+  }));
+  assert.equal(participantsWithDirective(snapshot, result.id).length, snapshot.participants.length);
+
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'send_notice',
+    target: { scope: 'group', id: groupId },
+    payload: { text: '小组广播' },
+  }));
+  assert.equal(participantsWithDirective(snapshot, result.id).length, groupMembers.length);
+  assert.ok(snapshot.participants.some((item) => item.groupId !== groupId && item.latestDirective?.commandId !== result.id));
+
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'send_notice',
+    target: { scope: 'role', id: roleId },
+    payload: { text: '角色广播' },
+  }));
+  assert.equal(participantsWithDirective(snapshot, result.id).length, roleMembers.length);
+  assert.ok(snapshot.participants.some((item) => item.roleId !== roleId && item.latestDirective?.commandId !== result.id));
+
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'send_notice',
+    target: { scope: 'participant', id: participant.id },
+    payload: { text: '单人提示' },
+  }));
+  assert.equal(participantsWithDirective(snapshot, result.id).length, 1);
+  assert.equal(participantsWithDirective(snapshot, result.id)[0].id, participant.id);
+  assert.ok(snapshot.participants.some((item) => item.id !== participant.id && item.latestDirective?.commandId !== result.id));
+});
+
+test('18 个 action 均可被 sendCommand 接受并产生回执', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ className: '全 action 覆盖班', groupCount: 2 });
+  let snapshot = await service.getSnapshot(run.id);
+  const participant = snapshot.participants[0];
+  const actions = [
+    'send_notice', 'push_knowledge', 'add_time', 'remove_time', 'pause', 'resume',
+    'release_roles', 'lock_roles', 'start_phase', 'advance_phase', 'end_run',
+    'confirm_arrival', 'reject_evidence', 'approve_evidence', 'skip_step',
+    'set_scaffold', 'switch_alternative', 'emergency_rally',
+  ];
+
+  for (const action of actions) {
+    const { result } = await sendAndRefresh(service, run.id, snapshot, {
+      action,
+      target: action === 'end_run' ? { scope: 'all' } : { scope: 'participant', id: participant.id },
+      payload: action === 'add_time'
+        ? { amount: 2 }
+        : action === 'set_scaffold'
+          ? { level: 1 }
+          : action === 'advance_phase'
+            ? { phaseId: `phase-${action}`, phaseName: '阶段' }
+            : action === 'send_notice'
+              ? { text: '继续' }
+              : action === 'emergency_rally'
+                ? { rallyPoint: '广场', message: '集合' }
+                : {},
+    });
+    snapshot = await service.getSnapshot(run.id);
+    assert.equal(result.action, action);
+    assert.ok(result.receipts.length >= 1);
+    assert.equal(result.receipts[0].status, 'accepted');
+  }
 });
