@@ -55,6 +55,10 @@
 - 教师介入：馆方禁止拍摄或展签无法阅读
 - 通过后：step:label-assign-source-id
 
+##### 验收标准
+展签标题与点位都已填写；照片可读或已改为完整抄录
+- S1 主动区分来源并处理冲突
+
 
 #### Step 2：建立来源编号
 - id：label-assign-source-id

@@ -410,3 +410,101 @@ test('客户端在 claim 期间断开时会释放取得的 lease，且不调用�
   assert.equal(failed.error.name, 'AbortError');
   assert.equal(modelCalls, 0);
 });
+
+// D6 的第一段是"轻量"模型。配了 OPENAI_UNDERSTAND_MODEL 却仍打主模型，
+// 就等于每个自由文字回合白付一次主模型的钱，而且从外部看不出来——所以在这里锁住。
+test('配置 OPENAI_UNDERSTAND_MODEL 后，语义理解打小模型而生成打主模型', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const models = [];
+  globalThis.fetch = async (_url, options) => {
+    const body = JSON.parse(options.body);
+    models.push(body.model);
+    // 理解层要 JSON；生成层这里给纯文本即可。
+    const content = body.response_format?.type === 'json_object'
+      ? JSON.stringify({
+        intent: 'chat_offtopic',
+        emotion: 'neutral',
+        answersPendingQuestion: false,
+        pendingAnswer: 'unknown',
+        want: '',
+        confidence: 0.9,
+      })
+      : '我在听呢。';
+    return new Response(JSON.stringify({
+      choices: [{ message: { content, tool_calls: [] } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  const sessions = new Map();
+  const app = await buildApp({
+    env: env({
+      APP_ENV: 'test',
+      OPENAI_WIRE_API: 'chat_completions',
+      OPENAI_MODEL: 'main-model',
+      OPENAI_UNDERSTAND_MODEL: 'small-model',
+      AI_UNDERSTAND_TIMEOUT_MS: 8_000,
+      DATABASE_URL: undefined,
+      S3_BUCKET: undefined,
+      S3_ENDPOINT: undefined,
+      S3_ACCESS_KEY_ID: undefined,
+      S3_SECRET_ACCESS_KEY: undefined,
+    }),
+    // 不传 llm：这条用例要验的正是 buildApp 自己建的那两个客户端。
+    sessionStore: {
+      async create(values) {
+        const session = createSessionRecord(values);
+        sessions.set(session.id, session);
+        return session;
+      },
+      async get(id) { return sessions.get(id) || null; },
+      async save(session) { sessions.set(session.id, session); return session; },
+    },
+    courseRunStore: {
+      ...courseRunStore,
+      async transaction(mutator) { return mutator(await courseRunStore.read()); },
+    },
+    evidenceStore,
+    serveStatic: false,
+    realtimeMode: 'polling',
+  });
+  t.after(() => app.close());
+
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/sessions',
+    payload: {
+      courseId: 'lesson_gewu_001',
+      roleId: 'dragon-counter',
+      studentId: 'understand-model-student',
+      groupId: 'understand-model-group',
+    },
+  });
+  assert.equal(created.statusCode, 201, created.body);
+  const sessionId = created.json().id;
+
+  await app.inject({
+    method: 'POST',
+    url: '/api/agent/turn',
+    payload: {
+      sessionId,
+      requestId: 'understand-model-role',
+      input: { type: 'lifecycle_event', event: 'role_assigned' },
+    },
+  });
+  models.length = 0;
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/agent/turn',
+    payload: {
+      sessionId,
+      requestId: 'understand-model-turn',
+      input: { type: 'user_text', text: '你们那儿今天下雨了吗' },
+    },
+  });
+
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(models[0], 'small-model', '语义理解必须走小模型');
+  assert.ok(models.includes('main-model'), '回应生成仍走主模型');
+});

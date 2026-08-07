@@ -22,6 +22,8 @@ const schema = z.object({
   OPENAI_BASE_URL: z.string().url(),
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_MODEL: z.string().min(1),
+  // 语义理解用的轻量模型。不配置时复用 OPENAI_MODEL（行为不变，只是每回合多打一次主模型）。
+  OPENAI_UNDERSTAND_MODEL: z.string().min(1).optional(),
   OPENAI_WIRE_API: z.enum(['responses', 'chat_completions']).default('responses'),
   AI_TOOL_MODE: z.enum(['auto', 'native', 'structured']).default('auto'),
   // 当前未实现：services/llm.js 硬编码 webSearch: false；接线前配置它没有效果。
@@ -30,6 +32,8 @@ const schema = z.object({
   AI_REASONING_EFFORT: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).default('minimal'),
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(64).max(2000).default(192),
   AI_TIMEOUT_MS: z.coerce.number().int().min(5000).max(60000).default(18000),
+  // 语义理解的总预算（含一次重试），必须明显短于整轮预算：它只是回合的第一段。
+  AI_UNDERSTAND_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30000).default(8000),
   AI_TURN_TIMEOUT_MS: z.coerce.number().int().min(10000).max(75000).default(70000),
   AI_REQUEST_LEASE_MS: z.coerce.number().int().min(15000).max(85000).default(80000),
   VITE_AMAP_KEY: z.string().default(''),
@@ -85,6 +89,9 @@ export function loadEnv({
   }
   if (values.AI_REQUEST_LEASE_MS < values.AI_TURN_TIMEOUT_MS + 5_000) {
     throw new Error('AI_REQUEST_LEASE_MS 必须至少比 AI_TURN_TIMEOUT_MS 多 5000 毫秒。');
+  }
+  if (values.AI_UNDERSTAND_TIMEOUT_MS >= values.AI_TURN_TIMEOUT_MS) {
+    throw new Error('AI_UNDERSTAND_TIMEOUT_MS 必须小于 AI_TURN_TIMEOUT_MS：语义理解只是回合的第一段。');
   }
   return values;
 }

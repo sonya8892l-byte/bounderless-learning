@@ -16,7 +16,6 @@ function base(intent, additions = {}) {
   return {
     intent,
     signal: 'neutral',
-    fastPath: false,
     needsKnowledge: false,
     includeTaskContext: false,
     includePhasePrompt: false,
@@ -289,16 +288,6 @@ export function decisionForTutorAction(action, context = {}) {
   const build = TUTOR_ACTION_DECISIONS[action] || TUTOR_ACTION_DECISIONS.reply_natural;
   const decision = build(context);
   return { ...decision, tutorAction: action, tutorReason: context.reason || '' };
-}
-
-export function fastConversationReply(intent, companionName = '絮絮', signal = 'neutral') {
-  if (intent === 'greeting') return `你好呀，我是${companionName}～我在呢。你想聊什么都可以。`;
-  if (intent === 'gratitude') return '不客气呀～我一直在，有想法就继续告诉我。';
-  if (intent === 'goodbye') return '好呀，回头见～需要我的时候再来找我。';
-  if (intent === 'acknowledgement') return '嗯嗯，我在听。你可以接着说。';
-  if (intent === 'emotion' && signal === 'tired') return '听起来你有点累了。先在安全的位置休息一分钟，好吗？我会在这里等你。';
-  if (intent === 'emotion') return '我在听。紧张、烦躁或害怕都可以告诉我，你愿意先说说刚刚发生了什么吗？';
-  return '';
 }
 
 export function toolsForDecision(decision, definitions) {

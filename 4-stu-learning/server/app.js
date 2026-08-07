@@ -276,6 +276,21 @@ export async function buildApp({
     maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
     timeoutMs: env.AI_TIMEOUT_MS,
   });
+  // 语义理解（D6 第一段）走独立的轻量客户端：不需要工具、不需要视觉，输出只有一个小 JSON。
+  // 未配置 OPENAI_UNDERSTAND_MODEL 时复用主客户端，行为与配置前完全一致。
+  const understandingLlm = (providedLLM || !env.OPENAI_UNDERSTAND_MODEL)
+    ? llm
+    : createLLM({
+      baseUrl: env.OPENAI_BASE_URL,
+      apiKey: env.OPENAI_API_KEY,
+      model: env.OPENAI_UNDERSTAND_MODEL,
+      wireApi: env.OPENAI_WIRE_API,
+      toolMode: 'structured',
+      visionMode: 'disabled',
+      reasoningEffort: 'none',
+      maxOutputTokens: 192,
+      timeoutMs: env.AI_UNDERSTAND_TIMEOUT_MS,
+    });
   const getCourse = providedGetCourse || ((courseId) => compileCourse({ lessonsRoot, courseId }));
   const evidenceStore = providedEvidenceStore
     || (persistentInfrastructureRequired && !evidenceStorageConfigured(env)
@@ -291,6 +306,8 @@ export async function buildApp({
   };
   const agent = createAgentService({
     llm,
+    understandingLlm,
+    understandingTimeoutMs: env.AI_UNDERSTAND_TIMEOUT_MS,
     store,
     getCourse,
     loadEvidence,
