@@ -130,7 +130,7 @@ function parameterConfig(parameters, toolId, onlyTool) {
   return {};
 }
 
-export function resolveActivityTools(modules = '', toolParameters = '') {
+export function resolveActivityTools(modules = '', toolParameters = '', toolDefaults = null) {
   const parameters = parseToolParameters(toolParameters);
   const requested = [];
   for (const specification of splitTopLevel(String(modules))) {
@@ -144,16 +144,27 @@ export function resolveActivityTools(modules = '', toolParameters = '') {
   }
 
   if (!requested.length && String(modules).trim()) requested.push({ id: 'text', module: 'A01', detail: String(modules) });
+  const names = toolDefaults?.names || {};
+  const fieldLabels = toolDefaults?.fieldLabels || {};
   return requested.map(({ id, module, detail }) => {
     const catalog = CATALOG_BY_ID[id];
+    const courseConfig = parameterConfig(parameters, id, requested.length === 1);
+    const config = {
+      ...clone(DEFAULT_CONFIG[id]),
+      ...inferredConfig(id, detail),
+      ...clone(courseConfig),
+    };
+    // 课程没写 fields 时，缺省字段 label 来自平台缺省层。
+    if (id === 'text' && fieldLabels['text.observation'] && !courseConfig.fields && Array.isArray(config.fields)) {
+      config.fields = config.fields.map((field) => (
+        field?.id === 'observation' ? { ...field, label: fieldLabels['text.observation'] } : field
+      ));
+    }
     return {
       ...catalog,
+      name: names[id] || catalog.name,
       module,
-      config: {
-        ...clone(DEFAULT_CONFIG[id]),
-        ...inferredConfig(id, detail),
-        ...clone(parameterConfig(parameters, id, requested.length === 1)),
-      },
+      config,
     };
   });
 }

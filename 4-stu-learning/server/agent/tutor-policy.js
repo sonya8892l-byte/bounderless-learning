@@ -35,9 +35,15 @@ function normalizeUnderstanding(value) {
 }
 
 function normalizeContext(value) {
+  const configuredMax = Math.round(Number(value?.maxScaffoldLevel));
+  const maxLevel = Number.isFinite(configuredMax)
+    ? Math.max(0, Math.min(MAX_SCAFFOLD_LEVEL, configuredMax))
+    : MAX_SCAFFOLD_LEVEL;
   const level = Math.round(Number(value?.scaffoldLevel));
   return {
-    scaffoldLevel: Math.max(0, Math.min(MAX_SCAFFOLD_LEVEL, Number.isFinite(level) ? level : 0)),
+    scaffoldLevel: Math.max(0, Math.min(maxLevel, Number.isFinite(level) ? level : 0)),
+    maxScaffoldLevel: maxLevel,
+    upgradeOnRepeatHelp: value?.upgradeOnRepeatHelp !== false,
     recentActions: Array.isArray(value?.recentActions) ? value.recentActions.filter(Boolean) : [],
   };
 }
@@ -76,11 +82,12 @@ function baseDecision(understanding) {
 /** 同类求助连续出现时升一档脚手架，已到最高级则不越界。 */
 function withScaffoldUpgrade(decision, understanding, context) {
   if (decision.action !== 'give_scaffold' || !HELP_INTENTS.includes(understanding.intent)) return decision;
+  if (!context.upgradeOnRepeatHelp) return decision;
   const repeated = [...context.recentActions].reverse().find((entry) => (
     entry?.action === 'give_scaffold' && HELP_INTENTS.includes(String(entry?.intent))
   ));
   if (!repeated) return decision;
-  const delta = Math.max(0, Math.min(1, MAX_SCAFFOLD_LEVEL - context.scaffoldLevel));
+  const delta = Math.max(0, Math.min(1, context.maxScaffoldLevel - context.scaffoldLevel));
   return {
     action: 'give_scaffold',
     params: { scaffoldLevelDelta: delta },

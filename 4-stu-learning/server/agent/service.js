@@ -430,8 +430,8 @@ function startCurrentRoleStage({ session, task, tool }) {
   };
 }
 
-function askNextOnboarding({ session, task, role }) {
-  const question = nextOnboardingQuestion({ session, task, role });
+function askNextOnboarding({ session, task, role, voice = null }) {
+  const question = nextOnboardingQuestion({ session, task, role, voice });
   return question ? askQuestion(session, question) : null;
 }
 
@@ -445,7 +445,7 @@ function workflowResult({ decision, role, session, course, input }) {
     if (!taskRequiresArrival(task) || session.locationState?.status === 'arrived') {
       confirmDialogueSlot(session, 'arrival', true);
     }
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     if (!next) return startCurrentRoleStage({ session, task, tool });
     return {
       ...next,
@@ -458,7 +458,7 @@ function workflowResult({ decision, role, session, course, input }) {
     };
   }
   if (decision.intent === 'quick_reply_stale') {
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     return {
       ...(next || {}),
       text: next
@@ -468,15 +468,15 @@ function workflowResult({ decision, role, session, course, input }) {
       dialogueMove: 'repair_stale_action',
     };
   }
-  if (decision.intent === 'conversation_repair') return { ...conversationRepair(session), toolCalls: [] };
-  if (decision.intent === 'unclear_input') return { ...unclearInputReply(session), toolCalls: [] };
+  if (decision.intent === 'conversation_repair') return { ...conversationRepair(session, voice), toolCalls: [] };
+  if (decision.intent === 'unclear_input') return { ...unclearInputReply(session, voice), toolCalls: [] };
   if (decision.intent === 'onboarding_not_arrived' || decision.intent === 'onboarding_navigation') {
     confirmDialogueSlot(session, 'arrival', !taskRequiresArrival(task));
     if (!taskRequiresArrival(task)) {
-      const next = askNextOnboarding({ session, task, role });
+      const next = askNextOnboarding({ session, task, role, voice });
       return { ...next, text: say('onboarding_not_arrived.无需前往', { next: next.text }), toolCalls: [] };
     }
-    const question = arrivalQuestion(task, role);
+    const question = arrivalQuestion(task, role, voice);
     askQuestion(session, question);
     return {
       text: say('onboarding_not_arrived.导航', { location: locationName }),
@@ -491,13 +491,13 @@ function workflowResult({ decision, role, session, course, input }) {
       if (taskRequiresArrival(task)) recordArrival(session, 'manual');
     }
     confirmDialogueSlot(session, 'readiness', false);
-    const question = readinessQuestion(task);
+    const question = readinessQuestion(task, voice);
     askQuestion(session, question);
     return {
       text: say('onboarding_not_ready.等待'),
       toolCalls: [],
       dialogueMove: 'wait_for_readiness',
-      quickReplies: [{ id: 'readiness-yes', label: '现在开始', value: '我准备好了' }],
+      quickReplies: [{ id: 'readiness-yes', label: say('onboarding.准备.现在开始'), value: say('onboarding.准备.value.现在开始') }],
     };
   }
   if (decision.intent === 'pending_answer') {
@@ -512,7 +512,7 @@ function workflowResult({ decision, role, session, course, input }) {
     if (decision.entry?.notReady) confirmDialogueSlot(session, 'readiness', false);
 
     if (resolved?.pending.kind === 'arrival' && resolved.value === false) {
-      const question = arrivalQuestion(task, role);
+      const question = arrivalQuestion(task, role, voice);
       askQuestion(session, question);
       return {
         text: say('pending_answer.未到达导航', { location: locationName }),
@@ -522,16 +522,16 @@ function workflowResult({ decision, role, session, course, input }) {
       };
     }
     if (decision.entry?.notReady || (resolved?.pending.kind === 'readiness' && resolved.value === false)) {
-      const question = readinessQuestion(task);
+      const question = readinessQuestion(task, voice);
       askQuestion(session, question);
       return {
         text: say('pending_answer.等待准备'),
         toolCalls: [],
         dialogueMove: 'wait_for_readiness',
-        quickReplies: [{ id: 'readiness-yes', label: '现在开始', value: '我准备好了' }],
+        quickReplies: [{ id: 'readiness-yes', label: say('onboarding.准备.现在开始'), value: say('onboarding.准备.value.现在开始') }],
       };
     }
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     if (next) {
       return {
         ...next,
@@ -552,7 +552,7 @@ function workflowResult({ decision, role, session, course, input }) {
       || session.dialogueState?.confirmedSlots?.arrival === true;
     if (decision.entry?.ready && arrivalSatisfied) confirmDialogueSlot(session, 'readiness', true);
     if (decision.entry?.notReady) confirmDialogueSlot(session, 'readiness', false);
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     if (next) return { ...next, toolCalls: [] };
     return startCurrentRoleStage({ session, task, tool });
   }
@@ -562,7 +562,7 @@ function workflowResult({ decision, role, session, course, input }) {
       clearPendingQuestion(session, { outcome: 'tool_confirmed' });
     }
     if (!session.onboardingState.completed) {
-      const next = askNextOnboarding({ session, task, role });
+      const next = askNextOnboarding({ session, task, role, voice });
       if (next) return { ...next, text: say('navigation_completed.已到位', { next: next.text }), toolCalls: [] };
       return startCurrentRoleStage({ session, task, tool });
     }
@@ -721,7 +721,7 @@ function workflowResult({ decision, role, session, course, input }) {
     }
     return {
       text: say('proactive_nudge.试一小步', {
-        hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session)),
+        hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session), course?.platformDefaults?.scaffolding),
       }),
       toolCalls: [],
       dialogueMove: 'proactive_support',
@@ -747,7 +747,7 @@ function immediatePrelude(decision, role, session, course) {
   const voice = course?.platformDefaults?.voice;
   if (['task_help', 'task_followup'].includes(decision.intent)) {
     return renderVoice(voice, 'prelude.求助', {
-      hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session)),
+      hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session), course?.platformDefaults?.scaffolding),
     });
   }
   if (decision.intent === 'emotion') return renderVoice(voice, 'prelude.情绪');
@@ -1009,8 +1009,11 @@ export function createAgentService({
       grade: session.learnerState?.grade || session.grade || '',
     }, { signal });
 
+    const scaffolding = course?.platformDefaults?.scaffolding;
     const tutor = decideTutorAction(result, {
       scaffoldLevel: Number(session.scaffoldLevel || 0),
+      maxScaffoldLevel: scaffolding?.maxLevel,
+      upgradeOnRepeatHelp: scaffolding?.upgradeOnRepeatHelp,
       pendingQuestion,
       currentStep,
       recentActions: session.conversationState?.recentTutorActions || [],
@@ -1146,7 +1149,10 @@ export function createAgentService({
     if (['user_text', 'quick_reply'].includes(input.type)) {
       // 升档由 tutorPolicy 判定（它看得到教学动作历史），这里只执行。
       if (decision.params?.scaffoldLevelDelta) {
-        session.scaffoldLevel = Math.min(4, session.scaffoldLevel + decision.params.scaffoldLevelDelta);
+        session.scaffoldLevel = Math.min(
+          Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4),
+          session.scaffoldLevel + decision.params.scaffoldLevelDelta,
+        );
       }
       if (decision.tutorAction) {
         recordTutorAction(session, { intent: decision.understanding?.intent, action: decision.tutorAction });
@@ -1263,6 +1269,7 @@ export function createAgentService({
         avoidRepeatedReply(session, result.text, {
           intent: decision.intent,
           dialogueMove: result.dialogueMove,
+          voice: course?.platformDefaults?.voice,
         }),
         session.learnerState?.grade || session.grade,
         course?.platformDefaults?.languageLevels,
@@ -1312,6 +1319,7 @@ export function createAgentService({
         avoidRepeatedReply(session, item.text, {
           intent: decision.intent,
           dialogueMove: item.dialogueMove || result.dialogueMove,
+          voice: course?.platformDefaults?.voice,
         }),
         session.learnerState?.grade || session.grade,
         course?.platformDefaults?.languageLevels,

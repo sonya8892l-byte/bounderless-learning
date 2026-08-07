@@ -13,10 +13,10 @@
 | `privacy-rules.md` | 数据隐私规则 | **immutable** | 已接入 |
 | `competency-framework.md` | CC 核心能力 / CQ 综合素质标签树 | immutable（课程只引用节点） | draft，无运行行为 |
 | `companion.md` | 絮絮人设：名字与素材锁定，语气侧面可覆盖 | 混合（见下） | **已接入**（素材路径仍在 `platform-config.js`，浏览器构建期要用） |
-| `voice.md` | 流程话术模板（入场/导航/到达/验收/求助/完成），带占位符 | overridable | **部分接入**（`service.js` 的 43 条已搬完；`dialogue-policy.js` 的对话修复话术仍在代码里） |
+| `voice.md` | 流程话术模板（入场/导航/到达/验收/求助/完成/修复），带占位符 | overridable | **已接入**（`service.js` + `dialogue-policy.js`；分支控制流仍在代码） |
 | `language-levels.md` | 学段表达规范（字数/硬上限/句式） | overridable | **已接入** |
-| `scaffolding.md` | L0–L4 语义定义 + 升降策略 | overridable | **待建**（现散落于 `service.js`） |
-| `tool-defaults.md` | 十种活动工具的缺省参数与提示文案 | overridable | **待建**（现位于 `tool-registry.js`） |
+| `scaffolding.md` | L0–L4 语义定义 + 升档参数（本阶段只升不降） | overridable | **已接入** |
+| `tool-defaults.md` | 十种活动工具显示名 + 缺省字段 label | overridable | **已接入**（中文正则匹配器仍在 `tool-registry.js`） |
 | `defaults.md` | 时长/提醒/冷却/推进方式等数值缺省 | overridable | **已接入** |
 
 前三份规则文件为必需。缺失或内容为空时服务端课程编译失败，避免线上静默跳过平台底线。标"待建"的文件属于 M2 阶段，尚未建立时运行时继续使用 JS 中的现有缺省值，行为不变。

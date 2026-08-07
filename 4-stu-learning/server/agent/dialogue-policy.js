@@ -8,47 +8,50 @@ import {
   suspendPendingQuestion,
 } from './session-state.js';
 import { languageLevelFor } from '../course/platform-defaults.js';
+import { renderVoice } from '../course/voice.js';
 
 export function taskRequiresArrival(task) {
   return Boolean(task?.location?.mode && task.location.mode !== 'none');
 }
 
-export function arrivalQuestion(task, role) {
+export function arrivalQuestion(task, role, voice = null) {
   const place = task.location?.name || role.location || '当前任务点';
+  const say = (key, params) => renderVoice(voice, key, params);
   return {
     id: `arrival:${task.id}`,
     type: 'arrival_confirmation',
     kind: 'arrival',
     slot: 'arrival',
-    prompt: `你已经到“${place}”了吗？`,
+    prompt: say('onboarding.到达确认', { place }),
     quickReplies: [
-      { id: 'arrival-yes', label: '已到达', value: '我已到达', act: 'affirm' },
-      { id: 'arrival-no', label: '还在路上', value: '我还没到', act: 'deny' },
-      { id: 'arrival-nav', label: '需要导航', value: '请帮我导航', act: 'request_navigation' },
+      { id: 'arrival-yes', label: say('onboarding.到达.已到达'), value: say('onboarding.到达.value.已到达'), act: 'affirm' },
+      { id: 'arrival-no', label: say('onboarding.到达.还在路上'), value: say('onboarding.到达.value.还在路上'), act: 'deny' },
+      { id: 'arrival-nav', label: say('onboarding.到达.需要导航'), value: say('onboarding.到达.value.需要导航'), act: 'request_navigation' },
     ],
     expectedActs: ['affirm', 'deny', 'request_navigation'],
   };
 }
 
-export function readinessQuestion(task) {
+export function readinessQuestion(task, voice = null) {
+  const say = (key) => renderVoice(voice, key);
   return {
     id: `readiness:${task.id}`,
     type: 'readiness_confirmation',
     kind: 'readiness',
     slot: 'readiness',
-    prompt: '你准备好开始了吗？',
+    prompt: say('onboarding.准备确认'),
     quickReplies: [
-      { id: 'readiness-yes', label: '现在开始', value: '我准备好了', act: 'affirm' },
-      { id: 'readiness-no', label: '等一下', value: '我还没准备好', act: 'deny' },
+      { id: 'readiness-yes', label: say('onboarding.准备.现在开始'), value: say('onboarding.准备.value.现在开始'), act: 'affirm' },
+      { id: 'readiness-no', label: say('onboarding.准备.等一下'), value: say('onboarding.准备.value.等一下'), act: 'deny' },
     ],
     expectedActs: ['affirm', 'deny'],
   };
 }
 
-export function nextOnboardingQuestion({ session, task, role }) {
+export function nextOnboardingQuestion({ session, task, role, voice = null }) {
   const slots = session.dialogueState?.confirmedSlots || {};
-  if (taskRequiresArrival(task) && slots.arrival !== true) return arrivalQuestion(task, role);
-  if (slots.readiness !== true) return readinessQuestion(task);
+  if (taskRequiresArrival(task) && slots.arrival !== true) return arrivalQuestion(task, role, voice);
+  if (slots.readiness !== true) return readinessQuestion(task, voice);
   return null;
 }
 
@@ -69,23 +72,23 @@ export function applyPendingAnswer(session, resolution) {
   return { pending, value: resolution.value };
 }
 
-export function conversationRepair(session) {
+export function conversationRepair(session, voice = null) {
   suspendPendingQuestion(session);
   recordConversationRepair(session);
   return {
-    text: '你说得对，刚才的回应让人很烦。我先停下来听你说；想继续时告诉我“继续”就行。',
+    text: renderVoice(voice, 'conversation_repair.主回复'),
     dialogueMove: 'repair_conversation',
     quickReplies: [],
   };
 }
 
-export function unclearInputReply(session) {
+export function unclearInputReply(session, voice = null) {
   const count = recordMisunderstanding(session);
   const pending = session.dialogueState?.pendingQuestion;
   return {
     text: count > 1
-      ? '这条我还是没理解。直接点一个选项就可以。'
-      : '我没太看懂这条消息。你可以换句话说，也可以直接点选项。',
+      ? renderVoice(voice, 'unclear_input.再次')
+      : renderVoice(voice, 'unclear_input.首次'),
     dialogueMove: 'clarify_input',
     quickReplies: pending?.quickReplies || [],
   };
@@ -100,19 +103,19 @@ export function applyGradeResponsePolicy(text, grade, languageLevels = null) {
   return `${(boundary >= Math.floor(limit * 0.55) ? slice.slice(0, boundary + 1) : slice).trim()}…`;
 }
 
-export function avoidRepeatedReply(session, text, { intent = '', dialogueMove = '' } = {}) {
+export function avoidRepeatedReply(session, text, { intent = '', dialogueMove = '', voice = null } = {}) {
   if (!isRepeatedAssistantText(session, text)) return text;
   const move = `${intent} ${dialogueMove}`;
   if (/conversation_repair/.test(move)) {
-    return '我听见了，也先不催你。你想说什么就继续说，想回到学习时告诉我“继续”。';
+    return renderVoice(voice, 'avoid_repeat.conversation_repair');
   }
   if (/emotion|safety_help/.test(move)) {
-    return '我还在，先照顾好自己。你可以慢慢说，现在不需要赶任务。';
+    return renderVoice(voice, 'avoid_repeat.emotion');
   }
-  if (/greeting|gratitude|goodbye|social|course_knowledge|onboarding_unclear/.test(move)) {
-    return '嗯嗯，我还在听～你可以接着说，想回到学习时告诉我“继续”。';
+  if (/greeting|gratitude|goodbye|social|course_knowledge/.test(move)) {
+    return renderVoice(voice, 'avoid_repeat.social');
   }
   return session.dialogueState?.pendingQuestion
-    ? '这件事我已经问过了，你可以直接点下面的选项，我会按你的回答继续。'
-    : '这句话我刚才说过了。我们接着你现在的想法往下聊。';
+    ? renderVoice(voice, 'avoid_repeat.有待答')
+    : renderVoice(voice, 'avoid_repeat.默认');
 }

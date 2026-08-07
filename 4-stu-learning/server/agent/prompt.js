@@ -41,8 +41,9 @@ function scaffoldLineFor(source, level) {
   return '';
 }
 
-export function taskScaffoldHint(task, scaffoldLevel = 0, guidanceStepIndex = 0, step = null) {
-  const targetLevel = Math.min(4, Math.max(0, Number(scaffoldLevel) + 1));
+export function taskScaffoldHint(task, scaffoldLevel = 0, guidanceStepIndex = 0, step = null, scaffolding = null) {
+  const maxLevel = Math.min(4, Math.max(0, Number(scaffolding?.maxLevel ?? 4)));
+  const targetLevel = Math.min(maxLevel, Math.max(0, Number(scaffoldLevel) + 1));
   // Step 级就地脚手架优先于任务级，两者不叠加。
   const line = scaffoldLineFor(step?.scaffold, targetLevel) || scaffoldLineFor(task.scaffold, targetLevel);
   if (line) return line;
@@ -52,6 +53,7 @@ export function taskScaffoldHint(task, scaffoldLevel = 0, guidanceStepIndex = 0,
     : (task.guidanceSteps?.length ? task.guidanceSteps : []);
   return quoteMatch?.[1]?.trim()
     || steps[Math.min(Number(guidanceStepIndex || 0), Math.max(0, steps.length - 1))]
+    || scaffolding?.fallbackHint
     || '先选一条最容易确认的现场线索，说说你看到了什么。';
 }
 
@@ -109,7 +111,13 @@ export function buildAgentPrompt({ course, session, role, knowledge, input, deci
 地点：${task.location?.name || '无需指定地点'}；到达：${runtime.location.status || '未知'}；停留：${runtime.location.dwellSeconds || 0}秒
 已进行：${runtime.taskElapsedSeconds}秒；无操作：${runtime.idleSeconds}秒；脚手架：L${session.scaffoldLevel}`.trim() : '';
   const taskHint = decision.includeTaskContext
-    ? taskScaffoldHint(task, session.scaffoldLevel, runtime.guidanceStepIndex, currentStep)
+    ? taskScaffoldHint(
+      task,
+      session.scaffoldLevel,
+      runtime.guidanceStepIndex,
+      currentStep,
+      course?.platformDefaults?.scaffolding,
+    )
     : '';
   // 就地引导：Step 级优先于任务级，两者不叠加；截断防止长引导挤占 Prompt。
   const guidanceContext = decision.includeTaskContext

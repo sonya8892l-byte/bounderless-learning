@@ -1,5 +1,6 @@
 import { PLATFORM_LEARNING_VIEW } from './platform-config.js';
-import { mergeDefaults } from './platform-defaults.js';
+import { courseOverrideSection, mergeDefaults } from './platform-defaults.js';
+import { resolveToolDefaults } from './tool-defaults.js';
 import { resolveActivityTools } from './tool-registry.js';
 
 function clean(value = '') {
@@ -231,7 +232,7 @@ function parseBlockFields(block) {
   return fields;
 }
 
-function parseStructuredSteps(block, roleStageId, assetBase, defaults = TASK_DEFAULTS) {
+function parseStructuredSteps(block, roleStageId, assetBase, defaults = TASK_DEFAULTS, toolDefaults = null) {
   const matches = [...block.matchAll(/^####\s*(?:Step|小步)\s*(\d+)[：:]\s*(.+)$/gim)];
   return matches.map((match, index) => {
     const end = matches[index + 1]?.index ?? block.length;
@@ -260,7 +261,7 @@ function parseStructuredSteps(block, roleStageId, assetBase, defaults = TASK_DEF
       },
       modules,
       toolParameters: fields['工具参数'] || '',
-      tools: resolveToolAssets(resolveActivityTools(modules, fields['工具参数']), assetBase),
+      tools: resolveToolAssets(resolveActivityTools(modules, fields['工具参数'], toolDefaults), assetBase),
       knowledgeRef: fields['知识引用'] || '',
       guidanceRef: fields['引导引用'] || '',
       restrictionRef: fields['限制引用'] || '',
@@ -279,14 +280,14 @@ function parseStructuredSteps(block, roleStageId, assetBase, defaults = TASK_DEF
   });
 }
 
-function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS) {
+function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS, toolDefaults = null) {
   const firstStepIndex = block.search(/^####\s*(?:Step|小步)\s*\d+[：:]/im);
   const roleStageBlock = firstStepIndex === -1 ? block : block.slice(0, firstStepIndex);
   const fields = parseBlockFields(fieldRegion(roleStageBlock));
   const inline = parseInlineSections(roleStageBlock);
 
   const modules = fields['功能模块'] || '';
-  const tools = resolveToolAssets(resolveActivityTools(modules, fields['工具参数']), assetBase);
+  const tools = resolveToolAssets(resolveActivityTools(modules, fields['工具参数'], toolDefaults), assetBase);
   const primaryTool = tools[0]?.id || 'text';
   const toolType = ['photo', 'scanner'].includes(primaryTool)
     ? 'capture'
@@ -299,7 +300,7 @@ function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS) {
   const locationMode = normalizeLocationMode(rawLocationMode, Boolean(coordinates), Boolean(fields['地点']));
   const requirement = fields['配置'] || fields['通过条件'] || '提交你的现场发现';
   const id = clean(fields.id || fields.ID || `task-${index + 1}`);
-  const structuredSteps = parseStructuredSteps(block, id, assetBase, defaults);
+  const structuredSteps = parseStructuredSteps(block, id, assetBase, defaults, toolDefaults);
   const guidanceSteps = structuredSteps.length
     ? structuredSteps.map((step) => step.studentAction)
     : parseGuidanceSteps(fields['引导步骤'], requirement);
@@ -358,14 +359,14 @@ function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS) {
   };
 }
 
-function parseRole(path, markdown, assetBase, index, defaults = TASK_DEFAULTS) {
+function parseRole(path, markdown, assetBase, index, defaults = TASK_DEFAULTS, toolDefaults = null) {
   const slug = path.split('/').at(-1).replace('.md', '');
   const info = parseKeyValues(markdown, '## 基本信息');
   const taskMatches = [...markdown.matchAll(/^###\s*(?:任务|角色阶段)\d+[：:].*$/gm)];
   const tasks = taskMatches.map((match, taskIndex) => {
     const start = match.index;
     const end = taskMatches[taskIndex + 1]?.index ?? markdown.indexOf('\n## Phase 3', start);
-    return parseTaskBlock(markdown.slice(start, end === -1 ? markdown.length : end), taskIndex, assetBase, defaults);
+    return parseTaskBlock(markdown.slice(start, end === -1 ? markdown.length : end), taskIndex, assetBase, defaults, toolDefaults);
   });
 
   const token = requiredField(info['收集物'], `${path} / 基本信息 / 收集物`);
@@ -495,6 +496,11 @@ function resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning) 
 export function parseLesson(source, { platformDefaults = null, onWarning = null } = {}) {
   const courseMarkdown = source.files['course.md'];
   const taskDefaults = resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning);
+  const { toolDefaults, warnings: toolWarnings } = resolveToolDefaults(
+    platformDefaults?.documents?.toolDefaults || null,
+    courseOverrideSection(courseMarkdown, '工具缺省'),
+  );
+  for (const warning of toolWarnings) onWarning?.(warning);
   const courseInfo = parseKeyValues(courseMarkdown, '## 基本信息');
   const roleSystem = parseKeyValues(courseMarkdown, '## 学生端角色体系');
   const learningView = parseKeyValues(courseMarkdown, '## 学习视图');
@@ -503,7 +509,7 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
   const roleFiles = Object.entries(source.files)
     .filter(([path]) => path.startsWith('roles/') && path.endsWith('.md'));
   const roles = roleFiles
-    .map(([path, markdown], index) => parseRole(path, markdown, assetBase, index, taskDefaults))
+    .map(([path, markdown], index) => parseRole(path, markdown, assetBase, index, taskDefaults, toolDefaults))
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
   const requestedLearningView = clean(learningView.default || PLATFORM_LEARNING_VIEW.default).toLowerCase();
   if (!['dialogue', 'challenge'].includes(requestedLearningView)) {

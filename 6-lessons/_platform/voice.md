@@ -75,3 +75,31 @@
 - tool.call_teacher：我现在帮你呼叫老师，请先停在安全的位置。
 - tool.默认：我已经打开接下来需要的工具。
 - knowledge.摘录：根据课程材料，{excerpt}
+
+## 入场确认问题与快捷回复
+
+`label` 是按钮上的字，`value` 是点按钮后当作学生说出口的那句话。
+
+- onboarding.到达确认：你已经到“{place}”了吗？
+- onboarding.到达.已到达：已到达
+- onboarding.到达.还在路上：还在路上
+- onboarding.到达.需要导航：需要导航
+- onboarding.到达.value.已到达：我已到达
+- onboarding.到达.value.还在路上：我还没到
+- onboarding.到达.value.需要导航：请帮我导航
+- onboarding.准备确认：你准备好开始了吗？
+- onboarding.准备.现在开始：现在开始
+- onboarding.准备.等一下：等一下
+- onboarding.准备.value.现在开始：我准备好了
+- onboarding.准备.value.等一下：我还没准备好
+
+## 对话修复与防复读
+
+- conversation_repair.主回复：你说得对，刚才的回应让人很烦。我先停下来听你说；想继续时告诉我“继续”就行。
+- unclear_input.首次：我没太看懂这条消息。你可以换句话说，也可以直接点选项。
+- unclear_input.再次：这条我还是没理解。直接点一个选项就可以。
+- avoid_repeat.conversation_repair：我听见了，也先不催你。你想说什么就继续说，想回到学习时告诉我“继续”。
+- avoid_repeat.emotion：我还在，先照顾好自己。你可以慢慢说，现在不需要赶任务。
+- avoid_repeat.social：嗯嗯，我还在听～你可以接着说，想回到学习时告诉我“继续”。
+- avoid_repeat.有待答：这件事我已经问过了，你可以直接点下面的选项，我会按你的回答继续。
+- avoid_repeat.默认：这句话我刚才说过了。我们接着你现在的想法往下聊。

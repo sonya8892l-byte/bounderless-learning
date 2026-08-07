@@ -11,7 +11,62 @@ export const PLATFORM_DEFAULT_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'languageLevels', filename: 'language-levels.md', title: '学段表达规范' }),
   Object.freeze({ id: 'companion', filename: 'companion.md', title: '絮絮人设' }),
   Object.freeze({ id: 'voice', filename: 'voice.md', title: '流程话术' }),
+  Object.freeze({ id: 'scaffolding', filename: 'scaffolding.md', title: '脚手架等级' }),
+  Object.freeze({ id: 'toolDefaults', filename: 'tool-defaults.md', title: '工具显示名与缺省字段' }),
 ]);
+
+export const SCAFFOLDING_DEFAULTS = Object.freeze({
+  maxLevel: 4,
+  upgradeOnRepeatHelp: true,
+  fallbackHint: '先选一条最容易确认的现场线索，说说你看到了什么。',
+  levels: Object.freeze({
+    L0: '不主动给提示，等学生先试',
+    L1: '点一个观察方向或行动入口，不给步骤',
+    L2: '给出可执行的一小步，仍不透露结论',
+    L3: '把关键线索说得更具体，仍要求学生自己验',
+    L4: '兜底提示，尽量逼近答案边界但不直接公布保护词',
+  }),
+});
+
+const SCAFFOLDING_FALLBACK_DOCUMENT = Object.freeze({
+  filename: 'scaffolding.md',
+  declaration: Object.freeze({
+    overridable: true,
+    merge: 'by-key',
+    courseField: '脚手架',
+    locked: Object.freeze([]),
+  }),
+  entries: Object.freeze({
+    ...SCAFFOLDING_DEFAULTS.levels,
+    最高等级: String(SCAFFOLDING_DEFAULTS.maxLevel),
+    升档触发: '同类求助第二次',
+    缺省提示: SCAFFOLDING_DEFAULTS.fallbackHint,
+  }),
+  sections: Object.freeze({}),
+  markdown: '',
+});
+
+export function resolveScaffolding(document, courseOverrides = {}) {
+  const { entries, warnings } = mergeDefaults(document || SCAFFOLDING_FALLBACK_DOCUMENT, courseOverrides);
+  const maxLevel = Math.min(4, positiveInteger(entries['最高等级'], SCAFFOLDING_DEFAULTS.maxLevel));
+  const trigger = String(entries['升档触发'] || '同类求助第二次');
+  return {
+    scaffolding: Object.freeze({
+      maxLevel,
+      upgradeOnRepeatHelp: !/不升|关闭|false|否/.test(trigger),
+      fallbackHint: String(entries['缺省提示'] || SCAFFOLDING_DEFAULTS.fallbackHint).trim()
+        || SCAFFOLDING_DEFAULTS.fallbackHint,
+      levels: Object.freeze({
+        L0: entries.L0 || SCAFFOLDING_DEFAULTS.levels.L0,
+        L1: entries.L1 || SCAFFOLDING_DEFAULTS.levels.L1,
+        L2: entries.L2 || SCAFFOLDING_DEFAULTS.levels.L2,
+        L3: entries.L3 || SCAFFOLDING_DEFAULTS.levels.L3,
+        L4: entries.L4 || SCAFFOLDING_DEFAULTS.levels.L4,
+      }),
+    }),
+    warnings,
+  };
+}
 
 // _platform/companion.md 缺失时的回落。素材路径不进 md：浏览器在构建期就要用到它们，
 // 读不到 md，因此始终以 platform-config.js 为准，并同样锁定不许课程覆盖。

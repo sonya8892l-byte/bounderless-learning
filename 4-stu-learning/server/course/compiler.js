@@ -2,7 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseLesson } from '../../src/engine/lesson-parser.js';
 import { compilePlatformRules } from './platform-rules.js';
-import { loadPlatformDefaults, resolveCompanion, resolveLanguageLevels } from './platform-defaults.js';
+import {
+  loadPlatformDefaults,
+  resolveCompanion,
+  resolveLanguageLevels,
+  resolveScaffolding,
+} from './platform-defaults.js';
 import { courseOverrideSection } from '../../src/engine/platform-defaults.js';
 import { assertVoiceHasNoSpoiler, resolveVoice } from './voice.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
@@ -252,6 +257,12 @@ export async function compileCourse({ lessonsRoot, courseId }) {
   );
   defaultWarnings.push(...voice.warnings);
 
+  const scaffolding = resolveScaffolding(
+    platformDefaults.documents.scaffolding,
+    courseOverrideSection(files['course.md'], '脚手架'),
+  );
+  defaultWarnings.push(...scaffolding.warnings);
+
   const restrictionMarkdown = files['restrictions.md'] || '';
   const restrictions = parseRestrictionRows(restrictionMarkdown);
   assertVoiceHasNoSpoiler(voice.voice, restrictions.flatMap((rule) => rule.protectedTerms || []));
@@ -269,6 +280,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
       ),
       companion: companion.companion,
       voice: voice.voice,
+      scaffolding: scaffolding.scaffolding,
     },
     publicLesson,
     roles,
