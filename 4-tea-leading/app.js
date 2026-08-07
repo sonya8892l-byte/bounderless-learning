@@ -18,6 +18,8 @@ const state = {
   runs: [], runId: null, snapshot: null, review: null, activeView: 'live',
   pendingCommand: null, socket: null, pollTimer: null, refreshTimer: null, toastTimer: null,
   mapUnavailable: false, locationListVisible: false,
+  connected: true, eventSequence: 0, commandLedger: {},
+  lastReceiptAnnouncement: '',
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -38,6 +40,230 @@ function relativeTime(value) {
   if (seconds < 60) return `${seconds}秒前`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟前`;
   return `${Math.floor(seconds / 3600)}小时前`;
+}
+
+function commandLedgerStorageKey(runId = state.runId) {
+  return `teacher-command-ledger:${runId}`;
+}
+
+function loadCommandLedger(runId = state.runId) {
+  if (!runId) return {};
+  try {
+    const raw = localStorage.getItem(commandLedgerStorageKey(runId));
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCommandLedger() {
+  if (!state.runId) return;
+  localStorage.setItem(commandLedgerStorageKey(), JSON.stringify(state.commandLedger));
+}
+
+function targetScopeLabel(target = {}) {
+  if (target.scope === 'all') return '全班';
+  if (target.scope === 'group') return '所选小组';
+  if (target.scope === 'role') return '所选角色';
+  if (target.scope === 'participant') return '所选学生';
+  return '目标对象';
+}
+
+function upsertCommandRecord(record = {}) {
+  if (!record.id) return;
+  const existing = state.commandLedger[record.id] || { receipts: {} };
+  state.commandLedger[record.id] = {
+    ...existing,
+    ...record,
+    receipts: { ...existing.receipts, ...(record.receipts || {}) },
+    total: Math.max(Number(existing.total || 0), Number(record.total || 0), Object.keys({ ...existing.receipts, ...(record.receipts || {}) }).length),
+  };
+  saveCommandLedger();
+}
+
+function upsertCommandFromSendResult(result = {}) {
+  const receipts = {};
+  for (const receipt of result.receipts || []) receipts[receipt.participantId] = receipt.status;
+  upsertCommandRecord({
+    id: result.id,
+    action: result.action,
+    target: result.target,
+    reason: result.reason,
+    createdAt: result.createdAt,
+    total: (result.receipts || []).length,
+    receipts,
+  });
+}
+
+function applyCommandEvent(event = {}) {
+  if (event.type === 'teacher.command.accepted') {
+    upsertCommandRecord({
+      id: event.data?.commandId,
+      action: event.data?.action,
+      createdAt: event.createdAt,
+      receipts: {},
+    });
+    return;
+  }
+  if (event.type !== 'teacher.command.receipt') return;
+  const { commandId, participantId, status } = event.data || {};
+  if (!commandId || !participantId) return;
+  const existing = state.commandLedger[commandId] || { id: commandId, receipts: {}, createdAt: event.createdAt };
+  existing.receipts[participantId] = status;
+  existing.total = Math.max(Number(existing.total || 0), Object.keys(existing.receipts).length);
+  upsertCommandRecord(existing);
+}
+
+function summarizeReceipts(command = {}, connected = state.connected && navigator.onLine) {
+  if (!connected) {
+    return { text: '状态未知', tone: 'unknown', parts: [{ key: 'unknown', text: '状态未知' }] };
+  }
+  const statuses = Object.values(command.receipts || {});
+  const total = Math.max(Number(command.total || 0), statuses.length);
+  const delivered = statuses.filter((status) => status === 'delivered' || status === 'confirmed').length;
+  const confirmed = statuses.filter((status) => status === 'confirmed').length;
+  const failed = statuses.filter((status) => status === 'failed').length;
+  const acceptedOnly = total > 0 && statuses.length === total && statuses.every((status) => status === 'accepted');
+  const parts = [];
+  if (acceptedOnly) parts.push({ key: 'accepted', text: `已下发 ${total}/${total}` });
+  else {
+    if (delivered > 0 || total > 0) parts.push({ key: 'delivered', text: `已送达 ${delivered}/${total || '?'}` });
+    if (confirmed > 0) parts.push({ key: 'confirmed', text: `已确认 ${confirmed}/${total || '?'}` });
+    if (failed > 0) parts.push({ key: 'failed', text: `失败 ${failed}` });
+    if (!parts.length && total > 0) parts.push({ key: 'accepted', text: `已下发 ${total}/${total}` });
+  }
+  return {
+    text: parts.map((part) => part.text).join(' · ') || '等待回执',
+    tone: failed > 0 ? 'failed' : (confirmed > 0 ? 'confirmed' : (delivered > 0 ? 'delivered' : 'accepted')),
+    parts,
+    total,
+    delivered,
+    confirmed,
+    failed,
+  };
+}
+
+async function syncCommandEvents() {
+  if (!state.runId) return;
+  try {
+    const events = await request(`/teacher/runs/${encodeURIComponent(state.runId)}/events?after=${state.eventSequence}`);
+    for (const event of events) {
+      applyCommandEvent(event);
+      state.eventSequence = Math.max(state.eventSequence, Number(event.sequence || 0));
+    }
+    if (state.snapshot?.sequence) {
+      state.eventSequence = Math.max(state.eventSequence, Number(state.snapshot.sequence));
+    }
+  } catch {
+    // 快照缓存仍可显示；回执状态在离线时不误报失败。
+  }
+}
+
+async function hydrateCommandLedgerFromReview() {
+  if (!state.runId) return;
+  try {
+    const review = await request(`/teacher/runs/${encodeURIComponent(state.runId)}/review`);
+    for (const item of review.interventions || []) {
+      upsertCommandRecord({
+        id: item.commandId,
+        action: item.action,
+        target: item.target,
+        reason: item.reason,
+        createdAt: item.createdAt,
+      });
+    }
+  } catch {
+    // 干预时间线不可用时不阻塞主界面。
+  }
+}
+
+function ensureCommandFeedMount() {
+  if ($('#commandFeed')) return;
+  const mount = document.createElement('section');
+  mount.id = 'commandFeed';
+  mount.className = 'command-feed';
+  mount.setAttribute('aria-labelledby', 'commandFeedTitle');
+  mount.innerHTML = `
+    <div class="section-heading command-feed__heading">
+      <div>
+        <p class="eyebrow">指令回执</p>
+        <h2 id="commandFeedTitle">教师指令送达</h2>
+      </div>
+      <button class="outline-button command-feed__controls" type="button" data-action="open-controls">打开遥控器</button>
+    </div>
+    <div class="command-feed__list" id="commandFeedList" role="list"></div>
+    <p class="command-feed__announcer visually-hidden" id="commandReceiptAnnouncer" aria-live="polite" aria-atomic="true"></p>`;
+  $('#statusStrip')?.insertAdjacentElement('afterend', mount);
+}
+
+function renderCommandFeed() {
+  ensureCommandFeedMount();
+  const list = $('#commandFeedList');
+  if (!list) return;
+  const commands = Object.values(state.commandLedger)
+    .sort((a, b) => Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0))
+    .slice(0, 8);
+  if (!commands.length) {
+    list.innerHTML = '<div class="command-feed__empty">还没有发出指令。发送后这里会显示已下发、已送达与已确认状态。</div>';
+    return;
+  }
+  list.innerHTML = commands.map((command) => {
+    const summary = summarizeReceipts(command);
+    const highImpact = HIGH_IMPACT.has(command.action);
+    const label = ACTION_LABELS[command.action] || command.action;
+    return `<button class="command-card ${highImpact ? 'is-high-impact' : ''}" type="button" role="listitem" data-action="open-command" data-command-id="${escapeHtml(command.id)}" data-receipt-tone="${summary.tone}">
+      <div class="command-card__top">
+        <div>
+          ${highImpact ? '<span class="command-impact-tag">高影响</span>' : ''}
+          <strong>${escapeHtml(label)}</strong>
+          <span class="command-card__meta">${escapeHtml(targetScopeLabel(command.target))} · ${relativeTime(command.createdAt)}</span>
+        </div>
+        <span class="receipt-badge receipt-badge--${summary.tone}" aria-hidden="true">${summary.parts.map((part) => part.text).join(' · ') || '状态未知'}</span>
+      </div>
+      <p class="command-card__summary">${escapeHtml(summary.text)}</p>
+    </button>`;
+  }).join('');
+  const latest = commands[0];
+  const latestSummary = summarizeReceipts(latest);
+  const announcement = `${ACTION_LABELS[latest.action] || latest.action} ${latestSummary.text}`;
+  if (announcement !== state.lastReceiptAnnouncement) {
+    state.lastReceiptAnnouncement = announcement;
+    const announcer = $('#commandReceiptAnnouncer');
+    if (announcer) announcer.textContent = announcement;
+  }
+}
+
+function renderCommandDrawer(commandId) {
+  const command = state.commandLedger[commandId];
+  if (!command) return;
+  const summary = summarizeReceipts(command);
+  const label = ACTION_LABELS[command.action] || command.action;
+  const highImpact = HIGH_IMPACT.has(command.action);
+  const participants = state.snapshot?.participants || [];
+  const rows = Object.entries(command.receipts || {}).map(([participantId, status]) => {
+    const participant = participants.find((item) => item.id === participantId);
+    const statusLabel = {
+      accepted: '已下发',
+      delivered: '已送达',
+      confirmed: '已确认',
+      failed: '失败',
+    }[status] || status;
+    return `<div class="receipt-row"><strong>${escapeHtml(participant?.name || participantId)}</strong><span class="receipt-badge receipt-badge--${status}">${statusLabel}</span></div>`;
+  }).join('');
+  openDrawer({
+    eyebrow: highImpact ? '高影响指令' : '指令详情',
+    title: label,
+    html: `
+      <div class="detail-block">
+        <p>${escapeHtml(command.reason || '未记录操作原因')}</p>
+        <div class="metric-grid">
+          <div class="metric"><span>作用范围</span><strong>${escapeHtml(targetScopeLabel(command.target))}</strong></div>
+          <div class="metric"><span>发送时间</span><strong>${relativeTime(command.createdAt)}</strong></div>
+        </div>
+        <p class="command-detail-summary receipt-badge receipt-badge--${summary.tone}">${escapeHtml(summary.text)}</p>
+      </div>
+      <div class="detail-block"><h3>回执明细</h3><div class="receipt-list">${rows || '<p class="command-feed__empty">还没有学生端回执；服务端已接单时会显示为已下发。</p>'}</div></div>`,
+  });
 }
 
 async function request(path, options = {}) {
@@ -97,6 +323,9 @@ async function bootstrap() {
       state.runs = [demo];
     }
     state.runId = state.runs.find((run) => run.status === 'active')?.id || state.runs[0].id;
+    state.commandLedger = loadCommandLedger(state.runId);
+    state.eventSequence = 0;
+    await hydrateCommandLedgerFromReview();
     await refreshSnapshot();
     connectRealtime();
     state.pollTimer = window.setInterval(refreshSnapshot, 5000);
@@ -111,6 +340,7 @@ async function refreshSnapshot() {
   try {
     state.snapshot = await request(`/teacher/runs/${encodeURIComponent(state.runId)}/snapshot`);
     state.runs = await request('/teacher/runs');
+    await syncCommandEvents();
     renderAll();
     if (REALTIME_MODE === 'polling') setConnection(true);
     localStorage.setItem(`teacher-snapshot:${state.runId}`, JSON.stringify(state.snapshot));
@@ -147,9 +377,11 @@ function connectRealtime() {
 }
 
 function setConnection(connected) {
-  $('#offlineBanner').hidden = connected && navigator.onLine;
-  $('#syncButton').classList.toggle('is-stale', !connected);
-  $('#syncLabel').textContent = connected ? '刚刚同步' : '数据可能过期';
+  state.connected = connected && navigator.onLine;
+  $('#offlineBanner').hidden = state.connected;
+  $('#syncButton').classList.toggle('is-stale', !state.connected);
+  $('#syncLabel').textContent = state.connected ? '刚刚同步' : '数据可能过期';
+  renderCommandFeed();
 }
 
 function renderAll() {
@@ -157,6 +389,7 @@ function renderAll() {
   renderRuns();
   renderLive();
   renderAlerts();
+  renderCommandFeed();
 }
 
 function renderRuns() {
@@ -356,9 +589,11 @@ async function confirmCommand() {
         idempotencyKey: crypto.randomUUID(),
       }),
     });
-    const delivered = result.receipts.filter((receipt) => receipt.status === 'delivered').length;
-    showToast(`服务端已接受 · ${delivered}/${result.receipts.length}人已送达`);
+    upsertCommandFromSendResult(result);
+    const summary = summarizeReceipts(state.commandLedger[result.id]);
+    showToast(`服务端已接单 · ${summary.text}`);
     closeLayer();
+    renderCommandFeed();
     await refreshSnapshot();
   } catch (error) {
     showToast(error.status === 409 ? '场次已更新，请确认最新状态后重试。' : error.message);
@@ -388,7 +623,11 @@ async function loadReview() {
     $('#reviewContent').innerHTML = `
       <section class="review-hero"><p class="eyebrow">${escapeHtml(run.className)}</p><h2>${escapeHtml(run.courseTitle)}</h2><p>位置与用时只用于运行复盘，不自动转换为学习评价。</p><div class="review-stats"><div class="review-stat"><span>平均进度</span><strong>${summary.averageProgress}%</strong></div><div class="review-stat"><span>教师干预</span><strong>${state.review.interventions.length}</strong></div><div class="review-stat"><span>学习小组</span><strong>${groups.length}</strong></div></div></section>
       <section class="review-section"><h2>小组完成情况</h2><div class="group-list">${groups.map((group, index) => `<button class="group-card" type="button" data-action="open-group" data-group-id="${group.id}"><span class="group-index">${index + 1}</span><span class="group-copy"><strong>${escapeHtml(group.name)}</strong><p>${group.members.reduce((sum, item) => sum + item.learning.evidenceCount, 0)}项证据</p></span><span class="group-meta"><strong>${group.progress}%</strong><span>已完成</span></span></button>`).join('')}</div></section>
-      <section class="review-section"><h2>干预时间线</h2><div class="timeline">${state.review.interventions.slice().reverse().map((item) => `<div class="timeline-item"><strong>${escapeHtml(ACTION_LABELS[item.action] || item.action)}</strong><p>${escapeHtml(item.reason)} · ${relativeTime(item.createdAt)}</p></div>`).join('') || '<p>本场次还没有教师干预记录。</p>'}</div></section>`;
+      <section class="review-section"><h2>干预时间线</h2><div class="timeline">${state.review.interventions.slice().reverse().map((item) => {
+        const command = state.commandLedger[item.commandId];
+        const summary = command ? summarizeReceipts(command) : null;
+        return `<div class="timeline-item"><strong>${escapeHtml(ACTION_LABELS[item.action] || item.action)}</strong><p>${escapeHtml(item.reason)} · ${relativeTime(item.createdAt)}${summary ? ` · ${escapeHtml(summary.text)}` : ''}</p></div>`;
+      }).join('') || '<p>本场次还没有教师干预记录。</p>'}</div></section>`;
   } catch (error) { showToast(error.message); }
 }
 
@@ -443,8 +682,16 @@ document.addEventListener('click', async (event) => {
     showToast('设备状态已重新检测。'); await refreshSnapshot(); return renderPreflight(target.dataset.runId);
   }
   if (action === 'switch-run') {
-    state.runId = target.dataset.runId; closeLayer(); await refreshSnapshot(); connectRealtime(); return showView('live');
+    state.runId = target.dataset.runId;
+    state.commandLedger = loadCommandLedger(state.runId);
+    state.eventSequence = 0;
+    closeLayer();
+    await hydrateCommandLedgerFromReview();
+    await refreshSnapshot();
+    connectRealtime();
+    return showView('live');
   }
+  if (action === 'open-command') return renderCommandDrawer(target.dataset.commandId);
   if (action === 'prepare-rally') return prepareCommand({ action: 'emergency_rally', target: { scope: 'all' }, payload: { rallyPoint: '太和门广场', message: '请立即停止任务，前往太和门广场集合。' } });
   if (action === 'prepare-command') return prepareCommand({ action: target.dataset.command, target: JSON.parse(target.dataset.target), payload: JSON.parse(target.dataset.payload || '{}') });
   if (action === 'confirm-command') return confirmCommand();
