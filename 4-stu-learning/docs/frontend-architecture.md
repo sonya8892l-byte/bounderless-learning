@@ -17,8 +17,8 @@
   → engine/lesson-parser.js
        └─ engine/tool-registry.js 解析 A01–A07 与单行 JSON 参数
   → server/course/compiler.js
-       ├─ publicLesson / publicConfig：学生可见
-       └─ validation / private course：仅服务端可见
+       ├─ lesson（全量 IR）+ taskGraph：仅服务端
+       └─ projections.js: toPublic() / publicConfig：学生可见
   → server/agent/service.js
        ├─ 回合理解、RAG、Prompt、LLM 与流式输出
        ├─ 工具权限、结果校验和 FSM
@@ -52,7 +52,7 @@
 `src/engine/lesson-parser.js` 将 Markdown 转换为统一课程对象：
 
 - `course.md`：标题、核心问题、角色体系、主题和课程级素材；
-- `phases.md`：课程阶段、时长、模式、地点和触发条件；
+- `phases.md`：课程阶段、时长、模式、地点和触发条件；另含**阶段任务**（非角色任务，`### 阶段任务N`）——解析成可执行单元并进任务图，但运行时未接，学生端不渲染；
 - `roles/*.md`：N 个角色、角色阶段、结构化 Step、位置和课程活动工具；
 - `time-bank.md`：CM01 启用状态、规则、计量单位和任务池；
 - B1–B6 文件：知识、引导、限制、阶段提示、评估和脚手架；
@@ -60,10 +60,14 @@
 
 `server/course/compiler.js` 在同一解析结果上生成双视图：
 
-- `publicLesson` 与工具 `publicConfig` 供学生端渲染；
-- 完整课程、工具 `validation`、正确答案、映射、期望识别结果、评估规则和限制只留在服务端。
+- `toPublic(lesson, restrictionMarkdown)` 的产物与工具 `publicConfig` 供学生端渲染；
+- 完整课程（`course.lesson`）、工具 `validation`、正确答案、映射、期望识别结果、评估规则和限制只留在服务端。
 
-所有学生端字段必须经过公开过滤。新增工具私有字段时，应同步更新编译器过滤、服务端校验和防泄露测试。
+裁剪清单只有一份：`server/course/projections.js`。构建脚本与服务端都调用它，`tests/projections.test.js` 有一条 deepEqual 钉住"构建期产物 == 运行期投影"，防止"双清单"回归。
+
+所有学生端字段必须经过公开过滤。新增工具私有字段时，应同步更新 `projections.js` 的裁剪清单、服务端校验和防泄露测试。
+
+⚠️ **容易漏的一处**：`toPublic` 需要显式遍历每个带任务的集合。`phases` 是整份下发浏览器的，此前 `toPublic` 完全不碰它——阶段任务带上就地验收标准与能力标签后，不裁就直接进公开包（P3 修复）。新增任何"带 tasks 的顶层结构"时，记得走同一把 `sanitizeTaskTools`。
 
 ### 3.3 中央工具注册表
 
@@ -147,7 +151,7 @@ learningView: {
 
 平台默认开启双视图，所有未配置课程默认进入对话模式并允许学生切换；课程可在 `course.md / ## 学习视图` 中显式关闭或覆盖。`learningView` 只描述前端呈现方式，与 URL 中的 `mode=connected/standalone`、任务区的 `activeTab=task/team` 分开管理。Gate 开启时，“我的任务”右下角显示平台级絮絮悬浮按钮：对话页显示“切换为闯关模式”，闯关页显示“切换为智能 AI 模式”；进入“小组”页时隐藏。切换学习视图不能创建会话、调用 Agent、推进 Step 或插入对话消息。
 
-絮絮的名称和媒体路径统一来自 `src/engine/platform-config.js / PLATFORM_COMPANION`，四个键锁定，课程覆盖不生效。性格、语气、口头禅和本课侧重的缺省值在 `_platform/companion.md`，课程可在 `course.md / ## 人设侧重` 里调整——这条通路只影响服务端 System Prompt，编译后的公开课程对象仍不包含 `persona`、`companionIdle` 或 `companionTalk`。学生端消息头像、思考状态和学习视图悬浮入口共用 `companionAvatar()` 渲染组件；动画无法播放时统一显示平台静态头像。悬浮入口使用固定宽度与固定右下角锚点，切换文案和学习视图不会改变其位置。服务端 Agent 提示也直接读取同一份平台配置，保证更换课程时保持一致。
+絮絮的名称和媒体路径统一来自 `src/engine/platform-config.js / PLATFORM_COMPANION`，四个键锁定，课程覆盖不生效。性格、语气、口头禅和本课侧重的默认值在 `_platform/companion.md`，课程可在 `course.md / ## 人设侧重` 里调整——这条通路只影响服务端 System Prompt，编译后的公开课程对象仍不包含 `persona`、`companionIdle` 或 `companionTalk`。学生端消息头像、思考状态和学习视图悬浮入口共用 `companionAvatar()` 渲染组件；动画无法播放时统一显示平台静态头像。悬浮入口使用固定宽度与固定右下角锚点，切换文案和学习视图不会改变其位置。服务端 Agent 提示也直接读取同一份平台配置，保证更换课程时保持一致。
 
 对话模式和闯关模式共用 `renderTaskWorkspace(context)`。两种视图从同一份角色任务、`progress`、`guidanceStepIndices`、证据、工具值、`toolCallId` 和完成状态渲染，继续调用同一组完成小步与提交任务入口。任何时刻只能挂载当前视图的一套可交互工具节点；隐藏视图不得保留第二套答题、画板、录音或上传 DOM 实例。
 
@@ -259,3 +263,9 @@ learningView: {
 - P02 语音通道：A01 录音证据已使用浏览器录音能力；全局对话 TTS、唤醒词、静音策略和小程序原生 STT 仍需端能力接入；
 - CM01 拍照打卡和定位签到：相机上传、文字补充、设备 GPS、课程坐标和半径校验已接入；目标物图像语义与持续停留验证仍需加强；
 - 弱网恢复：需继续补齐工具草稿持久化、上传队列、断线重试和会话恢复测试。
+
+### 7.1 已定义但未接线的环境变量
+
+| 变量 | 定义位置 | 现状 |
+|---|---|---|
+| `AI_WEB_SEARCH_MODE` | `server/config/env.js:34-35`（`auto` / `enabled` / `disabled`） | **已定义未实现**：`server/services/llm.js` 硬编码 `webSearch: false`，配置项当前不影响任何请求。演示环境保留 schema 占位；生产接线前不要依赖它控制联网搜索。 |

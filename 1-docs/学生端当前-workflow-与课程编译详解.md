@@ -194,7 +194,9 @@ npm run build
 └── lesson_zhizhi_003/     编译
 ```
 
-因此，`_platform` 当前不会作为课程目录参与 `sync-lessons.mjs` 的公开编译。
+因此，`_platform` 当前不会作为课程目录参与 `sync-lessons.mjs` 的**公开**编译——这句话指的是浏览器可见的 `lesson-public.js` / `public/lessons` 链路，**不是** `_platform` 整体未接入。
+
+私有编译走 `server/course/platform-defaults.js` 与 `server/course/platform-rules.js`：六份默认层 md（`defaults` / `language-levels` / `companion` / `voice` / `scaffolding` / `tool-defaults`）在服务端编译期全部生效。覆盖优先级：**平台默认 → 课程 `course.md` 覆盖段 → 角色/任务字段**；只有公开投影（`toPublic()`）会排除 `_platform` 原文。
 
 ### 6.2 收集单门课程 Markdown
 
@@ -453,9 +455,9 @@ roles/dragon-counter.md
 }
 ```
 
-重要的缺省行为：
+重要的默认行为：
 
-| 缺少内容 | 当前缺省行为 |
+| 缺少内容 | 当前默认行为 |
 |---|---|
 | 大任务 `id` | `task-1`、`task-2` |
 | 建议时长 | 15 分钟 |
@@ -647,7 +649,7 @@ const getCourse = (courseId) => compileCourse({ lessonsRoot, courseId });
 - Step 完整工具配置；
 - 工具答案和私有判定字段。
 
-服务端内部变量名叫 `publicLesson`，但它位于完整私有 Course 对象中，不能理解为已经经过 `sync-lessons.mjs` 公开裁剪的浏览器产物。
+这个字段**曾经**叫 `publicLesson`，名叫"公开"却是全量结构——已于 A1 改名为 `course.lesson`，同时新增 `server/course/projections.js` 的 `toPublic()` 作为唯一裁剪入口（构建期与运行期共用）。读到旧名时按 `lesson` 理解。
 
 ### 8.4 解析知识卡
 
@@ -808,12 +810,17 @@ AI 小步验收时，会同时收到 Step 的 `evaluationRef` 标签和完整评
 ```js
 {
   id,
+  schemaVersion,
+  courseVersion,
+  contentVersion,
   platformRules: {
     version,
     documents,
     prompt
   },
-  publicLesson,
+  lesson,          // 全量 IR（含 phases[].tasks 阶段任务）；下发浏览器前须过 toPublic()
+  platformDefaults,
+  taskGraph,       // 角色任务节点 roleId/taskId ＋ 阶段任务节点 phaseId/taskId；仅装配不执行
   roles: [
     {
       ...role,
@@ -839,13 +846,17 @@ Agent、教师运行时和时间银行共用该对象。
 `compileCourse()` 使用进程内 `Map` 缓存：
 
 ```text
-cacheKey = absoluteLessonsRoot + courseId
-cacheValid = cached.platformRules.version === currentPlatformRules.version
+cacheKey  = absoluteLessonsRoot + courseId
+cacheValid = cached.platformRules.version    === currentPlatformRules.version
+          && cached.platformDefaults.version === currentPlatformDefaults.version
+          && cached.courseVersion            === courseVersionFor(files)   // 课程 md 内容 hash
 ```
 
-同一进程中第一次编译后，平台规则版本未变化时，后续回合直接复用 Course 对象。平台规则改变会自动使缓存失效；课程专属 Markdown 变化仍需要清除缓存或重启服务端。
+**缓存按内容失效**（A3）：课程 md、平台规则、平台默认三者任一变化就重编译，**改课程 md 不必再重启服务端**。读几十个 md 本身很便宜，贵的是解析与装配。
 
-开发环境中 `node --watch-path=server` 只监听 `server`，课程 Markdown 的变化不会自动清理该 Map。`predev` 会在启动前重新生成公开包，但已经运行的服务端进程通常仍需重启才能重新私有编译课程。
+`contentVersion` 是课程内容 ＋ 平台包的联合指纹，会话记录下它就能追溯"当时那一版内容"。
+
+开发环境中 `node --watch-path=server` 只监听 `server`，因此改 `server/` 下的代码会重启进程；改课程 md 不重启，靠上面的内容 hash 自动失效。`predev` 在启动前重新生成浏览器公开包。
 
 ## 9. 一个 Step 从 Markdown 到运行时的字段流转
 
