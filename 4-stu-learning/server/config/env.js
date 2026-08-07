@@ -24,6 +24,11 @@ const schema = z.object({
   OPENAI_MODEL: z.string().min(1),
   // 语义理解用的轻量模型。不配置时复用 OPENAI_MODEL（行为不变，只是每回合多打一次主模型）。
   OPENAI_UNDERSTAND_MODEL: z.string().min(1).optional(),
+  // 轻量模型可以住在另一个服务商（如 DeepSeek 官方）。这三个不配就沿用主模型那套。
+  OPENAI_UNDERSTAND_BASE_URL: z.string().url().optional(),
+  // 允许留空：配置文件里留着占位的空行不该导致服务起不来，空值等于"沿用主模型的 key"。
+  OPENAI_UNDERSTAND_API_KEY: z.string().optional(),
+  OPENAI_UNDERSTAND_WIRE_API: z.enum(['responses', 'chat_completions']).optional(),
   OPENAI_WIRE_API: z.enum(['responses', 'chat_completions']).default('responses'),
   AI_TOOL_MODE: z.enum(['auto', 'native', 'structured']).default('auto'),
   // 当前未实现：services/llm.js 硬编码 webSearch: false；接线前配置它没有效果。
@@ -92,6 +97,13 @@ export function loadEnv({
   }
   if (values.AI_UNDERSTAND_TIMEOUT_MS >= values.AI_TURN_TIMEOUT_MS) {
     throw new Error('AI_UNDERSTAND_TIMEOUT_MS 必须小于 AI_TURN_TIMEOUT_MS：语义理解只是回合的第一段。');
+  }
+  // 轻量模型指到了别的服务商却没给对应的 key，等于拿甲家的钥匙敲乙家的门：
+  // 每个回合的第一段都会 401，而降级链会把它咽下去，只在日志里留痕。启动时就说清楚。
+  if (values.OPENAI_UNDERSTAND_BASE_URL
+    && values.OPENAI_UNDERSTAND_BASE_URL !== values.OPENAI_BASE_URL
+    && !values.OPENAI_UNDERSTAND_API_KEY) {
+    throw new Error('配了 OPENAI_UNDERSTAND_BASE_URL 指向另一个服务商，就必须同时配 OPENAI_UNDERSTAND_API_KEY，否则语义理解会一直认证失败。');
   }
   return values;
 }

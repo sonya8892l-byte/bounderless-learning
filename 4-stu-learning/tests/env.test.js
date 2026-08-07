@@ -12,6 +12,9 @@ const REQUIRED = {
 const MANAGED = [
   ...Object.keys(REQUIRED),
   'OPENAI_UNDERSTAND_MODEL',
+  'OPENAI_UNDERSTAND_BASE_URL',
+  'OPENAI_UNDERSTAND_API_KEY',
+  'OPENAI_UNDERSTAND_WIRE_API',
   'AI_UNDERSTAND_TIMEOUT_MS',
   'AI_TIMEOUT_MS',
   'AI_TURN_TIMEOUT_MS',
@@ -60,4 +63,37 @@ test('理解预算不小于整轮预算时启动即失败', () => {
     }, () => loadEnv()),
     /AI_UNDERSTAND_TIMEOUT_MS/,
   );
+});
+
+test('轻量模型可以住在另一个服务商：地址与密钥各自独立', () => {
+  const env = withEnv({
+    OPENAI_UNDERSTAND_MODEL: 'deepseek-chat',
+    OPENAI_UNDERSTAND_BASE_URL: 'https://api.deepseek.invalid/v1',
+    OPENAI_UNDERSTAND_API_KEY: 'sk-understand-key',
+    OPENAI_UNDERSTAND_WIRE_API: 'chat_completions',
+  }, () => loadEnv());
+
+  assert.equal(env.OPENAI_UNDERSTAND_BASE_URL, 'https://api.deepseek.invalid/v1');
+  assert.equal(env.OPENAI_UNDERSTAND_API_KEY, 'sk-understand-key');
+  assert.equal(env.OPENAI_BASE_URL, 'https://example.invalid/v1', '主模型地址不受影响');
+  assert.equal(env.OPENAI_API_KEY, 'test-key', '主模型密钥不受影响');
+});
+
+test('指到别家服务商却没给密钥时启动即失败，不留到运行期 401', () => {
+  assert.throws(
+    () => withEnv({
+      OPENAI_UNDERSTAND_MODEL: 'deepseek-chat',
+      OPENAI_UNDERSTAND_BASE_URL: 'https://api.deepseek.invalid/v1',
+    }, () => loadEnv()),
+    /OPENAI_UNDERSTAND_API_KEY/,
+  );
+});
+
+test('轻量模型与主模型同址时不要求独立密钥', () => {
+  const env = withEnv({
+    OPENAI_UNDERSTAND_MODEL: 'test-small-model',
+    OPENAI_UNDERSTAND_BASE_URL: 'https://example.invalid/v1',
+  }, () => loadEnv());
+
+  assert.equal(env.OPENAI_UNDERSTAND_API_KEY, undefined, '同一个网关沿用主模型密钥即可');
 });
