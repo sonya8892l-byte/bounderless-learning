@@ -254,7 +254,7 @@ learningView:
 
 路径相对于课程目录。统一写成 `assets/...`，区分大小写。
 
-课程不配置絮絮的人设与媒体路径。运行时直接读取平台 `PLATFORM_COMPANION`，公开课程对象不会生成 `persona`，其 `assets` 也不会生成 `companionIdle` 或 `companionTalk`。当前目录中的 `assets/companion/*.webm` 仅为历史副本，不参与平台絮絮渲染。
+课程不配置絮絮的名称与媒体路径，这四个键由平台 `PLATFORM_COMPANION` 锁定；性格与语气的缺省值在 `_platform/companion.md`，课程需要时用 `course.md / ## 人设侧重` 调整语气侧面。公开课程对象不会生成 `persona`，其 `assets` 也不会生成 `companionIdle` 或 `companionTalk`。当前目录中的 `assets/companion/*.webm` 仅为历史副本，不参与平台絮絮渲染。
 
 ### 5.4 当前未读取字段
 

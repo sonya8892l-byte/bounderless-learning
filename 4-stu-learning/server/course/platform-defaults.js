@@ -1,14 +1,52 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { parsePlatformDefaultDocument } from '../../src/engine/platform-defaults.js';
+import { mergeDefaults, parsePlatformDefaultDocument } from '../../src/engine/platform-defaults.js';
+import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 
 // 平台缺省层文件清单。与三份底线规则不同，缺省层文件缺失不报错：运行时回落到 JS 里的
 // 现有常量，行为与建立缺省层之前完全一致（双轨期）。
 export const PLATFORM_DEFAULT_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'defaults', filename: 'defaults.md', title: '数值缺省' }),
   Object.freeze({ id: 'languageLevels', filename: 'language-levels.md', title: '学段表达规范' }),
+  Object.freeze({ id: 'companion', filename: 'companion.md', title: '絮絮人设' }),
 ]);
+
+// _platform/companion.md 缺失时的回落。素材路径不进 md：浏览器在构建期就要用到它们，
+// 读不到 md，因此始终以 platform-config.js 为准，并同样锁定不许课程覆盖。
+const COMPANION_FALLBACK_DOCUMENT = Object.freeze({
+  filename: 'companion.md',
+  declaration: Object.freeze({
+    overridable: true,
+    merge: 'by-key',
+    courseField: '人设侧重',
+    locked: Object.freeze(['name', 'posterAsset', 'idleAsset', 'talkAsset']),
+  }),
+  entries: Object.freeze({
+    name: PLATFORM_COMPANION.name,
+    character: PLATFORM_COMPANION.character,
+    tone: PLATFORM_COMPANION.tone,
+  }),
+  sections: Object.freeze({}),
+  markdown: '',
+});
+
+export function resolveCompanion(document, courseOverrides = {}, emphasis = '') {
+  const { entries, warnings } = mergeDefaults(document || COMPANION_FALLBACK_DOCUMENT, courseOverrides);
+  return {
+    companion: Object.freeze({
+      name: entries.name || PLATFORM_COMPANION.name,
+      character: entries.character || PLATFORM_COMPANION.character,
+      tone: entries.tone || PLATFORM_COMPANION.tone,
+      catchphrase: String(entries['口头禅'] || '').trim(),
+      emphasis: String(emphasis || '').trim(),
+      posterAsset: PLATFORM_COMPANION.posterAsset,
+      idleAsset: PLATFORM_COMPANION.idleAsset,
+      talkAsset: PLATFORM_COMPANION.talkAsset,
+    }),
+    warnings,
+  };
+}
 
 // _platform/language-levels.md 缺失时的回落值。双轨期内不要删除。
 export const LANGUAGE_LEVEL_DEFAULTS = Object.freeze({

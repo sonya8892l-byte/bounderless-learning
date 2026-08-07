@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseLesson } from '../../src/engine/lesson-parser.js';
 import { compilePlatformRules } from './platform-rules.js';
-import { loadPlatformDefaults, resolveLanguageLevels } from './platform-defaults.js';
+import { loadPlatformDefaults, resolveCompanion, resolveLanguageLevels } from './platform-defaults.js';
 import { courseOverrideSection } from '../../src/engine/platform-defaults.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
 
@@ -236,6 +236,15 @@ export async function compileCourse({ lessonsRoot, courseId }) {
       ]),
   );
 
+  // 人设侧重是课程私有配置：只在服务端 Prompt 里生效，不经过 parseLesson，因此不会进公开包。
+  const { 侧重: sectionEmphasis = '', ...companionOverrides } = courseOverrideSection(files['course.md'], '人设侧重');
+  const companion = resolveCompanion(
+    platformDefaults.documents.companion,
+    companionOverrides,
+    sectionEmphasis || courseOverrideSection(files['course.md'], '基本信息')['人设侧重'] || '',
+  );
+  defaultWarnings.push(...companion.warnings);
+
   const restrictionMarkdown = files['restrictions.md'] || '';
   const course = {
     id: courseId,
@@ -248,6 +257,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
         platformDefaults.documents.languageLevels,
         courseOverrideSection(files['course.md'], '学段规范'),
       ),
+      companion: companion.companion,
     },
     publicLesson,
     roles,

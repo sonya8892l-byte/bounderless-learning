@@ -147,7 +147,7 @@ learningView: {
 
 平台默认开启双视图，所有未配置课程默认进入对话模式并允许学生切换；课程可在 `course.md / ## 学习视图` 中显式关闭或覆盖。`learningView` 只描述前端呈现方式，与 URL 中的 `mode=connected/standalone`、任务区的 `activeTab=task/team` 分开管理。Gate 开启时，“我的任务”右下角显示平台级絮絮悬浮按钮：对话页显示“切换为闯关模式”，闯关页显示“切换为智能 AI 模式”；进入“小组”页时隐藏。切换学习视图不能创建会话、调用 Agent、推进 Step 或插入对话消息。
 
-絮絮的名称、人设和媒体路径统一来自 `src/engine/platform-config.js / PLATFORM_COMPANION`。课程 Markdown 不提供这些字段，编译后的公开课程对象也不包含 `persona`、`companionIdle` 或 `companionTalk`。学生端消息头像、思考状态和学习视图悬浮入口共用 `companionAvatar()` 渲染组件；动画无法播放时统一显示平台静态头像。悬浮入口使用固定宽度与固定右下角锚点，切换文案和学习视图不会改变其位置。服务端 Agent 提示也直接读取同一份平台配置，保证更换课程时保持一致。
+絮絮的名称和媒体路径统一来自 `src/engine/platform-config.js / PLATFORM_COMPANION`，四个键锁定，课程覆盖不生效。性格、语气、口头禅和本课侧重的缺省值在 `_platform/companion.md`，课程可在 `course.md / ## 人设侧重` 里调整——这条通路只影响服务端 System Prompt，编译后的公开课程对象仍不包含 `persona`、`companionIdle` 或 `companionTalk`。学生端消息头像、思考状态和学习视图悬浮入口共用 `companionAvatar()` 渲染组件；动画无法播放时统一显示平台静态头像。悬浮入口使用固定宽度与固定右下角锚点，切换文案和学习视图不会改变其位置。服务端 Agent 提示也直接读取同一份平台配置，保证更换课程时保持一致。
 
 对话模式和闯关模式共用 `renderTaskWorkspace(context)`。两种视图从同一份角色任务、`progress`、`guidanceStepIndices`、证据、工具值、`toolCallId` 和完成状态渲染，继续调用同一组完成小步与提交任务入口。任何时刻只能挂载当前视图的一套可交互工具节点；隐藏视图不得保留第二套答题、画板、录音或上传 DOM 实例。
 

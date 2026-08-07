@@ -32,10 +32,11 @@ async function withTempCourse(files, run) {
 }
 
 // 这些键一旦出现在浏览器包里就是泄漏：引导会暴露教学策略，脚手架含逐档答案，
-// 验收标准是评分细则，能力标签是评价预留数据。
+// 验收标准是评分细则，能力标签是评价预留数据，人设侧重是课程私有的 Prompt 配置。
 const PRIVATE_KEYS = Object.freeze([
   'inlineGuidance', 'inlineScaffold', 'inlineAcceptance', 'competencyTags',
   'guidance', 'scaffold', 'acceptance', 'guide', 'keyData',
+  'companion', 'personaEmphasis', 'platformDefaults',
 ]);
 
 function collectKeys(value, found = new Set()) {
