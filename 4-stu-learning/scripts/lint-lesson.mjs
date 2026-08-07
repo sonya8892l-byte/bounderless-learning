@@ -512,13 +512,24 @@ export function lintCourse(course, options = {}) {
     }
   }
 
+  // 运行时**只**执行 sequential：`traversalMode` 在 server/ 下零消费者，
+  // 推进仍是 task-advance.js 的 `currentTaskIndex += 1`。所以除 sequential
+  // 以外的每个值都要告警——写了它的课程会按线性跑，而作者以为不是。
+  //
+  // 早先只警告 inquiry、放过 open，是因为当时计划本轮落地 open；那件事已取消，
+  // 放过它就变成了静默陷阱：课程作者写下 open，lint 全绿，学生端照线性走。
   const traversalMode = String(course?.lesson?.traversalMode || 'sequential').toLowerCase();
-  if (traversalMode === 'inquiry') {
+  const UNSUPPORTED_TRAVERSAL_MODES = {
+    open: '学生在已解锁任务间自选',
+    inquiry: '由 methodology.md 驱动、无任务顺序',
+  };
+  if (UNSUPPORTED_TRAVERSAL_MODES[traversalMode]) {
     stats.unsupportedTraversalModes += 1;
     pushIssue({
       level: 'warning',
       code: 'unsupported_traversal_mode',
-      message: '遍历模式 inquiry 本期未实现，运行时将按 sequential 处理',
+      message: `遍历模式 ${traversalMode}（${UNSUPPORTED_TRAVERSAL_MODES[traversalMode]}）本期未实现，`
+        + '运行时将按 sequential 处理；字段可以先写占位，但不要依赖它改变推进顺序',
       file: `6-lessons/${courseId}/course.md`,
       line: 1,
       field: '遍历模式',
