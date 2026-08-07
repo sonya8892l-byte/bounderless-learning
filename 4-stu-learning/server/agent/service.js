@@ -7,6 +7,15 @@ import { renderVoice } from '../course/voice.js';
 import { resolveStepRestrictions } from '../course/restriction-sections.js';
 import { evaluateNudge, recordNudge } from './nudge-policy.js';
 import {
+  advanceToNextTask,
+  advanceWaitModeOf,
+  currentTaskOf,
+  currentToolOf,
+  markPendingAdvance,
+  pendingAdvanceOf,
+  resolvePendingAdvance,
+} from './task-advance.js';
+import {
   clearMisunderstandings,
   clearPendingQuestion,
   confirmDialogueSlot,
@@ -35,6 +44,7 @@ import {
   toolsForDecision,
 } from './turn-router.js';
 import { createUnderstanding } from './understanding.js';
+import { phaseNumber } from '../services/session-factory.js';
 import { decideTutorAction } from './tutor-policy.js';
 import {
   applyGradeResponsePolicy,
@@ -80,8 +90,8 @@ function sourceMeta(knowledge, input, decision) {
 }
 
 function toolFallbackInstructions(instructions, role, session, tools) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  const instance = role.tools.find((tool) => tool.taskIndex === session.currentTaskIndex);
+  const task = currentTaskOf(role, session);
+  const instance = currentToolOf(role, session);
   const names = tools.map((tool) => tool.name).join('|');
   return `${instructions}\n\n[结构化兼容模式]\n原生工具调用不可用。只输出 JSON：{"message":"给学生的话","tool":null或{"name":"${names}","arguments":{}}}。当前 taskId=${task.id}，当前 toolInstanceId=${instance?.id || ''}。`;
 }
@@ -407,6 +417,7 @@ function navigationToolCall(task) {
 
 function updateDialogueLifecycleForDecision(session, decision) {
   if (decision.intent === 'safety_help') return setDialogueLifecycle(session, 'SAFETY_ESCALATION');
+  if (decision.intent === 'scaffold_exhausted') return setDialogueLifecycle(session, 'SAFETY_ESCALATION');
   if (decision.intent === 'emotion') return setDialogueLifecycle(session, 'EMOTIONAL_SUPPORT');
   if (decision.intent === 'conversation_repair') return;
   if (session.dialogueState?.pendingQuestion) return;
@@ -436,8 +447,8 @@ function askNextOnboarding({ session, task, role, voice = null }) {
 }
 
 function workflowResult({ decision, role, session, course, input }) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  const tool = role.tools.find((item) => item.taskIndex === session.currentTaskIndex);
+  const task = currentTaskOf(role, session);
+  const tool = currentToolOf(role, session);
   const voice = course?.platformDefaults?.voice;
   const say = (key, params = {}) => renderVoice(voice, key, params);
   const locationName = task.location?.name || role.location;
@@ -621,6 +632,19 @@ function workflowResult({ decision, role, session, course, input }) {
       quickReplies: [],
     };
   }
+  // 脚手架到顶仍连续求助：转请老师。不撤走提示，也不再复读 L4。
+  if (decision.intent === 'scaffold_exhausted') {
+    return {
+      text: say('scaffold_exhausted.转老师', { taskName: task.name }),
+      toolCalls: [{
+        id: `call_${crypto.randomUUID()}`,
+        name: 'call_teacher',
+        arguments: { reason: `学生在“${task.name}”连续求助且脚手架已到最高档` },
+      }],
+      dialogueMove: 'escalate_to_teacher',
+      quickReplies: [],
+    };
+  }
   if (decision.intent === 'task_progress') {
     // "是否在声称完成"由语义理解判定（decision.claimsDone）；
     // 正则只作为非语言输入与语义理解不可用时的兜底。
@@ -673,7 +697,7 @@ function workflowResult({ decision, role, session, course, input }) {
       const evaluation = input.data.aiEvaluation;
       return {
         text: [
-          evaluation.feedback || say('task_step_completed.补充缺省语'),
+          evaluation.feedback || say('task_step_completed.补充默认语'),
           evaluation.missing?.length ? say('task_step_completed.还需要', { items: evaluation.missing.join('、') }) : '',
           evaluation.teacherRecommended ? say('task_step_completed.可呼叫老师') : '',
         ].filter(Boolean).join(' '),
@@ -732,7 +756,7 @@ function workflowResult({ decision, role, session, course, input }) {
 }
 
 function degradedReply(decision, role, session, course) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+  const task = currentTaskOf(role, session);
   const voice = course?.platformDefaults?.voice;
   if (decision.intent === 'emotion') return renderVoice(voice, 'degraded.情绪');
   if (['task_help', 'task_followup', 'course_knowledge', 'tool_result'].includes(decision.intent)) {
@@ -743,7 +767,7 @@ function degradedReply(decision, role, session, course) {
 }
 
 function immediatePrelude(decision, role, session, course) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+  const task = currentTaskOf(role, session);
   const voice = course?.platformDefaults?.voice;
   if (['task_help', 'task_followup'].includes(decision.intent)) {
     return renderVoice(voice, 'prelude.求助', {
@@ -754,6 +778,8 @@ function immediatePrelude(decision, role, session, course) {
   if (decision.intent === 'tool_result') return renderVoice(voice, 'prelude.收到提交');
   if (decision.intent === 'course_knowledge') return renderVoice(voice, 'prelude.核对材料');
   if (decision.intent === 'social') return renderVoice(voice, 'prelude.寒暄');
+  // 澄清回合也要先接住一句：读不懂学生时最不该做的就是沉默几秒再问一句。
+  if (decision.intent === 'clarify_intent') return renderVoice(voice, 'prelude.澄清');
   return '';
 }
 
@@ -770,7 +796,7 @@ function knowledgeExcerptReply(knowledge, course) {
 }
 
 function toolNarration(call, role, session, course) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+  const task = currentTaskOf(role, session);
   const voice = course?.platformDefaults?.voice;
   if (call?.name === 'show_navigation') {
     return renderVoice(voice, 'tool.show_navigation', { location: task.location?.name || role.location });
@@ -811,11 +837,24 @@ function guardedDeltaEmitter({ course, session, emit }) {
 }
 
 function appendStateDrivenTools(result, { input, role, session }) {
-  if (input.type !== 'tool_result' || input.result?.status !== 'completed') return result;
-  if (input.data?.resolvedTool !== 'open_task_tool' || !input.data?.completedTaskId || input.data?.allTasksCompleted) return result;
+  // 进度刚刚往前走了一格的两条路：
+  // ① 提交工具结果后自动推进（`auto_after_validation`，85 个任务的主路径）；
+  // ② 教师／学生解除等待后推进——它是 lifecycle_event，不是 tool_result。
+  //    漏掉②的话老师按了确认，进度确实 +1，但**新任务的工具卡永远不开**，
+  //    学生停在一张已完成的旧卡上，卡死只是换了个位置。
+  const autoAdvanced = input.type === 'tool_result'
+    && input.result?.status === 'completed'
+    && input.data?.resolvedTool === 'open_task_tool'
+    && Boolean(input.data?.completedTaskId);
+  const resolvedAdvance = input.type === 'lifecycle_event' && Boolean(input.data?.advancedBy);
+  if (!autoAdvanced && !resolvedAdvance) return result;
+  if (input.data?.allTasksCompleted) return result;
   if (result.toolCalls?.length) return result;
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  const tool = role.tools.find((item) => item.taskIndex === session.currentTaskIndex);
+  // 等教师／学生推进时 currentTaskIndex 还没动，这里再自动开卡会把**刚做完的那个任务**
+  // 重新打开一遍。等待期间什么都不开——推进发生后的那一回合才开新卡。
+  if (pendingAdvanceOf(session)) return result;
+  const task = currentTaskOf(role, session);
+  const tool = currentToolOf(role, session);
   const arrived = task.location?.mode === 'none' || session.locationState?.status === 'arrived';
   if (arrived) {
     return {
@@ -836,6 +875,60 @@ function appendStateDrivenTools(result, { input, role, session }) {
     ],
     toolCalls: [navigationToolCall(task)],
   };
+}
+
+/**
+ * 教师指令落到会话状态。
+ *
+ * 为什么走这条路：教师运行时（server/runtime/）只持有场次记录，碰不到 agent 会话存储，
+ * 而真正驱动学生体验的是会话上的 phaseId 与 scaffoldLevel。学生端轮询到指令后回发一个
+ * lifecycle_event，由这里改会话——`approve_evidence` 早就是这么生效的，不新增机制。
+ *
+ * 教师是现场的权威，所以这里不做教学判断，只做合法性校验。
+ */
+function applyTeacherDirective({ session, course, data }) {
+  const applied = [];
+
+  // 阶段是课程编排里的既有阶段才认。写错一个不存在的 phaseId 会让「阶段规则」段整段变空，
+  // 而降级是静默的——宁可不改，也不要让课程作者写的阶段约束凭空消失。
+  if (data.phaseId) {
+    const phaseId = String(data.phaseId);
+    if (course.lesson.phases.some((phase) => phase.id === phaseId)) {
+      session.phaseId = phaseId;
+      session.phaseNumber = phaseNumber(phaseId);
+      applied.push('phase');
+    }
+  }
+
+  // 教师调档可升可降：tutorPolicy 的自动升档只升不降，老师看得到学生的真实状态，
+  // 有权把档位调回去。上限取平台默认层的 maxLevel，与 service 里自动升档同一个口径。
+  if (data.scaffoldLevel !== undefined && data.scaffoldLevel !== null) {
+    const level = Number(data.scaffoldLevel);
+    if (Number.isFinite(level)) {
+      const maxLevel = Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4);
+      session.scaffoldLevel = Math.max(0, Math.min(maxLevel, Math.trunc(level)));
+      applied.push('scaffold');
+    }
+  }
+
+  return applied;
+}
+
+/**
+ * 拒绝推进时的错误。
+ *
+ * 刻意区分四种原因而不是笼统报"推不了"：老师在现场按了按钮没反应，最需要知道的
+ * 就是"为什么"——是学生还没做完，还是他已经自己往前走了。
+ */
+function advanceRefusalError(actor, reason) {
+  const who = actor === 'teacher' ? '老师' : '学生';
+  const messages = {
+    NOT_WAITING: `当前任务没有在等${who}推进，进度未改变。`,
+    WRONG_ACTOR: `这个任务不是在等${who}推进，进度未改变。`,
+    TASK_CHANGED: '学生已经换到别的任务，这次推进没有生效。',
+    NOT_COMPLETED: '学生还没有完成当前任务，不能推进。',
+  };
+  return new AgentActionError(messages[reason] || '这次推进没有生效。', `ADVANCE_${reason}`);
 }
 
 function applyToolResult({ course, session, role, input }) {
@@ -866,7 +959,7 @@ function applyToolResult({ course, session, role, input }) {
       verification: session.locationState?.verifiedBy,
       dwellSeconds: session.locationState?.dwellSeconds || 0,
     };
-    const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+    const task = currentTaskOf(role, session);
     const stepIndex = Number(session.taskState?.guidanceStepIndex || 0);
     if (
       session.onboardingState?.completed
@@ -880,7 +973,7 @@ function applyToolResult({ course, session, role, input }) {
     return;
   }
   if (pending.name !== 'open_task_tool') return;
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+  const task = currentTaskOf(role, session);
   const steps = guidanceSteps(task);
   const completedSteps = Math.min(Number(session.taskState?.guidanceStepIndex || 0), steps.length);
   if (completedSteps < steps.length) {
@@ -944,23 +1037,21 @@ function finalizeToolResult({ session, role, input }) {
     completedTaskName: task.name,
     allTasksCompleted: session.currentTaskIndex >= role.tasks.length - 1,
   };
-  if (task.advanceMode === 'teacher') {
-    session.events.push(`${completedId}:waiting-teacher-advance`);
-    input.data.waitingForTeacher = true;
-  } else if (task.advanceMode === 'ai_suggest') {
-    session.events.push(`${completedId}:waiting-student-advance`);
-    input.data.waitingForStudent = true;
-  } else if (session.currentTaskIndex < role.tasks.length - 1) {
-    session.currentTaskIndex += 1;
-    const nextTask = role.tasks[session.currentTaskIndex];
-    input.data.continueAtSameLocation = Boolean(
-      completion.completedLocationStatus === 'arrived'
-      && completion.completedLocationName
-      && nextTask.location?.name === completion.completedLocationName,
-    );
-    input.data.previousVerification = completion.completedVerification;
-  } else {
-    session.events.push(`${role.id}:all-tasks-completed`);
+  // 等待态落到会话（`pendingAdvance`）而不是只写 input.data：input.data 是单次回合的
+  // 载荷，而教师指令要等下一次轮询才到。改造前这两个分支只写 input.data，于是
+  // `推进方式：teacher`／`ai_suggest` 的任务做完就永久卡住（见 task-advance.js 模块头）。
+  const waitMode = advanceWaitModeOf(task);
+  if (waitMode !== 'auto') {
+    markPendingAdvance(session, { task, completedId, mode: waitMode, completion });
+    session.events.push(`${completedId}:waiting-${waitMode}-advance`);
+    if (waitMode === 'teacher') input.data.waitingForTeacher = true;
+    else input.data.waitingForStudent = true;
+    return;
+  }
+  const advance = advanceToNextTask({ role, session, completion });
+  if (advance.advanced) {
+    input.data.continueAtSameLocation = advance.continueAtSameLocation;
+    input.data.previousVerification = advance.previousVerification;
   }
 }
 
@@ -972,7 +1063,7 @@ export function createAgentService({
   logger,
   // 语义理解用的轻量模型。未单独配置时复用主模型（同一网关，行为不变）。
   understandingLlm = llm,
-  // 语义理解的总预算（含一次重试）。缺省值由 understanding.js 持有。
+  // 语义理解的总预算（含一次重试）。默认值由 understanding.js 持有。
   understandingTimeoutMs,
 }) {
   const understanding = createUnderstanding({
@@ -1034,7 +1125,6 @@ export function createAgentService({
       pendingResolution,
       pendingValue: pendingResolution.value,
       entry: pendingResolution.entry,
-      needsKnowledge: result.intent === 'asking_knowledge',
       onboardingCompleted: Boolean(session.onboardingState?.completed),
       claimsDone: result.intent === 'claim_done',
     });
@@ -1078,7 +1168,7 @@ export function createAgentService({
     }
     const course = await getCourse(session.courseId);
     const role = roleFor(course, session);
-    let task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+    let task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
     if (['user_text', 'quick_reply'].includes(input.type)) markMeaningfulAction(session, Date.now(), 'user');
     if (input.type === 'lifecycle_event') {
@@ -1121,9 +1211,29 @@ export function createAgentService({
         recordLocationObservation(session, input.data || {});
         markMeaningfulAction(session, Date.now(), 'other');
       }
+      if (input.event === 'teacher_directive') {
+        applyTeacherDirective({ session, course, data: input.data || {} });
+      }
+      // 解除"等谁推进"。两个入口共用同一套校验（task-advance.js），只有 actor 不同：
+      // teacher_advance_task 走教师指令桥，student_advance_task 是学生点了「继续下一个」。
+      if (['teacher_advance_task', 'student_advance_task'].includes(input.event)) {
+        const actor = input.event === 'teacher_advance_task' ? 'teacher' : 'student';
+        const outcome = resolvePendingAdvance({
+          role, session, actor, taskId: String(input.data?.taskId || ''),
+        });
+        if (!outcome.ok) throw advanceRefusalError(actor, outcome.reason);
+        input.data = {
+          ...(input.data || {}),
+          advancedBy: actor,
+          continueAtSameLocation: outcome.result.continueAtSameLocation,
+          previousVerification: outcome.result.previousVerification,
+          allTasksCompleted: !outcome.result.advanced,
+        };
+        markMeaningfulAction(session, Date.now(), 'other');
+      }
     }
     applyToolResult({ course, session, role, input });
-    task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+    task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
     if (input.data?.continueAtSameLocation && task.location?.mode !== 'none') {
       recordArrival(session, input.data.previousVerification || 'manual');
@@ -1143,7 +1253,14 @@ export function createAgentService({
     const nudge = evaluateNudge({ session, task, input });
     const decision = await resolveDecision({ input, session, course, role, nudge, task, signal });
     throwIfAborted(signal);
-    if (['greeting', 'gratitude', 'goodbye', 'emotion', 'course_knowledge', 'safety_help', 'social'].includes(decision.intent)) {
+    // 这些回合都不推进流程，挂起待答问题以免下一轮复读它。
+    // clarify_intent 同样要挂起：没读懂这句话时让"是/否"继续挂着，
+    // 学生下一句一个"好"就会误确认到达。
+    if ([
+      'greeting', 'gratitude', 'goodbye', 'emotion', 'course_knowledge',
+      'safety_help', 'social', 'activity_logistics', 'scaffold_exhausted',
+      'clarify_intent',
+    ].includes(decision.intent)) {
       suspendPendingQuestion(session);
     }
     updateDialogueLifecycleForDecision(session, decision);
@@ -1159,7 +1276,10 @@ export function createAgentService({
         recordTutorAction(session, { intent: decision.understanding?.intent, action: decision.tutorAction });
       }
       recordIntent(session, decision.intent, decision.signal);
-      if (!['unclear_input', 'conversation_repair'].includes(decision.intent)) clearMisunderstandings(session);
+      // clarify_intent 与 unclear_input 同类：都是"这轮没读懂"，要累计而不是清零。
+      if (!['unclear_input', 'conversation_repair', 'clarify_intent'].includes(decision.intent)) {
+        clearMisunderstandings(session);
+      }
     }
     if (nudge.due) recordNudge(session);
 
@@ -1180,7 +1300,16 @@ export function createAgentService({
         ].filter(Boolean).join(' '),
       })
       : [];
-    const prompt = buildAgentPrompt({ course, session, role, knowledge, input, decision });
+    const prompt = buildAgentPrompt({
+      course,
+      session,
+      role,
+      knowledge,
+      input,
+      decision,
+      // 教师称呼在 run 上而不是 session 上；取不到时由投影回落到"带队老师"。
+      teacherName: session.teacherName || '',
+    });
     const tools = toolsForDecision(decision, TOOL_DEFINITIONS);
     let result = { text: '', toolCalls: [] };
     let streamed = false;
@@ -1279,7 +1408,7 @@ export function createAgentService({
     const taskIndexBeforeFinalize = session.currentTaskIndex;
     finalizeToolResult({ session, role, input });
     if (session.currentTaskIndex !== taskIndexBeforeFinalize) {
-      task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+      task = currentTaskOf(role, session);
       ensureSessionRuntime(session, task);
       if (input.data?.continueAtSameLocation && task.location?.mode !== 'none') {
         recordArrival(session, input.data.previousVerification || 'manual');
@@ -1378,6 +1507,11 @@ export function createAgentService({
         currentTaskIndex: session.currentTaskIndex,
         completedTaskIds: session.completedTaskIds,
         scaffoldLevel: session.scaffoldLevel,
+        // 等谁推进（`teacher`／`student`／null）。学生端据此决定显示「等老师推进」
+        // 还是「继续下一个」按钮——否则做完任务后界面看不出为什么停住了。
+        pendingAdvance: session.pendingAdvance
+          ? { mode: session.pendingAdvance.mode, taskId: session.pendingAdvance.taskId }
+          : null,
         intent: decision.intent,
         runtime: runtimeSnapshot(session),
         learningState: structuredClone(session.learningState),

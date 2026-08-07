@@ -4,16 +4,71 @@ import path from 'node:path';
 import { mergeDefaults, parsePlatformDefaultDocument } from '../../src/engine/platform-defaults.js';
 import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 
-// 平台缺省层文件清单。与三份底线规则不同，缺省层文件缺失不报错：运行时回落到 JS 里的
-// 现有常量，行为与建立缺省层之前完全一致（双轨期）。
+// 平台默认层文件清单。与三份底线规则不同，默认层文件缺失不报错：运行时回落到 JS 里的
+// 现有常量，行为与建立默认层之前完全一致（双轨期）。
 export const PLATFORM_DEFAULT_DEFINITIONS = Object.freeze([
-  Object.freeze({ id: 'defaults', filename: 'defaults.md', title: '数值缺省' }),
+  Object.freeze({ id: 'defaults', filename: 'defaults.md', title: '数值默认' }),
   Object.freeze({ id: 'languageLevels', filename: 'language-levels.md', title: '学段表达规范' }),
   Object.freeze({ id: 'companion', filename: 'companion.md', title: '絮絮人设' }),
   Object.freeze({ id: 'voice', filename: 'voice.md', title: '流程话术' }),
   Object.freeze({ id: 'scaffolding', filename: 'scaffolding.md', title: '脚手架等级' }),
-  Object.freeze({ id: 'toolDefaults', filename: 'tool-defaults.md', title: '工具显示名与缺省字段' }),
+  Object.freeze({ id: 'toolDefaults', filename: 'tool-defaults.md', title: '工具显示名与默认字段' }),
+  Object.freeze({ id: 'logistics', filename: 'logistics.md', title: '活动组织信息回答规则' }),
 ]);
+
+// _platform/logistics.md 的默认话术与硬约束。缺文件时回落到这里，行为与建文件前一致。
+export const LOGISTICS_DEFAULTS = Object.freeze({
+  rules: Object.freeze([
+    '课程包里没写的现场设施位置一律不许猜，只能说没有这个信息、问带队老师最快。',
+    '只说课程配置里有的时长，不报绝对时刻。',
+    '不替老师做安排，不承诺提前走、换组或跳过任务。',
+    '不评价活动安排本身。',
+  ]),
+  phrases: Object.freeze({
+    信息缺失: '我这里没有这个信息，问一下带队老师最快。',
+    设施位置: '这个我没有场馆平面图，问带队老师或者现场工作人员最快。',
+    时间安排: '这个阶段计划{duration}。具体几点结束要看现场进度，以带队老师的安排为准。',
+    需要老师定: '这个要带队老师决定，我没法替老师安排。你现在就可以去问问。',
+    找老师: '带队老师在带着大家走这条路线。如果一时找不到，先待在原地不要走开，我可以帮你呼叫老师。',
+    身体不适: '先停下来，别再继续任务。我现在帮你叫老师，你待在原地不要独自走开。',
+    走失: '先停在原地不要再移动，也不要自己找路。我现在帮你呼叫老师，把你现在能看到的标志物告诉我。',
+    拉回一句: '先回到手上这一小步——{stepLabel}。',
+  }),
+});
+
+const LOGISTICS_FALLBACK_DOCUMENT = Object.freeze({
+  filename: 'logistics.md',
+  declaration: Object.freeze({
+    overridable: true,
+    merge: 'by-key',
+    courseField: '组织信息',
+    locked: Object.freeze([]),
+  }),
+  entries: Object.freeze({ ...LOGISTICS_DEFAULTS.phrases }),
+  sections: Object.freeze({}),
+  markdown: '',
+});
+
+/**
+ * 组织信息回答规则。硬约束（不许猜设施位置等）取文档正文喂 Prompt；
+ * 默认话术按键合并，课程可用 `## 组织信息` 小节逐条覆盖。
+ */
+export function resolveLogistics(document, courseOverrides = {}) {
+  const { entries, warnings } = mergeDefaults(document || LOGISTICS_FALLBACK_DOCUMENT, courseOverrides);
+  const phrases = {};
+  for (const [key, value] of Object.entries(LOGISTICS_DEFAULTS.phrases)) {
+    phrases[key] = String(entries[key] || value).trim() || value;
+  }
+  const constraints = String(document?.sections?.['硬约束']?.body || '').trim();
+  return {
+    logistics: Object.freeze({
+      phrases: Object.freeze(phrases),
+      // 缺文件时用代码内的规则清单，保证 Prompt 里这段硬约束永远存在。
+      constraints: constraints || LOGISTICS_DEFAULTS.rules.map((line) => `- ${line}`).join('\n'),
+    }),
+    warnings,
+  };
+}
 
 export const SCAFFOLDING_DEFAULTS = Object.freeze({
   maxLevel: 4,
@@ -40,7 +95,7 @@ const SCAFFOLDING_FALLBACK_DOCUMENT = Object.freeze({
     ...SCAFFOLDING_DEFAULTS.levels,
     最高等级: String(SCAFFOLDING_DEFAULTS.maxLevel),
     升档触发: '同类求助第二次',
-    缺省提示: SCAFFOLDING_DEFAULTS.fallbackHint,
+    默认提示: SCAFFOLDING_DEFAULTS.fallbackHint,
   }),
   sections: Object.freeze({}),
   markdown: '',
@@ -54,7 +109,9 @@ export function resolveScaffolding(document, courseOverrides = {}) {
     scaffolding: Object.freeze({
       maxLevel,
       upgradeOnRepeatHelp: !/不升|关闭|false|否/.test(trigger),
-      fallbackHint: String(entries['缺省提示'] || SCAFFOLDING_DEFAULTS.fallbackHint).trim()
+      // 「默认提示」是现行键名，「缺省提示」是旧名。两个都读：键名改动不该让课程或
+      // _platform/scaffolding.md 里已写好的 L0 回落话术静默失效。
+      fallbackHint: String(entries['默认提示'] || entries['缺省提示'] || SCAFFOLDING_DEFAULTS.fallbackHint).trim()
         || SCAFFOLDING_DEFAULTS.fallbackHint,
       levels: Object.freeze({
         L0: entries.L0 || SCAFFOLDING_DEFAULTS.levels.L0,
@@ -178,7 +235,7 @@ export async function loadPlatformDefaults({ lessonsRoot, logger = console } = {
       if (error?.code !== 'ENOENT') throw error;
       documents[definition.id] = null;
       missing.push(definition.filename);
-      logger?.debug?.(`平台缺省层未提供 _platform/${definition.filename}，回落到代码内缺省值。`);
+      logger?.debug?.(`平台默认层未提供 _platform/${definition.filename}，回落到代码内默认值。`);
       continue;
     }
     documents[definition.id] = parsePlatformDefaultDocument(markdown, definition.filename);

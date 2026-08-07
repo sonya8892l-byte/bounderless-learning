@@ -2,7 +2,7 @@
 
 > 版本：**v2**（2026-08-07）｜依据 [目标架构 D4 覆盖白名单](../1-docs/目标架构讨论稿-两包md与课程渲染管线.md)
 
-平台包是所有课程共享的**缺省层**——可以理解为"一门缺省课程"：课程包没写的一切都有平台缺省，课程包写了的按白名单覆盖。它同时承载不可覆盖的三条底线规则。
+平台包是所有课程共享的**默认层**——可以理解为"一门默认课程"：课程包没写的一切都有平台默认，课程包写了的按白名单覆盖。它同时承载不可覆盖的三条底线规则。
 
 ## 文件清单
 
@@ -16,12 +16,12 @@
 | `voice.md` | 流程话术模板（入场/导航/到达/验收/求助/完成/修复），带占位符 | overridable | **已接入**（`service.js` + `dialogue-policy.js`；分支控制流仍在代码） |
 | `language-levels.md` | 学段表达规范（字数/硬上限/句式） | overridable | **已接入** |
 | `scaffolding.md` | L0–L4 语义定义 + 升档参数（本阶段只升不降） | overridable | **已接入** |
-| `tool-defaults.md` | 十种活动工具显示名 + 缺省字段 label | overridable | **已接入**（中文正则匹配器仍在 `tool-registry.js`） |
-| `defaults.md` | 时长/提醒/冷却/推进方式等数值缺省 | overridable | **已接入** |
+| `tool-defaults.md` | 十种活动工具显示名 + 默认字段 label | overridable | **已接入**（中文正则匹配器仍在 `tool-registry.js`） |
+| `defaults.md` | 时长/提醒/冷却/推进方式等数值默认 | overridable | **已接入** |
 
 前三份规则文件为必需。缺失或内容为空时服务端课程编译失败，避免线上静默跳过平台底线。
 
-**六份缺省层 md（`companion` / `voice` / `language-levels` / `scaffolding` / `tool-defaults` / `defaults`）删掉任意一份，行为与建立之前完全一致**——代码里的常量作为回落保留（如 `voice.js` 的 `VOICE_DEFAULTS`）。这是双轨期的安全网：任何一份 md 写坏或被误删，学生端不会开天窗。等线上跑稳再单独提一次删除 JS 常量的收尾提交。
+**六份默认层 md（`companion` / `voice` / `language-levels` / `scaffolding` / `tool-defaults` / `defaults`）删掉任意一份，行为与建立之前完全一致**——代码里的常量作为回落保留（如 `voice.js` 的 `VOICE_DEFAULTS`）。这是双轨期的安全网：任何一份 md 写坏或被误删，学生端不会开天窗。等线上跑稳再单独提一次删除 JS 常量的收尾提交。
 
 ## 覆盖白名单（D4）
 
@@ -33,14 +33,14 @@
 
 **可覆盖**（课程声明后真正生效）：
 
-| 课程侧写在哪 | 覆盖什么 | 平台缺省 |
+| 课程侧写在哪 | 覆盖什么 | 平台默认 |
 |---|---|---|
 | `course.md / ## 人设侧重` | `character`、`tone`、`口头禅`、`侧重` | `companion.md` |
 | `course.md / ## 话术覆盖` | 61 个话术模板，按 key 逐条 | `voice.md` |
 | `course.md / ## 学段规范` | 各学段字数、硬上限、句式 | `language-levels.md` |
 | `course.md / ## 脚手架` | L0–L4 语义与升档参数 | `scaffolding.md` |
-| `course.md / ## 工具缺省` | 十种工具显示名与缺省 label | `tool-defaults.md` |
-| `course.md / ## 数值缺省`、任务块字段 | 时长、提醒、冷却、推进方式 | `defaults.md` |
+| `course.md / ## 工具默认` | 十种工具显示名与默认 label | `tool-defaults.md` |
+| `course.md / ## 数值默认`、任务块字段 | 时长、提醒、冷却、推进方式 | `defaults.md` |
 
 判断标准：教研或内容团队可能想调的 → 进 md；纯工程参数（超时、重试、连接池）→ 留代码。
 
@@ -57,7 +57,7 @@
 > locked: name、posterAsset  # 可选：本文件内不许课程覆盖的键
 ```
 
-`immutable` 文件同样声明，值为 `overridable: false`。声明块必须写在第一个 `## 小节` 之前，`overridable` 与 `merge` 取值非法时课程编译直接报错，不会静默按缺省处理。
+`immutable` 文件同样声明，值为 `overridable: false`。声明块必须写在第一个 `## 小节` 之前，`overridable` 与 `merge` 取值非法时课程编译直接报错，不会静默按默认处理。
 
 正文格式：`## 小节` 下的 `- 键：值` 是可覆盖的键值；小节里的其余正文行作为该小节的模板文本（`voice.md` 这类用它）。课程覆盖被 `locked` 或 `overridable: false` 拦下时不会静默丢弃，会产出一条 warning 挂在编译结果的 `course.platformDefaults.warnings` 上。
 
@@ -66,7 +66,7 @@
 引擎按以下顺序拼装 System Prompt：
 
 1. `_platform` 底线规则 → 不可覆盖的前缀（最高优先级）
-2. 平台缺省层（人设/话术/学段/脚手架策略）← 课程按白名单覆盖
+2. 平台默认层（人设/话术/学段/脚手架策略）← 课程按白名单覆盖
 3. `lesson_xxx/course.md` → 人设侧重与课程元数据
 4. `lesson_xxx/prompts/phaseN.md` → 当前阶段提示词（阶段氛围与全班节奏）
 5. 当前任务单元的**就地引导与脚手架**（v2 起写在 `roles/<role>.md` 内）

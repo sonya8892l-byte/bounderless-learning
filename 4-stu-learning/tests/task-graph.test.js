@@ -30,7 +30,10 @@ test('跨角色重名的 task id 不会塌成一个节点', async () => {
   assert.equal(graph.warnings.filter((item) => item.code === 'duplicate_task').length, 0);
 });
 
-test('5 门课共 87 个任务节点、29 个终止节点，零告警', async () => {
+// 数字不变，口径收窄：图里现在还有阶段任务节点（非角色任务，见 tests/phase-tasks.test.js），
+// 所以这里数的是 scope==='role' 的节点，而不是 graph.nodes.size。
+// 87 这个数必须钉死——它是"阶段任务不污染角色任务"的那道保险。
+test('5 门课共 87 个角色任务节点、29 个终止节点，零告警', async () => {
   clearCourseCache();
   let nodes = 0;
   let terminals = 0;
@@ -39,7 +42,7 @@ test('5 门课共 87 个任务节点、29 个终止节点，零告警', async ()
   for (const courseId of COURSE_IDS) {
     const course = await compileCourse({ lessonsRoot, courseId });
     const graph = course.taskGraph;
-    nodes += graph.nodes.size;
+    nodes += [...graph.nodes.values()].filter((node) => node.scope === 'role').length;
     roles += course.roles.length;
     for (const role of course.roles) {
       const roleTerminals = [...graph.nodes.values()].filter((node) => node.roleId === role.id && node.terminal);

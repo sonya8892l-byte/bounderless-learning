@@ -49,21 +49,24 @@ export function sanitizeTool(tool) {
   return safe;
 }
 
+const PUBLIC_STEP_FIELDS = ['id', 'title', 'objective', 'studentAction', 'completionMode', 'evidenceRequirement', 'location', 'modules', 'next'];
+
 // Step 采用白名单重建：新增的私有字段（就地引导/脚手架/验收标准、能力标签）自动不下发。
+//
+// 只拷**存在**的键，不把白名单里缺的字段写成 `key: undefined`。
+// 作者没写 `#### Step N` 时解析器会合成一条占位小步（没有 title/modules/next），
+// 照搬白名单就会造出三个 undefined 键。它们 JSON 序列化时消失、在内存里却存在，
+// 于是"构建期产物 vs 运行期投影"的 deepEqual 会红——两边其实是同一份数据。
 export function sanitizeTaskTools(task) {
   task.tools = (task.tools || []).map(sanitizeTool);
-  task.steps = (task.steps || []).map((step) => ({
-    id: step.id,
-    title: step.title,
-    objective: step.objective,
-    studentAction: step.studentAction,
-    completionMode: step.completionMode,
-    evidenceRequirement: step.evidenceRequirement,
-    location: step.location,
-    modules: step.modules,
-    next: step.next,
-    tools: (step.tools || []).map(sanitizeTool),
-  }));
+  task.steps = (task.steps || []).map((step) => {
+    const safe = {};
+    for (const key of PUBLIC_STEP_FIELDS) {
+      if (key in step) safe[key] = step[key];
+    }
+    safe.tools = (step.tools || []).map(sanitizeTool);
+    return safe;
+  });
   delete task.toolParameters;
   // 任务级为增量对象，私有字段需显式删除：就地教学内容会泄漏引导策略与验收标准，
   // 能力标签属于评价预留数据，两类都不进浏览器。
@@ -84,6 +87,15 @@ export function toPublic(lesson, restrictionMarkdown = '') {
   publicLesson.roles.forEach((role) => {
     delete role.keyData;
     role.tasks.forEach((task) => {
+      delete task.guide;
+      sanitizeTaskTools(task);
+    });
+  });
+  // 阶段任务（非角色任务）走同一把裁剪清单。
+  // 这一段容易漏：`phases` 是整份下发浏览器的，此前 toPublic 完全不碰它——
+  // 阶段任务一旦带上就地验收标准与能力标签，不裁就直接进公开包。
+  (publicLesson.phases || []).forEach((phase) => {
+    (phase.tasks || []).forEach((task) => {
       delete task.guide;
       sanitizeTaskTools(task);
     });

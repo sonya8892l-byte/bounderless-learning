@@ -143,6 +143,9 @@ const state = {
       lastLocalActionAt: Date.now(),
       challengePageIndex: 0,
       challengeFeedback: {},
+      // 服务端 state.updated 下发的「等谁推进」：`{ mode: 'teacher'|'student', taskId }` 或 null。
+      // 任务卡据此显示「等老师确认」还是「继续下一个」按钮。
+      pendingAdvance: null,
       locationStatus: {
         permission: 'unknown',
         insideFence: null,
@@ -624,6 +627,10 @@ function renderTaskWorkspace({
   const stepId = activeStep?.id || `${task.id}-complete`;
   const canCompleteStep = !lockedBrowse && (standaloneMode || !['teacher_confirm', 'location_event'].includes(activeStep?.completionMode));
   const toolCallReady = !lockedBrowse && (standaloneMode || Boolean(callId));
+  // 这个任务已经做完、但在等推进（`推进方式：teacher`／`ai_suggest`）。
+  // 等待期间服务端不开新工具卡也不动 currentTaskIndex，所以卡片还是这一张——
+  // 必须换掉提交区，否则学生看到的是一个点了没反应的「提交给絮絮分析」。
+  const waiting = roleState.pendingAdvance?.taskId === task.id ? roleState.pendingAdvance.mode : '';
 
   return `
     <article class="tool-card task-workspace" data-task-card="${task.id}" data-learning-workspace="${escapeHtml(view)}">
@@ -638,7 +645,7 @@ function renderTaskWorkspace({
         <div class="module-tags">
           ${moduleLabels(task.modules).map((module) => `<span class="module-tag">${escapeHtml(module)}</span>`).join('')}
         </div>
-        ${!isComplete ? `
+        ${!isComplete && !waiting ? `
           <section class="task-step-guide ${stepsComplete ? 'is-complete' : ''}">
             <div class="task-step-guide__top">
               <span>${stepsComplete ? '小步已完成' : `当前小步 ${stepIndex + 1} / ${steps.length}`}</span>
@@ -655,7 +662,19 @@ function renderTaskWorkspace({
             ${!stepsComplete && activeStep?.completionMode === 'location_event' ? '<span class="task-step-guide__validation">到达课程配置地点并验证后，系统会完成本小步。</span>' : ''}
           </section>
         ` : ''}
-        ${isComplete ? `
+        ${waiting ? `
+          <div class="evidence-form">
+            <div class="activity-submit-summary">
+              <i data-lucide="${waiting === 'teacher' ? 'hand' : 'circle-check-big'}"></i>
+              <div><strong>${waiting === 'teacher' ? '这个任务要老师确认后才继续' : '这个任务已经完成'}</strong><span>${waiting === 'teacher' ? '老师在教师端确认后会自动进入下一个任务。' : '准备好了就自己进入下一个任务。'}</span></div>
+            </div>
+            ${waiting === 'student' ? `
+              <button class="tool-primary" type="button" data-action="advance-task" data-task-id="${task.id}">
+                <i data-lucide="arrow-right"></i>继续下一个任务
+              </button>
+            ` : ''}
+          </div>
+        ` : isComplete ? `
           <div class="source-label"><i data-lucide="circle-check-big"></i>证据已进入个人学习档案</div>
         ` : `
           <div class="evidence-form ${stepsComplete ? '' : 'is-locked'}">
@@ -1205,10 +1224,18 @@ function applyAgentEvent(event, feedbackTarget = null) {
       if (!roleState.completed) roleState.messages.push({ id: crypto.randomUUID(), type: 'token' });
       roleState.completed = true;
     }
+    // 做完 `推进方式：teacher`／`ai_suggest` 的任务后进度不动，界面必须说清为什么停住。
+    // 没有这一行，学生看到的是一个提交完就没反应的任务卡。
+    roleState.pendingAdvance = event.data.pendingAdvance || null;
     const location = event.data.runtime?.location;
     const runtime = event.data.runtime;
     if (runtime?.taskId) {
       roleState.guidanceStepIndices[runtime.taskId] = Number(runtime.guidanceStepIndex || 0);
+    }
+    // 服务端累计的证据条数是权威值（本地 roleState.evidence 只有当前任务那一份）。
+    // 教师端要靠 presence 上报它来判断"这个学生到底交了几项"。
+    if (Array.isArray(runtime?.learning?.evidenceIds)) {
+      roleState.evidenceCount = runtime.learning.evidenceIds.length;
     }
     if (roleState.progress > previousProgress) {
       roleState.challengePageIndex = Math.min(roleState.progress, role.tasks.length - 1);
@@ -1380,6 +1407,7 @@ async function sendContextTick() {
     network: navigator.onLine ? (navigator.connection?.effectiveType === '2g' ? 'weak' : 'ready') : 'offline',
     progress: Math.round((roleState.progress / Math.max(1, currentRole().tasks.length)) * 100),
     currentTask: currentTask()?.name,
+    evidenceCount: Number(roleState.evidenceCount || 0),
     idleSeconds: Math.max(0, Math.floor((Date.now() - roleState.lastLocalActionAt) / 1000)),
     location: {
       permission: roleState.locationStatus.permission,
@@ -2221,7 +2249,28 @@ async function applyTeacherCommand(command) {
     state.phaseEndTime = Math.max(Date.now(), (state.phaseEndTime || Date.now()) - (minutes * 60_000));
     teacherNotice(`老师将当前课程阶段调整了 ${minutes} 分钟。`);
   } else if (command.action === 'set_scaffold') {
+    // 把档位真正送到会话上：服务端 participant.learning.scaffoldLevel 只是场次记录里的
+    // 展示字段，决定取哪一档提示的是会话上的 scaffoldLevel。
+    await runAgentTurn({
+      type: 'lifecycle_event',
+      event: 'teacher_directive',
+      data: { scaffoldLevel: Number(command.payload.level ?? 0), teacherCommandId: command.id },
+    });
     teacherNotice('老师已调整后续提示深度。');
+  } else if (command.action === 'advance_phase') {
+    const phaseId = command.payload.phaseId;
+    if (phaseId && lesson.phases.some((phase) => phase.id === phaseId)) {
+      await runAgentTurn({
+        type: 'lifecycle_event',
+        event: 'teacher_directive',
+        data: { phaseId, teacherCommandId: command.id },
+      });
+      state.currentPhaseId = phaseId;
+      // 阶段换了，倒计时要按新阶段的时长重开，顶栏也要跟着变。
+      beginCurrentPhase();
+      renderLearningShell();
+    }
+    teacherNotice(`老师已推进到${currentPhase()?.name || '下一课程阶段'}。`);
   } else if (command.action === 'approve_evidence') {
     teacherNotice('老师已人工确认当前证据。');
     const task = currentTask();
@@ -2246,6 +2295,16 @@ async function applyTeacherCommand(command) {
       });
       teacherNotice('老师已允许跳过当前小步，系统保留了本次人工干预记录。');
     }
+  } else if (command.action === 'advance_task') {
+    // 解开 `推进方式：teacher` 的任务。学生做完这类任务后服务端只记 pendingAdvance
+    // 不动进度，必须靠这条指令走「学生端作为桥」才能推进（见 server/agent/task-advance.js）。
+    // 服务端会校验是否真的在等教师，没等就报错——所以这里不做本地判断，让服务端说话。
+    await runAgentTurn({
+      type: 'lifecycle_event',
+      event: 'teacher_advance_task',
+      data: { taskId: roleState.pendingAdvance?.taskId || currentTask()?.id || '', teacherCommandId: command.id },
+    });
+    teacherNotice('老师已确认，可以进入下一个任务。');
   } else if (['pause', 'emergency_rally'].includes(command.action)) {
     showTeacherDirective(command);
   } else if (command.action === 'resume') {
@@ -2355,6 +2414,13 @@ const actions = {
     Number(target.dataset.minEvidence || 1),
   ),
   'send-message': sendMessage,
+  // 学生自己确认进入下一任务（`推进方式：ai_suggest`）。教师侧的对应入口是
+  // 教师端 advance_task 指令，两条路在服务端汇到同一个 resolvePendingAdvance。
+  'advance-task': (target) => runAgentTurn({
+    type: 'lifecycle_event',
+    event: 'student_advance_task',
+    data: { taskId: target.dataset.taskId || '' },
+  }),
   'send-quick-reply': (target) => sendQuickReply({
     questionId: target.dataset.questionId,
     act: target.dataset.act,

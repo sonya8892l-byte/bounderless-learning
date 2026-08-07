@@ -15,6 +15,8 @@ const commandSchema = z.object({
     'release_roles', 'lock_roles', 'start_phase', 'advance_phase', 'end_run',
     'confirm_arrival', 'reject_evidence', 'approve_evidence', 'skip_step',
     'set_scaffold', 'switch_alternative', 'emergency_rally',
+    // 解开 `推进方式：teacher` 的任务。真会推进学生进度，因此在教师端标高影响。
+    'advance_task',
   ]),
   target: targetSchema,
   payload: z.record(z.unknown()).default({}),
@@ -120,6 +122,8 @@ export async function registerRuntimeRoutes(app, {
       online: z.boolean().optional(), network: z.enum(['ready', 'weak', 'offline']).optional(),
       progress: z.coerce.number().min(0).max(100).optional(), currentTask: z.string().max(200).optional(),
       idleSeconds: z.coerce.number().min(0).optional(),
+      // 学生累计提交的证据条数。教师端的「已提交 N 项证据」读它，此前是演示种子。
+      evidenceCount: z.coerce.number().int().min(0).optional(),
       location: z.object({
         lng: z.coerce.number().optional(), lat: z.coerce.number().optional(), accuracyMeters: z.coerce.number().min(0).optional(),
         insideFence: z.boolean().nullable().optional(), permission: z.enum(['unknown', 'granted', 'denied', 'unavailable']).optional(),

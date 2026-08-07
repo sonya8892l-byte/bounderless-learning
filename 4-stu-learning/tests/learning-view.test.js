@@ -10,7 +10,7 @@ import {
 } from '../src/engine/learning-view.js';
 import { recordClientContext } from '../server/agent/session-state.js';
 
-test('学习视图缺省保持对话，只有课程 Gate 开启时才采用配置默认值', () => {
+test('学习视图默认保持对话，只有课程 Gate 开启时才采用配置默认值', () => {
   assert.equal(initialLearningView(), 'dialogue');
   assert.equal(initialLearningView({ enabled: false, default: 'challenge' }), 'dialogue');
   assert.equal(initialLearningView({ enabled: true, default: 'challenge' }), 'challenge');

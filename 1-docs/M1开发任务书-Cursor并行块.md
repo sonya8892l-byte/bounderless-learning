@@ -89,6 +89,8 @@ SPEC v2 承诺了"一条命令输出 file:line 级错误"，但校验器不存�
 
 1. `npm run lint:lesson` 对 5 门课**零 error**，warning 恰好 55 条；
 2. `npm run lint:lesson -- --strict` 退出码 1（因为那 55 条 warning）；
+
+> **验收后基线已上调：55 → 57**（2026-08-07，P 系列）。`lesson_gewu_001` Phase 1 迁成三个阶段任务，其中两个没写 `##### 验收标准` → 多两条同类 warning。这是真缺口不是误报，所以上调基线而不是放宽检查。lint 现在还多两条阶段任务专属规则：`bad_executor`、`phase_task_in_role_file`（详见[问题清单](./问题清单-优先级与解决思路.md) P 系列）。C1 交付本身未被改动。
 3. `tests/lint-lesson.test.js` 至少 5 例，其中**必须包含一条"注入式"负例**——在内存里造一个带死知识引用的假课程，断言校验器报 error。只断言"真课程全绿"的测试没有牙齿，真课程本来就是绿的；
 4. `npm test` ≥ 192 通过、0 失败。
 

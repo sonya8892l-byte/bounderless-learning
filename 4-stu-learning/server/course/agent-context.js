@@ -14,8 +14,21 @@
 import { restrictionUnlocked } from './retrieval.js';
 import { resolveStepRestrictions } from './restriction-sections.js';
 
-/** 当前任务：索引越界时收敛到最后一个任务，与改造前的 currentTask 行为一致。 */
-export function currentTaskOf(role, taskIndex = 0) {
+/**
+ * 按**下标**取任务：越界时收敛到最后一个，与改造前的 currentTask 行为一致。
+ *
+ * ⚠️ 名字里带 `AtIndex` 不是啰嗦。这个函数原来也叫 `currentTaskOf`，与
+ * `server/agent/task-advance.js` 导出的同名函数**签名不兼容**——那个收 `session`，
+ * 这个收 `taskIndex`。两者搞混不会抛错，会静默返回 `tasks[0]`：
+ *
+ * ```js
+ * currentTaskOf(role, session)   // 期望 task-3，实得 task-1（Number({}) → NaN → 0）
+ * ```
+ *
+ * 也就是**把学生悄悄退回第一个任务**，没有任何报错。R3-1 收敛取值表达式时正好
+ * 要把 `task-advance.js` 那个 import 到十几处，同名不同参就成了地雷，故改名。
+ */
+export function taskAtIndex(role, taskIndex = 0) {
   const tasks = role?.tasks || [];
   return tasks[Math.min(Number(taskIndex) || 0, tasks.length - 1)];
 }
@@ -31,6 +44,39 @@ function stepLabels(task) {
 }
 
 /**
+ * 活动组织信息切片：answer_logistics 唯一的取料来源。
+ *
+ * 刻意与课程知识分开：组织信息不走 knowledge/ 检索（它不在知识库里），
+ * 也不走 restrictions 屏蔽（它不是待学生探索的答案）。它就是现场安排的事实。
+ *
+ * 只收课程包里确实写了的字段。**不在这里的东西 Prompt 必须承认不知道**——
+ * 场馆平面图、厕所方位、绝对结束时刻都不在课程 md 里，编一个比不答更危险。
+ */
+export function toLogisticsContext({ course, session, role, teacherName = '' }) {
+  const lesson = course?.lesson || {};
+  const phase = lesson.phases?.find((item) => item.id === session?.phaseId);
+  const task = taskAtIndex(role, session?.currentTaskIndex);
+  const timeBank = lesson.timeBank || {};
+  return {
+    venue: String(lesson.venue || ''),
+    duration: String(lesson.duration || ''),
+    grades: String(lesson.grades || ''),
+    groupRule: String(lesson.groupRule || ''),
+    phaseName: phase?.name || '',
+    phaseDuration: String(phase?.duration || ''),
+    phaseMode: String(phase?.mode || ''),
+    phaseLocation: String(phase?.location || ''),
+    taskLocationName: task?.location?.name || '',
+    timeBankEnabled: timeBank.enabled === true,
+    timeBankMaxEarn: String(timeBank.maxEarnTotal ?? timeBank.max_earn_total ?? ''),
+    timeBankGiftRule: String(timeBank.giftTarget ?? timeBank.gift_target ?? ''),
+    teacherName: String(teacherName || '带队老师'),
+    phrases: course?.platformDefaults?.logistics?.phrases || {},
+    constraints: String(course?.platformDefaults?.logistics?.constraints || ''),
+  };
+}
+
+/**
  * @param {object} params
  * @param {object} params.course 编译产物（IR）
  * @param {object} params.session 会话（只读）
@@ -39,7 +85,7 @@ function stepLabels(task) {
  * @returns 智能体切片：人设、学段、任务、小步、脚手架、限制、阶段提示
  */
 export function toAgentContext({ course, session, role, guidanceStepIndex = 0 }) {
-  const task = currentTaskOf(role, session?.currentTaskIndex);
+  const task = taskAtIndex(role, session?.currentTaskIndex);
   const labels = stepLabels(task);
   const stepIndex = Math.min(Number(guidanceStepIndex) || 0, Math.max(0, labels.length - 1));
   const step = task?.steps?.[stepIndex];

@@ -1052,9 +1052,27 @@ flowchart TD
 → 检查 toolCallId 和最少证据
 → 生成任务反馈
 → 写入 completedTaskIds
-→ 根据 advanceMode 自动推进 / 等待学生 / 等待教师
+→ 根据 advanceMode 分三路（server/agent/task-advance.js）
+   ├ auto_after_validation：当轮就 currentTaskIndex += 1
+   ├ ai_suggest：写 session.pendingAdvance = { mode: 'student' }，进度不动
+   └ teacher    ：写 session.pendingAdvance = { mode: 'teacher' }，进度不动
 → 同地点直接打开下一任务；不同地点先导航
 ```
+
+`pendingAdvance` 落在**会话**上而不是回合载荷上，这是它能跨回合等到解除的前提（2026-08-08 R3-0 修复，此前那两个分支只写单次回合的 `input.data`，做完就永久卡死）。
+
+等待态的解除有两个入口，共用同一套校验：
+
+```text
+教师：教师端「进入下一任务」（advance_task）→ 场次记录 → 学生端轮询
+     → applyTeacherCommand → lifecycle_event: teacher_advance_task
+学生：任务卡上「继续下一个任务」→ lifecycle_event: student_advance_task
+
+两者 → resolvePendingAdvance()：必须真的在等待 ＋ 等的必须是这个 actor
+     → currentTaskIndex += 1 → 清空 pendingAdvance → 开下一任务的工具卡
+```
+
+`state.updated` 带 `pendingAdvance: { mode, taskId } | null`，学生端据此把任务卡的提交区换成「等老师确认」或「继续下一个任务」——否则做完任务后界面看不出为什么停住。
 
 ## 16. Workflow 6：教师控制
 
@@ -1067,7 +1085,9 @@ flowchart TD
 → 发送回执
 ```
 
-教师可控制角色开放、课程开始、暂停、恢复、加时、脚手架、审核、消息、集合和求助处理。
+教师可控制角色开放、课程开始、暂停、恢复、加时、脚手架、审核、任务推进、消息、集合和求助处理。
+
+"学生端执行"这一步是这条链的关键：教师运行时（`server/runtime/`）只持有场次记录，碰不到 agent 会话存储——`course-run-service.js` 至今只有 `node:crypto` 一个 import，这是刻意维持的墙。所有需要真改会话的指令（`advance_phase`、`set_scaffold`、`approve_evidence`、`skip_step`、`advance_task`）都由学生端轮询到之后回发一个 `lifecycle_event`，在 agent 侧落地。
 
 ## 17. 当前三种模型调用角色
 

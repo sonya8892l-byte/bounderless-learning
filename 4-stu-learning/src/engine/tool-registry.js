@@ -154,7 +154,7 @@ export function resolveActivityTools(modules = '', toolParameters = '', toolDefa
       ...inferredConfig(id, detail),
       ...clone(courseConfig),
     };
-    // 课程没写 fields 时，缺省字段 label 来自平台缺省层。
+    // 课程没写 fields 时，默认字段 label 来自平台默认层。
     if (id === 'text' && fieldLabels['text.observation'] && !courseConfig.fields && Array.isArray(config.fields)) {
       config.fields = config.fields.map((field) => (
         field?.id === 'observation' ? { ...field, label: fieldLabels['text.observation'] } : field

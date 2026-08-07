@@ -22,7 +22,7 @@ const TOOL_DEFAULTS_FALLBACK = Object.freeze({
   declaration: Object.freeze({
     overridable: true,
     merge: 'by-key',
-    courseField: '工具缺省',
+    courseField: '工具默认',
     locked: Object.freeze([]),
   }),
   entries: Object.freeze({ ...TOOL_NAME_DEFAULTS, ...TOOL_FIELD_LABEL_DEFAULTS }),
@@ -30,7 +30,7 @@ const TOOL_DEFAULTS_FALLBACK = Object.freeze({
   markdown: '',
 });
 
-/** 把 tool-defaults.md 解析成显示名与缺省字段 label。缺失时回落到代码常量。 */
+/** 把 tool-defaults.md 解析成显示名与默认字段 label。缺失时回落到代码常量。 */
 export function resolveToolDefaults(document, courseOverrides = {}) {
   const { entries, warnings } = mergeDefaults(document || TOOL_DEFAULTS_FALLBACK, courseOverrides);
   const names = {};

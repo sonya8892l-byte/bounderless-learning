@@ -21,11 +21,13 @@ function cloneCourse(course) {
   });
 }
 
-test('5 门真课程：零 error，恰好 55 条缺验收 warning', async () => {
+// 55 → 57：gewu_001 Phase 1 迁成三个阶段任务后，其中两个没写验收标准。
+// 这两条是真缺口（作者该补），不是误报，所以基线上调而不是把检查放宽。
+test('5 门真课程：零 error，恰好 57 条缺验收 warning', async () => {
   const { issues, stats } = await lintAllCourses({ lessonsRoot });
   const summary = summarizeIssues(issues);
   assert.equal(summary.errors, 0);
-  assert.equal(summary.warnings, 55);
+  assert.equal(summary.warnings, 57);
   assert.equal(exitCodeForIssues(issues), 0);
   assert.equal(exitCodeForIssues(issues, { strict: true }), 1);
 
@@ -35,9 +37,10 @@ test('5 门真课程：零 error，恰好 55 条缺验收 warning', async () => 
   const nextEdges = stats.reduce((sum, item) => sum + item.nextEdges, 0);
   assert.equal(knowledgeRefs, 403);
   assert.equal(restrictionRefs, 216);
-  assert.equal(competencyTags, 113);
+  // 113 → 115：阶段任务2 的 DS-01 / DC-01 也进同一批能力标签校验。
+  assert.equal(competencyTags, 115);
   assert.equal(nextEdges, 208);
-  assert.equal(stats.reduce((sum, item) => sum + item.missingAcceptance, 0), 55);
+  assert.equal(stats.reduce((sum, item) => sum + item.missingAcceptance, 0), 57);
   assert.equal(stats.reduce((sum, item) => sum + item.deadKnowledgeRefs, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.deadRestrictionRefs, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.missingAssets, 0), 0);

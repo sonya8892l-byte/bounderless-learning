@@ -54,8 +54,8 @@ function parseCoordinates(value) {
 
 export const ADVANCE_MODES = Object.freeze(['ai_suggest', 'auto_after_validation', 'teacher']);
 
-// 平台缺省层未提供 _platform/defaults.md 时的回落值。双轨期内不要删除：它同时是
-// resolveTaskDefaults 的兜底基线，保证缺省层缺失时行为与建立缺省层之前完全一致。
+// 平台默认层未提供 _platform/defaults.md 时的回落值。双轨期内不要删除：它同时是
+// resolveTaskDefaults 的兜底基线，保证默认层缺失时行为与建立默认层之前完全一致。
 export const TASK_DEFAULTS = Object.freeze({
   suggestedSeconds: 15 * 60,
   idleNudgeSeconds: 3 * 60,
@@ -65,7 +65,7 @@ export const TASK_DEFAULTS = Object.freeze({
   advanceMode: 'auto_after_validation',
 });
 
-/** 把缺省层的键值表转成带类型的任务缺省。缺键回落到 base，因此可以逐层叠加。 */
+/** 把默认层的键值表转成带类型的任务默认。缺键回落到 base，因此可以逐层叠加。 */
 export function resolveTaskDefaults(entries = {}, base = TASK_DEFAULTS) {
   const advanceMode = clean(entries['推进方式'] || '').toLowerCase();
   return Object.freeze({
@@ -408,7 +408,55 @@ function parseRole(path, markdown, assetBase, index, defaults = TASK_DEFAULTS, t
   };
 }
 
-function parsePhases(markdown) {
+// 阶段任务的执行单位。三值是刻意的：
+// 全班＝一次集体完成（看导入短片、发角色卡），小组＝每组一份（拼合、沙盘、展示），
+// 个人＝每人各做一遍（反思、成果提交）。
+// 「同角色多人短协作」不在这里——它需要 roleId，仍属角色内任务，写在 roles/<role>.md。
+export const PHASE_TASK_EXECUTORS = Object.freeze(['全班', '小组', '个人']);
+const DEFAULT_PHASE_TASK_EXECUTOR = '全班';
+
+/**
+ * 一个 Phase 块里的阶段任务（非角色任务）。
+ *
+ * 标题刻意用 `### 阶段任务N：`：`parseRole` 扫角色任务的正则是
+ * `/^###\s*(?:任务|角色阶段)\d+[：:]/`，对「阶段任务」不命中，所以这些块不会被
+ * 当成某个角色的任务，也就不会出现"六个角色各看一遍导入短片"。
+ *
+ * 字段解析整体复用 parseTaskBlock：功能模块／工具参数／完成方式／通过条件／能力标签／
+ * 前置／就地引导·脚手架·验收标准 与角色任务逐字一致，课程作者不必学第二套写法。
+ */
+function parsePhaseTasks(block, phaseNumber, assetBase, defaults, toolDefaults, onWarning) {
+  const matches = [...block.matchAll(/^###\s*阶段任务\s*(\d+)[：:]\s*(.+)$/gm)];
+  return matches.map((match, index) => {
+    const start = match.index;
+    const end = matches[index + 1]?.index ?? block.length;
+    const body = block.slice(start, end);
+    // parseTaskBlock 读 `### 任务N：` 取名字，这里的标题是 `### 阶段任务N：`，
+    // 取不到就回落成「任务N」。所以名字由本函数从标题直接给，覆盖掉那个回落值。
+    const task = parseTaskBlock(body, index, assetBase, defaults, toolDefaults);
+    const rawExecutor = clean(body.match(/^-\s*执行单位[：:]\s*(.+)$/m)?.[1] || '');
+    const executor = PHASE_TASK_EXECUTORS.includes(rawExecutor) ? rawExecutor : DEFAULT_PHASE_TASK_EXECUTOR;
+    if (rawExecutor && !PHASE_TASK_EXECUTORS.includes(rawExecutor)) {
+      onWarning?.({
+        code: 'bad_phase_task_executor',
+        message: `阶段任务「${stripDecoration(match[2])}」的执行单位「${rawExecutor}」不是 ${PHASE_TASK_EXECUTORS.join(' / ')} 之一，已按${DEFAULT_PHASE_TASK_EXECUTOR}处理。`,
+      });
+    }
+    return {
+      ...task,
+      // id 带 phase 前缀：角色任务的 id 跨角色重复（gewu 18 个去重后只剩 3 个），
+      // 阶段任务要进同一张任务图，键必须自带作用域才不会静默塌掉。
+      id: clean(task.id.startsWith('phase-') ? task.id : `phase-${phaseNumber}-task-${index + 1}`),
+      roleStageId: '',
+      name: stripDecoration(match[2]),
+      scope: 'phase',
+      phaseId: `phase-${phaseNumber}`,
+      executor,
+    };
+  });
+}
+
+function parsePhases(markdown = '', { assetBase = '', defaults = TASK_DEFAULTS, toolDefaults = null, onWarning = null } = {}) {
   const matches = [...markdown.matchAll(/^##\s*Phase\s*(\d+)[：:]\s*(.+)$/gm)];
 
   return matches.map((match, index) => {
@@ -417,6 +465,8 @@ function parsePhases(markdown) {
     const block = markdown.slice(start, end);
     const info = {};
     for (const field of ['时长', '模式', '地点', '功能模块', '触发条件', '结束条件']) {
+      // 取首个匹配：Phase 自己的字段写在 `### 阶段任务N` 之前，所以阶段任务里的
+      // 同名字段（例如短片的 `- 时长：3min`）抢不走 Phase 的 20min。
       info[field] = clean(block.match(new RegExp(`^-\\s*${field}[：:]\\s*(.+)$`, 'm'))?.[1] || '');
     }
     const flow = sectionAfter(block, '### 流程')
@@ -435,6 +485,9 @@ function parsePhases(markdown) {
       trigger: info['触发条件'],
       endCondition: info['结束条件'],
       flow,
+      // `### 流程` 仍是给教师看的叙述；tasks 才是可编译的单元。两者并存：
+      // 迁移一门课的 Phase 时不必同时删掉流程说明。
+      tasks: parsePhaseTasks(block, match[1], assetBase, defaults, toolDefaults, onWarning),
     };
   });
 }
@@ -483,10 +536,19 @@ function parseTimeBank(markdown = '') {
   };
 }
 
-// 数值缺省的优先级：任务块字段 > course.md 的 `## 数值缺省` > `_platform/defaults.md` > TASK_DEFAULTS。
+// 「默认」是现行写法，「缺省」是 2026-08 之前的旧名。两个都读：小节名改动不该让存量
+// 课程静默失效——课程写了覆盖却读不到，表现是"我明明配了却没生效"，最难查。
+// 新名优先；两节都写时以新名为准。等五门课都改完再删旧名。
+function courseSectionWithLegacyName(courseMarkdown, currentName, legacyName) {
+  const current = parseKeyValues(courseMarkdown || '', `## ${currentName}`);
+  if (Object.keys(current).length > 0) return current;
+  return parseKeyValues(courseMarkdown || '', `## ${legacyName}`);
+}
+
+// 数值默认的优先级：任务块字段 > course.md 的 `## 数值默认` > `_platform/defaults.md` > TASK_DEFAULTS。
 function resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning) {
   const document = platformDefaults?.documents?.defaults || null;
-  const overrides = parseKeyValues(courseMarkdown || '', '## 数值缺省');
+  const overrides = courseSectionWithLegacyName(courseMarkdown, '数值默认', '数值缺省');
   if (!document) return resolveTaskDefaults(overrides);
   const merged = mergeDefaults(document, overrides);
   for (const warning of merged.warnings) onWarning?.(warning);
@@ -496,9 +558,11 @@ function resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning) 
 export function parseLesson(source, { platformDefaults = null, onWarning = null } = {}) {
   const courseMarkdown = source.files['course.md'];
   const taskDefaults = resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning);
+  const toolOverrides = courseOverrideSection(courseMarkdown, '工具默认');
   const { toolDefaults, warnings: toolWarnings } = resolveToolDefaults(
     platformDefaults?.documents?.toolDefaults || null,
-    courseOverrideSection(courseMarkdown, '工具缺省'),
+    // 同上：旧名「工具缺省」继续读，避免存量课程的覆盖静默失效。
+    Object.keys(toolOverrides).length > 0 ? toolOverrides : courseOverrideSection(courseMarkdown, '工具缺省'),
   );
   for (const warning of toolWarnings) onWarning?.(warning);
   const courseInfo = parseKeyValues(courseMarkdown, '## 基本信息');
@@ -535,7 +599,9 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
       ? clean(courseInfo['遍历模式']).toLowerCase()
       : 'sequential',
     coreQuestion: clean(sectionAfter(courseMarkdown, '## 核心问题').split('\n').find(Boolean) || ''),
-    phases: parsePhases(source.files['phases.md']),
+    phases: parsePhases(source.files['phases.md'], {
+      assetBase, defaults: taskDefaults, toolDefaults, onWarning,
+    }),
     roleSystem: {
       collectionName: requiredField(roleSystem.collectionName, 'course.md / 学生端角色体系 / collectionName'),
       itemName: requiredField(roleSystem.itemName, 'course.md / 学生端角色体系 / itemName'),

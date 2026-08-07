@@ -67,7 +67,7 @@ intent 枚举（首版，写成模块导出的常量数组 `INTENTS` 以便测�
 2. Prompt 用中文、精简（目标 300–500 字符）：给出枚举清单、pendingQuestion 与 currentStep 摘要、末尾 4 条对话，要求只输出 JSON。**Prompt 中不得包含任何课程答案性内容**（你拿到的输入里本来也没有）；
 3. 输出用 **zod** 校验（仓库已有 zod 依赖，不新装包）：枚举合法、confidence 数值收敛到 0–1；
 4. **总预算 8 秒**：若 llm.generate 自带超时/abort 机制按真实接口用，否则用 Promise.race 包一层；
-5. **降级链（核心要求）**：调用失败/超时/JSON 解析失败/zod 不过 → 重试一次 → 再失败返回保守缺省值 `{ intent: 'unknown', emotion: 'neutral', answersPendingQuestion: false, want: '', confidence: 0 }`。**本函数在任何输入下都不抛异常**；
+5. **降级链（核心要求）**：调用失败/超时/JSON 解析失败/zod 不过 → 重试一次 → 再失败返回保守默认值 `{ intent: 'unknown', emotion: 'neutral', answersPendingQuestion: false, want: '', confidence: 0 }`。**本函数在任何输入下都不抛异常**；
 6. 文件头部用中文注释说明模块职责（仿照仓库现有风格，注释密度低）。
 
 ## 4. 交付物二：`4-stu-learning/server/agent/tutor-policy.js`（新建）
@@ -115,9 +115,9 @@ action 枚举（导出常量数组 `TUTOR_ACTIONS`）：
 `4-stu-learning/tests/understanding.test.js`（mock llm，**绝不调真实模型、不读 .env**）：
 
 1. 正常返回合法 JSON → 解析结果字段正确，且传给 llm 的调用开启了 jsonMode、prompt 里包含 pendingQuestion 内容；
-2. llm 抛错 → 自动重试一次（断言 generate 被调 2 次）→ 仍失败 → 返回保守缺省值，不抛异常；
-3. llm 返回不可解析/不过 zod 的内容 → 同样走重试→缺省链；
-4. llm 挂起超时（用一个永不 resolve 的 promise + 短预算注入，若你把预算做成可注入参数）→ 缺省值。为了这条可测，允许 `createUnderstanding({ llm, timeoutMs })` 多收一个可选 timeoutMs（默认 8000）。
+2. llm 抛错 → 自动重试一次（断言 generate 被调 2 次）→ 仍失败 → 返回保守默认值，不抛异常；
+3. llm 返回不可解析/不过 zod 的内容 → 同样走重试→默认链；
+4. llm 挂起超时（用一个永不 resolve 的 promise + 短预算注入，若你把预算做成可注入参数）→ 默认值。为了这条可测，允许 `createUnderstanding({ llm, timeoutMs })` 多收一个可选 timeoutMs（默认 8000）。
 
 `4-stu-learning/tests/tutor-policy.test.js`（纯函数直测）：
 
@@ -154,7 +154,7 @@ cd 4-stu-learning && node --test tests/understanding.test.js tests/tutor-policy.
 ## 9. 验收清单（自查）
 
 - [ ] 只新建了 4 个文件（understanding.js、tutor-policy.js、两个测试）＋1 个执行记录，未改动任何现有文件
-- [ ] understanding.js 任何输入不抛异常，降级链完整（失败→重试1次→保守缺省）
+- [ ] understanding.js 任何输入不抛异常，降级链完整（失败→重试1次→保守默认）
 - [ ] tutor-policy.js 纯函数零 import，防复读两条规则可测试证明
 - [ ] 两个测试文件全绿，mock 不触网、不读 env
 - [ ] 未安装依赖、未跑全量测试/构建/同步、无 git 操作

@@ -441,6 +441,7 @@ test('模型内部超时时 SSE 返回降级完成事件，不静默结束', asy
 
 test('整次 turn 超过服务端 deadline 时返回可重试错误且不保存请求', async (t) => {
   let modelCalls = 0;
+  let observedSignal = null;
   const deadlineLlm = {
     capabilities() {
       return {
@@ -453,6 +454,8 @@ test('整次 turn 超过服务端 deadline 时返回可重试错误且不保存�
     },
     async generate({ signal }) {
       modelCalls += 1;
+      observedSignal = signal;
+      // 模型永不返回；只能靠 turn deadline 的 abort 结束。
       return new Promise((_resolve, reject) => {
         signal.addEventListener('abort', () => reject(signal.reason), { once: true });
       });
@@ -463,7 +466,9 @@ test('整次 turn 超过服务端 deadline 时返回可重试错误且不保存�
     env: {
       APP_ENV: 'test',
       AI_ENABLED: true,
-      AI_TURN_TIMEOUT_MS: 15,
+      // 15ms 在全量并行跑时 CPU 被挤占，deadline 常在模型被调之前就触发（modelCalls=0）。
+      // 要测的是「deadline 机制 + 不重试 + 不保存请求」，不是机器有多快。
+      AI_TURN_TIMEOUT_MS: 500,
       EVIDENCE_UPLOAD_MODE: 'proxy',
       ENABLE_DEMO: false,
       OPENAI_BASE_URL: 'https://example.invalid/v1',
@@ -529,7 +534,10 @@ test('整次 turn 超过服务端 deadline 时返回可重试错误且不保存�
   assert.equal(response.statusCode, 200, response.body);
   assert.match(response.body, /event: agent\.error/);
   assert.match(response.body, /"code":"AI_TURN_TIMEOUT"/);
-  assert.equal(modelCalls, 1);
+  assert.ok(modelCalls <= 1, `deadline 后不应重试模型，实际调用 ${modelCalls} 次`);
+  if (modelCalls > 0) {
+    assert.ok(observedSignal?.aborted, '模型被调用时，turn deadline 应 abort 底层请求');
+  }
   const session = await sessionStore.get(sessionId);
   assert.equal(session.handledRequestIds.includes('deadline-user-turn'), false);
 });

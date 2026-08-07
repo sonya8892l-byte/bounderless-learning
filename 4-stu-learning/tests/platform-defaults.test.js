@@ -38,7 +38,7 @@ test('声明块解析：三种 merge 语义与锁定键都能读出来', () => {
   assert.deepEqual(append.declaration.locked, ['name', 'posterAsset']);
 });
 
-test('声明块非法取值直接报错，不静默按缺省处理', () => {
+test('声明块非法取值直接报错，不静默按默认处理', () => {
   assert.throws(() => document('> overridable: maybe\n'), /overridable 只能是 true 或 false/);
   assert.throws(() => document('> merge: deep-merge\n'), /merge 只能是/);
 });
@@ -73,7 +73,7 @@ test('不可覆盖的文件：课程写什么都不生效，且每个键都有 w
   assert.match(warnings[0].message, /pedagogy-rules\.md 不可覆盖/);
 });
 
-test('缺省层文件缺失时回落到代码常量，并留一条 debug 记录', async (t) => {
+test('默认层文件缺失时回落到代码常量，并留一条 debug 记录', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'platform-defaults-missing-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, '_platform'), { recursive: true });
@@ -89,7 +89,7 @@ test('缺省层文件缺失时回落到代码常量，并留一条 debug 记录'
   assert.deepEqual(resolveLanguageLevels(null)['初中'], { id: '初中', ...LANGUAGE_LEVEL_DEFAULTS['初中'] });
 });
 
-test('缺省层版本随内容变化，内容不变则版本稳定', async (t) => {
+test('默认层版本随内容变化，内容不变则版本稳定', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'platform-defaults-version-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const directory = path.join(root, '_platform');
@@ -107,7 +107,7 @@ test('缺省层版本随内容变化，内容不变则版本稳定', async (t) =
   assert.notEqual(updated.version, first.version);
 });
 
-test('仓库里的 defaults.md 与代码常量一致：接入缺省层不改变现有行为', async () => {
+test('仓库里的 defaults.md 与代码常量一致：接入默认层不改变现有行为', async () => {
   const loaded = await loadPlatformDefaults({ lessonsRoot });
   assert.deepEqual(loaded.missing, []);
   assert.deepEqual(resolveTaskDefaults(documentEntries(loaded.documents.defaults)), TASK_DEFAULTS);
@@ -130,7 +130,7 @@ test('端到端：defaults.md 把无操作提醒改成 5 分钟，nudge-policy �
     filter: (source) => !path.relative(sourceCourse, source).split(path.sep).includes('assets'),
   });
 
-  // 现有课程每个任务都自带「无操作提醒」，把它删掉才轮得到缺省层生效。
+  // 现有课程每个任务都自带「无操作提醒」，把它删掉才轮得到默认层生效。
   const rolesDirectory = path.join(root, 'lesson_gewu_001', 'roles');
   for (const name of await fs.readdir(rolesDirectory)) {
     const file = path.join(rolesDirectory, name);
@@ -151,7 +151,7 @@ test('端到端：defaults.md 把无操作提醒改成 5 分钟，nudge-policy �
   const after = await compileCourse({ lessonsRoot: root, courseId: 'lesson_gewu_001' });
   const task = taskOf(after);
   assert.equal(task.timing.idleNudgeSeconds, 5 * 60);
-  assert.equal(task.timing.suggestedSeconds, 15 * 60, '课程自己写的字段不受缺省层变化影响');
+  assert.equal(task.timing.suggestedSeconds, 15 * 60, '课程自己写的字段不受默认层变化影响');
 
   const start = Date.parse('2026-08-07T09:00:00.000Z');
   const session = {
@@ -168,7 +168,7 @@ test('端到端：defaults.md 把无操作提醒改成 5 分钟，nudge-policy �
   assert.equal(evaluateNudge({ session, task, input: tick, now: start + 6 * 60 * 1000 }).due, true);
 });
 
-test('课程 course.md 的 ## 数值缺省 覆盖平台缺省，但任务块字段优先级最高', () => {
+test('课程 course.md 的 ## 数值缺省 覆盖平台默认，但任务块字段优先级最高', () => {
   const platformDefaults = {
     documents: {
       defaults: parsePlatformDefaultDocument(
@@ -227,5 +227,5 @@ test('课程 course.md 的 ## 数值缺省 覆盖平台缺省，但任务块字�
   const [first, second] = lesson.roles[0].tasks;
   assert.equal(first.timing.idleNudgeSeconds, 7 * 60, '课程级覆盖生效');
   assert.equal(second.timing.idleNudgeSeconds, 60, '任务块字段仍然最高优先级');
-  assert.equal(first.nudgePolicy.maxNudges, 2, '课程没写的键回落到平台缺省');
+  assert.equal(first.nudgePolicy.maxNudges, 2, '课程没写的键回落到平台默认');
 });

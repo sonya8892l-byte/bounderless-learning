@@ -55,7 +55,7 @@ const ORIGINAL = Object.freeze([
     '好，我们继续“观其形”。我把任务工具打开了，有发现随时告诉我。'],
   ['task_progress.先去地点', { location: '三大殿三台' },
     '好，我们先去“三大殿三台”。我把高德地图打开了。'],
-  ['task_step_completed.补充缺省语', {}, '这一步还需要补充。'],
+  ['task_step_completed.补充默认语', {}, '这一步还需要补充。'],
   ['task_step_completed.还需要', { items: '正面全景、台基边缘' }, '还需要：正面全景、台基边缘。'],
   ['task_step_completed.可呼叫老师', {}, '已达到本步最大尝试次数，可以呼叫老师一起看。'],
   ['task_step_completed.继续小步', { doneNumber: 1, nextNumber: 2, stepText: '拍摄侧面' },
@@ -107,7 +107,7 @@ test('验收反馈的三段拼装结果与搬运前一致', async () => {
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const { voice } = course.platformDefaults;
   const compose = (feedback, items, teacher) => [
-    feedback || renderVoice(voice, 'task_step_completed.补充缺省语'),
+    feedback || renderVoice(voice, 'task_step_completed.补充默认语'),
     items ? renderVoice(voice, 'task_step_completed.还需要', { items }) : '',
     teacher ? renderVoice(voice, 'task_step_completed.可呼叫老师') : '',
   ].filter(Boolean).join(' ');

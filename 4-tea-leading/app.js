@@ -4,13 +4,15 @@ const API = '/api';
 const TEACHER_ID = 'teacher-demo';
 const configuredRealtimeMode = String(globalThis.__TEACHER_APP_CONFIG__?.REALTIME_MODE || 'polling').trim().toLowerCase();
 const REALTIME_MODE = configuredRealtimeMode === 'websocket' ? 'websocket' : 'polling';
-const HIGH_IMPACT = new Set(['pause', 'advance_phase', 'end_run', 'approve_evidence', 'skip_step', 'emergency_rally']);
+// advance_task 真会推进学生进度（解开 `推进方式：teacher` 的任务），与 skip_step 同级需要二次确认。
+const HIGH_IMPACT = new Set(['pause', 'advance_phase', 'end_run', 'approve_evidence', 'skip_step', 'advance_task', 'emergency_rally']);
 const ACTION_LABELS = {
   send_notice: '发送教师提示', push_knowledge: '推送知识卡', add_time: '追加时间',
   remove_time: '减少时间', pause: '暂停课程', resume: '恢复课程', release_roles: '开启角色领取',
   lock_roles: '锁定角色', start_phase: '开始课程阶段', advance_phase: '推进至下一阶段',
   end_run: '结束场次', confirm_arrival: '确认到达', reject_evidence: '退回证据',
-  approve_evidence: '人工通过', skip_step: '跳过可选小步', set_scaffold: '调整提示等级',
+  approve_evidence: '人工通过', skip_step: '跳过可选小步', advance_task: '确认进入下一任务',
+  set_scaffold: '调整提示等级',
   switch_alternative: '切换替代任务', emergency_rally: '紧急集合',
 };
 
@@ -515,6 +517,7 @@ function renderStudentDrawer(participantId) {
       ${actionButton('confirm_arrival', '确认到达', '教师人工确认位置', { scope: 'participant', id: participant.id })}
       ${actionButton('approve_evidence', '人工通过', '保留AI原判断记录', { scope: 'participant', id: participant.id }, {}, true)}
       ${actionButton('reject_evidence', '退回补做', '要求补充证据', { scope: 'participant', id: participant.id })}
+      ${actionButton('advance_task', '进入下一任务', '解开需教师确认的任务', { scope: 'participant', id: participant.id }, {}, true)}
     </div></div>` });
 }
 

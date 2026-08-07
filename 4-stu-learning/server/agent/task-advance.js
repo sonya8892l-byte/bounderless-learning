@@ -29,7 +29,26 @@
  * 在同一个地点重新走一遍到达验证。
  */
 
-/** 当前任务。收敛 `role.tasks[Math.min(session.currentTaskIndex, ...)]` 这个到处重复的表达式。 */
+/**
+ * 当前任务。收敛 `role.tasks[Math.min(session.currentTaskIndex, ...)]` 这个到处重复的表达式。
+ *
+ * ## 那个 `Math.min` 到底在防什么（R3-1 的分类结论）
+ *
+ * 原本以为这 12 处夹取有两种语义——一种"取当前任务，夹取只是保险"，一种"故意取末尾任务
+ * 渲染收尾文案"——如果真有第二种，R3-2 换成读图时它们会取到 `undefined` 把话术搞崩。
+ *
+ * 逐处读完 ＋ 实测的结论是：**只有一种语义，但夹取确实在承重**。
+ *
+ * - 单次会话内 `currentTaskIndex` 永不越界：`advanceToNextTask` 在最后一个任务上直接
+ *   拒绝推进（见下），所以它顶多等于 `length - 1`；
+ * - 但**会话恢复**路径（`session-factory.js` 的 `normalize`）原样带回存量 index，不做
+ *   任何边界校验。课程改版后某角色任务变少时，存量会话的 index 就越界了；
+ * - 实测：把 12 处夹取全摘掉跑全量，**302 例照样全绿**——也就是说没有任何测试覆盖这条路。
+ *   夹取是在保一个真实但无人测试的场景。
+ *
+ * 所以 R3-2 换成读图时，**这个夹取语义必须保留**：找不到节点时回落到"遍历序列的最后一个"，
+ * 而不是返回 `undefined`。丢了它，存量会话在课程改版后会直接崩在取任务这一行。
+ */
 export function currentTaskOf(role, session) {
   const tasks = role?.tasks || [];
   if (!tasks.length) return undefined;

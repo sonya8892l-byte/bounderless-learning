@@ -13,7 +13,7 @@
 flowchart LR
     subgraph L1["① 内容层：仍是两类 md，平台包扩容"]
       P1["平台包A：底线规则（留、不可覆盖）<br/>safety-rules / pedagogy-rules / privacy-rules"]
-      P2["平台包B：缺省层（新，从JS常量搬出）<br/>companion 人设 / voice 流程话术<br/>language-levels 学段 / scaffolding 脚手架策略<br/>tool-defaults 工具缺省 / defaults 数值缺省"]
+      P2["平台包B：默认层（新，从JS常量搬出）<br/>companion 人设 / voice 流程话术<br/>language-levels 学段 / scaffolding 脚手架策略<br/>tool-defaults 工具默认 / defaults 数值默认"]
       P3["平台包C：competency-framework（新）<br/>核心能力CC、综合素质CQ 标签树"]
       C1["课程包A：course.md（改）<br/>新增 推进模式；人设侧重真正生效"]
       C2["课程包B：roles 任务单元（改，本次核心）<br/>Step、引导、脚手架、验收标准 就地同居<br/>新增 前置、能力标签<br/>guidance 与 scaffolds 两个目录取消"]
@@ -25,7 +25,7 @@ flowchart LR
       F1["compilePlatform 平台包编译器（改）<br/>由 compilePlatformRules 扩容<br/>产出带版本的平台IR"]
       F2["parseLesson 课程结构解析器（留）<br/>扩字段：就地段落、前置、标签"]
       F3["parseKnowledge 知识卡解析器（留）<br/>parseRestrictionRows 防剧透解析器（留）"]
-      F5["mergeDefaults 缺省合并器（新）<br/>平台缺省被课程按白名单覆盖"]
+      F5["mergeDefaults 默认合并器（新）<br/>平台默认被课程按白名单覆盖"]
       F6["buildTaskGraph 任务图装配器（新）<br/>前置关系变成图；不写前置就是链式"]
       F7["buildToolInstances 任务卡生成器（留）"]
       F8["compileCourseIR 课程总装器（改）"]
@@ -109,27 +109,27 @@ flowchart LR
 
 | 现状图一的节点 | 目标态 | 变化 |
 |---|---|---|
-| compilePlatformRules 平台规则编译器 | compilePlatform（改） | 从只编 3 份规则扩为编整个缺省层＋标签树 |
+| compilePlatformRules 平台规则编译器 | compilePlatform（改） | 从只编 3 份规则扩为编整个默认层＋标签树 |
 | parseLesson / parseKnowledge / parseRestriction 系列 | 原样保留 | 只扩字段，解析方式不动 |
 | taskSection 引导/脚手架分段器 | **消失** | 内容就地后不再需要按序号切分装配，装错风险一并消失 |
 | buildToolInstances 任务卡生成器 | 原样保留 | 其 validation 归入 IR 单一验收计划 |
 | compileCourse 课程总装器 | compileCourseIR（改） | 缓存失效从"只认平台版本"改为内容 hash；产出唯一 IR |
 | sync-lessons 公开包裁剪器 | 并入 toPublic 投影器 | 构建脚本仍在，裁剪逻辑与服务端共用同一个函数，双清单消失 |
 | **classifyTurn 回合分类器** | **取消对自由文本的正则分类** | 只保留 routeInput 对"语言/非语言输入"的分流；自由文本的语义判断全部交给 understandTurn，规则不再猜语义 |
-| （雏形：待答问题时的"回合理解器"） | understandTurn 轻量语义理解（新） | 从"特殊情况才调"提为"语言输入必经第一站"；zod 校验＋重试一次＋保守缺省的降级链，绝不回落会循环的正则分支 |
+| （雏形：待答问题时的"回合理解器"） | understandTurn 轻量语义理解（新） | 从"特殊情况才调"提为"语言输入必经第一站"；zod 校验＋重试一次＋保守默认的降级链，绝不回落会循环的正则分支 |
 | （无对应，散落在 service.js 各分支） | tutorPolicy 教学决策器（新） | 确定性代码：拿结构化意图＋任务状态选择教学动作；能看到提醒历史，同样的求助第二次来会换策略而不是复读 |
 | workflowResult 流程话术机 | composeReply 回应组合器（改） | 对话性回应由轻量模型自然生成（先接住学生的话）；流程性事实取 voice.md 模板；写死中文消失 |
 | buildAgentPrompt Prompt 装配器 | 保留但简化 | 从"自己凑 11 个槽"变为"消费 toAgentContext 一个切片" |
 | evaluateStepSubmission AI 阅卷器 | 保留 | 量规就地后只拿本步一段，不再整份灌 evaluation.md |
 | validateStepCompletion / retrieveKnowledge / findSpoiler / llm.generate | 原样保留 | 只是喂料来源变成 IR/切片 |
 | （无对应） | lintLesson（新） | 课程作者的即时反馈，报错到 file:line |
-| （无对应） | mergeDefaults（新） | "换课只需课程 md"的落点：课程没写的都有平台缺省 |
+| （无对应） | mergeDefaults（新） | "换课只需课程 md"的落点：课程没写的都有平台默认 |
 | （无对应） | buildTaskGraph＋advanceProgress（新） | 图三从计数器变图执行器；三种模式的地基 |
 | （无对应） | toAgentContext（新） | 图二的输入契约，图二迭代不再碰编译层 |
 
 ## 图上画不出来的七件事
 
-1. **mergeDefaults 箭头上的规则（覆盖白名单）**：不可覆盖＝三底线＋絮絮名字底色；可覆盖＝语气侧面、话术模板、学段规范、工具与时长缺省。每份平台文件头部自己声明。
+1. **mergeDefaults 箭头上的规则（覆盖白名单）**：不可覆盖＝三底线＋絮絮名字底色；可覆盖＝语气侧面、话术模板、学段规范、工具与时长默认。每份平台文件头部自己声明。
 2. **IR 里"内容 hash"的含义**：hash 写进学生 session，从此能回答"这个学生当时跑的哪版课程"；本地改 md 不用重启；也是未来评价数据对齐的键。
 3. **课程包B 的本质是"消灭引用"而非"修好引用"**：一个任务从散在 5 个文件变为就地同居，大部分引用不再存在。保留的引用只剩 知识引用、限制引用 两种（指向真正共享的内容），全部锚点化并由 lintLesson 编译期校验。
 4. **advanceProgress 背后是"数据与策略分离"**：任务图是数据（任务单元的 前置 字段，不写＝链式，现有 5 门课零迁移）；遍历模式是策略（course.md 一行）。模式1＝链式＋sequential；模式2＝弱依赖＋open；模式3＝无任务图＋methodology 驱动。约束：无序只发生在任务层，Step 内永远线性；闯关线只支持 sequential，对话线支持全部三种。

@@ -242,7 +242,7 @@ NETWORK_RECOVERY
 - 当前是第几个角色阶段；
 - 角色阶段名称；
 - 主要学习目标；
-- 预计时长，读取角色阶段的 `建议时长`；缺省值为 15 分钟。
+- 预计时长，读取角色阶段的 `建议时长`；默认值为 15 分钟。
 
 絮絮的同轮对话只补充当前第一个行动，不复述卡片内容。
 
@@ -680,10 +680,21 @@ P6 主动提醒
 | `stage.started` | 角色阶段卡：序号、名称、主任务、地点、小步数量和 `suggestedSeconds` |
 | `ui.quick_replies` | 与唯一 `pendingQuestion.id` 绑定的快捷回复 |
 | `tool.requested` | 打开导航、课程活动或呼叫老师 |
-| `state.updated` | 写回学习、对话、位置和当前小步状态 |
+| `state.updated` | 写回学习、对话、位置、当前小步状态，以及 `pendingAdvance` |
 | `agent.error` | 校验错误或真实连接错误；两类错误必须区分 |
 
 `tool_result` 目前作为学生端到服务端的输入 `type` 传输；证据反馈通过 `assistant.completed` 和 `state.updated` 返回。后续若拆成单独事件，要同时升级客户端和协议版本。
+
+`state.updated` 的 `pendingAdvance` 是 `{ mode: 'teacher' | 'student', taskId }` 或 `null`：任务做完了，但课程写了 `推进方式：teacher`／`ai_suggest`，所以进度**故意停住**等确认。学生端据此把任务卡的提交区换成「等老师确认」或「继续下一个任务」；不读它的话，学生看到的是一张点了没反应的卡。
+
+解除等待的两个客户端输入（都是 `lifecycle_event`）：
+
+| 事件 | 谁发 | 拒绝条件 |
+|---|---|---|
+| `teacher_advance_task` | 学生端轮询到教师 `advance_task` 指令后代发 | 没在等待（`ADVANCE_NOT_WAITING`）、等的是学生（`ADVANCE_WRONG_ACTOR`）、任务已切换（`ADVANCE_TASK_CHANGED`）、完成记录不在（`ADVANCE_NOT_COMPLETED`） |
+| `student_advance_task` | 学生点任务卡上的「继续下一个任务」 | 同上四条，只是 actor 换成学生 |
+
+两个入口共用同一套校验（`server/agent/task-advance.js`）。**教师不能替学生完成 `ai_suggest` 的确认**——那不是权限问题，是那次停顿本来就属于学生。
 
 ### 17.2 单回合组合限制
 

@@ -20,6 +20,8 @@ function base(intent, additions = {}) {
     includeTaskContext: false,
     includePhasePrompt: false,
     includeRestrictions: false,
+    // 组织信息切片只在 answer_logistics 回合装配，避免每轮都往 Prompt 里塞运营字段。
+    includeLogistics: false,
     allowedTools: [],
     sourceMode: 'conversation',
     ...additions,
@@ -213,6 +215,18 @@ export function classifyTurn({ input, session, nudge }) {
         sourceMode: 'course-config',
       });
     }
+    // 教师指令只改会话状态（阶段、脚手架档位），不让絮絮开口：
+    // 学生端已经自己弹了"老师已推进阶段"这类提示，模型再说一句就是重复。
+    if (input.event === 'teacher_directive') {
+      return base('teacher_directive', { silent: true, sourceMode: 'course-config' });
+    }
+    // 解除等待推进同理不让絮絮单独开口：推进成功后状态机会追加 stage.started
+    // 与新任务的第一小步引导，那两条已经把"现在做什么"说清了。走通用
+    // lifecycle_event 分支会真调一次主模型，且因为没有新话可说，反重复层会把
+    // 回复替换成"这句话我刚才说过了"——学生看到的就是一句莫名其妙的抱怨。
+    if (['teacher_advance_task', 'student_advance_task'].includes(input.event)) {
+      return base('advance_task', { silent: true, sourceMode: 'course-config' });
+    }
     return base('lifecycle_event', {
       includeTaskContext: true,
       includePhasePrompt: true,
@@ -274,14 +288,45 @@ const TUTOR_ACTION_DECISIONS = Object.freeze({
     allowedTools: ['show_navigation', 'call_teacher'],
     sourceMode: 'course-config',
   }),
-  reply_natural: (context) => (context.needsKnowledge
-    ? base('course_knowledge', {
-      includeTaskContext: true,
-      includeRestrictions: true,
-      needsKnowledge: true,
-      allowedTools: [],
-    })
-    : base('social', { includeTaskContext: false, sourceMode: 'conversation' })),
+  // L0：与 deterministicLanguageDecision 的 safety_help 共用 intent，
+  // 因此复用同一条 workflowResult 分支——安全话术只有一份。
+  call_teacher_safety: () => base('safety_help', {
+    signal: 'anxious',
+    fastWorkflow: true,
+    includeTaskContext: false,
+    allowedTools: ['call_teacher'],
+    sourceMode: 'conversation',
+  }),
+  // L2 知识：needsKnowledge 由动作自带，不再靠 service 外挂判断 intent。
+  answer_knowledge: () => base('course_knowledge', {
+    includeTaskContext: true,
+    includeRestrictions: true,
+    needsKnowledge: true,
+    allowedTools: [],
+    sourceMode: 'course-config',
+  }),
+  // L3 组织信息：走模型生成（要按学生问的那一点作答），但取料只给运营切片，
+  // 不给课程知识、不给脚手架——它不是教学回合。
+  answer_logistics: () => base('activity_logistics', {
+    includeTaskContext: true,
+    includeLogistics: true,
+    needsKnowledge: false,
+    allowedTools: ['show_navigation', 'call_teacher'],
+    sourceMode: 'course-config',
+  }),
+  // L4 澄清：与 social 分开，防复读才不会把"没读懂"和"闲聊"混在一起计数。
+  clarify: () => base('clarify_intent', {
+    includeTaskContext: false,
+    sourceMode: 'conversation',
+  }),
+  // 脚手架到顶仍连续求助的出口。不撤走帮助，转请老师。
+  escalate_teacher: () => base('scaffold_exhausted', {
+    fastWorkflow: true,
+    includeTaskContext: true,
+    allowedTools: ['call_teacher'],
+    sourceMode: 'course-config',
+  }),
+  reply_natural: () => base('social', { includeTaskContext: false, sourceMode: 'conversation' }),
 });
 
 export function decisionForTutorAction(action, context = {}) {

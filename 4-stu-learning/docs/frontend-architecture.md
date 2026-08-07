@@ -132,6 +132,7 @@ P01–P05 固定能力和 CM01 不加入活动工具注册表：
 - 会话、课程、角色、课程阶段、角色阶段和当前 Step；
 - `pendingQuestion`、对话生命周期、历史摘要、情绪和脚手架等级；
 - 当前允许工具、`toolCallId`、已完成 Step、证据 ID 和角色阶段状态；
+- `pendingAdvance`：任务已完成但按 `推进方式` 在等教师或学生确认。它必须在服务端会话上，因为解除它的指令要到下一次（或下几次）回合才到；
 - 位置验证、停留时间、教师覆盖、时间状态和安全事件。
 
 服务端是进度推进的最终判定方。客户端刷新或接口重试时使用会话 ID 恢复；过期工具结果不能改变新任务状态。
@@ -226,7 +227,7 @@ learningView: {
 - `stage.started`：显示角色阶段名称、地点、主要任务和 `suggestedSeconds`；
 - `ui.quick_replies`：显示与唯一待回答问题绑定的快捷选项；
 - `tool.requested`：渲染导航、教师求助或课程活动卡；
-- `state.updated`：同步当前 Step、进度、位置和完成状态；
+- `state.updated`：同步当前 Step、进度、位置、完成状态，以及 `pendingAdvance`（`{ mode: 'teacher' | 'student', taskId }` 或 `null`）——任务卡据此显示「等老师确认」或「继续下一个任务」；
 - `agent.error`：保留草稿并显示可操作的重试原因；
 - 教师消息与指令：以系统卡或高优先级全屏层呈现。
 

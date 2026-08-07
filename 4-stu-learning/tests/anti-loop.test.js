@@ -170,25 +170,54 @@ test('“我不知道从哪开始”给的是分级提示，不是地图', async
   );
 });
 
-test('同一句求助连问三次会逐步升档，不是复读同一条提示', async () => {
+/**
+ * 连续求助的正确解法是"换帮法"而不是"撤走帮助"。
+ * 旧实现在第三次同类求助时把 give_scaffold 强制换成 redirect_task——学生第三次说
+ * "这个看不懂"，得到的是"去用工具提交"。现在改为继续升档，档位到顶才转教师。
+ */
+test('同一句求助连问四次会逐档升到顶，不复读也不撤走帮助', async () => {
   const { agent, session } = await harness();
   await say(agent, session, '我已经到位，也准备好了', 'entry');
 
   const levels = [];
   const texts = [];
-  for (let index = 0; index < 3; index += 1) {
+  for (let index = 0; index < 4; index += 1) {
     const turn = await say(agent, session, '这个看不懂', `stuck-${index}`);
     levels.push(turn.result.session.scaffoldLevel);
     texts.push(turn.text);
   }
 
   assert.ok(levels[1] > levels[0], `第二次求助应升档，实际 ${levels.join('→')}`);
+  assert.ok(levels[3] > levels[1], `连续求助应持续升档，实际 ${levels.join('→')}`);
   assert.notEqual(texts[1], texts[0], '第二次求助不应复读第一次的提示');
-  // 第三次连续同一动作触发强制换档，动作本身必须变化。
+
   const actions = session.conversationState.recentTutorActions.map((entry) => entry.action);
+  assert.equal(
+    actions.slice(-4).every((action) => action === 'give_scaffold'),
+    true,
+    `连续求助期间不该撤走脚手架，实际动作序列 ${actions.join(',')}`,
+  );
+});
+
+test('脚手架到顶后仍连续求助会转请老师，而不是继续复读最高档', async () => {
+  const { agent, session } = await harness();
+  await say(agent, session, '我已经到位，也准备好了', 'entry');
+
+  const actions = [];
+  for (let index = 0; index < 7; index += 1) {
+    const turn = await say(agent, session, '这个看不懂', `exhaust-${index}`);
+    actions.push(turn.result.session.conversationState.recentTutorActions.at(-1).action);
+  }
+
+  assert.equal(session.scaffoldLevel, 4, '连续求助应把档位推到平台上限');
   assert.ok(
-    new Set(actions.slice(-3)).size > 1,
-    `连续三次同类求助应换策略，实际动作序列 ${actions.join(',')}`,
+    actions.includes('escalate_teacher'),
+    `档位到顶后应转教师，实际动作序列 ${actions.join(',')}`,
+  );
+  assert.equal(
+    actions.includes('redirect_task'),
+    false,
+    '求助回合不该被换成"去提交证据"',
   );
 });
 
@@ -206,7 +235,7 @@ test('语义理解不可用时不回落到会循环的正则，仍然接住学�
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const agent = createAgentService({
     llm: echoLlm(),
-    // 轻量模型整体不可用：understandTurn 应返回保守缺省而非抛错。
+    // 轻量模型整体不可用：understandTurn 应返回保守默认而非抛错。
     understandingLlm: {
       capabilities: () => ({ nativeTools: false, vision: false }),
       generate: async () => { throw new Error('understanding upstream down'); },

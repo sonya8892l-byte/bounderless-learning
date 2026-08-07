@@ -19,12 +19,13 @@ export const VOICE_DEFAULTS = Object.freeze({
   'navigation.无需前往': '当前“{taskName}”不需要前往指定地点，可以直接继续。',
   'navigation.已打开': '我把前往“{location}”的高德地图打开了。请跟随老师统一移动，现场路线变化以老师引导为准。',
   'safety_help.呼叫老师': '收到，我现在帮你呼叫老师。先停在安全的位置，不要独自继续移动。',
+  'scaffold_exhausted.转老师': '这一步我把能给的线索都给你了，还是卡着说明它确实难。我请老师过来和你一起看“{taskName}”，你先把已经确认的部分留着。',
   'task_progress.小步记下': '好，第{doneNumber}小步记下了。现在做第{nextNumber}小步：{stepText}。',
   'task_progress.小步全记下': '好，这个阶段的{stepCount}个小步都记下了。现在整理任务卡里的照片或记录，提交给我检查。',
   'task_progress.请提交': '收到。请在“{taskName}”任务卡中提交记录或照片，我会根据提交内容帮你检查。',
   'task_progress.继续任务': '好，我们继续“{taskName}”。我把任务工具打开了，有发现随时告诉我。',
   'task_progress.先去地点': '好，我们先去“{location}”。我把高德地图打开了。',
-  'task_step_completed.补充缺省语': '这一步还需要补充。',
+  'task_step_completed.补充默认语': '这一步还需要补充。',
   'task_step_completed.还需要': '还需要：{items}。',
   'task_step_completed.可呼叫老师': '已达到本步最大尝试次数，可以呼叫老师一起看。',
   'task_step_completed.继续小步': '第{doneNumber}小步完成了。现在做第{nextNumber}小步：{stepText}。',
@@ -39,6 +40,7 @@ export const VOICE_DEFAULTS = Object.freeze({
   'prelude.收到提交': '我收到你的提交了，正在看这条证据。',
   'prelude.核对材料': '我先按课程材料帮你核对。',
   'prelude.寒暄': '嗯嗯，我在听～',
+  'prelude.澄清': '我在，不过这句话我还没完全接住。',
   'tool.show_navigation': '我把前往“{location}”的高德地图打开了。',
   'tool.open_task_tool': '我把“{taskName}”任务工具打开了，我们继续。',
   'tool.call_teacher': '我现在帮你呼叫老师，请先停在安全的位置。',
@@ -68,6 +70,27 @@ export const VOICE_DEFAULTS = Object.freeze({
 
 export const VOICE_KEYS = Object.freeze(Object.keys(VOICE_DEFAULTS));
 
+// 2026-08 把「缺省」统一改成「默认」时留下的旧键名。课程或 _platform/voice.md 仍写旧键时
+// 照旧生效：话术键要过 VOICE_KEYS 校验，不认旧名就会被当成"未知键已忽略"，学生那边看到
+// 的是默认话术而不是课程写的那句——静默，且很难查。等存量内容都改完再删这张表。
+const LEGACY_VOICE_KEYS = Object.freeze({
+  'task_step_completed.补充缺省语': 'task_step_completed.补充默认语',
+});
+
+const CURRENT_TO_LEGACY_VOICE_KEY = Object.freeze(
+  Object.fromEntries(Object.entries(LEGACY_VOICE_KEYS).map(([legacy, current]) => [current, legacy])),
+);
+
+/** 把旧键名换成现行键名。传入非旧键时原样返回。 */
+function canonicalVoiceKey(key) {
+  return LEGACY_VOICE_KEYS[key] || key;
+}
+
+/** 现行键名对应的旧键名；没有旧名时返回空串（用它查表拿不到值，正是想要的结果）。 */
+function legacyNameOf(key) {
+  return CURRENT_TO_LEGACY_VOICE_KEY[key] || '';
+}
+
 const VOICE_FALLBACK_DOCUMENT = Object.freeze({
   filename: 'voice.md',
   declaration: Object.freeze({ overridable: true, merge: 'by-key', courseField: '话术覆盖', locked: Object.freeze([]) }),
@@ -77,10 +100,13 @@ const VOICE_FALLBACK_DOCUMENT = Object.freeze({
 });
 
 export function resolveVoice(document, courseOverrides = {}) {
-  const { entries, warnings } = mergeDefaults(document || VOICE_FALLBACK_DOCUMENT, courseOverrides);
+  // 先把旧键名归一，再走合并与未知键校验，否则旧名会被判成未知键而丢掉。
+  const normalizedOverrides = {};
+  for (const [key, value] of Object.entries(courseOverrides)) normalizedOverrides[canonicalVoiceKey(key)] = value;
+  const { entries, warnings } = mergeDefaults(document || VOICE_FALLBACK_DOCUMENT, normalizedOverrides);
   const voice = {};
-  for (const key of VOICE_KEYS) voice[key] = entries[key] || VOICE_DEFAULTS[key];
-  const unknown = Object.keys(courseOverrides).filter((key) => !VOICE_KEYS.includes(key));
+  for (const key of VOICE_KEYS) voice[key] = entries[key] || entries[legacyNameOf(key)] || VOICE_DEFAULTS[key];
+  const unknown = Object.keys(normalizedOverrides).filter((key) => !VOICE_KEYS.includes(key));
   for (const key of unknown) {
     warnings.push({ file: 'voice.md', key, message: `话术覆盖里的「${key}」不是已知模板键，已忽略。` });
   }

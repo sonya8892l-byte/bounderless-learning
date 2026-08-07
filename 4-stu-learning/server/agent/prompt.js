@@ -1,5 +1,5 @@
 import { runtimeSnapshot } from './session-state.js';
-import { toAgentContext } from '../course/agent-context.js';
+import { toAgentContext, toLogisticsContext } from '../course/agent-context.js';
 import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { languageLevelFor } from '../course/platform-defaults.js';
 
@@ -52,6 +52,53 @@ export function taskScaffoldHint(task, scaffoldLevel = 0, guidanceStepIndex = 0,
     || '先选一条最容易确认的现场线索，说说你看到了什么。';
 }
 
+/**
+ * 活动组织信息段。只列课程包里确实有值的字段，空值不写进 Prompt——
+ * 写 `厕所：` 空着比不写更容易让模型去填一个。硬约束紧跟其后，明确"没写的不许猜"。
+ */
+function logisticsSection(context) {
+  const fields = [
+    ['场地', context.venue],
+    ['课程总时长', context.duration],
+    ['适用年级', context.grades],
+    ['分组规则', context.groupRule],
+    ['当前阶段', context.phaseName],
+    ['本阶段计划时长', context.phaseDuration],
+    ['本阶段形式', context.phaseMode],
+    ['本阶段地点', context.phaseLocation],
+    ['当前任务点', context.taskLocationName],
+    ['带队教师', context.teacherName],
+  ].filter(([, value]) => String(value || '').trim());
+  if (context.timeBankEnabled) {
+    fields.push(['时间银行', `已开启${context.timeBankMaxEarn ? `，可赚取上限 ${context.timeBankMaxEarn}` : ''}${context.timeBankGiftRule ? `，赠送范围 ${context.timeBankGiftRule}` : ''}`]);
+  }
+  const known = fields.map(([key, value]) => `- ${key}：${value}`).join('\n');
+  return [
+    '学生问的是本次活动怎么安排，不是课程内容。如实回答，不要反问，也不要用提示代替答案。',
+    known ? `已知信息（只能用这些）：\n${known}` : '课程包没有提供可用的组织信息字段。',
+    context.constraints ? `硬约束：\n${context.constraints}` : '',
+    `上面没有的信息一律不许推测。特别是场馆设施（厕所、饮水处、出口、储物柜）的方位、楼层、距离，以及具体几点几分结束——这些课程包里没有，必须回答：${context.phrases['信息缺失'] || '我这里没有这个信息，问一下带队老师最快。'}`,
+  ].filter(Boolean).join('\n');
+}
+
+/** 情绪与拉回是维度而不是动作：tutorPolicy 判定，这里只翻译成写作要求。 */
+function toneRules(params, stepLabel) {
+  const lines = [];
+  if (params.tone === 'comfort_first') {
+    lines.push('学生情绪偏低但带着具体诉求：先用一句话共情，紧接着把他要的事办掉。不要只安抚就结束，也不要跳过共情直接讲任务。');
+  }
+  if (params.tone === 'comfort_only') {
+    lines.push('学生只是在表达情绪，没有具体诉求：只安抚，本轮不提任务、不给提示、不问推进类问题。');
+  }
+  if (params.tone === 'urgent') {
+    lines.push('这是安全回合：先让学生停下并留在原地，说明已经在叫老师。不要共情铺垫，不要提任务。');
+  }
+  if (params.refocus === true && stepLabel) {
+    lines.push(`回答完之后，附一句把学生轻轻带回当前小步（${stepLabel}）。只加一句，不要展开，也不要催。`);
+  }
+  return lines.join('\n');
+}
+
 function toolRules(decision, task, tool) {
   const allowed = decision.allowedTools || [];
   if (!allowed.length) return '本轮不调用工具，直接回应学生。';
@@ -67,7 +114,9 @@ function toolRules(decision, task, tool) {
   return rules.join('\n');
 }
 
-export function buildAgentPrompt({ course, session, role, knowledge, input, decision = {} }) {
+export function buildAgentPrompt({
+  course, session, role, knowledge, input, decision = {}, teacherName = '',
+}) {
   const platformRules = platformRuleInstructions(course);
   const runtime = runtimeSnapshot(session);
   // 取料集中在智能体投影里，这个函数只负责措辞与按 decision 取舍。
@@ -113,6 +162,10 @@ export function buildAgentPrompt({ course, session, role, knowledge, input, deci
     : '';
   // 就地引导由投影负责 Step 优先于任务级；这里只截断，防止长引导挤占 Prompt。
   const guidanceContext = decision.includeTaskContext ? context.guidance.slice(0, 600) : '';
+  const logisticsContext = decision.includeLogistics
+    ? logisticsSection(toLogisticsContext({ course, session, role, teacherName }))
+    : '';
+  const toneContext = toneRules(decision.params || {}, stepLabel);
   const nudgeContext = decision.intent === 'proactive_nudge'
     ? `提醒原因：${decision.nudge?.reason}；这是第${(session.conversationState?.nudgeCount || 0) + 1}次提醒。用一句关心或轻问句确认学生状态，最多附一个可执行的小提示。避免重复完整任务。`
     : '';
@@ -136,8 +189,10 @@ ${platformRules}
 
 [本轮]
 意图：${decision.intent || '未分类'}。先接住学生当前的话。闲聊和情绪表达不催任务；学生主动求助或讨论发现时再连接课程。
+${section('本轮写作要求', toneContext)}
 ${section('待回答问题', pendingContext)}
 ${section('学生表达标准', learnerContext)}
+${section('活动组织信息', logisticsContext)}
 ${section('任务', taskContext)}
 ${section('阶段规则', phasePrompt)}
 ${section('本步引导方向', guidanceContext)}

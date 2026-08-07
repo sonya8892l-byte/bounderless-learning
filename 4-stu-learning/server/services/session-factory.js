@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-function phaseNumber(phaseId) {
+export function phaseNumber(phaseId) {
   return Number.parseInt(String(phaseId || 'phase-2').match(/\d+/)?.[0], 10) || 2;
 }
 

@@ -169,7 +169,7 @@ for (const config of cases) {
   });
 }
 
-test('旧课程缺省层级为空，新课程入口代码按需展示层级标签', async () => {
+test('旧课程默认层级为空，新课程入口代码按需展示层级标签', async () => {
   clearCourseCache();
   const legacy = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   assert.equal(legacy.lesson.level, '');

@@ -1,5 +1,5 @@
-// 平台缺省层文档的解析与合并。纯函数、无 IO，服务端课程编译与浏览器公开包编译共用同一份实现，
-// 避免两条链各自持有一套缺省值。文件读取与版本计算见 server/course/platform-defaults.js。
+// 平台默认层文档的解析与合并。纯函数、无 IO，服务端课程编译与浏览器公开包编译共用同一份实现，
+// 避免两条链各自持有一套默认值。文件读取与版本计算见 server/course/platform-defaults.js。
 
 export const MERGE_STRATEGIES = Object.freeze(['by-key', 'replace', 'append']);
 
@@ -40,14 +40,14 @@ function parseDeclarationLine(line, declaration, filename) {
 
   if (key === 'overridable') {
     if (!['true', 'false'].includes(value.toLowerCase())) {
-      throw new Error(`平台缺省层 ${filename} 的 overridable 只能是 true 或 false，实际写了：${value}`);
+      throw new Error(`平台默认层 ${filename} 的 overridable 只能是 true 或 false，实际写了：${value}`);
     }
     declaration.overridable = value.toLowerCase() === 'true';
     return true;
   }
   if (key === 'merge') {
     if (!MERGE_STRATEGIES.includes(value)) {
-      throw new Error(`平台缺省层 ${filename} 的 merge 只能是 ${MERGE_STRATEGIES.join(' / ')}，实际写了：${value}`);
+      throw new Error(`平台默认层 ${filename} 的 merge 只能是 ${MERGE_STRATEGIES.join(' / ')}，实际写了：${value}`);
     }
     declaration.merge = value;
     return true;
@@ -61,7 +61,7 @@ function parseDeclarationLine(line, declaration, filename) {
 }
 
 /**
- * 把一份平台缺省层 md 解析成结构化文档。
+ * 把一份平台默认层 md 解析成结构化文档。
  * 头部声明块决定覆盖属性；`## 小节` 下的 `- 键：值` 进 sections，小节之前的进 entries，
  * 其余正文按小节收进 body（voice.md 这类模板文件用 body）。
  */
@@ -126,15 +126,15 @@ export function courseOverrideSection(courseMarkdown, sectionName) {
 }
 
 function lockedWarning(filename, key) {
-  return { file: filename, key, message: `平台缺省层 ${filename} 锁定了「${key}」，课程的覆盖已忽略。` };
+  return { file: filename, key, message: `平台默认层 ${filename} 锁定了「${key}」，课程的覆盖已忽略。` };
 }
 
 function immutableWarning(filename, key) {
-  return { file: filename, key, message: `平台缺省层 ${filename} 不可覆盖，课程写的「${key}」已忽略。` };
+  return { file: filename, key, message: `平台默认层 ${filename} 不可覆盖，课程写的「${key}」已忽略。` };
 }
 
 /**
- * 按 D4 白名单把课程覆盖合并到平台缺省之上。
+ * 按 D4 白名单把课程覆盖合并到平台默认之上。
  * 被拦下的键不静默丢弃，一律进 warnings 由调用方上报。
  */
 export function mergeDefaults(document, courseOverrides = {}) {

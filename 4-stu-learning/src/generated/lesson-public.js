@@ -37,6 +37,228 @@ export default {
           "收集学生的初始假设（C类数据：C2认知数据）",
           "引出核心问题：「600年，为什么不积水？今天我们一起找答案」",
           "发放角色卡（扫码确认角色）"
+        ],
+        "tasks": [
+          {
+            "id": "phase-1-task-1",
+            "roleStageId": "",
+            "name": "看\"暴雨将至\"短片",
+            "phase": "课程任务",
+            "modules": "A06(沉浸媒体)",
+            "tools": [
+              {
+                "id": "media",
+                "module": "A06",
+                "name": "沉浸媒体",
+                "icon": "play",
+                "output": "playback",
+                "config": {
+                  "type": "video",
+                  "url": "",
+                  "poster": "lessons/lesson_gewu_001/assets/videos/video-storm-coming.png",
+                  "title": "暴雨将至",
+                  "requireCompletion": true
+                }
+              }
+            ],
+            "requirement": "短片播放完毕",
+            "guidanceSteps": [
+              "短片播放完毕"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-1-step-1",
+                "objective": "短片播放完毕",
+                "studentAction": "短片播放完毕",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "inherit"
+                },
+                "tools": []
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "无需提交，播放完成即通过",
+            "passCondition": "短片播放完毕",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "media",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "全班"
+          },
+          {
+            "id": "phase-1-task-2",
+            "roleStageId": "",
+            "name": "写下你最初的猜想",
+            "phase": "课程任务",
+            "modules": "A01(文字输入)",
+            "tools": [
+              {
+                "id": "text",
+                "module": "A01",
+                "name": "文字表单",
+                "icon": "notebook-pen",
+                "output": "fields",
+                "config": {
+                  "fields": [
+                    {
+                      "id": "observation",
+                      "label": "观察记录",
+                      "type": "long_text",
+                      "required": true
+                    }
+                  ]
+                }
+              }
+            ],
+            "requirement": "写出是否会积水的判断，并给出至少一条理由",
+            "guidanceSteps": [
+              "写出是否会积水的判断",
+              "并给出至少一条理由"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-2-step-1",
+                "objective": "写出是否会积水的判断",
+                "studentAction": "写出是否会积水的判断",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "inherit"
+                },
+                "tools": []
+              },
+              {
+                "id": "phase-1-task-2-step-2",
+                "objective": "并给出至少一条理由",
+                "studentAction": "并给出至少一条理由",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "inherit"
+                },
+                "tools": []
+              }
+            ],
+            "completionMode": "ai_evaluation",
+            "evidenceRequirement": "一段文字，含判断与理由",
+            "passCondition": "写出是否会积水的判断，并给出至少一条理由",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 300,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "个人"
+          },
+          {
+            "id": "phase-1-task-3",
+            "roleStageId": "",
+            "name": "扫码领取角色卡",
+            "phase": "课程任务",
+            "modules": "A07(扫码)",
+            "tools": [
+              {
+                "id": "scanner",
+                "module": "A07",
+                "name": "扫码识别",
+                "icon": "scan-line",
+                "output": "scanResult",
+                "config": {
+                  "mode": "qr",
+                  "allowManualEntry": true,
+                  "prompt": ""
+                }
+              }
+            ],
+            "requirement": "扫码成功并确认角色",
+            "guidanceSteps": [
+              "扫码成功并确认角色"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-3-step-1",
+                "objective": "扫码成功并确认角色",
+                "studentAction": "扫码成功并确认角色",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "inherit"
+                },
+                "tools": []
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "扫码结果",
+            "passCondition": "扫码成功并确认角色",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "capture",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "个人"
+          }
         ]
       },
       {
@@ -54,7 +276,8 @@ export default {
           "每个角色执行3个递进任务（见 roles/*.md）",
           "任务完成后获得密符字母",
           "时间银行分支任务可并行进行"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-3",
@@ -71,7 +294,8 @@ export default {
           "每个角色撰写\"我的发现报告\"（文字+照片）",
           "小组汇合后，用拼合工具将6个角色的发现整合",
           "尝试还原完整的故宫排水路径"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-4",
@@ -89,7 +313,8 @@ export default {
           "运行模拟——观察水流路径",
           "AI揭示：「你们搭建的系统……能撑过暴雨吗？」",
           "播放暴雨动画验证"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-5",
@@ -106,7 +331,8 @@ export default {
           "AI辅助生成组间对比（不做排名，聚焦差异）",
           "回顾初始假设——「你最初的猜想对了吗？」",
           "AI引导元认知反思：「如果再来一次，你会改变哪一步？」"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-6",
@@ -122,7 +348,8 @@ export default {
           "AI生成个人学习报告预览（完整版后续推送）",
           "絮絮告别：「今天很开心陪你探索！下次见~」",
           "课程结束标记"
-        ]
+        ],
+        "tasks": []
       }
     ],
     "roleSystem": {
@@ -3933,7 +4160,8 @@ export default {
           "每组领取一种动物剪影与候选点位。",
           "学生写下三个真正想查明的问题。",
           "絮絮说明四类信息：观察、资料、推断、期待。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-2",
@@ -3950,7 +4178,8 @@ export default {
           "记录物种名、学名、形态、栖息地和生活方式。",
           "每条事实绑定照片或信息卡编号。",
           "冲突或缺失信息标记“待核”，不由AI补写。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-3",
@@ -3967,7 +4196,8 @@ export default {
           "用箭头说明关系方向。",
           "将人类活动分为帮助、威胁和待判断。",
           "从已有证据推导一种基本需要。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-4",
@@ -3984,7 +4214,8 @@ export default {
           "同伴逐句标记证据编号和信息类型。",
           "修改无来源、过度拟人或绝对化表达。",
           "录制30—60秒真人旁白。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-5",
@@ -4001,7 +4232,8 @@ export default {
           "检查事实、推断和期待标签。",
           "生成居民ID Card草稿。",
           "教师或引导员完成事实复核。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-6",
@@ -4018,7 +4250,8 @@ export default {
           "回答一个“证据在哪里”的问题。",
           "保留仍待核验的信息。",
           "每人提交一项具体、可观察、在一周内可复盘的行动。"
-        ]
+        ],
+        "tasks": []
       }
     ],
     "roleSystem": {
@@ -6949,7 +7182,8 @@ export default {
           "区分保护身份、受威胁等级、种群趋势与措施成效。",
           "选择物种并提出可调查的核心问题。",
           "制定六线取证计划和来源编号规则。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-2",
@@ -6966,7 +7200,8 @@ export default {
           "用“来源—主张—日期—局限”格式登记证据。",
           "将一致、冲突和缺失信息分别上墙。",
           "教师完成第一次来源与点位抽检。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-3",
@@ -6983,7 +7218,8 @@ export default {
           "搭建“人类活动—环境变化—直接威胁—种群结果”链。",
           "对威胁重要性和证据强度分别评分。",
           "保留至少一个替代解释或未知项。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-4",
@@ -7000,7 +7236,8 @@ export default {
           "区分“已经开展”与“已有成效证据”。",
           "用覆盖度、可执行性、公平性和可监测性审计。",
           "识别保护缺口并模拟有限资源配置。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-5",
@@ -7017,7 +7254,8 @@ export default {
           "利益相关者代表从影响、成本和公平性提出质询。",
           "调查组用证据回应，不能回答的列入待核。",
           "记录采纳、部分采纳或暂不采纳及理由。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-6",
@@ -7034,7 +7272,8 @@ export default {
           "提交含目标、行动、主体、资源、指标和复盘日期的行动书。",
           "披露AI使用位置、人工核验人和未解决问题。",
           "每组接受一次可追溯的证据质询。"
-        ]
+        ],
+        "tasks": []
       }
     ],
     "roleSystem": {
@@ -9990,7 +10229,8 @@ export default {
           "区分鸟撞事件、风险代理指标、规范要求和政策建议。",
           "确定一处校园/机构研究范围与替代范围。",
           "完成研究问题、角色分工、伦理与AI使用计划。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-2",
@@ -10007,7 +10247,8 @@ export default {
           "按固定路线和时段观察玻璃反射、通透、绿植与照明。",
           "对照片去除个人信息，记录零发现和调查限制。",
           "形成高、中、低风险点位图；教师完成安全与数据抽检。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-3",
@@ -10024,7 +10265,8 @@ export default {
           "区分法律、[待学生探索]、设计指引、[待学生探索]和倡议。",
           "仅用三城官方原文比较适用范围、措施、程序与执行。",
           "记录版本、效力、适用条件和不可直接移植之处。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-4",
@@ -10041,7 +10283,8 @@ export default {
           "试访谈后修改诱导、隐私或无法回答的问题。",
           "收集最少必要信息，去标识化并允许退出。",
           "双人编码分歧，公开样本边界和未代表群体。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-5",
@@ -10058,7 +10301,8 @@ export default {
           "模拟不同预算、建筑条件和例外情境。",
           "由科学、管理、使用者和权益视角公开听证。",
           "对每条意见记录采纳状态、理由和条款变化。"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-6",
@@ -10075,7 +10319,8 @@ export default {
           "发布赞成理由、反对/保留意见和未解问题。",
           "明示“青少年建议稿”，不宣称正式立法或机构采纳。",
           "如获授权，可向校园/机构提交；记录接收状态，不把提交等同采纳。"
-        ]
+        ],
+        "tasks": []
       }
     ],
     "roleSystem": {
@@ -13321,7 +13566,8 @@ export default {
           "学生提交初始选择：继续北渡、原地作战、向东转移或暂不决策",
           "AI只追问判断依据，不公布后续四渡路线",
           "教师开启角色领取"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-2",
@@ -13339,7 +13585,8 @@ export default {
           "每条证据必须标记：展项/权威资料/课程材料/个人推测",
           "完成核心任务后获得对应战图图层",
           "时间银行分支任务可并行进行"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-3",
@@ -13358,7 +13605,8 @@ export default {
           "小组提交“目标—约束—方案—风险—预期敌方反应”",
           "系统再开放下一段史实，要求标记原判断保留或修正",
           "通讯兵记录：基层执行者实际能看到多少信息"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-4",
@@ -13376,7 +13624,8 @@ export default {
           "学生回答：看不到全局时，一个人凭什么判断、行动和坚持",
           "AI要求区分史实证据、情境推断与价值判断",
           "小组形成双栏结论：战略层的行动逻辑 / 个体层的行动依据"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-5",
@@ -13394,7 +13643,8 @@ export default {
           "教师补充四渡赤水与遵义会议后独立自主、实事求是的历史意义",
           "回看初始方案，记录至少一次判断变化及触发它的证据",
           "完成迁移题：现实中何时应该坚持，何时应该调整方案"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-6",
@@ -13411,7 +13661,8 @@ export default {
           "学生确认哪些内容是史实、推断或价值表达",
           "絮絮告别并提醒：历史判断需要持续回到证据",
           "课程结束标记"
-        ]
+        ],
+        "tasks": []
       }
     ],
     "roleSystem": {

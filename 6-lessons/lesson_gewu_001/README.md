@@ -254,7 +254,7 @@ learningView:
 
 路径相对于课程目录。统一写成 `assets/...`，区分大小写。
 
-课程不配置絮絮的名称与媒体路径，这四个键由平台 `PLATFORM_COMPANION` 锁定；性格与语气的缺省值在 `_platform/companion.md`，课程需要时用 `course.md / ## 人设侧重` 调整语气侧面。公开课程对象不会生成 `persona`，其 `assets` 也不会生成 `companionIdle` 或 `companionTalk`。当前目录中的 `assets/companion/*.webm` 仅为历史副本，不参与平台絮絮渲染。
+课程不配置絮絮的名称与媒体路径，这四个键由平台 `PLATFORM_COMPANION` 锁定；性格与语气的默认值在 `_platform/companion.md`，课程需要时用 `course.md / ## 人设侧重` 调整语气侧面。公开课程对象不会生成 `persona`，其 `assets` 也不会生成 `companionIdle` 或 `companionTalk`。当前目录中的 `assets/companion/*.webm` 仅为历史副本，不参与平台絮絮渲染。
 
 ### 5.4 当前未读取字段
 
@@ -280,6 +280,22 @@ learningView:
 ```
 
 标题必须使用 `## Phase N：名称`。运行时自动生成 `phase-N`。
+
+`### 流程` 是给**教师**看的叙述，平台只读成一个字符串数组，不产生运行行为。要让某一步成为可编译的单元，写成 `### 阶段任务N：`（见下）。
+
+### 6.1.1 阶段任务（本课 Phase 1 已迁移）
+
+不属于任何角色的集体／小组／个人任务写成阶段任务，挂在对应 Phase 下。本课 Phase 1 是全仓第一个真样本：
+
+| 阶段任务 | 执行单位 | 功能模块 | 完成方式 |
+|---|---|---|---|
+| 看"暴雨将至"短片 | 全班 | A06(沉浸媒体) | `tool_result` |
+| 写下你最初的猜想 | 个人 | A01(文字输入) | `ai_evaluation` |
+| 扫码领取角色卡 | 个人 | A07(扫码) | `tool_result` |
+
+字段表与角色任务完全一致，只多一个 `执行单位`（`全班`/`小组`/`个人`，默认 `全班`）。完整写法见 [`../COURSE-SUBMISSION-SPEC.md`](../COURSE-SUBMISSION-SPEC.md) §4.1。
+
+⚠️ **当前状态：可写、可编译、可校验、可进任务图，但学生端还不会跑它。** 阶段任务不进 `currentTaskIndex`，学生看不到它的任务卡；课堂上这三步仍由教师带。Phase 1 原有的 `### 流程` 六条叙述保留未删。
 
 ### 6.2 本课阶段对照
 

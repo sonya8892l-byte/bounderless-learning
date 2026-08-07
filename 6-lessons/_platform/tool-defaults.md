@@ -1,8 +1,8 @@
-# 工具显示名与缺省字段
+# 工具显示名与默认字段
 
 > overridable: true
 > merge: by-key
-> course-field: 工具缺省
+> course-field: 工具默认
 
 只放学生看得见的文案。决定程序行为的中文匹配（例如扫码器何时切到物体识别）留在代码里，教研改这里不会影响分支逻辑。
 
@@ -19,6 +19,6 @@
 - media：沉浸媒体
 - scanner：扫码识别
 
-## 缺省字段
+## 默认字段
 
 - text.observation：观察记录

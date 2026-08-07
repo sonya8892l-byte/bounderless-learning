@@ -281,7 +281,7 @@ export async function buildApp({
   const understandingLlm = (providedLLM || !env.OPENAI_UNDERSTAND_MODEL)
     ? llm
     : createLLM({
-      // 轻量模型可以在另一个服务商；三项缺省沿用主模型那套。
+      // 轻量模型可以在另一个服务商；三项默认沿用主模型那套。
       baseUrl: env.OPENAI_UNDERSTAND_BASE_URL || env.OPENAI_BASE_URL,
       apiKey: env.OPENAI_UNDERSTAND_API_KEY || env.OPENAI_API_KEY,
       model: env.OPENAI_UNDERSTAND_MODEL,

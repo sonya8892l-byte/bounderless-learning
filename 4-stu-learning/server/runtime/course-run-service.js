@@ -76,7 +76,9 @@ function makeParticipants(course, groupCount = 5) {
           idleSeconds: index === 8 ? 260 : 20 + index * 4,
           scaffoldLevel: index % 3,
           timeBalance: 10 + (index % 6),
-          evidenceCount: index % 4,
+          // 证据条数由学生端 presence 上报真实值（session.learningState.evidenceIds 的长度）。
+          // 这里从 0 起，不再造演示数字——教师要靠它判断该不该点「人工通过」。
+          evidenceCount: 0,
           dialogueSummary: index === 8
             ? '学生已尝试两种记录方式，仍不确定应选择哪一处作为证据。'
             : '学生正在按任务要求收集现场证据，尚未出现明显理解偏差。',
@@ -391,6 +393,9 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       if (action === 'confirm_arrival') participant.location.insideFence = true;
       if (action === 'approve_evidence') participant.learning.progress = Math.min(100, participant.learning.progress + 12);
       if (action === 'skip_step') participant.learning.progress = Math.min(100, participant.learning.progress + 8);
+      // `advance_task` 只投递指令，真正改会话的是学生端桥回发的 lifecycle_event
+      // （见 server/agent/task-advance.js）。这里刻意**不动** participant.learning.progress：
+      // 进度前进多少由服务端按真实任务算，教师端不猜。
     }
   }
 
@@ -507,6 +512,7 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       }
       participant.location.observedAt = nowIso();
       if (Number.isFinite(Number(input.progress))) participant.learning.progress = Math.max(0, Math.min(100, Number(input.progress)));
+      if (Number.isFinite(Number(input.evidenceCount))) participant.learning.evidenceCount = Math.max(0, Number(input.evidenceCount));
       if (input.currentTask) participant.learning.currentTask = String(input.currentTask).slice(0, 200);
       if (Number.isFinite(Number(input.idleSeconds))) participant.learning.idleSeconds = Math.max(0, Number(input.idleSeconds));
       publishedEvent = eventFor(state, run.id, 'participant.presence', { participantId: participant.id });

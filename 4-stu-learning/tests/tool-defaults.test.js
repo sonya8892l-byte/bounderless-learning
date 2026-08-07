@@ -11,14 +11,14 @@ import { resolveActivityTools } from '../src/engine/tool-registry.js';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
-test('tool-defaults.md 的 10 个显示名与缺省 label 与代码常量一致', async () => {
+test('tool-defaults.md 的 10 个显示名与默认 label 与代码常量一致', async () => {
   const loaded = await loadPlatformDefaults({ lessonsRoot });
   const { toolDefaults } = resolveToolDefaults(loaded.documents.toolDefaults);
   assert.deepEqual(toolDefaults.names, TOOL_NAME_DEFAULTS);
   assert.deepEqual(toolDefaults.fieldLabels, TOOL_FIELD_LABEL_DEFAULTS);
 });
 
-test('解析工具时显示名来自缺省层；中文正则匹配器仍在代码里', () => {
+test('解析工具时显示名来自默认层；中文正则匹配器仍在代码里', () => {
   const { toolDefaults } = resolveToolDefaults(null, { photo: '现场拍照', 'text.observation': '我的观察' });
   const [photo] = resolveActivityTools('A01（拍照）', '', toolDefaults);
   assert.equal(photo.name, '现场拍照');
@@ -31,7 +31,7 @@ test('解析工具时显示名来自缺省层；中文正则匹配器仍在代�
   assert.equal(text.config.fields[0].label, '我的观察');
 });
 
-test('课程 tool parameters 写了 fields 时不被平台缺省 label 覆盖', () => {
+test('课程 tool parameters 写了 fields 时不被平台默认 label 覆盖', () => {
   const { toolDefaults } = resolveToolDefaults(null, { 'text.observation': '平台观察' });
   const [text] = resolveActivityTools(
     'A01（文字）',
