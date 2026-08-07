@@ -87,7 +87,7 @@ npm run build
 │   ├── services/
 │   │   ├── course-service.js      # 课程加载入口
 │   │   ├── ai-service.js          # AI 会话、SSE、上传与时间银行 API
-│   │   └── map-service.js         # 真实地图能力预留
+│   │   └── amap-service.js        # 高德地图导航与定位
 │   ├── app-controller.js          # 学习状态与交互调度
 │   ├── main.js
 │   ├── styles.css                  # 通用结构与组件样式

@@ -24,6 +24,7 @@ const schema = z.object({
   OPENAI_MODEL: z.string().min(1),
   OPENAI_WIRE_API: z.enum(['responses', 'chat_completions']).default('responses'),
   AI_TOOL_MODE: z.enum(['auto', 'native', 'structured']).default('auto'),
+  // 当前未实现：services/llm.js 硬编码 webSearch: false；接线前配置它没有效果。
   AI_WEB_SEARCH_MODE: z.enum(['auto', 'enabled', 'disabled']).default('auto'),
   AI_VISION_MODE: z.enum(['auto', 'enabled', 'disabled']).default('auto'),
   AI_REASONING_EFFORT: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).default('minimal'),

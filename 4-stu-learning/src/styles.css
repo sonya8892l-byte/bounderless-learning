@@ -503,10 +503,6 @@ svg {
   line-height: 1.65;
 }
 
-.teacher-wait-panel .primary-button {
-  grid-column: 1 / -1;
-}
-
 /* Role selection */
 .group-code {
   padding: 6px 9px;
