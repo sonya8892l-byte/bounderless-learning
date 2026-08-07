@@ -1053,8 +1053,9 @@ export function createAgentService({
     if (!role) throw new Error(`角色 ${input.roleId} 不存在。`);
     const session = await store.create({
       ...input,
-      phaseId: course.publicLesson.roleSystem.phaseId,
-      timeBalance: course.publicLesson.timeBank.initialBalance,
+      phaseId: course.lesson.roleSystem.phaseId,
+      timeBalance: course.lesson.timeBank.initialBalance,
+      contentVersion: course.contentVersion || '',
     });
     ensureSessionRuntime(session, role.tasks[0]);
     await store.save(session);
@@ -1395,7 +1396,7 @@ export function createAgentService({
     const session = await store.get(sessionId);
     if (!session) throw new Error('会话不存在或已经失效。');
     const course = await getCourse(session.courseId);
-    const bank = course.publicLesson.timeBank;
+    const bank = course.lesson.timeBank;
     const task = bank.tasks.find((item) => item.id === taskId);
     if (!task || session.completedBankTaskIds.includes(taskId)) throw new Error('该时间银行任务不可用。');
     const requiredPhase = Number.parseInt(task.unlockAfter?.match(/phase(\d+)/i)?.[1], 10);
@@ -1441,7 +1442,7 @@ export function createAgentService({
     const course = await getCourse(session.courseId);
     const role = course.roles.find((item) => item.id === roleId);
     if (!role) throw new Error('赠送对象不存在。');
-    const rules = course.publicLesson.timeBank.giftRules;
+    const rules = course.lesson.timeBank.giftRules;
     if (!Number.isFinite(amount) || amount < rules.minAmount || amount > rules.maxPerAction) throw new Error('赠送数量不符合课程规则。');
     if (!rules.allowGiftToSelf && roleId === session.roleId) throw new Error('不能赠送给自己。');
     if (session.timeBalance < amount) throw new Error('时间余额不足。');

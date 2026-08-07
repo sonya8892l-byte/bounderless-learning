@@ -16,6 +16,8 @@ export function createSessionRecord(values = {}) {
     runId: values.runId || null,
     participantId: values.participantId || null,
     roleId: values.roleId,
+    // 课程 md＋平台包的联合内容指纹。主体未产出时存空串，不阻塞建会话。
+    contentVersion: values.contentVersion || '',
     grade: values.grade || '初中',
     phaseId,
     phaseNumber: phaseNumber(phaseId),
