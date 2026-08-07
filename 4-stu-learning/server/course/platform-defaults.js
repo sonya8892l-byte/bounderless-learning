@@ -10,6 +10,7 @@ export const PLATFORM_DEFAULT_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'defaults', filename: 'defaults.md', title: '数值缺省' }),
   Object.freeze({ id: 'languageLevels', filename: 'language-levels.md', title: '学段表达规范' }),
   Object.freeze({ id: 'companion', filename: 'companion.md', title: '絮絮人设' }),
+  Object.freeze({ id: 'voice', filename: 'voice.md', title: '流程话术' }),
 ]);
 
 // _platform/companion.md 缺失时的回落。素材路径不进 md：浏览器在构建期就要用到它们，

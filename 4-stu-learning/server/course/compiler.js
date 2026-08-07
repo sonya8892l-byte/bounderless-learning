@@ -4,6 +4,7 @@ import { parseLesson } from '../../src/engine/lesson-parser.js';
 import { compilePlatformRules } from './platform-rules.js';
 import { loadPlatformDefaults, resolveCompanion, resolveLanguageLevels } from './platform-defaults.js';
 import { courseOverrideSection } from '../../src/engine/platform-defaults.js';
+import { assertVoiceHasNoSpoiler, resolveVoice } from './voice.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
 
 export {
@@ -245,7 +246,16 @@ export async function compileCourse({ lessonsRoot, courseId }) {
   );
   defaultWarnings.push(...companion.warnings);
 
+  const voice = resolveVoice(
+    platformDefaults.documents.voice,
+    courseOverrideSection(files['course.md'], '话术覆盖'),
+  );
+  defaultWarnings.push(...voice.warnings);
+
   const restrictionMarkdown = files['restrictions.md'] || '';
+  const restrictions = parseRestrictionRows(restrictionMarkdown);
+  assertVoiceHasNoSpoiler(voice.voice, restrictions.flatMap((rule) => rule.protectedTerms || []));
+
   const course = {
     id: courseId,
     platformRules,
@@ -258,11 +268,12 @@ export async function compileCourse({ lessonsRoot, courseId }) {
         courseOverrideSection(files['course.md'], '学段规范'),
       ),
       companion: companion.companion,
+      voice: voice.voice,
     },
     publicLesson,
     roles,
     knowledge: parseKnowledge(files),
-    restrictions: parseRestrictionRows(restrictionMarkdown),
+    restrictions,
     restrictionMarkdown,
     restrictionDocument: parseRestrictionDocument(restrictionMarkdown),
     phasePrompts,

@@ -3,6 +3,7 @@ import { buildAgentPrompt, platformRuleInstructions, taskScaffoldHint } from './
 import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { TOOL_DEFINITIONS, validateClientTool } from './tools.js';
 import { findSpoiler, retrieveKnowledge } from '../course/retrieval.js';
+import { renderVoice } from '../course/voice.js';
 import { resolveStepRestrictions } from '../course/restriction-sections.js';
 import { evaluateNudge, recordNudge } from './nudge-policy.js';
 import {
@@ -29,7 +30,6 @@ import {
   classifyTurn,
   decisionForTutorAction,
   deterministicLanguageDecision,
-  fastConversationReply,
   resolvePendingAnswer,
   routeInput,
   toolsForDecision,
@@ -48,7 +48,6 @@ import {
   taskRequiresArrival,
   unclearInputReply,
 } from './dialogue-policy.js';
-import { parseTurnUnderstanding, understandingInstructions } from './turn-understanding.js';
 
 export class AgentActionError extends Error {
   constructor(message, code, details = {}) {
@@ -439,6 +438,9 @@ function askNextOnboarding({ session, task, role }) {
 function workflowResult({ decision, role, session, course, input }) {
   const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
   const tool = role.tools.find((item) => item.taskIndex === session.currentTaskIndex);
+  const voice = course?.platformDefaults?.voice;
+  const say = (key, params = {}) => renderVoice(voice, key, params);
+  const locationName = task.location?.name || role.location;
   if (decision.intent === 'role_assigned') {
     if (!taskRequiresArrival(task) || session.locationState?.status === 'arrived') {
       confirmDialogueSlot(session, 'arrival', true);
@@ -447,7 +449,11 @@ function workflowResult({ decision, role, session, course, input }) {
     if (!next) return startCurrentRoleStage({ session, task, tool });
     return {
       ...next,
-      text: `欢迎你，${role.name}！我是${PLATFORM_COMPANION.name}。${next.text}`,
+      text: say('role_assigned.欢迎', {
+        roleName: role.name,
+        companionName: course?.platformDefaults?.companion?.name || PLATFORM_COMPANION.name,
+        next: next.text,
+      }),
       toolCalls: [],
     };
   }
@@ -455,7 +461,9 @@ function workflowResult({ decision, role, session, course, input }) {
     const next = askNextOnboarding({ session, task, role });
     return {
       ...(next || {}),
-      text: next ? `刚才的选项已经失效了。${next.text}` : '刚才的选项已经失效了，我们按当前进度继续。',
+      text: next
+        ? say('quick_reply_stale.有下一问', { next: next.text })
+        : say('quick_reply_stale.无下一问'),
       toolCalls: [],
       dialogueMove: 'repair_stale_action',
     };
@@ -466,12 +474,12 @@ function workflowResult({ decision, role, session, course, input }) {
     confirmDialogueSlot(session, 'arrival', !taskRequiresArrival(task));
     if (!taskRequiresArrival(task)) {
       const next = askNextOnboarding({ session, task, role });
-      return { ...next, text: `这个任务没有指定地点。${next.text}`, toolCalls: [] };
+      return { ...next, text: say('onboarding_not_arrived.无需前往', { next: next.text }), toolCalls: [] };
     }
     const question = arrivalQuestion(task, role);
     askQuestion(session, question);
     return {
-      text: `好，先跟紧小组和老师。我把前往“${task.location?.name || role.location}”的高德地图打开，到了再告诉我。`,
+      text: say('onboarding_not_arrived.导航', { location: locationName }),
       toolCalls: [navigationToolCall(task)],
       dialogueMove: 'support_navigation',
       quickReplies: [],
@@ -486,7 +494,7 @@ function workflowResult({ decision, role, session, course, input }) {
     const question = readinessQuestion(task);
     askQuestion(session, question);
     return {
-      text: '好，我等你。先检查队伍、物品和周围安全，准备好时告诉我。',
+      text: say('onboarding_not_ready.等待'),
       toolCalls: [],
       dialogueMove: 'wait_for_readiness',
       quickReplies: [{ id: 'readiness-yes', label: '现在开始', value: '我准备好了' }],
@@ -507,7 +515,7 @@ function workflowResult({ decision, role, session, course, input }) {
       const question = arrivalQuestion(task, role);
       askQuestion(session, question);
       return {
-        text: `知道了。我把去“${task.location?.name || role.location}”的高德地图打开，你跟着老师和小组移动。`,
+        text: say('pending_answer.未到达导航', { location: locationName }),
         toolCalls: taskRequiresArrival(task) ? [navigationToolCall(task)] : [],
         dialogueMove: 'support_navigation',
         quickReplies: [],
@@ -517,7 +525,7 @@ function workflowResult({ decision, role, session, course, input }) {
       const question = readinessQuestion(task);
       askQuestion(session, question);
       return {
-        text: '好，我等你。准备好时告诉我就行。',
+        text: say('pending_answer.等待准备'),
         toolCalls: [],
         dialogueMove: 'wait_for_readiness',
         quickReplies: [{ id: 'readiness-yes', label: '现在开始', value: '我准备好了' }],
@@ -527,7 +535,9 @@ function workflowResult({ decision, role, session, course, input }) {
     if (next) {
       return {
         ...next,
-        text: resolved?.pending.kind === 'arrival' ? `到达确认了。${next.text}` : next.text,
+        text: resolved?.pending.kind === 'arrival'
+          ? say('pending_answer.到达确认', { next: next.text })
+          : next.text,
         toolCalls: [],
       };
     }
@@ -553,7 +563,7 @@ function workflowResult({ decision, role, session, course, input }) {
     }
     if (!session.onboardingState.completed) {
       const next = askNextOnboarding({ session, task, role });
-      if (next) return { ...next, text: `已经到位了。${next.text}`, toolCalls: [] };
+      if (next) return { ...next, text: say('navigation_completed.已到位', { next: next.text }), toolCalls: [] };
       return startCurrentRoleStage({ session, task, tool });
     }
     if (!session.taskState.stageAnnounced) {
@@ -570,15 +580,15 @@ function workflowResult({ decision, role, session, course, input }) {
       const stepIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
       return {
         text: stepIndex < steps.length
-          ? `到位验证通过。现在做第${stepIndex + 1}小步：${steps[stepIndex]}。`
-          : '到位验证通过，这个阶段的小步已经完成，可以整理结果提交。',
+          ? say('navigation_completed.继续小步', { stepNumber: stepIndex + 1, stepText: steps[stepIndex] })
+          : say('navigation_completed.小步已完成'),
         toolCalls: [],
         dialogueMove: 'guide_current_step',
         quickReplies: [],
       };
     }
     return {
-      text: `已经回到“${task.name}”，我们接着当前小步继续。`,
+      text: say('navigation_completed.回到任务', { taskName: task.name }),
       toolCalls: [taskToolCall(tool, '继续当前任务')],
       dialogueMove: 'resume_current_step',
       quickReplies: [],
@@ -586,10 +596,10 @@ function workflowResult({ decision, role, session, course, input }) {
   }
   if (decision.intent === 'navigation') {
     if (task.location?.mode === 'none') {
-      return { text: `当前“${task.name}”不需要前往指定地点，可以直接继续。`, toolCalls: [], dialogueMove: 'clarify_location', quickReplies: [] };
+      return { text: say('navigation.无需前往', { taskName: task.name }), toolCalls: [], dialogueMove: 'clarify_location', quickReplies: [] };
     }
     return {
-      text: `我把前往“${task.location?.name || role.location}”的高德地图打开了。请跟随老师统一移动，现场路线变化以老师引导为准。`,
+      text: say('navigation.已打开', { location: locationName }),
       toolCalls: [{
         id: `call_${crypto.randomUUID()}`,
         name: 'show_navigation',
@@ -940,8 +950,13 @@ export function createAgentService({
   logger,
   // 语义理解用的轻量模型。未单独配置时复用主模型（同一网关，行为不变）。
   understandingLlm = llm,
+  // 语义理解的总预算（含一次重试）。缺省值由 understanding.js 持有。
+  understandingTimeoutMs,
 }) {
-  const understanding = createUnderstanding({ llm: understandingLlm });
+  const understanding = createUnderstanding({
+    llm: understandingLlm,
+    ...(understandingTimeoutMs ? { timeoutMs: understandingTimeoutMs } : {}),
+  });
   // 决策入口（D6 乙案）：非语言输入走原有确定性规则；
   // 自由文字必经「轻量语义理解 → 确定性教学决策 → 映射为 decision」三段。
   async function resolveDecision({ input, session, course, role, nudge, task, signal }) {
