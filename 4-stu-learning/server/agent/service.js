@@ -611,7 +611,7 @@ function workflowResult({ decision, role, session, course, input }) {
   }
   if (decision.intent === 'safety_help') {
     return {
-      text: '收到，我现在帮你呼叫老师。先停在安全的位置，不要独自继续移动。',
+      text: say('safety_help.呼叫老师'),
       toolCalls: [{
         id: `call_${crypto.randomUUID()}`,
         name: 'call_teacher',
@@ -635,20 +635,24 @@ function workflowResult({ decision, role, session, course, input }) {
         setDialogueLifecycle(session, currentIndex + 1 < steps.length ? 'GUIDE_CURRENT_STEP' : 'WAIT_FOR_TOOL_RESULT');
         return {
           text: currentIndex + 1 < steps.length
-            ? `好，第${currentIndex + 1}小步记下了。现在做第${currentIndex + 2}小步：${steps[currentIndex + 1]}。`
-            : `好，这个阶段的${steps.length}个小步都记下了。现在整理任务卡里的照片或记录，提交给我检查。`,
+            ? say('task_progress.小步记下', {
+              doneNumber: currentIndex + 1,
+              nextNumber: currentIndex + 2,
+              stepText: steps[currentIndex + 1],
+            })
+            : say('task_progress.小步全记下', { stepCount: steps.length }),
           toolCalls: [],
           dialogueMove: currentIndex + 1 < steps.length ? 'guide_current_step' : 'request_required_evidence',
           quickReplies: [],
         };
       }
-      return { text: `收到。请在“${task.name}”任务卡中提交记录或照片，我会根据提交内容帮你检查。`, toolCalls: [], dialogueMove: 'request_required_evidence', quickReplies: [] };
+      return { text: say('task_progress.请提交', { taskName: task.name }), toolCalls: [], dialogueMove: 'request_required_evidence', quickReplies: [] };
     }
     const arrived = task.location?.mode === 'none' || session.locationState?.status === 'arrived';
     return {
       text: arrived
-        ? `好，我们继续“${task.name}”。我把任务工具打开了，有发现随时告诉我。`
-        : `好，我们先去“${task.location?.name || role.location}”。我把高德地图打开了。`,
+        ? say('task_progress.继续任务', { taskName: task.name })
+        : say('task_progress.先去地点', { location: locationName }),
       toolCalls: arrived ? [{
         id: `call_${crypto.randomUUID()}`,
         name: 'open_task_tool',
@@ -667,10 +671,12 @@ function workflowResult({ decision, role, session, course, input }) {
     const stepIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
     if (input.data?.aiEvaluation?.passed === false) {
       const evaluation = input.data.aiEvaluation;
-      const missing = evaluation.missing?.length ? ` 还需要：${evaluation.missing.join('、')}。` : '';
-      const teacherHint = evaluation.teacherRecommended ? ' 已达到本步最大尝试次数，可以呼叫老师一起看。' : '';
       return {
-        text: `${evaluation.feedback || '这一步还需要补充。'}${missing}${teacherHint}`,
+        text: [
+          evaluation.feedback || say('task_step_completed.补充缺省语'),
+          evaluation.missing?.length ? say('task_step_completed.还需要', { items: evaluation.missing.join('、') }) : '',
+          evaluation.teacherRecommended ? say('task_step_completed.可呼叫老师') : '',
+        ].filter(Boolean).join(' '),
         toolCalls: [],
         dialogueMove: 'request_step_revision',
         quickReplies: [],
@@ -679,7 +685,14 @@ function workflowResult({ decision, role, session, course, input }) {
     if (stepIndex < steps.length) {
       setDialogueLifecycle(session, 'GUIDE_CURRENT_STEP');
       return {
-        text: `${input.data?.aiEvaluation?.feedback ? `${input.data.aiEvaluation.feedback} ` : ''}第${stepIndex}小步完成了。现在做第${stepIndex + 1}小步：${steps[stepIndex]}。`,
+        text: [
+          input.data?.aiEvaluation?.feedback || '',
+          say('task_step_completed.继续小步', {
+            doneNumber: stepIndex,
+            nextNumber: stepIndex + 1,
+            stepText: steps[stepIndex],
+          }),
+        ].filter(Boolean).join(' '),
         toolCalls: [],
         dialogueMove: 'guide_current_step',
         quickReplies: [],
@@ -687,7 +700,7 @@ function workflowResult({ decision, role, session, course, input }) {
     }
     setDialogueLifecycle(session, 'WAIT_FOR_TOOL_RESULT');
     return {
-      text: `很好，这个阶段的${steps.length}个小步都完成了。现在整理好照片或记录，在任务卡里提交给我检查。`,
+      text: say('task_step_completed.全部完成', { stepCount: steps.length }),
       toolCalls: [],
       dialogueMove: 'request_required_evidence',
       quickReplies: [],
@@ -696,7 +709,7 @@ function workflowResult({ decision, role, session, course, input }) {
   if (decision.intent === 'proactive_nudge') {
     if (decision.nudge?.reason === 'location_pending' && task.location?.mode !== 'none') {
       return {
-        text: `还顺利吗？如果没找到“${task.location?.name || role.location}”，我把高德地图再放到这里。`,
+        text: say('proactive_nudge.找不到地点', { location: locationName }),
         toolCalls: [{
           id: `call_${crypto.randomUUID()}`,
           name: 'show_navigation',
@@ -707,7 +720,9 @@ function workflowResult({ decision, role, session, course, input }) {
       };
     }
     return {
-      text: `还顺利吗？可以先试这一小步：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session))}`,
+      text: say('proactive_nudge.试一小步', {
+        hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session)),
+      }),
       toolCalls: [],
       dialogueMove: 'proactive_support',
       quickReplies: [],
@@ -718,27 +733,31 @@ function workflowResult({ decision, role, session, course, input }) {
 
 function degradedReply(decision, role, session, course) {
   const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  if (decision.intent === 'emotion') return '我在听。你可以慢一点说，我会陪你一起理清。';
+  const voice = course?.platformDefaults?.voice;
+  if (decision.intent === 'emotion') return renderVoice(voice, 'degraded.情绪');
   if (['task_help', 'task_followup', 'course_knowledge', 'tool_result'].includes(decision.intent)) {
-    return `我收到啦。先从“${task.name}”里最确定的一条现场线索开始，把它告诉我，我继续陪你分析。`;
+    return renderVoice(voice, 'degraded.任务线索', { taskName: task.name });
   }
   if (decision.intent === 'proactive_nudge') return '';
-  return `我听见了，不过这句话我还没完全接住。你愿意再多说一点吗？`;
+  return renderVoice(voice, 'degraded.没接住');
 }
 
-function immediatePrelude(decision, role, session) {
+function immediatePrelude(decision, role, session, course) {
   const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+  const voice = course?.platformDefaults?.voice;
   if (['task_help', 'task_followup'].includes(decision.intent)) {
-    return `我在。先试一个小步骤：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session))}`;
+    return renderVoice(voice, 'prelude.求助', {
+      hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session)),
+    });
   }
-  if (decision.intent === 'emotion') return '我在听，你慢慢说。';
-  if (decision.intent === 'tool_result') return '我收到你的提交了，正在看这条证据。';
-  if (decision.intent === 'course_knowledge') return '我先按课程材料帮你核对。';
-  if (decision.intent === 'social') return '嗯嗯，我在听～';
+  if (decision.intent === 'emotion') return renderVoice(voice, 'prelude.情绪');
+  if (decision.intent === 'tool_result') return renderVoice(voice, 'prelude.收到提交');
+  if (decision.intent === 'course_knowledge') return renderVoice(voice, 'prelude.核对材料');
+  if (decision.intent === 'social') return renderVoice(voice, 'prelude.寒暄');
   return '';
 }
 
-function knowledgeExcerptReply(knowledge) {
+function knowledgeExcerptReply(knowledge, course) {
   const content = String(knowledge[0]?.content || '')
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/^[-*]\s+/gm, '')
@@ -747,15 +766,18 @@ function knowledgeExcerptReply(knowledge) {
     .trim();
   if (!content) return '';
   const excerpt = content.length > 110 ? `${content.slice(0, 108)}……` : content;
-  return `根据课程材料，${excerpt}`;
+  return renderVoice(course?.platformDefaults?.voice, 'knowledge.摘录', { excerpt });
 }
 
-function toolNarration(call, role, session) {
+function toolNarration(call, role, session, course) {
   const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  if (call?.name === 'show_navigation') return `我把前往“${task.location?.name || role.location}”的高德地图打开了。`;
-  if (call?.name === 'open_task_tool') return `我把“${task.name}”任务工具打开了，我们继续。`;
-  if (call?.name === 'call_teacher') return '我现在帮你呼叫老师，请先停在安全的位置。';
-  return '我已经打开接下来需要的工具。';
+  const voice = course?.platformDefaults?.voice;
+  if (call?.name === 'show_navigation') {
+    return renderVoice(voice, 'tool.show_navigation', { location: task.location?.name || role.location });
+  }
+  if (call?.name === 'open_task_tool') return renderVoice(voice, 'tool.open_task_tool', { taskName: task.name });
+  if (call?.name === 'call_teacher') return renderVoice(voice, 'tool.call_teacher');
+  return renderVoice(voice, 'tool.默认');
 }
 
 function guardedDeltaEmitter({ course, session, emit }) {
@@ -1161,9 +1183,9 @@ export function createAgentService({
       if (decision.fastWorkflow) {
         result = workflowResult({ decision, role, session, course, input });
       } else if (decision.fastGuidance) {
-        result.text = immediatePrelude(decision, role, session);
+        result.text = immediatePrelude(decision, role, session, course);
       } else if (decision.intent === 'course_knowledge' && knowledge.length) {
-        result.text = knowledgeExcerptReply(knowledge);
+        result.text = knowledgeExcerptReply(knowledge, course);
       } else {
         try {
         let shouldUseStructured = Boolean(tools.length && !llm.capabilities().nativeTools);
@@ -1172,7 +1194,7 @@ export function createAgentService({
           && !tools.length
           && !['proactive_nudge', 'lifecycle_event'].includes(decision.intent),
         );
-        const prelude = canStream ? immediatePrelude(decision, role, session) : '';
+        const prelude = canStream ? immediatePrelude(decision, role, session, course) : '';
         if (prelude) {
           streamed = true;
           onTextDelta(prelude);
@@ -1206,7 +1228,7 @@ export function createAgentService({
         }
 
         if (!result.text && result.toolCalls.length) {
-          result = { ...result, text: toolNarration(result.toolCalls[0], role, session) };
+          result = { ...result, text: toolNarration(result.toolCalls[0], role, session, course) };
         }
 
         const spoiler = deltaGuard?.isBlocked() || findSpoiler(result.text, course, session);
@@ -1226,7 +1248,7 @@ export function createAgentService({
               status: Number.isInteger(error?.status) ? error.status : null,
             },
           }, 'model request degraded');
-          const prelude = immediatePrelude(decision, role, session);
+          const prelude = immediatePrelude(decision, role, session, course);
           streamed = Boolean(prelude);
           result = {
             text: prelude || degradedReply(decision, role, session, course),

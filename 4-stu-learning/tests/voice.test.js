@@ -43,7 +43,60 @@ const ORIGINAL = Object.freeze([
     '当前“观其形”不需要前往指定地点，可以直接继续。'],
   ['navigation.已打开', { location: '三大殿三台' },
     '我把前往“三大殿三台”的高德地图打开了。请跟随老师统一移动，现场路线变化以老师引导为准。'],
+  ['safety_help.呼叫老师', {},
+    '收到，我现在帮你呼叫老师。先停在安全的位置，不要独自继续移动。'],
+  ['task_progress.小步记下', { doneNumber: 1, nextNumber: 2, stepText: '拍摄侧面' },
+    '好，第1小步记下了。现在做第2小步：拍摄侧面。'],
+  ['task_progress.小步全记下', { stepCount: 3 },
+    '好，这个阶段的3个小步都记下了。现在整理任务卡里的照片或记录，提交给我检查。'],
+  ['task_progress.请提交', { taskName: '观其形' },
+    '收到。请在“观其形”任务卡中提交记录或照片，我会根据提交内容帮你检查。'],
+  ['task_progress.继续任务', { taskName: '观其形' },
+    '好，我们继续“观其形”。我把任务工具打开了，有发现随时告诉我。'],
+  ['task_progress.先去地点', { location: '三大殿三台' },
+    '好，我们先去“三大殿三台”。我把高德地图打开了。'],
+  ['task_step_completed.补充缺省语', {}, '这一步还需要补充。'],
+  ['task_step_completed.还需要', { items: '正面全景、台基边缘' }, '还需要：正面全景、台基边缘。'],
+  ['task_step_completed.可呼叫老师', {}, '已达到本步最大尝试次数，可以呼叫老师一起看。'],
+  ['task_step_completed.继续小步', { doneNumber: 1, nextNumber: 2, stepText: '拍摄侧面' },
+    '第1小步完成了。现在做第2小步：拍摄侧面。'],
+  ['task_step_completed.全部完成', { stepCount: 3 },
+    '很好，这个阶段的3个小步都完成了。现在整理好照片或记录，在任务卡里提交给我检查。'],
+  ['proactive_nudge.找不到地点', { location: '三大殿三台' },
+    '还顺利吗？如果没找到“三大殿三台”，我把高德地图再放到这里。'],
+  ['proactive_nudge.试一小步', { hint: '先看嘴巴形状' }, '还顺利吗？可以先试这一小步：先看嘴巴形状'],
+  ['degraded.情绪', {}, '我在听。你可以慢一点说，我会陪你一起理清。'],
+  ['degraded.任务线索', { taskName: '观其形' },
+    '我收到啦。先从“观其形”里最确定的一条现场线索开始，把它告诉我，我继续陪你分析。'],
+  ['degraded.没接住', {}, '我听见了，不过这句话我还没完全接住。你愿意再多说一点吗？'],
+  ['prelude.求助', { hint: '先看嘴巴形状' }, '我在。先试一个小步骤：先看嘴巴形状'],
+  ['prelude.情绪', {}, '我在听，你慢慢说。'],
+  ['prelude.收到提交', {}, '我收到你的提交了，正在看这条证据。'],
+  ['prelude.核对材料', {}, '我先按课程材料帮你核对。'],
+  ['prelude.寒暄', {}, '嗯嗯，我在听～'],
+  ['tool.show_navigation', { location: '三大殿三台' }, '我把前往“三大殿三台”的高德地图打开了。'],
+  ['tool.open_task_tool', { taskName: '观其形' }, '我把“观其形”任务工具打开了，我们继续。'],
+  ['tool.call_teacher', {}, '我现在帮你呼叫老师，请先停在安全的位置。'],
+  ['tool.默认', {}, '我已经打开接下来需要的工具。'],
+  ['knowledge.摘录', { excerpt: '螭首是排水构件。' }, '根据课程材料，螭首是排水构件。'],
 ]);
+
+// 验收反馈由三段拼成，拼装规则在 service.js 里。这里锁住拼出来的成品与搬运前一致。
+test('验收反馈的三段拼装结果与搬运前一致', async () => {
+  clearCourseCache();
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const { voice } = course.platformDefaults;
+  const compose = (feedback, items, teacher) => [
+    feedback || renderVoice(voice, 'task_step_completed.补充缺省语'),
+    items ? renderVoice(voice, 'task_step_completed.还需要', { items }) : '',
+    teacher ? renderVoice(voice, 'task_step_completed.可呼叫老师') : '',
+  ].filter(Boolean).join(' ');
+
+  assert.equal(compose('照片有点糊。', '正面全景', true),
+    '照片有点糊。 还需要：正面全景。 已达到本步最大尝试次数，可以呼叫老师一起看。');
+  assert.equal(compose('', '', false), '这一步还需要补充。');
+  assert.equal(compose('照片有点糊。', '', false), '照片有点糊。');
+});
 
 test('voice.md 逐 key 渲染的结果与搬运前的硬编码逐字相同', async () => {
   clearCourseCache();
