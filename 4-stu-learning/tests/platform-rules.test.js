@@ -21,7 +21,7 @@ test('平台规则包按固定顺序编译进服务端课程对象', async () =>
   assert.match(course.platformRules.prompt, /必须通过追问、引导、提示让学生自己得出结论/);
   assert.match(course.platformRules.prompt, /不主动询问学生的家庭信息、联系方式、健康状况/);
   assert.equal(Object.keys(course.files).some((filename) => filename.startsWith('_platform/')), false);
-  assert.doesNotMatch(JSON.stringify(course.publicLesson), /禁止建议学生攀爬/);
+  assert.doesNotMatch(JSON.stringify(course.lesson), /禁止建议学生攀爬/);
 });
 
 test('平台规则内容变化会生成新的稳定版本', async (t) => {

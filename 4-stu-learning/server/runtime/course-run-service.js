@@ -16,7 +16,7 @@ function httpError(statusCode, message, details) {
 }
 
 function courseCenter(course) {
-  const configured = course.publicLesson.mapCenter;
+  const configured = course.lesson.mapCenter;
   if (Array.isArray(configured) && configured.length === 2 && configured.every(Number.isFinite)) {
     return configured;
   }
@@ -32,7 +32,7 @@ function courseCenter(course) {
 
 function makeParticipants(course, groupCount = 5) {
   const center = courseCenter(course);
-  if (!center) throw httpError(422, `课程「${course.publicLesson.title}」缺少坐标中心，无法创建安全场次。`);
+  if (!center) throw httpError(422, `课程「${course.lesson.title}」缺少坐标中心，无法创建安全场次。`);
   const participants = [];
   const groups = [];
   for (let groupIndex = 0; groupIndex < groupCount; groupIndex += 1) {
@@ -201,18 +201,18 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       teacherName: input.teacherName || '带队教师',
       courseId: course.id,
       courseVersion: input.courseVersion || '1.0.0',
-      courseTitle: course.publicLesson.title,
+      courseTitle: course.lesson.title,
       className: input.className || '故宫研学班',
       status: input.status || 'draft',
-      phaseId: course.publicLesson.phases[0]?.id || 'phase-1',
-      phaseName: course.publicLesson.phases[0]?.name || '课前准备',
+      phaseId: course.lesson.phases[0]?.id || 'phase-1',
+      phaseName: course.lesson.phases[0]?.name || '课前准备',
       phaseIndex: 0,
       phaseRemainingSeconds: 5400,
       paused: false,
       rolesReleased: false,
       rolesLocked: false,
       entryCode: String(Math.floor(100000 + Math.random() * 900000)),
-      mapAsset: `/${course.publicLesson.assets.navigationMap}`,
+      mapAsset: `/${course.lesson.assets.navigationMap}`,
       mapCenter: center,
       groupCount: groups.length,
       groups,

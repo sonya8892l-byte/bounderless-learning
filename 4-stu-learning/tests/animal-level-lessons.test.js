@@ -82,7 +82,7 @@ for (const config of cases) {
   test(`${config.id} 可编译并满足三层级课程结构契约`, async () => {
     clearCourseCache();
     const course = await compileCourse({ lessonsRoot, courseId: config.id });
-    const lesson = course.publicLesson;
+    const lesson = course.lesson;
 
     assert.equal(lesson.series, '致知');
     assert.equal(lesson.seriesCode, 'zhizhi');
@@ -172,8 +172,8 @@ for (const config of cases) {
 test('旧课程缺省层级为空，新课程入口代码按需展示层级标签', async () => {
   clearCourseCache();
   const legacy = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
-  assert.equal(legacy.publicLesson.level, '');
-  assert.equal(legacy.publicLesson.levelCode, '');
+  assert.equal(legacy.lesson.level, '');
+  assert.equal(legacy.lesson.levelCode, '');
 
   const appController = await fs.readFile(new URL('../src/app-controller.js', import.meta.url), 'utf8');
   assert.match(appController, /lesson\.level\s*\?/);

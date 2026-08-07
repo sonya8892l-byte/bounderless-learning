@@ -28,7 +28,7 @@ test('课程编译器生成六角色、知识、限制和工具实例', async ()
   assert.equal(course.knowledge.length, 19);
   assert.equal(course.roles.flatMap((role) => role.tools).length, 18);
   assert.ok(course.restrictions.length >= 9);
-  assert.deepEqual(course.publicLesson.learningView, {
+  assert.deepEqual(course.lesson.learningView, {
     enabled: true,
     default: 'dialogue',
     allowStudentSwitch: true,
@@ -74,9 +74,9 @@ test('模拟结果必须在事件完成后解锁，真相反例不会对普通�
 
 test('第二门课程可从课程配置解析新角色、工具和角色解锁条件', async () => {
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
-  assert.deepEqual(course.publicLesson.mapCenter, [116.3953, 40.0071]);
-  assert.equal(course.publicLesson.venue, '中国共产党历史展览馆');
-  assert.deepEqual(course.publicLesson.learningView, {
+  assert.deepEqual(course.lesson.mapCenter, [116.3953, 40.0071]);
+  assert.equal(course.lesson.venue, '中国共产党历史展览馆');
+  assert.deepEqual(course.lesson.learningView, {
     enabled: true,
     default: 'dialogue',
     allowStudentSwitch: true,
@@ -127,12 +127,12 @@ test('第二门课程可从课程配置解析新角色、工具和角色解锁�
     assert.equal(publicToolConfig.includes(privateKey), false, `公开工具配置包含 ${privateKey}`);
   }
   assert.equal(course.phasePrompts['phase-4'].includes('课程情境材料｜史料出处待核'), true);
-  assert.equal(Object.hasOwn(course.publicLesson, 'persona'), false);
+  assert.equal(Object.hasOwn(course.lesson, 'persona'), false);
   assert.equal(PLATFORM_COMPANION.posterAsset, '/assets/images/xuxu-avatar.png');
   assert.equal(PLATFORM_COMPANION.idleAsset, '/assets/video/xuxu-idle.webm');
   assert.equal(PLATFORM_COMPANION.talkAsset, '/assets/video/xuxu-talk.webm');
-  assert.equal(Object.hasOwn(course.publicLesson.assets, 'companionIdle'), false);
-  assert.equal(Object.hasOwn(course.publicLesson.assets, 'companionTalk'), false);
+  assert.equal(Object.hasOwn(course.lesson.assets, 'companionIdle'), false);
+  assert.equal(Object.hasOwn(course.lesson.assets, 'companionTalk'), false);
   assert.equal(course.roles.every((role) => role.tasks.every((task) => task.location.legacyMode === 'inherit_role')), true);
   assert.equal(course.roles.every((role) => role.tasks.every((task) => ['point', 'geofence'].includes(task.location.mode))), true);
 

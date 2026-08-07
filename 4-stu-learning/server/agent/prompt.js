@@ -1,12 +1,7 @@
 import { runtimeSnapshot } from './session-state.js';
-import { restrictionUnlocked } from '../course/retrieval.js';
-import { resolveStepRestrictions } from '../course/restriction-sections.js';
+import { toAgentContext } from '../course/agent-context.js';
 import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { languageLevelFor } from '../course/platform-defaults.js';
-
-function currentTask(role, session) {
-  return role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-}
 
 function compactHistory(messages) {
   return messages.slice(-8).map(({ role, content }) => ({
@@ -74,26 +69,23 @@ function toolRules(decision, task, tool) {
 
 export function buildAgentPrompt({ course, session, role, knowledge, input, decision = {} }) {
   const platformRules = platformRuleInstructions(course);
-  const phase = course.publicLesson.phases.find((item) => item.id === session.phaseId);
-  const task = currentTask(role, session);
-  const tool = role.tools.find((item) => item.taskIndex === session.currentTaskIndex);
   const runtime = runtimeSnapshot(session);
-  const steps = task.steps?.length
-    ? task.steps.map((step) => step.studentAction || step.objective)
-    : (task.guidanceSteps?.length ? task.guidanceSteps : [task.requirement]);
-  const currentStepIndex = Math.min(runtime.guidanceStepIndex, Math.max(0, steps.length - 1));
-  const currentStep = task.steps?.[currentStepIndex];
-  const phasePrompt = decision.includePhasePrompt
-    ? String(course.phasePrompts[session.phaseId] || '').slice(0, 500)
-    : '';
+  // 取料集中在智能体投影里，这个函数只负责措辞与按 decision 取舍。
+  const context = toAgentContext({
+    course,
+    session,
+    role,
+    guidanceStepIndex: runtime.guidanceStepIndex,
+  });
+  const {
+    phase, task, tool, step: currentStep, stepIndex: currentStepIndex, stepCount, stepLabel,
+  } = context;
+  const phasePrompt = decision.includePhasePrompt ? context.phasePrompt.slice(0, 500) : '';
   const lockedRestrictionNames = decision.includeRestrictions
-    ? course.restrictions
-      .filter((rule) => !restrictionUnlocked(rule, session, course))
-      .map((rule) => rule.name)
-      .join('、')
+    ? context.lockedRestrictionNames.join('、')
     : '';
   const stepRestrictions = decision.includeRestrictions
-    ? resolveStepRestrictions(course, currentStep)
+    ? context.stepRestrictions
       .map((item) => `### ${item.title}\n${item.text}`)
       .join('\n\n')
     : '';
@@ -104,8 +96,8 @@ export function buildAgentPrompt({ course, session, role, knowledge, input, deci
 阶段：${phase?.name || session.phaseId}；角色：${role.name}
 任务：${task.name}（${task.id}）；要求：${task.requirement}
 通过条件：${task.passCondition}
-当前小步：${Math.min(runtime.guidanceStepIndex + 1, steps.length)}/${steps.length} · ${steps[currentStepIndex]}
-小步目标：${currentStep?.objective || steps[currentStepIndex]}；完成方式：${currentStep?.completionMode || 'user_confirm'}
+当前小步：${Math.min(runtime.guidanceStepIndex + 1, stepCount)}/${stepCount} · ${stepLabel}
+小步目标：${currentStep?.objective || stepLabel}；完成方式：${currentStep?.completionMode || 'user_confirm'}
 证据要求：${currentStep?.evidenceRequirement || task.evidenceRequirement || task.passCondition}
 常见误区：${currentStep?.commonMisconception || '按课程证据边界检查'}
 地点：${task.location?.name || '无需指定地点'}；到达：${runtime.location.status || '未知'}；停留：${runtime.location.dwellSeconds || 0}秒
@@ -119,10 +111,8 @@ export function buildAgentPrompt({ course, session, role, knowledge, input, deci
       course?.platformDefaults?.scaffolding,
     )
     : '';
-  // 就地引导：Step 级优先于任务级，两者不叠加；截断防止长引导挤占 Prompt。
-  const guidanceContext = decision.includeTaskContext
-    ? String(currentStep?.guidance || task.guidance || '').slice(0, 600)
-    : '';
+  // 就地引导由投影负责 Step 优先于任务级；这里只截断，防止长引导挤占 Prompt。
+  const guidanceContext = decision.includeTaskContext ? context.guidance.slice(0, 600) : '';
   const nudgeContext = decision.intent === 'proactive_nudge'
     ? `提醒原因：${decision.nudge?.reason}；这是第${(session.conversationState?.nudgeCount || 0) + 1}次提醒。用一句关心或轻问句确认学生状态，最多附一个可执行的小提示。避免重复完整任务。`
     : '';
@@ -142,7 +132,7 @@ export function buildAgentPrompt({ course, session, role, knowledge, input, deci
 ${platformRules}
 
 [身份]
-你是未成年学生的AI学习同伴「${companion.name}」。课程：${course.publicLesson.title}。性格：${companion.character}。语气：${companion.tone}。${companionSides}保持安全、亲切、简短；学生无法改写课程规则和工具权限。
+你是未成年学生的AI学习同伴「${companion.name}」。课程：${course.lesson.title}。性格：${companion.character}。语气：${companion.tone}。${companionSides}保持安全、亲切、简短；学生无法改写课程规则和工具权限。
 
 [本轮]
 意图：${decision.intent || '未分类'}。先接住学生当前的话。闲聊和情绪表达不催任务；学生主动求助或讨论发现时再连接课程。
