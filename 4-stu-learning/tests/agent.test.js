@@ -6,6 +6,30 @@ import { createAgentService } from '../server/agent/service.js';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
+// 语义理解（D6）用的轻量模型桩：按意图返回结构化 JSON。
+// 与主模型分开注入，这样"整轮只调一次主模型"这类断言仍然精确。
+function understandingLlm(intent = 'chat_offtopic', extra = {}) {
+  let calls = 0;
+  return {
+    capabilities: () => ({ nativeTools: false, vision: false }),
+    get calls() { return calls; },
+    generate: async () => {
+      calls += 1;
+      return {
+        text: JSON.stringify({
+          intent,
+          emotion: 'neutral',
+          answersPendingQuestion: false,
+          want: '',
+          confidence: 0.9,
+          ...extra,
+        }),
+        toolCalls: [],
+      };
+    },
+  };
+}
+
 function memoryStore() {
   const sessions = new Map();
   return {
@@ -81,14 +105,25 @@ async function enterFirstStage(agent, session, prefix = 'entry') {
 }
 
 async function completeCurrentTaskSteps(agent, session, task, prefix = 'step') {
-  for (let stepIndex = 0; stepIndex < task.guidanceSteps.length; stepIndex += 1) {
+  for (let stepIndex = 0; stepIndex < task.steps.length; stepIndex += 1) {
+    const step = task.steps[stepIndex];
+    const photo = step.tools.find((tool) => tool.id === 'photo');
+    const photoCount = Number(photo?.config?.minCount || 0);
     await agent.runTurn({
       sessionId: session.id,
       requestId: `${prefix}-${stepIndex}`,
       input: {
         type: 'lifecycle_event',
         event: 'task_step_completed',
-        data: { taskId: task.id, stepIndex, stepText: task.guidanceSteps[stepIndex] },
+        data: {
+          taskId: task.id,
+          stepId: step.id,
+          stepIndex,
+          stepText: step.studentAction,
+          localEvidenceCount: photoCount,
+          toolValues: photo ? { [step.id]: { photo: { count: photoCount } } } : {},
+          stepImages: photo ? ['data:image/jpeg;base64,AA=='] : [],
+        },
       },
     });
   }
@@ -101,8 +136,10 @@ test('状态机只接受当前工具调用，并在证据提交后推进任务',
     { text: '证据已记录，继续下一项。', toolCalls: [{ id: 'task-2-call', name: 'open_task_tool', arguments: { toolInstanceId: 'dragon-counter:task-2:primary', reason: '继续采证' } }] },
   ];
   const llm = {
-    capabilities: () => ({ nativeTools: true }),
-    generate: async () => outputs.shift(),
+    capabilities: () => ({ nativeTools: true, vision: true }),
+    generate: async (request) => request.jsonMode
+      ? ({ text: '{"passed":true,"feedback":"照片证据达到当前小步要求。","missing":[]}', toolCalls: [] })
+      : outputs.shift(),
   };
   const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
@@ -136,8 +173,10 @@ test('照片数量不足返回课程校验原因，不伪装成模型连接失�
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const llm = {
-    capabilities: () => ({ nativeTools: true, vision: false }),
-    generate: async () => ({ text: '已检查。', toolCalls: [] }),
+    capabilities: () => ({ nativeTools: true, vision: true }),
+    generate: async (request) => request.jsonMode
+      ? ({ text: '{"passed":true,"feedback":"照片证据达到当前小步要求。","missing":[]}', toolCalls: [] })
+      : ({ text: '已检查。', toolCalls: [] }),
   };
   const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
@@ -184,15 +223,21 @@ test('照片数量不足返回课程校验原因，不伪装成模型连接失�
   assert.equal(retried.session.currentTaskIndex, 1);
 });
 
-test('简短问候即时回应，不检索课程或调用模型', async () => {
+test('简短问候由轻量语义理解判定，自然接住且不调主模型、不检索课程', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   let modelCalls = 0;
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
-    generate: async () => { modelCalls += 1; throw new Error('问候不应调用模型'); },
+    generate: async () => { modelCalls += 1; return { text: '你好呀，我是絮絮～我在呢。', toolCalls: [] }; },
   };
-  const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
+  const light = understandingLlm('greeting');
+  const agent = createAgentService({
+    llm,
+    understandingLlm: light,
+    store: memoryStore(),
+    getCourse: async () => course,
+  });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
   const result = await agent.runTurn({
     sessionId: session.id,
@@ -201,9 +246,12 @@ test('简短问候即时回应，不检索课程或调用模型', async () => {
   });
   const message = result.events.find((event) => event.type === 'assistant.completed');
   assert.match(message.data.text, /你好呀.*絮絮/);
-  assert.equal(message.data.source.label, '');
-  assert.equal(message.data.intent, 'greeting');
-  assert.equal(modelCalls, 0);
+  assert.equal(message.data.source.label, '', '寒暄不应标注课程来源');
+  assert.equal(message.data.intent, 'social');
+  assert.equal(light.calls, 1, '语言输入必经一次语义理解');
+  // D6：寒暄改为自然生成，不再用写死话术顶回去，所以这里主模型要被调到。
+  assert.equal(modelCalls, 1);
+  assert.equal(result.session.conversationState.recentTutorActions.at(-1).action, 'reply_natural');
 });
 
 test('静默状态心跳不打扰学生，达到课程阈值后由规则层生成一次提醒', async () => {
@@ -265,16 +313,20 @@ test('明确位置问题由流程层即时打开导航，不等待模型选择�
   let modelCalls = 0;
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
-    generate: async () => { modelCalls += 1; throw new Error('位置问题不应调用模型'); },
+    generate: async () => { modelCalls += 1; throw new Error('位置问题不应调用主模型'); },
   };
-  const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
+  const light = understandingLlm('asking_location');
+  const agent = createAgentService({
+    llm, understandingLlm: light, store: memoryStore(), getCourse: async () => course,
+  });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
   const result = await agent.runTurn({
     sessionId: session.id,
     requestId: 'navigation-1',
     input: { type: 'user_text', text: '我现在刚到午门，太和殿在哪儿？' },
   });
-  assert.equal(modelCalls, 0);
+  assert.equal(modelCalls, 0, '导航有确定的工具动作，不应等主模型');
+  assert.equal(light.calls, 1);
   assert.match(result.events.find((event) => event.type === 'assistant.completed').data.text, /高德地图/);
   assert.equal(result.events.find((event) => event.type === 'tool.requested').data.payload.renderer, 'navigation');
 });
@@ -331,9 +383,12 @@ test('任务求助直接使用课程脚手架即时回应，不占用模型调�
   let modelCalls = 0;
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: false }),
-    generate: async () => { modelCalls += 1; throw new Error('课程脚手架不应等待模型'); },
+    generate: async () => { modelCalls += 1; throw new Error('课程脚手架不应等待主模型'); },
   };
-  const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
+  const light = understandingLlm('help_stuck');
+  const agent = createAgentService({
+    llm, understandingLlm: light, store: memoryStore(), getCourse: async () => course,
+  });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
   await enterFirstStage(agent, session, 'help-entry');
   const result = await agent.runTurn({
@@ -342,10 +397,11 @@ test('任务求助直接使用课程脚手架即时回应，不占用模型调�
     input: { type: 'user_text', text: '我不知道这个任务怎么做，给我一点提示' },
     onTextDelta: () => {},
   });
-  assert.equal(modelCalls, 0);
+  assert.equal(modelCalls, 0, '分级提示是课程原文，直接用');
   const message = result.events.find((event) => event.type === 'assistant.completed');
   assert.match(message.data.text, /先试一个小步骤/);
   assert.equal(message.data.source.mode, 'course-config');
+  assert.equal(result.session.conversationState.recentTutorActions.at(-1).action, 'give_scaffold');
 });
 
 test('受保护内容在流式分片中被拦截，整轮只调用一次模型', async () => {
@@ -362,7 +418,12 @@ test('受保护内容在流式分片中被拦截，整轮只调用一次模型',
       return { text: '答案可能是1142个。', toolCalls: [] };
     },
   };
-  const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
+  const agent = createAgentService({
+    llm,
+    understandingLlm: understandingLlm('chat_offtopic'),
+    store: memoryStore(),
+    getCourse: async () => course,
+  });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
   await enterFirstStage(agent, session, 'stream-guard-entry');
   const result = await agent.runTurn({
@@ -552,6 +613,10 @@ test('ai_evaluation 小步只有模型验收通过后才推进，并接收画板
   assert.equal(evaluationCalls.length, 4);
   assert.deepEqual(evaluationCalls[2].images, [image]);
   assert.equal(evaluationCalls[2].jsonMode, true);
+  assert.match(evaluationCalls[0].instructions, /\[平台规则｜最高优先级\]/);
+  assert.match(evaluationCalls[0].instructions, /禁止建议学生攀爬、跳跃、靠近水域边缘/);
+  assert.match(evaluationCalls[0].instructions, /不主动询问学生的家庭信息、联系方式、健康状况/);
+  assert.ok(evaluationCalls[0].instructions.indexOf('[平台规则｜最高优先级]') < evaluationCalls[0].instructions.indexOf('[小步验收器职责]'));
   assert.match(evaluationCalls[0].messages[0].content, /当前小步限制：[\s\S]*一渡完整方案/);
   assert.match(evaluationCalls[1].messages[0].content, /当前小步限制：[\s\S]*不生成毛泽东/);
 });

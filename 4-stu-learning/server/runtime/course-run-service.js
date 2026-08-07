@@ -416,11 +416,10 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       run.version += 1;
       run.updatedAt = nowIso();
       for (const participant of participants) {
-        const delivered = participant.online;
         state.receipts.push({
           id: id('receipt'), commandId: command.id, participantId: participant.id,
-          learnerSessionId: participant.learnerSessionId, status: delivered ? 'delivered' : 'accepted',
-          acceptedAt: command.createdAt, deliveredAt: delivered ? nowIso() : null, confirmedAt: null,
+          learnerSessionId: participant.learnerSessionId, status: 'accepted',
+          acceptedAt: command.createdAt, deliveredAt: null, confirmedAt: null,
         });
       }
       audit(state, runId, input.actorId, 'teacher.command', input.target, input.reason, { commandId: command.id, action: input.action });
@@ -521,7 +520,10 @@ export function createCourseRunService({ store, getCourse, realtime }) {
     const state = await store.read();
     const located = locateParticipant(state, sessionId);
     if (!located) return { commands: [], sequence: state.sequence };
-    const receipts = state.receipts.filter((receipt) => receipt.learnerSessionId === sessionId || receipt.participantId === located.participant.id);
+    const receipts = state.receipts.filter((receipt) => (
+      receipt.participantId === located.participant.id
+      && receipt.status === 'accepted'
+    ));
     const commandIds = new Set(receipts.map((receipt) => receipt.commandId));
     return {
       commands: state.commands.filter((command) => commandIds.has(command.id) && command.sequence > Number(after))
@@ -538,13 +540,18 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       if (!located) throw httpError(404, '学生会话未绑定课程场次。');
       const receipt = state.receipts.find((item) => item.commandId === commandId && item.participantId === located.participant.id);
       if (!receipt) throw httpError(404, '指令回执不存在。');
+      if (receipt.status === 'confirmed' || receipt.status === status) {
+        result = receipt;
+        return;
+      }
       receipt.status = status;
+      receipt.learnerSessionId = sessionId;
       receipt.deliveredAt ||= nowIso();
       if (status === 'confirmed') receipt.confirmedAt = nowIso();
       publishedEvent = eventFor(state, located.run.id, 'teacher.command.receipt', { commandId, participantId: located.participant.id, status });
       result = receipt;
     });
-    realtime.publish(publishedEvent.runId, publishedEvent);
+    if (publishedEvent) realtime.publish(publishedEvent.runId, publishedEvent);
     return result;
   }
 

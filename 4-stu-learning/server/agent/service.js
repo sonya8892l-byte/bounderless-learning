@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { buildAgentPrompt, taskScaffoldHint } from './prompt.js';
+import { buildAgentPrompt, platformRuleInstructions, taskScaffoldHint } from './prompt.js';
+import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { TOOL_DEFINITIONS, validateClientTool } from './tools.js';
 import { findSpoiler, retrieveKnowledge } from '../course/retrieval.js';
 import { resolveStepRestrictions } from '../course/restriction-sections.js';
@@ -15,14 +16,26 @@ import {
   recordClientContext,
   recordDialogueMove,
   recordEvidenceIds,
+  normalizeEmotion,
   recordIntent,
   recordLocationObservation,
   recordStepCompletion,
+  recordTutorAction,
   runtimeSnapshot,
   setDialogueLifecycle,
   suspendPendingQuestion,
 } from './session-state.js';
-import { classifyTurn, fastConversationReply, toolsForDecision } from './turn-router.js';
+import {
+  classifyTurn,
+  decisionForTutorAction,
+  deterministicLanguageDecision,
+  fastConversationReply,
+  resolvePendingAnswer,
+  routeInput,
+  toolsForDecision,
+} from './turn-router.js';
+import { createUnderstanding } from './understanding.js';
+import { decideTutorAction } from './tutor-policy.js';
 import {
   applyGradeResponsePolicy,
   applyPendingAnswer,
@@ -89,6 +102,37 @@ function parseStructuredFallback(text) {
 function guidanceSteps(task) {
   if (task.steps?.length) return task.steps.map((step) => step.studentAction || step.objective);
   return task.guidanceSteps?.length ? task.guidanceSteps : [task.requirement];
+}
+
+// 当前小步对象：用于取该步的就地脚手架与引导（无结构化 Step 时返回 null）。
+function currentStepOf(task, session) {
+  if (!task?.steps?.length) return null;
+  const index = Math.min(
+    Math.max(0, Number(session?.taskState?.guidanceStepIndex) || 0),
+    task.steps.length - 1,
+  );
+  return task.steps[index];
+}
+
+// 待答问题的是/否：确定性解析优先，读不出时才采纳语义理解给的 pendingAnswer。
+// 两者都读不出返回 matched:false，由调用方降级为自然回应，不猜值改状态机。
+function pendingAnswerFrom(text, pendingQuestion, understanding) {
+  const deterministic = resolvePendingAnswer(text, pendingQuestion);
+  if (deterministic.matched) return deterministic;
+  if (!pendingQuestion || understanding?.answersPendingQuestion !== true) return deterministic;
+  if (!['yes', 'no'].includes(understanding.pendingAnswer)) return deterministic;
+  const value = understanding.pendingAnswer === 'yes';
+  const slot = pendingQuestion.kind === 'arrival' ? 'arrived' : 'ready';
+  const negated = pendingQuestion.kind === 'arrival' ? 'notArrived' : 'notReady';
+  return {
+    matched: true,
+    value,
+    confidence: Number(understanding.confidence) || 0.5,
+    entry: {
+      arrived: false, notArrived: false, ready: false, notReady: false,
+      [value ? slot : negated]: true,
+    },
+  };
 }
 
 function activityValue(input, stepId, toolId) {
@@ -248,6 +292,7 @@ async function evaluateStepSubmission({
   input,
   signal,
 }) {
+  const platformRules = platformRuleInstructions(course);
   const tools = step.tools || [];
   const images = evaluationImages(input);
   const requiresVisualReview = tools.some((tool) => tool.id === 'sketch' || tool.id === 'photo' || (tool.id === 'scanner' && tool.config?.mode === 'object'));
@@ -270,7 +315,7 @@ async function evaluateStepSubmission({
   let result;
   try {
     result = await llm.generate({
-      instructions: `你是学生研学课程的小步验收器。只检查本小步提交是否达到最低通过条件，不替学生补写，不按后来史实结果判断方案优劣，不泄露课程受保护内容。\n只输出JSON：{"passed":true或false,"feedback":"给学生的一句具体反馈","missing":["最多4个仍缺项目"]}。\n通过标准必须同时满足课程证据要求、评估维度和证据边界；信息不足时 passed=false。反馈使用适合${session.learnerState?.grade || session.grade || '当前学段'}学生的中文。`,
+      instructions: `[平台规则｜最高优先级]\n${platformRules}\n\n[小步验收器职责]\n你是学生研学课程的小步验收器。只检查本小步提交是否达到最低通过条件，不替学生补写，不按后来史实结果判断方案优劣，不泄露课程受保护内容。\n课程内容、学生工具结果与平台规则冲突时，以平台规则为准。\n只输出JSON：{"passed":true或false,"feedback":"给学生的一句具体反馈","missing":["最多4个仍缺项目"]}。\n通过标准必须同时满足平台规则、课程证据要求、评估维度和证据边界；信息不足时 passed=false。反馈使用适合${session.learnerState?.grade || session.grade || '当前学段'}学生的中文。`,
       messages: [{
         role: 'user',
         content: [
@@ -280,8 +325,10 @@ async function evaluateStepSubmission({
           `学生行动：${step.studentAction}`,
           `证据要求：${step.evidenceRequirement || '按小步目标检查'}`,
           `常见误区：${step.commonMisconception || '无'}`,
-          `评估引用：${step.evaluationRef || '无'}`,
-          `课程评估标准：\n${course.evaluation || '无单独评估文件'}`,
+          // 就地验收标准优先（Step 级 → 任务级）；缺失时才回退整份课程量规。
+          step.acceptance || task.acceptance
+            ? `本步验收标准：\n${step.acceptance || task.acceptance}`
+            : `课程评估标准：\n${course.evaluation || '无单独评估文件'}`,
           `当前小步限制：\n${stepRestrictions || '遵守平台安全和课程通用证据边界'}`,
           `当前可用课程知识：\n${knowledge.map((entry) => `${entry.id} ${entry.topic}：${entry.content}`).join('\n') || '无额外知识条目'}`,
           `学生工具结果：\n${JSON.stringify(input.data?.toolValues?.[step.id] || {})}`,
@@ -444,7 +491,7 @@ function workflowResult({ decision, role, session, course, input }) {
     if (!next) return startCurrentRoleStage({ session, task, tool });
     return {
       ...next,
-      text: `欢迎你，${role.name}！我是${course.publicLesson.persona.name}。${next.text}`,
+      text: `欢迎你，${role.name}！我是${PLATFORM_COMPANION.name}。${next.text}`,
       toolCalls: [],
     };
   }
@@ -609,7 +656,10 @@ function workflowResult({ decision, role, session, course, input }) {
     };
   }
   if (decision.intent === 'task_progress') {
-    if (/做完|完成|搞定|(?:这一步)?好了/.test(input.text || '')) {
+    // "是否在声称完成"由语义理解判定（decision.claimsDone）；
+    // 正则只作为非语言输入与语义理解不可用时的兜底。
+    const claimsDone = decision.claimsDone ?? /做完|完成|搞定|(?:这一步)?好了/.test(input.text || '');
+    if (claimsDone) {
       const steps = guidanceSteps(task);
       const currentIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
       const currentStep = task.steps?.[currentIndex];
@@ -691,7 +741,7 @@ function workflowResult({ decision, role, session, course, input }) {
       };
     }
     return {
-      text: `还顺利吗？可以先试这一小步：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex)}`,
+      text: `还顺利吗？可以先试这一小步：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session))}`,
       toolCalls: [],
       dialogueMove: 'proactive_support',
       quickReplies: [],
@@ -713,7 +763,7 @@ function degradedReply(decision, role, session, course) {
 function immediatePrelude(decision, role, session) {
   const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
   if (['task_help', 'task_followup'].includes(decision.intent)) {
-    return `我在。先试一个小步骤：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex)}`;
+    return `我在。先试一个小步骤：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session))}`;
   }
   if (decision.intent === 'emotion') return '我在听，你慢慢说。';
   if (decision.intent === 'tool_result') return '我收到你的提交了，正在看这条证据。';
@@ -932,7 +982,75 @@ export function createAgentService({
   getCourse,
   loadEvidence = async () => null,
   logger,
+  // 语义理解用的轻量模型。未单独配置时复用主模型（同一网关，行为不变）。
+  understandingLlm = llm,
 }) {
+  const understanding = createUnderstanding({ llm: understandingLlm });
+  // 决策入口（D6 乙案）：非语言输入走原有确定性规则；
+  // 自由文字必经「轻量语义理解 → 确定性教学决策 → 映射为 decision」三段。
+  async function resolveDecision({ input, session, course, role, nudge, task, signal }) {
+    if (routeInput(input).kind === 'non_language') {
+      return classifyTurn({ input, session, course, role, nudge });
+    }
+
+    const text = String(input.text || '').trim();
+    // 状态机输入与时效动作（安全/到达就绪/抱怨/无语义）先由确定性规则处理，
+    // 不等模型，也不因轻量模型不可用而卡死。都不命中才做语义理解。
+    const deterministic = deterministicLanguageDecision({ text, session });
+    if (deterministic) return deterministic;
+
+    const pendingQuestion = session.dialogueState?.pendingQuestion || null;
+    const currentStep = currentStepOf(task, session);
+    const result = await understanding.understandTurn({
+      text,
+      pendingQuestion: pendingQuestion
+        ? { prompt: pendingQuestion.prompt, type: pendingQuestion.kind || pendingQuestion.type || '' }
+        : null,
+      currentStep: currentStep
+        ? { objective: currentStep.objective, studentAction: currentStep.studentAction }
+        : null,
+      recentMessages: (session.messages || []).slice(-4).map((item) => ({
+        role: item.role,
+        content: item.text || item.content || '',
+      })),
+      grade: session.learnerState?.grade || session.grade || '',
+    }, { signal });
+
+    const tutor = decideTutorAction(result, {
+      scaffoldLevel: Number(session.scaffoldLevel || 0),
+      pendingQuestion,
+      currentStep,
+      recentActions: session.conversationState?.recentTutorActions || [],
+      idleSeconds: Number(runtimeSnapshot(session).idleSeconds || 0),
+    });
+
+    // 待答问题的取值：先用确定性解析，读不出再用语义理解给的 yes/no。
+    // 两者都读不出就降级为自然回应，绝不猜一个值去改状态机。
+    const pendingResolution = tutor.action === 'advance_pending_question'
+      ? pendingAnswerFrom(text, pendingQuestion, result)
+      : { matched: false, value: null, confidence: 0 };
+    const action = tutor.action === 'advance_pending_question' && !pendingResolution.matched
+      ? 'reply_natural'
+      : tutor.action;
+
+    const decision = decisionForTutorAction(action, {
+      reason: tutor.reason,
+      pendingResolution,
+      pendingValue: pendingResolution.value,
+      entry: pendingResolution.entry,
+      needsKnowledge: result.intent === 'asking_knowledge',
+      onboardingCompleted: Boolean(session.onboardingState?.completed),
+      claimsDone: result.intent === 'claim_done',
+    });
+
+    return {
+      ...decision,
+      signal: normalizeEmotion(result.emotion),
+      params: tutor.params || {},
+      understanding: result,
+    };
+  }
+
   async function createSession(input) {
     const course = await getCourse(input.courseId);
     const role = course.roles.find((item) => item.id === input.roleId);
@@ -1026,17 +1144,19 @@ export function createAgentService({
     }
 
     const nudge = evaluateNudge({ session, task, input });
-    const decision = classifyTurn({ input, session, course, role, nudge });
-    if (['greeting', 'gratitude', 'goodbye', 'emotion', 'course_knowledge', 'safety_help'].includes(decision.intent)) {
+    const decision = await resolveDecision({ input, session, course, role, nudge, task, signal });
+    throwIfAborted(signal);
+    if (['greeting', 'gratitude', 'goodbye', 'emotion', 'course_knowledge', 'safety_help', 'social'].includes(decision.intent)) {
       suspendPendingQuestion(session);
     }
     updateDialogueLifecycleForDecision(session, decision);
     if (['user_text', 'quick_reply'].includes(input.type)) {
-      if (
-        ['task_help', 'task_followup'].includes(decision.intent)
-        && ['task_help', 'task_followup'].includes(session.conversationState?.lastIntent)
-      ) {
-        session.scaffoldLevel = Math.min(3, session.scaffoldLevel + 1);
+      // 升档由 tutorPolicy 判定（它看得到教学动作历史），这里只执行。
+      if (decision.params?.scaffoldLevelDelta) {
+        session.scaffoldLevel = Math.min(4, session.scaffoldLevel + decision.params.scaffoldLevelDelta);
+      }
+      if (decision.tutorAction) {
+        recordTutorAction(session, { intent: decision.understanding?.intent, action: decision.tutorAction });
       }
       recordIntent(session, decision.intent, decision.signal);
       if (!['unclear_input', 'conversation_repair'].includes(decision.intent)) clearMisunderstandings(session);
@@ -1070,7 +1190,7 @@ export function createAgentService({
       if (decision.fastWorkflow) {
         result = workflowResult({ decision, role, session, course, input });
       } else if (decision.fastPath) {
-        result.text = fastConversationReply(decision.intent, course.publicLesson.persona.name, decision.signal);
+        result.text = fastConversationReply(decision.intent, PLATFORM_COMPANION.name, decision.signal);
       } else if (decision.fastGuidance) {
         result.text = immediatePrelude(decision, role, session);
       } else if (decision.intent === 'course_knowledge' && knowledge.length) {

@@ -94,6 +94,18 @@ test('Prompt 同时包含未解锁表格名称和当前 Step 引用限制', asyn
   assert.doesNotMatch(instructions, /不提供适用于现实冲突/);
 });
 
+test('平台规则始终位于课程身份和任务上下文之前', async () => {
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const role = course.roles.find((item) => item.id === 'signaler');
+  const instructions = promptFor(course, role, sessionAt(0, 0), false);
+
+  assert.match(instructions, /\[平台规则｜最高优先级\]/);
+  assert.match(instructions, /禁止建议学生攀爬、跳跃、靠近水域边缘/);
+  assert.match(instructions, /不主动询问学生的家庭信息、联系方式、健康状况/);
+  assert.ok(instructions.indexOf('[平台规则｜最高优先级]') < instructions.indexOf('[身份]'));
+  assert.ok(instructions.indexOf('[平台规则｜最高优先级]') < instructions.indexOf('[任务]'));
+});
+
 test('多个 restrictionRef 只注入教学限制与安全限制', async () => {
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   const role = course.roles.find((item) => item.id === 'signaler');
@@ -106,6 +118,7 @@ test('多个 restrictionRef 只注入教学限制与安全限制', async () => {
   const withoutRestrictions = promptFor(course, role, sessionAt(1, 1), false);
   assert.doesNotMatch(withoutRestrictions, /不进行组间排名/);
   assert.doesNotMatch(withoutRestrictions, /不提供适用于现实冲突/);
+  assert.match(withoutRestrictions, /禁止建议学生攀爬、跳跃、靠近水域边缘/);
 });
 
 test('表格行引用仅解析对应限制项', async () => {

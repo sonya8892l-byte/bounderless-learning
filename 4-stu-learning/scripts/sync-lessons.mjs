@@ -29,6 +29,18 @@ const lessonIds = (await readdir(lessonsRoot, { withFileTypes: true }))
   .map((entry) => entry.name)
   .sort();
 
+// 清理已删课程的过期产物：课程从 6-lessons 删除后，public/lessons 下的旧目录
+// 不会自动消失，会被打进部署产物。
+const staleDirectories = (await readdir(publicLessonsRoot, { withFileTypes: true }).catch(() => []))
+  .filter((entry) => entry.isDirectory() && !lessonIds.includes(entry.name))
+  .map((entry) => entry.name);
+for (const name of staleDirectories) {
+  await rm(resolve(publicLessonsRoot, name), { recursive: true, force: true });
+}
+if (staleDirectories.length) {
+  console.log(`已清理 ${staleDirectories.length} 个过期课程产物：${staleDirectories.join(', ')}`);
+}
+
 const publicLessons = {};
 
 function protectedTerms(markdown = '') {
@@ -67,6 +79,7 @@ function sanitizeTool(tool) {
   return safe;
 }
 
+// Step 采用白名单重建：新增的私有字段（就地引导/脚手架/验收标准、能力标签）自动不下发。
 function sanitizeTaskTools(task) {
   task.tools = (task.tools || []).map(sanitizeTool);
   task.steps = (task.steps || []).map((step) => ({
@@ -82,6 +95,11 @@ function sanitizeTaskTools(task) {
     tools: (step.tools || []).map(sanitizeTool),
   }));
   delete task.toolParameters;
+  // 任务级为增量对象，私有字段需显式删除：就地教学内容会泄漏引导策略与验收标准，
+  // 能力标签属于评价预留数据，两类都不进浏览器。
+  for (const key of ['inlineGuidance', 'inlineScaffold', 'inlineAcceptance', 'competencyTags']) {
+    delete task[key];
+  }
 }
 
 for (const lessonId of lessonIds) {

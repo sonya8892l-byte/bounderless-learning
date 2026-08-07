@@ -26,6 +26,17 @@
 - 配置：从威胁和措施出发识别相关者，不替任何群体编造态度
 - 通过条件：至少5类相关者及需要核验的问题
 
+##### 引导
+- 引导学生寻找执行者、承担成本者和拥有地方知识者。
+- 对群体态度一律改写为待调查问题。
+
+##### 脚手架
+| L0 | 自己列与威胁和措施有关的人。 |
+| L1 | 谁决策、执行、受影响、提供知识？ |
+| L2 | 每类补一条关系。 |
+| L3 | 把态度判断改成开放问题。 |
+| L4 | 教师处理刻板或敏感表达。 |
+
 #### Step 1：识别相关者
 - id：stakeholder-list-groups
 - 小步目标：覆盖决策者、执行者、受影响者和知识提供者
@@ -36,15 +47,16 @@
 - 功能模块：A03(利益相关者图)
 - 工具参数：{"builder":{"mode":"stakeholder_map","prompt":"按决策、执行、受影响、知识与监督识别相关者，可一类多职能。","minimumItems":5,"categories":["决策","执行","受影响","知识","监督"]}}
 - 知识引用：K-14
-- 引导引用：guidance/stakeholder-observer.md#任务1
 - 限制引用：restrictions.md#事实边界
-- 评估引用：evaluation.md#S1
-- 脚手架引用：scaffolds/stakeholder-observer.md#任务1
 - 常见误区：只列保护机构，不列承担成本或地方知识群体
 - 最大尝试：3
 - 失败处理：追问谁付出、谁执行、谁拥有现场知识
 - 教师介入：出现对具体群体的刻板评价
 - 通过后：step:stakeholder-write-questions
+
+##### 验收标准
+至少5类，每类有关系说明
+- S1 开题：核心问题可调查，来源计划覆盖现场、名录/数据库和措施材料。
 
 #### Step 2：标记待核假设
 - id：stakeholder-write-questions
@@ -56,15 +68,13 @@
 - 功能模块：A01(问题表)
 - 工具参数：{"text":{"fields":[{"id":"questions","label":"相关者开放问题","type":"long_text","required":true,"minLength":60}]}}
 - 知识引用：K-14, K-15
-- 引导引用：guidance/stakeholder-observer.md#任务1
 - 限制引用：restrictions.md#场馆与隐私
-- 评估引用：evaluation.md#E6
-- 脚手架引用：scaffolds/stakeholder-observer.md#任务1
 - 常见误区：用“你是否支持保护”这样的诱导问法
 - 最大尝试：3
 - 失败处理：改写为“你会受到什么影响”
 - 教师介入：计划真实访谈但尚未批准
 - 通过后：role-stage:stakeholder-evidence-map
+
 
 ### 任务2：绘制影响与公平图
 - id：stakeholder-evidence-map
@@ -77,6 +87,17 @@
 - 配置：用已有材料或经同意的匿名记录更新相关者图
 - 通过条件：至少4类相关者完成影响、资源、成本、参与方式记录
 
+##### 引导
+- 持续区分资料事实、合理推断和待询问。
+- 公平性逐项检查收益、成本、缺席和补救。
+
+##### 脚手架
+| L0 | 区分证据、推断、待询问。 |
+| L1 | 两项措施各问谁受益。 |
+| L2 | 再问谁承担成本、谁缺席。 |
+| L3 | 提出补救或替代。 |
+| L4 | 教师处理隐私材料。 |
+
 #### Step 1：登记证据与未知
 - id：stakeholder-register-evidence
 - 小步目标：区分材料中真的出现的观点和小组推测
@@ -87,15 +108,13 @@
 - 功能模块：A03(多源证据墙)
 - 工具参数：{"builder":{"mode":"evidence_board","prompt":"按相关者记录事实证据、推断和待询问；不得代替群体发言。","minimumItems":4,"categories":["资料事实","合理推断","待询问"]}}
 - 知识引用：K-06, K-14
-- 引导引用：guidance/stakeholder-observer.md#任务2
 - 限制引用：restrictions.md#事实边界
-- 评估引用：evaluation.md#E1, evaluation.md#E6
-- 脚手架引用：scaffolds/stakeholder-observer.md#任务2
 - 常见误区：把“可能反对”写成已证实态度
 - 最大尝试：3
 - 失败处理：要求将无来源态度改成待询问
 - 教师介入：材料涉及敏感个人信息
 - 通过后：step:stakeholder-fairness-check
+
 
 #### Step 2：检查公平性
 - id：stakeholder-fairness-check
@@ -107,15 +126,13 @@
 - 功能模块：A01(公平性检查表)
 - 工具参数：{"text":{"fields":[{"id":"fairness","label":"两项措施公平性检查","type":"long_text","required":true,"minLength":100}]}}
 - 知识引用：K-15
-- 引导引用：guidance/stakeholder-observer.md#任务2
 - 限制引用：restrictions.md#方案效力
-- 评估引用：evaluation.md#E5
-- 脚手架引用：scaffolds/stakeholder-observer.md#任务2
 - 常见误区：只写“对所有人都有好处”
 - 最大尝试：3
 - 失败处理：分别追问收益、成本和参与
 - 教师介入：无
 - 通过后：role-stage:stakeholder-hearing
+
 
 ### 任务3：主持相关者质询
 - id：stakeholder-hearing
@@ -128,6 +145,17 @@
 - 配置：帮助不同立场基于影响和证据提问，完整记录回应与修订
 - 通过条件：至少3类相关者发言，产生3条处置记录
 
+##### 引导
+- 问题必须指向具体行动与影响。
+- 不要求全部采纳；要求处置状态和理由可追踪。
+
+##### 脚手架
+| L0 | 问具体行动会怎样影响谁。 |
+| L1 | 覆盖影响、成本、参与三类。 |
+| L2 | 每条意见记录处置状态。 |
+| L3 | 补采纳理由和修改位置。 |
+| L4 | 教师维持听证规则。 |
+
 #### Step 1：组织三方质询
 - id：stakeholder-run-questions
 - 小步目标：让方案接受执行、成本和公平性检查
@@ -138,15 +166,16 @@
 - 功能模块：A05(听证)
 - 工具参数：{"team":{"mode":"hearing","prompt":"问题须指向具体行动和相关者影响，避免扮演刻板立场。","minimumEntries":3,"recordTypes":["影响质询","成本质询","参与或公平质询"],"requiredRecordTypes":["影响质询","成本质询","参与或公平质询"]}}
 - 知识引用：K-14, K-15
-- 引导引用：guidance/stakeholder-observer.md#任务3
 - 限制引用：restrictions.md#表达与决策
-- 评估引用：evaluation.md#S5
-- 脚手架引用：scaffolds/stakeholder-observer.md#任务3
 - 常见误区：问题只问“你们有信心吗”
 - 最大尝试：2
 - 失败处理：要求问题指出具体行动、对象和影响
 - 教师介入：讨论失焦或出现攻击性表达
 - 通过后：step:stakeholder-log-decisions
+
+##### 验收标准
+至少3条问题，分别触及影响、成本或参与
+- S5 听证：至少回应三类利益相关者并保留修订记录。
 
 #### Step 2：登记意见处置
 - id：stakeholder-log-decisions
@@ -158,10 +187,7 @@
 - 功能模块：A01(听证记录)
 - 工具参数：{"text":{"fields":[{"id":"hearing-log","label":"听证意见处置表","type":"long_text","required":true,"minLength":120}]}}
 - 知识引用：K-15, K-19
-- 引导引用：guidance/stakeholder-observer.md#任务3
 - 限制引用：restrictions.md#方案效力
-- 评估引用：evaluation.md#E6
-- 脚手架引用：scaffolds/stakeholder-observer.md#任务3
 - 常见误区：所有意见都写“已采纳”
 - 最大尝试：2
 - 失败处理：追问资源和证据是否允许完整采纳

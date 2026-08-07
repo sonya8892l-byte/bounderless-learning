@@ -45,11 +45,11 @@ function inertLlm() {
   };
 }
 
-async function harness(llm = inertLlm()) {
+async function harness(llm = inertLlm(), understandingLlm = llm) {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const store = memoryStore();
-  const agent = createAgentService({ llm, store, getCourse: async () => course });
+  const agent = createAgentService({ llm, understandingLlm, store, getCourse: async () => course });
   const { session } = await agent.createSession({
     courseId: course.id,
     roleId: 'dragon-counter',
@@ -118,36 +118,35 @@ test('快捷回复携带问题ID并走确定性状态转换', async () => {
   assert.match(assistantMessage(result).data.text, /准备好开始了吗/);
 });
 
-test('规则未命中的自然表达由一次结构化理解解析当前待回答问题', async () => {
-  let calls = 0;
-  const llm = {
-    capabilities: () => ({ nativeTools: true, vision: false }),
+test('规则未命中的自然表达由一次语义理解解析当前待回答问题', async () => {
+  // "和队友会合啦"不在 entrySignals 的词表里，必须靠语义理解读出这是在答"到了吗"。
+  let understandCalls = 0;
+  const understandingLlm = {
+    capabilities: () => ({ nativeTools: false, vision: false }),
     generate: async ({ jsonMode }) => {
-      calls += 1;
-      assert.equal(jsonMode, true);
+      understandCalls += 1;
+      assert.equal(jsonMode, true, '语义理解必须走 JSON 模式');
       return {
         text: JSON.stringify({
-          speechAct: 'affirm',
+          intent: 'answering_question',
+          emotion: 'neutral',
           answersPendingQuestion: true,
           pendingAnswer: 'yes',
-          emotion: 'neutral',
-          taskRelation: 'current_flow',
+          want: '告诉同伴自己已经到位',
           confidence: 0.94,
-          dialogueMove: 'acknowledge_student',
-          reply: '知道了，你已经和队友会合。',
         }),
         toolCalls: [],
       };
     },
   };
-  const { agent, session } = await harness(llm);
+  const { agent, session } = await harness(inertLlm(), understandingLlm);
   await assignRole(agent, session, 'semantic-role');
   const result = await agent.runTurn({
     sessionId: session.id,
     requestId: 'contract-semantic-arrival',
     input: { type: 'user_text', text: '我已经和队友会合啦' },
   });
-  assert.equal(calls, 1);
+  assert.equal(understandCalls, 1, '一个回合只做一次语义理解');
   assert.equal(result.session.dialogueState.confirmedSlots.arrival, true);
   assert.equal(activeQuestion(result.session)?.type, 'readiness_confirmation');
   assert.match(assistantMessage(result).data.text, /准备好开始了吗/);
@@ -355,7 +354,7 @@ test('阶段开始只产生一条当前行动气泡和一张阶段卡', async ()
   assert.equal(messages[0].data.text.includes(stageCards[0].data.mainTask), false);
 });
 
-test('自由文本“完成了”只推进 user_confirm 小步，不能越过阶段证据验收', async () => {
+test('自由文本“完成了”不能推进需要证据验收的结构化小步', async () => {
   const { agent, session } = await harness();
   await assignRole(agent, session, 'evidence-role');
   const started = await agent.runTurn({
@@ -377,7 +376,7 @@ test('自由文本“完成了”只推进 user_confirm 小步，不能越过阶
 
   assert.equal(result.session.currentTaskIndex, 0);
   assert.deepEqual(result.session.completedTaskIds, []);
-  assert.equal(result.session.taskState.guidanceStepIndex, guidanceStepIndex + 1);
-  assert.ok(result.session.pendingTools[taskTool.data.callId], 'user_confirm 只完成当前小步，原任务仍需最终证据');
+  assert.equal(result.session.taskState.guidanceStepIndex, guidanceStepIndex);
+  assert.ok(result.session.pendingTools[taskTool.data.callId], '自由文本不能替代当前小步的照片、AI或教师验收');
   assert.equal(result.events.some((event) => event.type === 'stage.started'), false);
 });

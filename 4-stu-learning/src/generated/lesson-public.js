@@ -17,13 +17,8 @@ export default {
     "groupRule": "6人一组，每人一个角色",
     "level": "",
     "levelCode": "",
+    "traversalMode": "sequential",
     "coreQuestion": "故宫建成600年，历经无数暴雨，为何几乎从不积水？",
-    "persona": {
-      "name": "絮絮",
-      "courseRole": "",
-      "character": "亲切、好奇、有少年感，尊重学生的观察和试错过程；本课侧重：亲切、好奇、有点调皮，像一个知识渊博的学长",
-      "tone": "清晰、自然、耐心，偶尔幽默；本课侧重：少年感、清晰、节奏适中，偶尔幽默"
-    },
     "phases": [
       {
         "id": "phase-1",
@@ -141,6 +136,12 @@ export default {
       "unlockTarget": "璇玑时刻",
       "phaseId": "phase-2"
     },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": true
+    },
     "roles": [
       {
         "id": "dragon-counter",
@@ -159,68 +160,124 @@ export default {
             "roleStageId": "task-1",
             "name": "观其形",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "拍照最少5张，含正面/侧面/细节",
             "guidanceSteps": [
-              "先选择一处螭首，拍下它在台基上的正面全景",
-              "换到安全的侧面角度，记录螭首与台基的连接方式",
-              "再拍材质、出水口和排列细节，检查照片是否至少5张"
+              "选择一处可安全观察的螭首，拍摄1—2张同时包含螭首、台基边缘和周围位置的正面全景",
+              "换到安全侧面，拍摄1—2张能看清螭首、出水口和台基连接位置的照片",
+              "再拍至少3张照片，分别记录材质或纹理、出水口细节和相邻螭首的排列关系"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先选择一处螭首，拍下它在台基上的正面全景",
-                "studentAction": "先选择一处螭首，拍下它在台基上的正面全景",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "拍摄螭首正面全景",
+                "objective": "获得能够确认螭首及其台基位置关系的现场全景证据",
+                "studentAction": "选择一处可安全观察的螭首，拍摄1—2张同时包含螭首、台基边缘和周围位置的正面全景",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张清楚照片；画面同时包含螭首主体与台基环境；不得跨越护栏或拍入其他参观者正脸",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍下螭首正面全景，同时保留台基边缘和周围位置；不要跨越护栏。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "换到安全的侧面角度，记录螭首与台基的连接方式",
-                "studentAction": "换到安全的侧面角度，记录螭首与台基的连接方式",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录连接方式",
+                "objective": "观察螭首如何嵌入台基并承担出水功能",
+                "studentAction": "换到安全侧面，拍摄1—2张能看清螭首、出水口和台基连接位置的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张侧面或斜侧面照片；能够辨认螭首与台基的连接处或出水口",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "从安全侧面拍清螭首与台基的连接处或出水口，不要攀爬、触摸文物。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "再拍材质、出水口和排列细节，检查照片是否至少5张",
-                "studentAction": "再拍材质、出水口和排列细节，检查照片是否至少5张",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐形态细节",
+                "objective": "用多角度细节证据描述螭首的材质、开口和排列特征",
+                "studentAction": "再拍至少3张照片，分别记录材质或纹理、出水口细节和相邻螭首的排列关系",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3张照片；三类内容中至少覆盖材质或纹理、出水口、排列关系；本任务累计不少于5张",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 3,
+                      "maxCount": 5,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "分别补拍材质或纹理、出水口细节、相邻螭首排列；避免重复同一画面。"
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "完成5张有效照片采集",
             "passCondition": "完成5张有效照片采集",
             "goals": "K1(排水系统构成), K3(螭首功能), S4(史料实证)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "lessons/lesson_gewu_001/assets/tasks/chishou-front.jpg",
             "location": {
               "mode": "geofence",
@@ -251,80 +308,189 @@ export default {
             "roleStageId": "task-2",
             "name": "算其数",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集), A02(答题评测)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "表单字段：[上层台基数量, 中层台基数量, 下层台基数量, 总计]",
             "guidanceSteps": [
-              "先观察三层台基的排列规律，决定逐个数还是分段估算",
-              "分别估算上层、中层和下层的数量，记录每层的方法",
-              "把三层结果相加，检查总数与现场观察是否匹配"
+              "观察三层台基的重复规律，选择逐个计数、分段抽样或间距估算，并写清选择理由",
+              "填写上层、中层和下层的估算数量，并分别说明这些数量怎样得到",
+              "计算三层总计，再比较三层大小关系和现场排列，说明这个结果为何合理或哪里仍不确定"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "先观察三层台基的排列规律，决定逐个数还是分段估算",
-                "studentAction": "先观察三层台基的排列规律，决定逐个数还是分段估算",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "选择估算策略",
+                "objective": "根据现场排列特点形成可执行的估算办法",
+                "studentAction": "观察三层台基的重复规律，选择逐个计数、分段抽样或间距估算，并写清选择理由",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "写明一种主要估算方法、一个现场观察依据和准备怎样复核",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "method",
+                          "label": "主要估算方法",
+                          "type": "select",
+                          "options": [
+                            "逐个计数",
+                            "分段抽样",
+                            "按间距估算",
+                            "组合方法"
+                          ],
+                          "required": true
+                        },
+                        {
+                          "id": "basis",
+                          "label": "现场观察依据",
+                          "type": "long_text",
+                          "placeholder": "例如排列是否重复、哪些区域便于计数",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "check",
+                          "label": "准备怎样复核",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "分别估算上层、中层和下层的数量，记录每层的方法",
-                "studentAction": "分别估算上层、中层和下层的数量，记录每层的方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录三层估算",
+                "objective": "分别保留三层台基的估算数据和推算依据",
+                "studentAction": "填写上层、中层和下层的估算数量，并分别说明这些数量怎样得到",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "三层估算值均已填写；至少说明抽样段、重复次数、间距或逐个计数记录中的一种推算依据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "upper",
+                          "label": "上层估算数量",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "middle",
+                          "label": "中层估算数量",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "lower",
+                          "label": "下层估算数量",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "分层推算过程",
+                          "type": "long_text",
+                          "placeholder": "写明数了哪一段、怎样扩大到整层",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "把三层结果相加，检查总数与现场观察是否匹配",
-                "studentAction": "把三层结果相加，检查总数与现场观察是否匹配",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "合计并做合理性检查",
+                "objective": "把分层估算合成为总数，并用现场证据检查结果是否自洽",
+                "studentAction": "计算三层总计，再比较三层大小关系和现场排列，说明这个结果为何合理或哪里仍不确定",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "填写总计；总计与三层数据能够对应；至少写出一条合理性检查和一项不确定性",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "total",
+                          "label": "三层估算总计",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "reasonableness",
+                          "label": "合理性检查",
+                          "type": "long_text",
+                          "placeholder": "比较三层大小、排列密度或现场范围",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "最大不确定性",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "提交估算值 + 说明估算方法",
             "passCondition": "提交估算值 + 说明估算方法",
             "goals": "K3(螭首功能), S1(估算计数), C1(证据意识), C4(科学精神)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -355,85 +521,157 @@ export default {
             "roleStageId": "task-3",
             "name": "验其差",
             "phase": "Phase 2 现场采证 / Phase 3 推演",
-            "modules": "A01(文字输入/语音录入)",
-            "tools": [
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "反思文本最少50字",
             "guidanceSteps": [
-              "先对比各组或各次估算结果，找出差异最大的一处",
-              "列出至少两个可能造成误差的原因",
-              "写下如果重新计数会怎样改进，完成至少50字的反思"
+              "录入本组与另一组或本组两次估算结果，指出总数或分层数据中差异最大的一项",
+              "列出至少两个具体误差来源，并说明它们可能让估算偏大还是偏小",
+              "写一段不少于50字的反思，说明如果重新计数会保留什么、改变什么以及怎样验证改进是否有效"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先对比各组或各次估算结果，找出差异最大的一处",
-                "studentAction": "先对比各组或各次估算结果，找出差异最大的一处",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "定位估算差异",
+                "objective": "通过对比至少两次结果找到差异最明显的位置",
+                "studentAction": "录入本组与另一组或本组两次估算结果，指出总数或分层数据中差异最大的一项",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少有两组可比较的数据，并明确写出差异最大的一项",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "estimate-a",
+                          "label": "结果A",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "estimate-b",
+                          "label": "结果B",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "largest-gap",
+                          "label": "差异最大的一项",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "列出至少两个可能造成误差的原因",
-                "studentAction": "列出至少两个可能造成误差的原因",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "分析误差来源",
+                "objective": "区分观察、抽样、计算和记录环节可能产生的误差",
+                "studentAction": "列出至少两个具体误差来源，并说明它们可能让估算偏大还是偏小",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2个不同的具体误差来源；每项包含发生环节和可能影响方向",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "source-1",
+                          "label": "误差来源1及影响",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-2",
+                          "label": "误差来源2及影响",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "写下如果重新计数会怎样改进，完成至少50字的反思",
-                "studentAction": "写下如果重新计数会怎样改进，完成至少50字的反思",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "形成改进反思",
+                "objective": "根据误差分析提出下一次能够执行的改进方案",
+                "studentAction": "写一段不少于50字的反思，说明如果重新计数会保留什么、改变什么以及怎样验证改进是否有效",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于50字；包含具体误差来源、至少一项可执行改进和一种复核方法",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "reflection",
+                          "label": "估算改进反思",
+                          "type": "long_text",
+                          "placeholder": "结合自己的数据和误差分析来写",
+                          "required": true,
+                          "minLength": 50,
+                          "maxLength": 300
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "提交包含\"误差来源分析\"的反思",
             "passCondition": "提交包含\"误差来源分析\"的反思",
             "goals": "C3(元认知), C4(科学精神), S1(估算计数)",
-            "toolType": "audio",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -480,68 +718,147 @@ export default {
             "roleStageId": "task-1",
             "name": "察其势",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "拍摄至少3个位置的地面对比照",
             "guidanceSteps": [
-              "先找到一处看起来较高和一处较低的地面",
-              "从相似高度和角度拍下至少3个位置",
-              "对比照片，用箭头标出你判断的水流方向"
+              "在安全动线内找到一处看起来较高和一处较低的地面，各拍1张包含固定参照物的照片",
+              "保持与前两张相近的拍摄高度和方向，再拍1—2张中间位置或另一处地面的照片",
+              "在剖面图上标出高点、低点和一条初步水流箭头，再写明箭头对应的照片线索"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先找到一处看起来较高和一处较低的地面",
-                "studentAction": "先找到一处看起来较高和一处较低的地面",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "寻找高低参照",
+                "objective": "通过可见参照建立一组可能存在高差的观察点",
+                "studentAction": "在安全动线内找到一处看起来较高和一处较低的地面，各拍1张包含固定参照物的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2张照片；高点和低点各1张；画面包含台阶、墙根、沟渠边缘或其他可复核参照物",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 2,
+                      "maxCount": 3,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "分别拍下可能的高点和低点，并保留台阶、墙根或沟渠等固定参照。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "从相似高度和角度拍下至少3个位置",
-                "studentAction": "从相似高度和角度拍下至少3个位置",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补充第三观察点",
+                "objective": "用第三个位置检查最初的高低判断是否只是局部错觉",
+                "studentAction": "保持与前两张相近的拍摄高度和方向，再拍1—2张中间位置或另一处地面的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张新增照片；拍摄高度和方向能够与前两张进行比较；本任务累计不少于3个位置",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "补拍第三个位置，尽量保持与前两张相近的拍摄高度和方向。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "对比照片，用箭头标出你判断的水流方向",
-                "studentAction": "对比照片，用箭头标出你判断的水流方向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "标出初步流向",
+                "objective": "依据照片中的高差线索提出可核验的水流方向判断",
+                "studentAction": "在剖面图上标出高点、低点和一条初步水流箭头，再写明箭头对应的照片线索",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "画板包含高点、低点和至少1条方向箭头；文字说明引用台阶、沟渠、积水痕迹或建筑线中的至少一种线索",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注), A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#b42318",
+                        "#2563eb",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
+                      "prompt": "在图上标出高点、低点和你判断的水流方向。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "clue",
+                          "label": "流向判断依据",
+                          "type": "long_text",
+                          "placeholder": "写明对应哪张照片和哪一种高差线索",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "拍照完成 + 描述观察到的高差线索",
             "passCondition": "拍照完成 + 描述观察到的高差线索",
             "goals": "K4(坡度与排水), S2(坡度与流向判断)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
             "location": {
               "mode": "geofence",
@@ -572,80 +889,183 @@ export default {
             "roleStageId": "task-2",
             "name": "量其度",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照), A02(答题评测)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "工具：目测+步测法（或提供简易水平仪AR模拟）\n表单字段：[估测高差(m), 估测距离(m), 计算坡度(%)]",
             "guidanceSteps": [
-              "选定一高一低两个安全观测点",
-              "用目测和步测记录高差与水平距离",
-              "根据高差和距离计算坡度，并写下估测方法"
+              "记录高点和低点的位置特征，说明测量区间为何适合进行目测或步测",
+              "用目测和步测记录高差与水平距离，填写单位、步数换算或其他估测依据",
+              "按“高差÷水平距离×100%”计算坡度，选择水可能流向的方向，并写出一项结果不确定性"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "选定一高一低两个安全观测点",
-                "studentAction": "选定一高一低两个安全观测点",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "确定测量区间",
+                "objective": "选定一组安全、可描述且能够比较的高低观测点",
+                "studentAction": "记录高点和低点的位置特征，说明测量区间为何适合进行目测或步测",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "高低点都有清楚位置描述；说明安全边界；写出至少一个适合测量的理由",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "high-point",
+                          "label": "高点位置特征",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        },
+                        {
+                          "id": "low-point",
+                          "label": "低点位置特征",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        },
+                        {
+                          "id": "why",
+                          "label": "区间选择与安全说明",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "用目测和步测记录高差与水平距离",
-                "studentAction": "用目测和步测记录高差与水平距离",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录高差与距离",
+                "objective": "保留能够复算的高差、水平距离和测量过程",
+                "studentAction": "用目测和步测记录高差与水平距离，填写单位、步数换算或其他估测依据",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "高差和距离均有数值与单位；说明步数、步长或目测参照；没有虚构精密仪器读数",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "height-difference",
+                          "label": "估测高差（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "horizontal-distance",
+                          "label": "估测水平距离（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "method",
+                          "label": "步测或目测过程",
+                          "type": "long_text",
+                          "placeholder": "记录步数、步长换算或参照物",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "根据高差和距离计算坡度，并写下估测方法",
-                "studentAction": "根据高差和距离计算坡度，并写下估测方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "计算坡度并判断方向",
+                "objective": "用高差与距离计算坡度，并把数值与现场流向联系起来",
+                "studentAction": "按“高差÷水平距离×100%”计算坡度，选择水可能流向的方向，并写出一项结果不确定性",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "坡度数值带百分号或明确单位；计算过程可复算；方向判断与所选高低点一致；包含至少一项不确定性",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "slope",
+                          "label": "计算坡度（%）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "direction",
+                          "label": "水流方向判断",
+                          "type": "short_text",
+                          "required": true,
+                          "placeholder": "从哪个观察点流向哪个观察点"
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "计算过程",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "一项不确定性",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "正确判断坡度方向（北高南低）+ 给出估算值",
             "passCondition": "正确判断坡度方向（北高南低）+ 给出估算值",
             "goals": "K4(坡度与排水), S2(坡度判断), S1(估算), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -676,88 +1096,137 @@ export default {
             "roleStageId": "task-3",
             "name": "析其理",
             "phase": "Phase 2 / Phase 3",
-            "modules": "A01(文字输入), A01(画板草图)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "sketch",
-                "module": "A01",
-                "name": "画板标注",
-                "icon": "pen-tool",
-                "output": "image",
-                "config": {
-                  "width": 720,
-                  "height": 420,
-                  "brushColors": [
-                    "#8d211f",
-                    "#245c4f",
-                    "#1f2937"
-                  ],
-                  "backgroundImage": ""
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "画出水流方向示意图 + 文字解释坡度的排水作用",
             "guidanceSteps": [
-              "把观测到的高点、低点和排水设施标在示意图上",
-              "用箭头连出水可能经过的路径",
-              "用现场证据解释坡度如何帮助水流向低处"
+              "在示意图上标出至少1个高点、1个低点和2处观察到的排水设施，并写上照片编号",
+              "用箭头从高点经过排水设施连向低点，并把无法确认的连接标成“待核”",
+              "写一段解释，说明高差如何改变水流方向、排水设施如何接住水，以及目前还有什么没有确认"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "把观测到的高点、低点和排水设施标在示意图上",
-                "studentAction": "把观测到的高点、低点和排水设施标在示意图上",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "建立高低与设施图层",
+                "objective": "把分散的高低点和排水设施放入同一空间表示",
+                "studentAction": "在示意图上标出至少1个高点、1个低点和2处观察到的排水设施，并写上照片编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "画板包含高点、低点、至少2处排水设施和对应照片编号",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#b42318",
+                        "#2563eb",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
+                      "prompt": "先标高点、低点和两处排水设施，再在旁边写对应照片编号。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "用箭头连出水可能经过的路径",
-                "studentAction": "用箭头连出水可能经过的路径",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "连出可能水路",
+                "objective": "依据重力方向把地势和排水设施连接成一条可讨论的路径",
+                "studentAction": "用箭头从高点经过排水设施连向低点，并把无法确认的连接标成“待核”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2段连续箭头；箭头总体由高到低；推测连接与已观察连接有明确区分",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#64748b",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
+                      "prompt": "用实线画现场能够支持的水路，用虚线或“待核”标出推测连接。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "用现场证据解释坡度如何帮助水流向低处",
-                "studentAction": "用现场证据解释坡度如何帮助水流向低处",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "解释坡度作用",
+                "objective": "用现场证据解释坡度怎样帮助排水，同时保留结论边界",
+                "studentAction": "写一段解释，说明高差如何改变水流方向、排水设施如何接住水，以及目前还有什么没有确认",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于60字；包含高差、重力流向、排水设施和至少一项未确认内容；引用至少1条现场证据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "explanation",
+                          "label": "坡度与排水解释",
+                          "type": "long_text",
+                          "placeholder": "结合你的测量、照片和示意图说明",
+                          "required": true,
+                          "minLength": 60,
+                          "maxLength": 300
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "示意图标注正确的流向 + 文字解释逻辑通顺",
             "passCondition": "示意图标注正确的流向 + 文字解释逻辑通顺",
             "goals": "K2([待学生探索]), C2(系统思维), S2(坡度判断)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "",
             "location": {
@@ -805,68 +1274,142 @@ export default {
             "roleStageId": "task-1",
             "name": "寻其踪",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "找到并拍照至少3处可见的排水设施（明沟/暗沟口/雨水篦子）",
             "guidanceSteps": [
-              "先低头观察地面和墙根，找到第一处可见排水设施",
-              "继续寻找不同位置或不同类型的设施，完成至少3张照片",
-              "为每张照片标注设施类型和周围水可能流入的方向"
+              "在安全动线内找到第一处疑似排水设施，拍摄1张全景和1张结构细节",
+              "再寻找至少1处不同位置或不同类型的排水设施，各拍1张能看清环境和结构的照片",
+              "为至少3张照片填写设施类型、判断依据和周围水可能流入的方向；不能确认时标“待核”"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先低头观察地面和墙根，找到第一处可见排水设施",
-                "studentAction": "先低头观察地面和墙根，找到第一处可见排水设施",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "确认第一处排水设施",
+                "objective": "从地面、墙根或台基边缘识别一处具有排水特征的现场对象",
+                "studentAction": "在安全动线内找到第一处疑似排水设施，拍摄1张全景和1张结构细节",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2张照片；一张说明设施所在环境，一张能看清开口、沟槽、篦子或汇水边缘；不得俯身进入危险区域",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 2,
+                      "maxCount": 3,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "先拍设施所在环境，再拍开口、沟槽或篦子等结构细节。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "继续寻找不同位置或不同类型的设施，完成至少3张照片",
-                "studentAction": "继续寻找不同位置或不同类型的设施，完成至少3张照片",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐不同位置证据",
+                "objective": "用不同位置或不同形态的证据避免以单个对象代表整个沟渠系统",
+                "studentAction": "再寻找至少1处不同位置或不同类型的排水设施，各拍1张能看清环境和结构的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张新增照片；与第一处在位置或结构类型上存在可说明的差别；本任务累计不少于3张有效照片",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 3,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "补拍另一处不同位置或不同类型的排水设施，并保留周围环境。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "为每张照片标注设施类型和周围水可能流入的方向",
-                "studentAction": "为每张照片标注设施类型和周围水可能流入的方向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "标注类型与来水方向",
+                "objective": "把照片中的结构特征转成可核验的设施分类和流向假设",
+                "studentAction": "为至少3张照片填写设施类型、判断依据和周围水可能流入的方向；不能确认时标“待核”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3条照片标注；每条包含照片编号、设施类型或待核、结构依据和来水方向",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "record-1",
+                          "label": "照片1：类型、依据与来水方向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "record-2",
+                          "label": "照片2：类型、依据与来水方向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "record-3",
+                          "label": "照片3：类型、依据与来水方向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "3张有效照片 + 标注每处设施类型",
             "passCondition": "3张有效照片 + 标注每处设施类型",
             "goals": "K5(明暗沟系统), S4(史料实证), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -897,84 +1440,150 @@ export default {
             "roleStageId": "task-2",
             "name": "探其网",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(画板草图), A02(答题)",
-            "tools": [
-              {
-                "id": "sketch",
-                "module": "A01",
-                "name": "画板标注",
-                "icon": "pen-tool",
-                "output": "image",
-                "config": {
-                  "width": 720,
-                  "height": 420,
-                  "brushColors": [
-                    "#8d211f",
-                    "#245c4f",
-                    "#1f2937"
-                  ],
-                  "backgroundImage": ""
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "画出发现的排水设施之间的连接关系\n问答：明沟和暗沟有什么区别？各有什么优势？",
             "guidanceSteps": [
-              "把已发现的排水设施按位置摆列出来",
-              "根据高低和开口方向画出至少3个节点的连接关系",
-              "对比明沟和暗沟的外观、连接方式和优势"
+              "在画板上放置至少3个设施节点，写明照片编号、所在位置和暂定类型",
+              "用箭头连接至少3个节点，并在每条箭头旁写明“现场可见”或“根据高低推测”",
+              "分别写出明沟和暗沟的可见特征、可能优势和局限，并引用至少一张现场照片"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "把已发现的排水设施按位置摆列出来",
-                "studentAction": "把已发现的排水设施按位置摆列出来",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "摆放设施节点",
+                "objective": "把现场发现转换成具有位置和来源的网络节点",
+                "studentAction": "在画板上放置至少3个设施节点，写明照片编号、所在位置和暂定类型",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个节点；每个节点包含照片编号和位置；不能确认的类型标“待核”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#0f766e",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "",
+                      "prompt": "把至少3处设施画成节点，旁边写照片编号、位置和暂定类型。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "根据高低和开口方向画出至少3个节点的连接关系",
-                "studentAction": "根据高低和开口方向画出至少3个节点的连接关系",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "提出连接假设",
+                "objective": "依据高低、开口和沟槽方向提出节点之间的连接关系",
+                "studentAction": "用箭头连接至少3个节点，并在每条箭头旁写明“现场可见”或“根据高低推测”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2条连接箭头；形成至少3个节点的关系；每条连接标明证据状态和流向依据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#64748b",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "",
+                      "prompt": "用箭头连接节点；实线表示现场可见，虚线表示推测，并写出流向依据。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "对比明沟和暗沟的外观、连接方式和优势",
-                "studentAction": "对比明沟和暗沟的外观、连接方式和优势",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "比较明沟与暗沟",
+                "objective": "从外观、连接和维护三个角度比较明沟与暗沟",
+                "studentAction": "分别写出明沟和暗沟的可见特征、可能优势和局限，并引用至少一张现场照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "明沟与暗沟各有一条特征；至少比较一个优势和一个局限；引用照片编号；未知部分明确标注",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "open-ditch",
+                          "label": "明沟：特征、优势与局限",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "covered-ditch",
+                          "label": "暗沟：特征、优势与局限",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "evidence",
+                          "label": "对应照片编号与依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "画出至少3个节点的连接关系图 + 正确区分明暗沟",
             "passCondition": "画出至少3个节点的连接关系图 + 正确区分明暗沟",
             "goals": "K5(明暗沟系统), S5(系统分级), C2(系统思维)",
-            "toolType": "sketch",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1005,85 +1614,180 @@ export default {
             "roleStageId": "task-3",
             "name": "绘其图",
             "phase": "Phase 3 推演",
-            "modules": "A01(画板草图), A03(拼合搭建)",
-            "tools": [
-              {
-                "id": "sketch",
-                "module": "A01",
-                "name": "画板标注",
-                "icon": "pen-tool",
-                "output": "image",
-                "config": {
-                  "width": 720,
-                  "height": 420,
-                  "brushColors": [
-                    "#8d211f",
-                    "#245c4f",
-                    "#1f2937"
-                  ],
-                  "backgroundImage": ""
-                }
-              },
-              {
-                "id": "builder",
-                "module": "A03",
-                "name": "拼合搭建",
-                "icon": "blocks",
-                "output": "layout",
-                "config": {
-                  "mode": "evidence-wall",
-                  "items": [],
-                  "zones": [],
-                  "connections": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "绘制完整的\"院落→支沟→干沟→河\"分级排水网络图",
             "guidanceSteps": [
-              "先把已发现的沟渠放入院落、支沟、干沟和河道对应层级",
-              "按水从小范围汇入大范围的方向连线",
-              "检查网络是否至少包含3级且每条水路都标有流向"
+              "把院落地表水、支沟、干沟和河道四张卡放入对应层级",
+              "在画板上画出至少3级网络和连续流向箭头，实线表示有证据支持，虚线表示待核",
+              "对照现场照片检查网络图，写明两条有证据支持的连接和一条仍需核验的连接"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先把已发现的沟渠放入院落、支沟、干沟和河道对应层级",
-                "studentAction": "先把已发现的沟渠放入院落、支沟、干沟和河道对应层级",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "完成排水层级分类",
+                "objective": "理解雨水从小范围收集设施逐级进入更大通道的层级关系",
+                "studentAction": "把院落地表水、支沟、干沟和河道四张卡放入对应层级",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "4张卡全部完成分类，层级从局部集水到河道汇流排列",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(分类搭建)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "courtyard-water",
+                          "label": "院落地表水"
+                        },
+                        {
+                          "id": "branch-ditch",
+                          "label": "支沟"
+                        },
+                        {
+                          "id": "trunk-ditch",
+                          "label": "干沟"
+                        },
+                        {
+                          "id": "river",
+                          "label": "河道"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "level-1",
+                          "label": "第1级：局部集水"
+                        },
+                        {
+                          "id": "level-2",
+                          "label": "第2级：小范围转运"
+                        },
+                        {
+                          "id": "level-3",
+                          "label": "第3级：主通道汇集"
+                        },
+                        {
+                          "id": "level-4",
+                          "label": "第4级：河道承接"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "把四张排水对象卡放入对应层级。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "按水从小范围汇入大范围的方向连线",
-                "studentAction": "按水从小范围汇入大范围的方向连线",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "连接分级水路",
+                "objective": "把层级分类转换成带方向的排水网络",
+                "studentAction": "在画板上画出至少3级网络和连续流向箭头，实线表示有证据支持，虚线表示待核",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个层级、2条以上连续箭头；每条路径有流向；已知和推测使用不同线型或文字标识",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#64748b",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "",
+                      "prompt": "从院落或设施节点开始，逐级连向支沟、干沟和河道；实线画已知，虚线画待核。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "检查网络是否至少包含3级且每条水路都标有流向",
-                "studentAction": "检查网络是否至少包含3级且每条水路都标有流向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "检查网络边界",
+                "objective": "检验网络图是否能够解释现场证据，同时承认地下连接的不确定性",
+                "studentAction": "对照现场照片检查网络图，写明两条有证据支持的连接和一条仍需核验的连接",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少引用2条现场证据；指出1条待核连接；说明待核连接还需要什么证据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "supported-1",
+                          "label": "有证据支持的连接1",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "supported-2",
+                          "label": "有证据支持的连接2",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "unknown",
+                          "label": "待核连接及所需证据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "网络图包含3级以上层级 + 标注流向",
             "passCondition": "网络图包含3级以上层级 + 标注流向",
             "goals": "K5(明暗沟系统), K2([待学生探索]), S5(系统分级), C2(系统思维)",
-            "toolType": "sketch",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "none",
@@ -1126,68 +1830,161 @@ export default {
             "roleStageId": "task-1",
             "name": "追其源",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "沿河行走拍照至少4处关键节点（入水口/桥下/弯道/出水口）",
             "guidanceSteps": [
-              "先找到安全可观察的入水口，记录水从哪里来",
-              "沿老师指定路线记录桥下、弯道等中间节点",
-              "找到出水方向，按上游到下游整理至少4张照片"
+              "在老师指定的安全观察点拍摄1张河段全景，并记录你判断来水方向的依据",
+              "沿老师指定路线，在桥下、弯道或岸线变化处拍摄至少2张不同节点照片",
+              "再拍1张下游或出水方向照片，把至少4张照片按上游到下游排序并逐张标注位置"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先找到安全可观察的入水口，记录水从哪里来",
-                "studentAction": "先找到安全可观察的入水口，记录水从哪里来",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录可观察的入水方向",
+                "objective": "找到河段的一端或来水方向，并保留可定位的现场证据",
+                "studentAction": "在老师指定的安全观察点拍摄1张河段全景，并记录你判断来水方向的依据",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张包含河道和固定参照物的全景；文字说明引用水面、河道形态、桥位或地图中的至少一种依据；不得向水中投放物品",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照), A01(文字)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍下河道全景和桥、岸线等固定参照，不靠近水边。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "inflow-basis",
+                          "label": "来水方向与判断依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "沿老师指定路线记录桥下、弯道等中间节点",
-                "studentAction": "沿老师指定路线记录桥下、弯道等中间节点",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "采集中间节点",
+                "objective": "用多个中间位置观察河道路径和方向变化",
+                "studentAction": "沿老师指定路线，在桥下、弯道或岸线变化处拍摄至少2张不同节点照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2张照片；来自两个不同节点或呈现两种不同河道特征；每张保留可定位参照",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 2,
+                      "maxCount": 4,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "在两个不同节点拍照，优先记录桥下、弯道或岸线变化，并保留定位参照。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "找到出水方向，按上游到下游整理至少4张照片",
-                "studentAction": "找到出水方向，按上游到下游整理至少4张照片",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "整理上下游序列",
+                "objective": "把分散照片整理成有依据的河道路径序列",
+                "studentAction": "再拍1张下游或出水方向照片，把至少4张照片按上游到下游排序并逐张标注位置",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "新增至少1张照片；本任务累计不少于4张；提交照片顺序和每张位置标注；无法确认的端点明确写“待核”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照), A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "补拍下游或出水方向的节点，并保留岸线或桥位参照。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "sequence",
+                          "label": "照片顺序与节点标注",
+                          "type": "long_text",
+                          "placeholder": "例：照片1入水方向→照片2桥下→照片3弯道→照片4出水方向",
+                          "required": true,
+                          "minLength": 40
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "4张有效照片 + 标注上下游方向",
             "passCondition": "4张有效照片 + 标注上下游方向",
             "goals": "K5(明暗沟系统), K2([待学生探索]), S2(流向判断)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "lessons/lesson_gewu_001/assets/maps/inner-river-path.png",
             "location": {
               "mode": "geofence",
@@ -1218,93 +2015,174 @@ export default {
             "roleStageId": "task-2",
             "name": "测其流",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照/语音), A02(答题)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "观察法估测流速（投叶片/观水面）\n表单：[估测河宽(m), 估测河深(m), 估测流速(m/s), 计算流量]\n允许较大误差，重在方法",
             "guidanceSteps": [
-              "先在安全位置选择流速观察方法，说明观察依据",
-              "估测河宽、河深和流速，记录数值与单位",
-              "用估测值计算流量，并标出哪个数据的不确定性最大"
+              "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和安全边界",
+              "填写河宽、河深和流速估测值，逐项注明观察或推算依据",
+              "按“河宽×河深×流速”计算流量，写出单位，并选择不确定性最大的输入解释原因"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "先在安全位置选择流速观察方法，说明观察依据",
-                "studentAction": "先在安全位置选择流速观察方法，说明观察依据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "设计安全观察方法",
+                "objective": "形成不接触河水、不投放物体的可执行流速观察方案",
+                "studentAction": "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和安全边界",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "方法可在岸上完成；包含固定参照、观察时长或距离中的至少两项；明确不向水中投放物品",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "method",
+                          "label": "流速观察方法",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 35
+                        },
+                        {
+                          "id": "safety",
+                          "label": "安全边界",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "估测河宽、河深和流速，记录数值与单位",
-                "studentAction": "估测河宽、河深和流速，记录数值与单位",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录宽深与流速估测",
+                "objective": "获得带单位、带方法说明的河宽、河深和流速估测数据",
+                "studentAction": "填写河宽、河深和流速估测值，逐项注明观察或推算依据",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "三个数值均有单位；河深明确标注为观察推测或资料值；每项至少有一个依据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "width",
+                          "label": "估测河宽（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "depth",
+                          "label": "估测河深（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "speed",
+                          "label": "估测流速（米/秒）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "basis",
+                          "label": "三项数据的观察或推算依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "用估测值计算流量，并标出哪个数据的不确定性最大",
-                "studentAction": "用估测值计算流量，并标出哪个数据的不确定性最大",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "计算流量并识别不确定性",
+                "objective": "用简化模型计算流量，并判断哪个输入最影响结果可信度",
+                "studentAction": "按“河宽×河深×流速”计算流量，写出单位，并选择不确定性最大的输入解释原因",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "计算过程可复算；结果单位为立方米/秒或等价写法；指出一个最大不确定性并说明它怎样影响结果",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "flow",
+                          "label": "估算流量（立方米/秒）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "计算过程与单位",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "uncertain-input",
+                          "label": "最大不确定性及影响",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "给出估测方法说明 + 估测值",
             "passCondition": "给出估测方法说明 + 估测值",
             "goals": "S1(估算), S3(实验设计), C1(证据意识), C4(科学精神)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1335,84 +2213,218 @@ export default {
             "roleStageId": "task-3",
             "name": "演其变",
             "phase": "Phase 3 推演",
-            "modules": "A01(文字), A04(沙盘推演)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "simulation",
-                "module": "A04",
-                "name": "沙盘推演",
-                "icon": "waves",
-                "output": "rounds",
-                "config": {
-                  "rounds": 1,
-                  "resources": {},
-                  "choices": [],
-                  "metrics": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "在沙盘中设置不同降水量，观察内金水河水位变化",
             "guidanceSteps": [
-              "先设置正常降水量，记录河道水位和流动状态",
-              "分别调到中雨和暴雨，观察哪个环节最先发生变化",
-              "对比三种情况，说明河道的容量边界和多出的水可能去向"
+              "依次运行常规降雨、中雨和暴雨三种情景，保存每轮水位、流速和溢流风险变化",
+              "比较三轮记录，指出水位、流速、河道余量或下游承接中最先明显变化的一项，并引用对应轮次",
+              "写出三种降雨下的河道状态变化，说明容量边界出现的条件和多余水可能去向，并标注推测部分"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先设置正常降水量，记录河道水位和流动状态",
-                "studentAction": "先设置正常降水量，记录河道水位和流动状态",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "完成三轮降雨推演",
+                "objective": "观察降雨负荷逐步增加时河道压力的相对变化",
+                "studentAction": "依次运行常规降雨、中雨和暴雨三种情景，保存每轮水位、流速和溢流风险变化",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "完成3轮且三种情景不重复；保留每轮指标变化记录",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A04(沙盘推演)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 3,
+                      "resources": {
+                        "河道容量": "固定",
+                        "上游来水": "随降雨增加"
+                      },
+                      "choices": [
+                        {
+                          "id": "normal",
+                          "label": "常规降雨",
+                          "publicFeedback": "河道处于基线状态；记录水位、流速和剩余空间。",
+                          "effects": {
+                            "water-level": 1,
+                            "flow-speed": 1,
+                            "overflow-risk": 0
+                          }
+                        },
+                        {
+                          "id": "medium",
+                          "label": "中雨",
+                          "publicFeedback": "来水增加；观察水位和流速中哪一项变化更明显。",
+                          "effects": {
+                            "water-level": 2,
+                            "flow-speed": 2,
+                            "overflow-risk": 1
+                          }
+                        },
+                        {
+                          "id": "storm",
+                          "label": "暴雨",
+                          "publicFeedback": "系统压力达到高位；检查哪个环节最先接近容量边界。",
+                          "effects": {
+                            "water-level": 4,
+                            "flow-speed": 3,
+                            "overflow-risk": 4
+                          }
+                        }
+                      ],
+                      "metrics": [
+                        {
+                          "id": "water-level",
+                          "label": "水位压力",
+                          "initial": 0,
+                          "initialLabel": "基线待测"
+                        },
+                        {
+                          "id": "flow-speed",
+                          "label": "流速变化",
+                          "initial": 0,
+                          "initialLabel": "基线待测"
+                        },
+                        {
+                          "id": "overflow-risk",
+                          "label": "溢流风险",
+                          "initial": 0,
+                          "initialLabel": "未观察"
+                        }
+                      ],
+                      "allowRepeat": false,
+                      "prompt": "依次运行三种降雨情景，观察河道压力怎样变化。",
+                      "roundPrompts": [
+                        "第1轮：选择常规降雨，建立基线。",
+                        "第2轮：选择中雨，比较指标变化。",
+                        "第3轮：选择暴雨，寻找容量边界。"
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "分别调到中雨和暴雨，观察哪个环节最先发生变化",
-                "studentAction": "分别调到中雨和暴雨，观察哪个环节最先发生变化",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "定位最先变化的环节",
+                "objective": "从三轮指标变化中识别系统压力首先出现在哪里",
+                "studentAction": "比较三轮记录，指出水位、流速、河道余量或下游承接中最先明显变化的一项，并引用对应轮次",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "明确指出一个首先变化的环节；引用至少两轮数据或现象进行比较；保留其他可能解释",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "first-change",
+                          "label": "最先明显变化的环节",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "comparison",
+                          "label": "对应轮次与比较证据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 35
+                        },
+                        {
+                          "id": "alternative",
+                          "label": "另一种可能解释",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "对比三种情况，说明河道的容量边界和多出的水可能去向",
-                "studentAction": "对比三种情况，说明河道的容量边界和多出的水可能去向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "说明容量边界与去向",
+                "objective": "用系统关系解释河道容量有限时多余来水可能怎样转移",
+                "studentAction": "写出三种降雨下的河道状态变化，说明容量边界出现的条件和多余水可能去向，并标注推测部分",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "同时描述常规、中雨、暴雨三种状态；包含容量边界条件、至少一个可能去向和一项不确定性",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "three-scenarios",
+                          "label": "三种降雨状态对比",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 60
+                        },
+                        {
+                          "id": "capacity-boundary",
+                          "label": "容量边界与多余水去向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "仍需核验的内容",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "描述\"正常/中雨/暴雨\"三种情况下河道状态变化",
             "passCondition": "描述\"正常/中雨/暴雨\"三种情况下河道状态变化",
             "goals": "K2([待学生探索]), C2(系统思维), S5(系统分级)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_gewu_001/assets/videos/video-simulation.png",
             "location": {
@@ -1456,68 +2468,142 @@ export default {
             "roleStageId": "task-1",
             "name": "观其堤",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "拍照河堤结构、排水口、水位标记至少4处",
             "guidanceSteps": [
-              "先观察河堤轮廓，找到排水口或水位痕迹",
-              "分别拍摄河堤结构、排水口和水位标记，完成至少4张照片",
-              "为照片分类，写下每种结构可能承担的作用"
+              "在老师指定的安全观察点拍摄1—2张河堤和水面全景，保留城墙、岸线或桥位参照",
+              "再拍至少3张照片，分别寻找排水口、岸壁结构、水位痕迹或其他可说明水位变化的细节",
+              "选择至少3张照片，分别填写结构类型、可见特征和可能作用；证据不足时使用“可能”或“待核”"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先观察河堤轮廓，找到排水口或水位痕迹",
-                "studentAction": "先观察河堤轮廓，找到排水口或水位痕迹",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录河堤整体结构",
+                "objective": "获得能够说明河堤轮廓、岸线与水体关系的现场全景",
+                "studentAction": "在老师指定的安全观察点拍摄1—2张河堤和水面全景，保留城墙、岸线或桥位参照",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张清楚全景；画面同时包含河堤和水体，并有可定位参照；不得靠近无护栏水边",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍下河堤与水体的整体关系，并保留城墙、岸线或桥位参照。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "分别拍摄河堤结构、排水口和水位标记，完成至少4张照片",
-                "studentAction": "分别拍摄河堤结构、排水口和水位标记，完成至少4张照片",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐排水与水位证据",
+                "objective": "观察河堤上可能与进排水或水位变化有关的细节",
+                "studentAction": "再拍至少3张照片，分别寻找排水口、岸壁结构、水位痕迹或其他可说明水位变化的细节",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3张新增照片；至少覆盖两类不同结构或痕迹；本任务累计不少于4张；不确定对象标“待核”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 3,
+                      "maxCount": 5,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "从安全位置补拍排水口、岸壁结构或水位痕迹，避免重复同一画面。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "为照片分类，写下每种结构可能承担的作用",
-                "studentAction": "为照片分类，写下每种结构可能承担的作用",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "分类并提出功能假设",
+                "objective": "把河堤照片分类，并用结构证据提出谨慎的功能解释",
+                "studentAction": "选择至少3张照片，分别填写结构类型、可见特征和可能作用；证据不足时使用“可能”或“待核”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3条照片记录；每条包含照片编号、可见特征和功能假设；观察事实与推测表达清楚区分",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "record-1",
+                          "label": "照片1：结构、特征与可能作用",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "record-2",
+                          "label": "照片2：结构、特征与可能作用",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "record-3",
+                          "label": "照片3：结构、特征与可能作用",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "4张有效照片 + 描述观察到的结构特征",
             "passCondition": "4张有效照片 + 描述观察到的结构特征",
             "goals": "K6(护城河蓄排并用), S4(史料实证), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1548,93 +2634,174 @@ export default {
             "roleStageId": "task-2",
             "name": "验其深",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照/语音), A02(答题)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "步测法估测河宽 + 观察法推测河深\n表单：[估测河宽(m), 估测深度(m), 估测周长(m), 计算蓄水体积]\n引导计算蓄水量（简化为矩形截面×周长）",
             "guidanceSteps": [
-              "用步测法估测河宽，记录步数和换算方法",
-              "根据可见结构推测河深和周长，标出估算依据",
-              "按简化截面计算蓄水量量级，检查单位和结果是否合理"
+              "在不靠近水边的前提下，记录步数、个人步长或地图比例，计算一处河宽估测值",
+              "根据可见岸壁、课程材料或地图记录河深和周长估测值，并逐项标注“观察推测”或“资料值”",
+              "按“河宽×河深×周长”计算简化蓄水量，写出计算过程、单位和模型可能造成的偏差"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "用步测法估测河宽，记录步数和换算方法",
-                "studentAction": "用步测法估测河宽，记录步数和换算方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "估测河宽",
+                "objective": "用步测或地图比例形成可复算的河宽估测",
+                "studentAction": "在不靠近水边的前提下，记录步数、个人步长或地图比例，计算一处河宽估测值",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "包含河宽数值和单位；写明步数与步长或地图比例；说明测量路线的安全边界",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "width",
+                          "label": "估测河宽（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "method",
+                          "label": "步数、步长或地图比例换算",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "safety",
+                          "label": "安全边界说明",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "根据可见结构推测河深和周长，标出估算依据",
-                "studentAction": "根据可见结构推测河深和周长，标出估算依据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "建立深度与长度假设",
+                "objective": "为无法直接测量的河深和周长建立有来源的估算假设",
+                "studentAction": "根据可见岸壁、课程材料或地图记录河深和周长估测值，并逐项标注“观察推测”或“资料值”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "河深与周长均有数值和单位；每项标明数据性质和依据；不得把推测写成现场实测",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "depth",
+                          "label": "估测河深（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "perimeter",
+                          "label": "估测周长（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "sources",
+                          "label": "数据性质与估算依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "按简化截面计算蓄水量量级，检查单位和结果是否合理",
-                "studentAction": "按简化截面计算蓄水量量级，检查单位和结果是否合理",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "估算蓄水量级",
+                "objective": "用简化截面模型估算护城河蓄水量，并检查量级和单位",
+                "studentAction": "按“河宽×河深×周长”计算简化蓄水量，写出计算过程、单位和模型可能造成的偏差",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "计算式使用本组前三项数据；结果单位为立方米；能够判断结果所在数量级；至少说明一个简化假设",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "volume",
+                          "label": "估算蓄水量（立方米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "计算过程与数量级",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "assumption",
+                          "label": "模型简化与可能偏差",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "给出蓄水量量级估算（万级m³即可）",
             "passCondition": "给出蓄水量量级估算（万级m³即可）",
             "goals": "K6(护城河), S1(估算), C1(证据意识), C4(科学精神)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1665,83 +2832,165 @@ export default {
             "roleStageId": "task-3",
             "name": "解其用",
             "phase": "Phase 2 / Phase 3",
-            "modules": "A01(文字输入), A02(答题)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "问答：护城河至少有哪3个功能？（防御/排水/景观/消防/交通）\n文字：解释\"蓄排并用\"——为什么先蓄后排而不是直接排走？",
             "guidanceSteps": [
-              "根据现场结构和课程材料列出护城河的至少3个功能",
-              "为每个功能匹配一条观察或资料证据",
-              "结合降雨和排水速度，解释先蓄后排的作用"
+              "列出至少3个不同功能，并分别用一句话说明该功能解决什么问题",
+              "为三个功能各匹配一条照片、计算结果或课程材料，并标明证据来源和强弱",
+              "结合自己的蓄水量估算和排水路径，解释为什么护城河需要先承接一部分来水，再逐步排向城外水系"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "根据现场结构和课程材料列出护城河的至少3个功能",
-                "studentAction": "根据现场结构和课程材料列出护城河的至少3个功能",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "提出三个功能主张",
+                "objective": "从现场结构和课程材料中识别护城河可能承担的多重功能",
+                "studentAction": "列出至少3个不同功能，并分别用一句话说明该功能解决什么问题",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个功能；功能之间含义不重复；每项包含所解决的问题；允许写“待核”主张",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "function-1",
+                          "label": "功能1及解决的问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "function-2",
+                          "label": "功能2及解决的问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "function-3",
+                          "label": "功能3及解决的问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "为每个功能匹配一条观察或资料证据",
-                "studentAction": "为每个功能匹配一条观察或资料证据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "为功能匹配证据",
+                "objective": "用现场观察或资料来源支持每一个功能主张",
+                "studentAction": "为三个功能各匹配一条照片、计算结果或课程材料，并标明证据来源和强弱",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "3条功能均有对应证据；每条写明来源；能够区分现场一手证据与课程资料",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "evidence-1",
+                          "label": "功能1的证据与来源",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "evidence-2",
+                          "label": "功能2的证据与来源",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "evidence-3",
+                          "label": "功能3的证据与来源",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "结合降雨和排水速度，解释先蓄后排的作用",
-                "studentAction": "结合降雨和排水速度，解释先蓄后排的作用",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "解释蓄排并用",
+                "objective": "理解先蓄后排如何调节暴雨来水并兼顾其他功能",
+                "studentAction": "结合自己的蓄水量估算和排水路径，解释为什么护城河需要先承接一部分来水，再逐步排向城外水系",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于60字；包含来水增加、暂时蓄存、下游排放和容量有限四个关系；引用至少一项本组数据或照片",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "storage-discharge",
+                          "label": "蓄排并用解释",
+                          "type": "long_text",
+                          "placeholder": "结合你的估算和现场证据说明",
+                          "required": true,
+                          "minLength": 60,
+                          "maxLength": 320
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "列出≥3个功能 + 解释蓄排并用逻辑",
             "passCondition": "列出≥3个功能 + 解释蓄排并用逻辑",
             "goals": "K6(护城河), K2([待学生探索]), C2(系统思维), C5(文化认同)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "",
             "location": {
@@ -1789,110 +3038,232 @@ export default {
             "roleStageId": "task-1",
             "name": "汇其证",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照/文字/语音), A07(扫码)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "scanner",
-                "module": "A07",
-                "name": "扫码识别",
-                "icon": "scan-line",
-                "output": "scanResult",
-                "config": {
-                  "mode": "qr",
-                  "allowManualEntry": true,
-                  "prompt": ""
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "收集至少5条来自不同角色的\"证据摘要\"\n扫描其他角色完成任务后生成的证据二维码\n每条证据标注来源（哪个角色、什么方法获得）",
             "guidanceSteps": [
-              "先向不同角色索取或扫码获取证据摘要",
-              "收集至少5条后，为每条标注角色、地点和获取方法",
-              "区分自己观察的一手证据和他人提供的二手证据"
+              "至少扫码获取1条角色证据，再把共计不少于5条证据摘要录入协作账本并标明贡献角色",
+              "按证据编号整理至少5条来源，逐条写明角色、地点、获取方法和对应照片或记录编号",
+              "把5张证据卡分到“一手证据”“二手证据”或“暂无法判断”，并写出一条分类原则"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先向不同角色索取或扫码获取证据摘要",
-                "studentAction": "先向不同角色索取或扫码获取证据摘要",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "建立跨角色证据账本",
+                "objective": "从不同角色取得至少5条可追溯的证据摘要",
+                "studentAction": "至少扫码获取1条角色证据，再把共计不少于5条证据摘要录入协作账本并标明贡献角色",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "完成至少1次扫码；账本不少于5条；每条包含贡献角色和简短证据摘要；不得索取其他角色的完整答案或最终结论",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A07(二维码), A05(证据汇总)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "scanner",
+                    "module": "A07",
+                    "name": "扫码识别",
+                    "icon": "scan-line",
+                    "output": "scanResult",
+                    "config": {
+                      "mode": "qr",
+                      "allowManualEntry": true,
+                      "prompt": "扫描其他角色完成任务后生成的证据摘要二维码；只收集证据摘要。"
+                    }
+                  },
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "evidence_log",
+                      "prompt": "记录至少5条来自不同角色或不同方法的证据摘要，并标明贡献角色。",
+                      "minimumEntries": 5,
+                      "roles": [
+                        "数龙官",
+                        "测坡官",
+                        "寻沟官",
+                        "引河官",
+                        "护城官",
+                        "真相官"
+                      ],
+                      "recordTypes": [
+                        "现场照片",
+                        "测量数据",
+                        "观察记录",
+                        "角色摘要"
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "收集至少5条后，为每条标注角色、地点和获取方法",
-                "studentAction": "收集至少5条后，为每条标注角色、地点和获取方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐来源元数据",
+                "objective": "让每条证据都能回到具体角色、地点和获取方法进行复查",
+                "studentAction": "按证据编号整理至少5条来源，逐条写明角色、地点、获取方法和对应照片或记录编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5条编号记录；每条均包含角色、地点、方法和证据编号；缺失信息明确写“待补”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "source-1",
+                          "label": "证据1来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-2",
+                          "label": "证据2来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-3",
+                          "label": "证据3来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-4",
+                          "label": "证据4来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-5",
+                          "label": "证据5来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "区分自己观察的一手证据和他人提供的二手证据",
-                "studentAction": "区分自己观察的一手证据和他人提供的二手证据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "区分一手与二手证据",
+                "objective": "根据证据获得方式区分自己直接观察与他人转述",
+                "studentAction": "把5张证据卡分到“一手证据”“二手证据”或“暂无法判断”，并写出一条分类原则",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "5张证据卡全部分类；允许使用“暂无法判断”；分类原则能够说明直接观察、他人提供和来源不清的区别",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(分类搭建), A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "evidence-1",
+                          "label": "证据1"
+                        },
+                        {
+                          "id": "evidence-2",
+                          "label": "证据2"
+                        },
+                        {
+                          "id": "evidence-3",
+                          "label": "证据3"
+                        },
+                        {
+                          "id": "evidence-4",
+                          "label": "证据4"
+                        },
+                        {
+                          "id": "evidence-5",
+                          "label": "证据5"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "first-hand",
+                          "label": "一手证据：自己直接获得"
+                        },
+                        {
+                          "id": "second-hand",
+                          "label": "二手证据：他人提供"
+                        },
+                        {
+                          "id": "unclear",
+                          "label": "暂无法判断"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "根据自己的证据账本，把5条证据按获得方式分类。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "rule",
+                          "label": "你的分类原则",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "收集≥5条 + 每条有来源标注",
             "passCondition": "收集≥5条 + 每条有来源标注",
             "goals": "S4(史料实证), S6(信息整合), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1923,83 +3294,201 @@ export default {
             "roleStageId": "task-2",
             "name": "辨其伪",
             "phase": "Phase 2 / Phase 3",
-            "modules": "A01(文字), A02(答题)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "对每条证据做可信度评级（强/中/弱）\n问答：\"600年不积水\"这个说法精确吗？有没有反例？\n提供[待学生探索]故宫局部积水的新闻资料（AI适时出示）",
             "guidanceSteps": [
-              "先按来源、方法和是否可复核将每条证据评为强、中或弱",
-              "用已收集证据检查“600年不积水”这句话成立需要哪些条件",
-              "阅读局部积水反例资料，修正为能够被证据支持的结论"
+              "把5张证据卡分为强、中、弱或待核，并写出你使用的三个评级标准",
+              "用已收集证据分析“600年不积水”需要在哪些降雨、维护、区域和时间条件下才可能成立",
+              "阅读絮絮在本步解锁的局部积水材料，写出修正后的结论，并说明哪些原判断保留、哪些需要收窄"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "先按来源、方法和是否可复核将每条证据评为强、中或弱",
-                "studentAction": "先按来源、方法和是否可复核将每条证据评为强、中或弱",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "评定证据强弱",
+                "objective": "依据来源、方法和可复核性评定证据强度",
+                "studentAction": "把5张证据卡分为强、中、弱或待核，并写出你使用的三个评级标准",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "5张卡全部评级；允许使用“待核”；评级标准至少覆盖来源、获取方法和能否复核",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(分类搭建), A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "evidence-1",
+                          "label": "证据1"
+                        },
+                        {
+                          "id": "evidence-2",
+                          "label": "证据2"
+                        },
+                        {
+                          "id": "evidence-3",
+                          "label": "证据3"
+                        },
+                        {
+                          "id": "evidence-4",
+                          "label": "证据4"
+                        },
+                        {
+                          "id": "evidence-5",
+                          "label": "证据5"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "strong",
+                          "label": "强证据"
+                        },
+                        {
+                          "id": "medium",
+                          "label": "中等证据"
+                        },
+                        {
+                          "id": "weak",
+                          "label": "弱证据"
+                        },
+                        {
+                          "id": "pending",
+                          "label": "待核"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "依据来源、获取方法和可复核性，为5条证据评级。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "criteria",
+                          "label": "评级标准",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "用已收集证据检查“600年不积水”这句话成立需要哪些条件",
-                "studentAction": "用已收集证据检查“600年不积水”这句话成立需要哪些条件",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "写出主张成立条件",
+                "objective": "把绝对化口号拆成可以被证据检验的条件性主张",
+                "studentAction": "用已收集证据分析“600年不积水”需要在哪些降雨、维护、区域和时间条件下才可能成立",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少提出3项成立条件；引用至少2条已评级证据；区分“未发现积水证据”和“从未积水”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "conditions",
+                          "label": "主张成立所需条件",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 70
+                        },
+                        {
+                          "id": "evidence-links",
+                          "label": "对应证据编号与等级",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "阅读局部积水反例资料，修正为能够被证据支持的结论",
-                "studentAction": "阅读局部积水反例资料，修正为能够被证据支持的结论",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "用反例修正结论",
+                "objective": "理解反例不会抹去系统价值，但会限定结论的适用范围",
+                "studentAction": "阅读絮絮在本步解锁的局部积水材料，写出修正后的结论，并说明哪些原判断保留、哪些需要收窄",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "修正结论包含适用条件和边界；引用局部积水反例；同时说明排水系统仍有何能力；不把单个反例扩大成“系统完全无效”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "revised-claim",
+                          "label": "修正后的条件性结论",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 70
+                        },
+                        {
+                          "id": "kept-and-revised",
+                          "label": "保留了什么、收窄了什么",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "完成证据评级 + 对\"600年不积水\"给出带条件的判断",
             "passCondition": "完成证据评级 + 对\"600年不积水\"给出带条件的判断",
             "goals": "C4(科学精神), C1(证据意识), S4(史料实证)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "",
             "location": {
@@ -2031,98 +3520,197 @@ export default {
             "roleStageId": "task-3",
             "name": "断其案",
             "phase": "Phase 3 推演",
-            "modules": "A01(文字/语音), A03(拼合)",
-            "tools": [
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "builder",
-                "module": "A03",
-                "name": "拼合搭建",
-                "icon": "blocks",
-                "output": "layout",
-                "config": {
-                  "mode": "evidence-wall",
-                  "items": [],
-                  "zones": [],
-                  "connections": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "撰写\"真相报告\"——总结排水系统的真实能力和边界",
             "guidanceSteps": [
-              "先把证据按地势、沟渠、河道和蓄水功能分组",
-              "用强证据总结排水系统在什么条件下有效",
-              "加入已知局限和反例，写出带边界的最终结论"
+              "把五张角色证据卡分别放入快速排出、重力驱动、沟渠转运、河道汇流和终端蓄排五个环节",
+              "选择至少3条强或中等证据，分别说明系统能力、适用条件和证据来源",
+              "撰写真相报告，回答排水系统为何有效、在哪些条件下有效、已知局限是什么，以及“600年不积水”应怎样准确表达"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先把证据按地势、沟渠、河道和蓄水功能分组",
-                "studentAction": "先把证据按地势、沟渠、河道和蓄水功能分组",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "拼合五条系统证据",
+                "objective": "把五个角色的证据放回排水系统的不同功能环节",
+                "studentAction": "把五张角色证据卡分别放入快速排出、重力驱动、沟渠转运、河道汇流和终端蓄排五个环节",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "5张角色卡全部完成匹配，形成从局部排水到终端承接的功能链",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(证据拼合)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "dragon",
+                          "label": "数龙官证据"
+                        },
+                        {
+                          "id": "slope",
+                          "label": "测坡官证据"
+                        },
+                        {
+                          "id": "ditch",
+                          "label": "寻沟官证据"
+                        },
+                        {
+                          "id": "river",
+                          "label": "引河官证据"
+                        },
+                        {
+                          "id": "moat",
+                          "label": "护城官证据"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "rapid-release",
+                          "label": "快速排出"
+                        },
+                        {
+                          "id": "gravity",
+                          "label": "重力驱动"
+                        },
+                        {
+                          "id": "transfer",
+                          "label": "沟渠转运"
+                        },
+                        {
+                          "id": "river-collection",
+                          "label": "河道汇流"
+                        },
+                        {
+                          "id": "terminal-storage",
+                          "label": "终端蓄排"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "把五个角色的证据贡献放入对应系统功能环节。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "用强证据总结排水系统在什么条件下有效",
-                "studentAction": "用强证据总结排水系统在什么条件下有效",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "总结能力与有效条件",
+                "objective": "用强证据说明排水系统能够做什么，以及这些能力依赖哪些条件",
+                "studentAction": "选择至少3条强或中等证据，分别说明系统能力、适用条件和证据来源",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3条证据；覆盖至少3个系统环节；每条包含证据编号、证据等级、支持的能力和成立条件",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "ability-1",
+                          "label": "能力证据1",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "ability-2",
+                          "label": "能力证据2",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "ability-3",
+                          "label": "能力证据3",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "conditions",
+                          "label": "共同有效条件",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "加入已知局限和反例，写出带边界的最终结论",
-                "studentAction": "加入已知局限和反例，写出带边界的最终结论",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "提交带边界的真相报告",
+                "objective": "形成同时包含系统成效、局限、反例和条件的最终结论",
+                "studentAction": "撰写真相报告，回答排水系统为何有效、在哪些条件下有效、已知局限是什么，以及“600年不积水”应怎样准确表达",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于150字；包含系统能力总结、至少3条证据、已知局限或反例、适用条件和最终条件性结论",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "truth-report",
+                          "label": "故宫排水真相报告",
+                          "type": "long_text",
+                          "placeholder": "用证据说明能力，也写清局限和适用条件",
+                          "required": true,
+                          "minLength": 150,
+                          "maxLength": 800
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "报告包含：系统能力总结 + 已知局限 + 带条件的结论",
             "passCondition": "报告包含：系统能力总结 + 已知局限 + 带条件的结论",
             "goals": "C4(科学精神), C2(系统思维), S6(信息整合), C5(文化认同)",
-            "toolType": "audio",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "none",
@@ -2310,9 +3898,7 @@ export default {
       "certificate": "lessons/lesson_gewu_001/assets/backgrounds/certificate-bg.png",
       "navigationMap": "lessons/lesson_gewu_001/assets/maps/navigation-map.png",
       "importPlaceholder": "lessons/lesson_gewu_001/assets/videos/video-storm-coming.png",
-      "simulationPlaceholder": "lessons/lesson_gewu_001/assets/videos/video-simulation.png",
-      "companionIdle": "/assets/video/xuxu-idle.webm",
-      "companionTalk": "/assets/video/xuxu-talk.webm"
+      "simulationPlaceholder": "lessons/lesson_gewu_001/assets/videos/video-simulation.png"
     }
   },
   "lesson_zhizhi_001": {
@@ -2329,13 +3915,8 @@ export default {
     "groupRule": "6人一组，共同代言一种动物",
     "level": "大众体验版",
     "levelCode": "experience",
+    "traversalMode": "sequential",
     "coreQuestion": "如果一种动物也要办理地球村居民证，我们需要用哪些证据说明它怎样生活、与谁相连，以及人类可以为它做什么？",
-    "persona": {
-      "name": "絮絮",
-      "courseRole": "万兽城证据向导",
-      "character": "亲切、好奇、有少年感，尊重学生的观察和试错过程；本课侧重：亲切、好奇、尊重生命和学生自己的发现",
-      "tone": "清晰、自然、耐心，偶尔幽默；本课侧重：短句、一次一个问题、先问证据再谈结论"
-    },
     "phases": [
       {
         "id": "phase-1",
@@ -2450,6 +4031,12 @@ export default {
       "collectionPanelName": "小组证据章",
       "unlockTarget": "居民发布会",
       "phaseId": "phase-2"
+    },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
     },
     "roles": [
       {
@@ -2566,6 +4153,7 @@ export default {
             "evidenceRequirement": "完成实物识别并提交1张同时保留标本与来源区域的照片",
             "passCondition": "完成实物识别并提交1张同时保留标本与来源区域的照片",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -2696,6 +4284,7 @@ export default {
             "evidenceRequirement": "2个观察事实 + 1条明确标为推断的结构功能关系",
             "passCondition": "2个观察事实 + 1条明确标为推断的结构功能关系",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -2842,6 +4431,7 @@ export default {
             "evidenceRequirement": "三项内容完整且关键事实有来源",
             "passCondition": "三项内容完整且关键事实有来源",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -3011,6 +4601,7 @@ export default {
             "evidenceRequirement": "1份可读展签证据 + 1个唯一来源编号",
             "passCondition": "1份可读展签证据 + 1个唯一来源编号",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -3176,6 +4767,7 @@ export default {
             "evidenceRequirement": "3条事实逐条绑定来源编号",
             "passCondition": "3条事实逐条绑定来源编号",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -3319,6 +4911,7 @@ export default {
             "evidenceRequirement": "事实包完整且无未标注推断",
             "passCondition": "事实包完整且无未标注推断",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -3521,6 +5114,7 @@ export default {
             "evidenceRequirement": "四类节点各至少1项并标来源或待核",
             "passCondition": "四类节点各至少1项并标来源或待核",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -3692,6 +5286,7 @@ export default {
             "evidenceRequirement": "至少5个节点、4条有说明的关系和1个待核节点",
             "passCondition": "至少5个节点、4条有说明的关系和1个待核节点",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -3835,6 +5430,7 @@ export default {
             "evidenceRequirement": "需要、证据、威胁和措施形成对应链",
             "passCondition": "需要、证据、威胁和措施形成对应链",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -3988,6 +5584,7 @@ export default {
             "evidenceRequirement": "五类材料完整且期待与事实分开",
             "passCondition": "五类材料完整且期待与事实分开",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -4102,6 +5699,7 @@ export default {
             "evidenceRequirement": "脚本完整、事实可追溯、录音时长合格",
             "passCondition": "脚本完整、事实可追溯、录音时长合格",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -4238,6 +5836,7 @@ export default {
             "evidenceRequirement": "至少1条保留、1条修改或确认无需修改的理由",
             "passCondition": "至少1条保留、1条修改或确认无需修改的理由",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -4430,6 +6029,7 @@ export default {
             "evidenceRequirement": "四类成果和至少1条待核项进入档案区",
             "passCondition": "四类成果和至少1条待核项进入档案区",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -4612,6 +6212,7 @@ export default {
             "evidenceRequirement": "核心字段完整，事实有编号，期待和措施标签清楚",
             "passCondition": "核心字段完整，事实有编号，期待和措施标签清楚",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -4759,6 +6360,7 @@ export default {
             "evidenceRequirement": "小组自检完成且教师确认可发布",
             "passCondition": "小组自检完成且教师确认可发布",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -4914,6 +6516,7 @@ export default {
             "evidenceRequirement": "判断、证据和边界完整",
             "passCondition": "判断、证据和边界完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -5037,6 +6640,7 @@ export default {
             "evidenceRequirement": "教师确认发布与回应完成",
             "passCondition": "教师确认发布与回应完成",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -5173,6 +6777,7 @@ export default {
             "evidenceRequirement": "小组至少6条行动记录，每条含时间和观察方法",
             "passCondition": "小组至少6条行动记录，每条含时间和观察方法",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
             "location": {
@@ -5309,9 +6914,7 @@ export default {
       "certificate": "lessons/lesson_zhizhi_001/assets/placeholders/certificate.svg",
       "navigationMap": "lessons/lesson_zhizhi_001/assets/placeholders/navigation-map.svg",
       "importPlaceholder": "lessons/lesson_zhizhi_001/assets/placeholders/opening.svg",
-      "simulationPlaceholder": "lessons/lesson_zhizhi_001/assets/placeholders/simulation.svg",
-      "companionIdle": "/assets/video/xuxu-idle.webm",
-      "companionTalk": "/assets/video/xuxu-talk.webm"
+      "simulationPlaceholder": "lessons/lesson_zhizhi_001/assets/placeholders/simulation.svg"
     }
   },
   "lesson_zhizhi_002": {
@@ -5328,13 +6931,8 @@ export default {
     "groupRule": "6人一组，共同调查一种物种",
     "level": "深度探究版",
     "levelCode": "inquiry",
+    "traversalMode": "sequential",
     "coreQuestion": "一个物种为什么面临风险，现有保护措施解决了什么、还缺什么，我们怎样提出有证据且可执行的守护方案？",
-    "persona": {
-      "name": "絮絮",
-      "courseRole": "守护调查总协调员",
-      "character": "亲切、好奇、有少年感，尊重学生的观察和试错过程；本课侧重：审慎、开放、重视证据冲突",
-      "tone": "清晰、自然、耐心，偶尔幽默；本课侧重：一次推动一个调查行动，先追问来源、日期和依据，再按需开放知识卡"
-    },
     "phases": [
       {
         "id": "phase-1",
@@ -5450,6 +7048,12 @@ export default {
       "unlockTarget": "守护方案听证会",
       "phaseId": "phase-2"
     },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
+    },
     "roles": [
       {
         "id": "species-profiler",
@@ -5561,6 +7165,7 @@ export default {
             "evidenceRequirement": "至少4个档案字段，分别标记已有证据或待核",
             "passCondition": "至少4个档案字段，分别标记已有证据或待核",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -5708,6 +7313,7 @@ export default {
             "evidenceRequirement": "至少3条现场事实和1条动态待核项，均有来源编号",
             "passCondition": "至少3条现场事实和1条动态待核项，均有来源编号",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -5877,6 +7483,7 @@ export default {
             "evidenceRequirement": "档案字段、来源表和未知项完整，并通过同伴复核",
             "passCondition": "档案字段、来源表和未知项完整，并通过同伴复核",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -6013,6 +7620,7 @@ export default {
             "evidenceRequirement": "完成至少4条主张分类并指出一处不可互推",
             "passCondition": "完成至少4条主张分类并指出一处不可互推",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -6202,6 +7810,7 @@ export default {
             "evidenceRequirement": "三类记录独立成行，含来源、版本/日期、范围、访问日期与核验人",
             "passCondition": "三类记录独立成行，含来源、版本/日期、范围、访问日期与核验人",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -6324,6 +7933,7 @@ export default {
             "evidenceRequirement": "四维状态表清楚，动态项有复核提示，冲突项未被隐藏",
             "passCondition": "四维状态表清楚，动态项有复核提示，冲突项未被隐藏",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -6504,6 +8114,7 @@ export default {
             "evidenceRequirement": "至少2条假设，各有需要寻找的证据与可能反证",
             "passCondition": "至少2条假设，各有需要寻找的证据与可能反证",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -6625,6 +8236,7 @@ export default {
             "evidenceRequirement": "至少4个节点、3条有方向连接、来源编号和1个替代解释",
             "passCondition": "至少4个节点、3条有方向连接、来源编号和1个替代解释",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -6783,6 +8395,7 @@ export default {
             "evidenceRequirement": "核心链、优先风险、证据强度和未知项完整",
             "passCondition": "核心链、优先风险、证据强度和未知项完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -6963,6 +8576,7 @@ export default {
             "evidenceRequirement": "至少为两类候选措施提出完整审计问题",
             "passCondition": "至少为两类候选措施提出完整审计问题",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -7126,6 +8740,7 @@ export default {
             "evidenceRequirement": "至少3项措施完成审计，产生2条有依据的保护缺口",
             "passCondition": "至少3项措施完成审计，产生2条有依据的保护缺口",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -7245,6 +8860,7 @@ export default {
             "evidenceRequirement": "报告至少包含1项可保留措施、1项待改进措施和2项缺口",
             "passCondition": "报告至少包含1项可保留措施、1项待改进措施和2项缺口",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -7424,6 +9040,7 @@ export default {
             "evidenceRequirement": "至少5类相关者及需要核验的问题",
             "passCondition": "至少5类相关者及需要核验的问题",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -7585,6 +9202,7 @@ export default {
             "evidenceRequirement": "至少4类相关者完成影响、资源、成本、参与方式记录",
             "passCondition": "至少4类相关者完成影响、资源、成本、参与方式记录",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -7749,6 +9367,7 @@ export default {
             "evidenceRequirement": "至少3类相关者发言，产生3条处置记录",
             "passCondition": "至少3类相关者发言，产生3条处置记录",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -7901,6 +9520,7 @@ export default {
             "evidenceRequirement": "形成一个目标草案、两个可监测指标和证据需求",
             "passCondition": "形成一个目标草案、两个可监测指标和证据需求",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -8036,6 +9656,7 @@ export default {
             "evidenceRequirement": "完成一轮配置、一轮冲击调整和取舍说明",
             "passCondition": "完成一轮配置、一轮冲击调整和取舍说明",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -8197,6 +9818,7 @@ export default {
             "evidenceRequirement": "七要素完整，引用六线证据，含版本修订和AI披露",
             "passCondition": "七要素完整，引用六线证据，含版本修订和AI披露",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
             "location": {
@@ -8333,9 +9955,7 @@ export default {
       "certificate": "lessons/lesson_zhizhi_002/assets/placeholders/certificate.svg",
       "navigationMap": "lessons/lesson_zhizhi_002/assets/placeholders/navigation-map.svg",
       "importPlaceholder": "lessons/lesson_zhizhi_002/assets/placeholders/opening.svg",
-      "simulationPlaceholder": "lessons/lesson_zhizhi_002/assets/placeholders/simulation.svg",
-      "companionIdle": "/assets/video/xuxu-idle.webm",
-      "companionTalk": "/assets/video/xuxu-talk.webm"
+      "simulationPlaceholder": "lessons/lesson_zhizhi_002/assets/placeholders/simulation.svg"
     }
   },
   "lesson_zhizhi_003": {
@@ -8352,13 +9972,8 @@ export default {
     "groupRule": "6人一组，围绕同一校园或机构开展研究",
     "level": "研究性学习版",
     "levelCode": "research",
+    "traversalMode": "sequential",
     "coreQuestion": "怎样把鸟撞科学、建筑风险、中国规范、域外制度、社会调查和成本效果证据转化为一条程序完整、可执行且可复核的防鸟撞规则建议？",
-    "persona": {
-      "name": "絮絮",
-      "courseRole": "青年规则研究秘书",
-      "character": "亲切、好奇、有少年感，尊重学生的观察和试错过程；本课侧重：严谨、中立、尊重证据与程序",
-      "tone": "清晰、自然、耐心，偶尔幽默；本课侧重：一次推动一个研究动作；区分事实、价值选择与规则条款；先让学生形成判断，再提供最少必要工具和信息卡"
-    },
     "phases": [
       {
         "id": "phase-1",
@@ -8473,6 +10088,12 @@ export default {
       "collectionPanelName": "四线证据包",
       "unlockTarget": "规则表决与发布",
       "phaseId": "phase-1"
+    },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
     },
     "roles": [
       {
@@ -8634,6 +10255,7 @@ export default {
             "evidenceRequirement": "机制假设、变量表、记录规则和安全路线经教师确认",
             "passCondition": "机制假设、变量表、记录规则和安全路线经教师确认",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -8795,6 +10417,7 @@ export default {
             "evidenceRequirement": "至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检",
             "passCondition": "至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -8960,6 +10583,7 @@ export default {
             "evidenceRequirement": "机制、现场模式、局限和措施证据完整，接受一次反证质询",
             "passCondition": "机制、现场模式、局限和措施证据完整，接受一次反证质询",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -9147,6 +10771,7 @@ export default {
             "evidenceRequirement": "形成规范层级图和五字段来源登记规则",
             "passCondition": "形成规范层级图和五字段来源登记规则",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -9371,6 +10996,7 @@ export default {
             "evidenceRequirement": "三类核心材料原文、效力、范围和人工签注完整",
             "passCondition": "三类核心材料原文、效力、范围和人工签注完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -9479,6 +11105,7 @@ export default {
             "evidenceRequirement": "规范地图、可引用结论、不可推出事项和更新提示完整",
             "passCondition": "规范地图、可引用结论、不可推出事项和更新提示完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -9668,6 +11295,7 @@ export default {
             "evidenceRequirement": "三城来源、七项字段、版本记录和翻译核验规则完整",
             "passCondition": "三城来源、七项字段、版本记录和翻译核验规则完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -9830,6 +11458,7 @@ export default {
             "evidenceRequirement": "三城七项矩阵、原文编号、双人译文复核和不可比说明完整",
             "passCondition": "三城七项矩阵、原文编号、双人译文复核和不可比说明完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -10002,6 +11631,7 @@ export default {
             "evidenceRequirement": "至少3项候选做法通过四问，含1项不建议直接移植",
             "passCondition": "至少3项候选做法通过四问，含1项不建议直接移植",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -10179,6 +11809,7 @@ export default {
             "evidenceRequirement": "同意页、样本计划和调查工具经教师批准",
             "passCondition": "同意页、样本计划和调查工具经教师批准",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -10350,6 +11981,7 @@ export default {
             "evidenceRequirement": "匿名数据、退出记录、编码本和分歧处理完整",
             "passCondition": "匿名数据、退出记录、编码本和分歧处理完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -10511,6 +12143,7 @@ export default {
             "evidenceRequirement": "报告不暴露身份、不夸大代表性，并接受成员核验",
             "passCondition": "报告不暴露身份、不夸大代表性，并接受成员核验",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -10689,6 +12322,7 @@ export default {
             "evidenceRequirement": "形成评估问题、参数表和不确定性记录规则",
             "passCondition": "形成评估问题、参数表和不确定性记录规则",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -10873,6 +12507,7 @@ export default {
             "evidenceRequirement": "至少3种组合、2种情境和敏感性分析完成",
             "passCondition": "至少3种组合、2种情境和敏感性分析完成",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -11042,6 +12677,7 @@ export default {
             "evidenceRequirement": "报告能追溯到参数并回应一次预算/公平质询",
             "passCondition": "报告能追溯到参数并回应一次预算/公平质询",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -11172,6 +12808,7 @@ export default {
             "evidenceRequirement": "程序日历、四线证据闸门和研究诚信协议经全组确认",
             "passCondition": "程序日历、四线证据闸门和研究诚信协议经全组确认",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -11333,6 +12970,7 @@ export default {
             "evidenceRequirement": "初稿、听证稿、终稿与逐条证据、意见处置完整",
             "passCondition": "初稿、听证稿、终稿与逐条证据、意见处置完整",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -11506,6 +13144,7 @@ export default {
             "evidenceRequirement": "发布包通过人工终审，表决与外部状态准确分开",
             "passCondition": "发布包通过人工终审，表决与外部状态准确分开",
             "goals": "",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
             "location": {
@@ -11642,9 +13281,7 @@ export default {
       "certificate": "lessons/lesson_zhizhi_003/assets/placeholders/certificate.svg",
       "navigationMap": "lessons/lesson_zhizhi_003/assets/placeholders/navigation-map.svg",
       "importPlaceholder": "lessons/lesson_zhizhi_003/assets/placeholders/opening.svg",
-      "simulationPlaceholder": "lessons/lesson_zhizhi_003/assets/placeholders/simulation.svg",
-      "companionIdle": "/assets/video/xuxu-idle.webm",
-      "companionTalk": "/assets/video/xuxu-talk.webm"
+      "simulationPlaceholder": "lessons/lesson_zhizhi_003/assets/placeholders/simulation.svg"
     }
   },
   "lesson_zhuhun_001": {
@@ -11664,13 +13301,8 @@ export default {
     "groupRule": "5人一组，每人一个推演角色",
     "level": "",
     "levelCode": "",
+    "traversalMode": "sequential",
     "coreQuestion": "面对悬殊兵力与不断变化的局势，四渡赤水这支“得意之笔”究竟得意在哪里？",
-    "persona": {
-      "name": "絮絮",
-      "courseRole": "协助展开地图、整理电文的电子参谋员",
-      "character": "亲切、好奇、有少年感，尊重学生的观察和试错过程；本课侧重：冷静、尊重证据，愿意承认信息不足",
-      "tone": "清晰、自然、耐心，偶尔幽默；本课侧重：战略推演中节奏更沉着，不煽情、不催促"
-    },
     "phases": [
       {
         "id": "phase-1",
@@ -11792,6 +13424,12 @@ export default {
       "collectionPanelName": "五层战图",
       "unlockTarget": "璇玑时刻",
       "phaseId": "phase-2"
+    },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
     },
     "roles": [
       {
@@ -11955,6 +13593,7 @@ export default {
             "evidenceRequirement": "至少2张有效证据照片 + 1条展项来源 + 至少2个正确空间标注",
             "passCondition": "至少2张有效证据照片 + 1条展项来源 + 至少2个正确空间标注",
             "goals": "K1(时空坐标), S1(地图判读), S3(史料实证)",
+            "prerequisites": [],
             "toolType": "capture",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
             "location": {
@@ -12194,6 +13833,7 @@ export default {
             "evidenceRequirement": "完成四类标注 + 至少3条证据说明 + 明确区分展陈信息与个人推断",
             "passCondition": "完成四类标注 + 至少3条证据说明 + 明确区分展陈信息与个人推断",
             "goals": "K2(敌我态势), S1(地图判读), S6(因果表达), C3(证据边界)",
+            "prerequisites": [],
             "toolType": "sketch",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
             "location": {
@@ -12399,6 +14039,7 @@ export default {
             "evidenceRequirement": "提交1条连续路线 + 4项理由完整 + 至少引用2条现场证据",
             "passCondition": "提交1条连续路线 + 4项理由完整 + 至少引用2条现场证据",
             "goals": "K3(四次渡河), S5(决策矩阵), C1(实事求是), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "sketch",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
             "location": {
@@ -12619,6 +14260,7 @@ export default {
             "evidenceRequirement": "至少2张有效照片 + 1条展项来源 + 至少3项信息字段；无法确认的字段标记“未知”",
             "passCondition": "至少2张有效照片 + 1条展项来源 + 至少3项信息字段；无法确认的字段标记“未知”",
             "goals": "K4(情报与信息差), S3(史料实证), C3(证据边界)",
+            "prerequisites": [],
             "toolType": "capture",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/intelligence-matrix.svg",
             "location": {
@@ -12904,6 +14546,7 @@ export default {
             "evidenceRequirement": "四个象限均有记录 + 至少5条信息卡 + 每条含来源和可靠度",
             "passCondition": "四个象限均有记录 + 至少5条信息卡 + 每条含来源和可靠度",
             "goals": "K4(情报与信息差), S4(信息不对称分析), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "form",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/intelligence-matrix.svg",
             "location": {
@@ -13164,6 +14807,7 @@ export default {
             "evidenceRequirement": "提交2种敌方判断 + 每种至少1条依据 + 1项利用窗口 + 1项失败风险",
             "passCondition": "提交2种敌方判断 + 每种至少1条依据 + 1项利用窗口 + 1项失败风险",
             "goals": "K4(情报与信息差), K6(虚实行动链), S5(决策矩阵), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "form",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/intelligence-matrix.svg",
             "location": {
@@ -13387,6 +15031,7 @@ export default {
             "evidenceRequirement": "至少1张来源照片 + 2个方案条目 + 每个方案含支持与反对理由",
             "passCondition": "至少1张来源照片 + 2个方案条目 + 每个方案含支持与反对理由",
             "goals": "K5(遵义与苟坝), S3(史料实证), S5(决策矩阵)",
+            "prerequisites": [],
             "toolType": "capture",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/decision-matrix.svg",
             "location": {
@@ -13689,6 +15334,7 @@ export default {
             "evidenceRequirement": "完成2个方案的五维比较 + 1条少数意见保护机制 + 小组提交阶段选择",
             "passCondition": "完成2个方案的五维比较 + 1条少数意见保护机制 + 小组提交阶段选择",
             "goals": "K5(遵义与苟坝), S5(决策矩阵), C1(实事求是), C4(民主与担当)",
+            "prerequisites": [],
             "toolType": "simulation",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/decision-matrix.svg",
             "location": {
@@ -13933,6 +15579,7 @@ export default {
             "evidenceRequirement": "三段式复盘完整 + 引用至少2条证据 + 明确1项统一行动安排",
             "passCondition": "三段式复盘完整 + 引用至少2条证据 + 明确1项统一行动安排",
             "goals": "K5(遵义与苟坝), S6(因果表达), C1(实事求是), C4(民主与担当)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/decision-matrix.svg",
             "location": {
@@ -14143,6 +15790,7 @@ export default {
             "evidenceRequirement": "至少1张展项来源照片 + 4张行动卡 + 顺序、地点和来源完整",
             "passCondition": "至少1张展项来源照片 + 4张行动卡 + 顺序、地点和来源完整",
             "goals": "K3(四次渡河), S3(史料实证), S6(因果表达)",
+            "prerequisites": [],
             "toolType": "capture",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/feint-route.svg",
             "location": {
@@ -14384,6 +16032,7 @@ export default {
             "evidenceRequirement": "完成三栏虚实图 + 1种替代解释 + 至少2条证据引用",
             "passCondition": "完成三栏虚实图 + 1种替代解释 + 至少2条证据引用",
             "goals": "K4(情报与信息差), K6(虚实行动链), S4(信息不对称分析), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "sketch",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/feint-route.svg",
             "location": {
@@ -14649,6 +16298,7 @@ export default {
             "evidenceRequirement": "1条四环行动链 + 2种敌方反应分支 + 1项失败风险 + 保留运行记录",
             "passCondition": "1条四环行动链 + 2种敌方反应分支 + 1项失败风险 + 保留运行记录",
             "goals": "K6(虚实行动链), S4(信息不对称分析), S5(决策矩阵), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "simulation",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/feint-route.svg",
             "location": {
@@ -14888,6 +16538,7 @@ export default {
             "evidenceRequirement": "至少2张有效照片 + 1条展项来源 + “已知/未知”各至少2项",
             "passCondition": "至少2张有效照片 + 1条展项来源 + “已知/未知”各至少2项",
             "goals": "K4(情报与信息差), S3(史料实证), C5(多视角同理)",
+            "prerequisites": [],
             "toolType": "capture",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/limited-message.svg",
             "location": {
@@ -15135,6 +16786,7 @@ export default {
             "evidenceRequirement": "五项信息完整 + 完成1次同伴复述核对 + 标记至少1项不能自行猜测的内容",
             "passCondition": "五项信息完整 + 完成1次同伴复述核对 + 标记至少1项不能自行猜测的内容",
             "goals": "S4(信息不对称分析), C4(民主与担当), C5(多视角同理)",
+            "prerequisites": [],
             "toolType": "form",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/limited-message.svg",
             "location": {
@@ -15447,6 +17099,7 @@ export default {
             "evidenceRequirement": "达到字数 + 至少引用2条证据 + 三类边界标记完整 + 无虚构直接引语",
             "passCondition": "达到字数 + 至少引用2条证据 + 三类边界标记完整 + 无虚构直接引语",
             "goals": "S3(史料实证), S6(因果表达), C3(证据边界), C5(多视角同理)",
+            "prerequisites": [],
             "toolType": "audio",
             "image": "lessons/lesson_zhuhun_001/assets/tasks/limited-message.svg",
             "location": {
@@ -15636,9 +17289,7 @@ export default {
       "certificate": "lessons/lesson_zhuhun_001/assets/backgrounds/certificate-bg.png",
       "navigationMap": "lessons/lesson_zhuhun_001/assets/maps/museum-navigation.png",
       "importPlaceholder": "lessons/lesson_zhuhun_001/assets/videos/video-opening.jpg",
-      "simulationPlaceholder": "lessons/lesson_zhuhun_001/assets/videos/video-strategy-table.jpg",
-      "companionIdle": "/assets/video/xuxu-idle.webm",
-      "companionTalk": "/assets/video/xuxu-talk.webm"
+      "simulationPlaceholder": "lessons/lesson_zhuhun_001/assets/videos/video-strategy-table.jpg"
     }
   }
 };

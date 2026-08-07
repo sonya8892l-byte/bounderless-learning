@@ -26,6 +26,17 @@
 - 配置：确定最少数据、知情同意、退出机制和不诱导问题
 - 通过条件：同意页、样本计划和调查工具经教师批准
 
+##### 引导
+- 逐字段追问研究必要性，删除“可能以后有用”的个人信息。
+- 一次只修一个诱导、双重或不清楚问题；录音不得默认同意。
+
+##### 脚手架
+| L0 | 先说需要听见哪些群体。 |
+| L1 | 每个数据字段写用途。 |
+| L2 | 补同意、跳过和退出。 |
+| L3 | 用两名同伴试测问题。 |
+| L4 | 教师审批未成年人和录音。 |
+
 #### Step 1：定义样本与最少数据
 - id：social-plan-sample
 - 小步目标：只收集回答研究问题所必需的信息
@@ -36,15 +47,16 @@
 - 功能模块：A01(样本计划)
 - 工具参数：{"text":{"fields":[{"id":"sample","label":"样本与招募计划","type":"long_text","required":true,"minLength":120},{"id":"fields","label":"最少数据字段及用途","type":"long_text","required":true,"minLength":80}]}}
 - 知识引用：K-17
-- 引导引用：guidance/social-researcher.md#任务1
 - 限制引用：restrictions.md#安全、隐私与伦理
-- 评估引用：evaluation.md#S1
-- 脚手架引用：scaffolds/social-researcher.md#任务1
 - 常见误区：为了“以后可能有用”收集个人信息
 - 最大尝试：3
 - 失败处理：逐字段追问与研究问题的直接关系
 - 教师介入：涉及未成年人或机构员工招募
 - 通过后：step:social-approve-instrument
+
+##### 验收标准
+至少3类群体；每个数据字段有用途；不收集姓名和无关联系方式
+- S1 开题：范围、问题、方法、安全、伦理、AI计划由教师确认。
 
 #### Step 2：试测并送审
 - id：social-approve-instrument
@@ -56,15 +68,13 @@
 - 功能模块：A05(试访谈), A08(教师确认)
 - 工具参数：{"team":{"mode":"pilot","prompt":"标记诱导、双重、含糊、过度隐私或无法回答的问题。","minimumEntries":2},"teacher_confirm":{"prompt":"核对同意、最少采集、未成年人要求、退出和公开边界。","required":true}}
 - 知识引用：K-17
-- 引导引用：guidance/social-researcher.md#任务1
 - 限制引用：restrictions.md#访谈录音
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/social-researcher.md#任务1
 - 常见误区：默认同意录音
 - 最大尝试：1
 - 失败处理：取消录音或删减高风险字段后重新送审
 - 教师介入：必须
 - 通过后：role-stage:social-collect-code
+
 
 ### 任务2：匿名收集与双人编码
 - id：social-collect-code
@@ -78,6 +88,17 @@
 - 配置：按批准工具收集最少数据，去标识后由两人独立编码
 - 通过条件：匿名数据、退出记录、编码本和分歧处理完整
 
+##### 引导
+- 原始可识别内容不进入AI；先由两人独立编码小样本。
+- 主题频率不自动等于重要性，保留反例和例外。
+
+##### 脚手架
+| L0 | 同意状态和匿名回答分开。 |
+| L1 | 删除姓名、联系方式和身份组合。 |
+| L2 | 两人先独立编码小批材料。 |
+| L3 | 记录分歧、定义修订和反例。 |
+| L4 | 教师处理撤回与意外身份信息。 |
+
 #### Step 1：实施匿名调查
 - id：social-collect-anonymous
 - 小步目标：获得合规、可撤回且不超范围的材料
@@ -88,15 +109,13 @@
 - 功能模块：A01(匿名表单), A01(同意记录)
 - 工具参数：{"text":{"fields":[{"id":"consent-log","label":"同意与退出状态汇总（不含身份）","type":"long_text","required":true,"minLength":40},{"id":"anonymous-data","label":"匿名研究数据","type":"long_text","required":true,"minLength":160}]}}
 - 知识引用：K-17
-- 引导引用：guidance/social-researcher.md#任务2
 - 限制引用：restrictions.md#安全、隐私与伦理
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/social-researcher.md#任务2
 - 常见误区：在匿名回答里保留具体岗位与姓名组合
 - 最大尝试：2
 - 失败处理：暂停分析，去标识并由教师检查
 - 教师介入：撤回请求、意外身份信息或不适内容
 - 通过后：step:social-double-code
+
 
 #### Step 2：双人编码与分歧处理
 - id：social-double-code
@@ -108,15 +127,13 @@
 - 功能模块：A03(编码墙)
 - 工具参数：{"builder":{"mode":"qualitative_coding","prompt":"两人独立编码后比较分歧，记录定义修订和反例。","minimumItems":6,"categories":["知识与认知","支持理由","担忧与成本","执行条件","例外","其他"]}}
 - 知识引用：K-18, K-22
-- 引导引用：guidance/social-researcher.md#任务2
 - 限制引用：restrictions.md#社调结论
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/social-researcher.md#任务2
 - 常见误区：AI先生成主题，两人只确认
 - 最大尝试：3
 - 失败处理：回到一小批材料独立编码，AI暂不参与
 - 教师介入：编码包含身份推断或污名化标签
 - 通过后：role-stage:social-report-findings
+
 
 ### 任务3：提交社会调查报告
 - id：social-report-findings
@@ -129,6 +146,17 @@
 - 配置：呈现主题、反例、样本边界和对条款的条件化含义
 - 通过条件：报告不暴露身份、不夸大代表性，并接受成员核验
 
+##### 引导
+- 使用“在本次样本中”等边界表达。
+- 优先降低重新识别风险，必要时删除精彩引文。
+
+##### 脚手架
+| L0 | 写方法、主题和样本范围。 |
+| L1 | 补反例和未代表群体。 |
+| L2 | 使用条件化结论。 |
+| L3 | 做匿名抽查与删除日志。 |
+| L4 | 教师批准公开版本。 |
+
 #### Step 1：撰写匿名报告
 - id：social-compose-report
 - 小步目标：把社会材料转成有边界的规则输入
@@ -139,15 +167,13 @@
 - 功能模块：A01(社会调查报告)
 - 工具参数：{"text":{"fields":[{"id":"social-report","label":"社会调查报告","type":"long_text","required":true,"minLength":350},{"id":"limitations","label":"样本与伦理局限","type":"long_text","required":true,"minLength":100}]}}
 - 知识引用：K-17, K-18
-- 引导引用：guidance/social-researcher.md#任务3
 - 限制引用：restrictions.md#社调结论
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/social-researcher.md#任务3
 - 常见误区：写“大家都支持”而样本有限
 - 最大尝试：3
 - 失败处理：改成“在本次样本中”，补未代表群体
 - 教师介入：报告可能重新识别受访者
 - 通过后：step:social-member-check
+
 
 #### Step 2：完成成员与伦理复核
 - id：social-member-check
@@ -159,12 +185,13 @@
 - 功能模块：A05(匿名复核), A08(教师确认)
 - 工具参数：{"team":{"mode":"ethical_review","prompt":"只使用匿名编号，核对主题、反例、代表性和重新识别风险。","minimumEntries":3},"teacher_confirm":{"prompt":"确认公开材料去标识、同意范围匹配、撤回已执行。","required":true}}
 - 知识引用：K-17, K-18, K-22
-- 引导引用：guidance/social-researcher.md#任务3
 - 限制引用：restrictions.md#安全、隐私与伦理
-- 评估引用：evaluation.md#S4
-- 脚手架引用：scaffolds/social-researcher.md#任务3
 - 常见误区：为保留精彩引文忽略识别风险
 - 最大尝试：1
 - 失败处理：删除高风险引文或改为汇总描述
 - 教师介入：必须
 - 通过后：role:complete
+
+##### 验收标准
+至少3条抽查记录、去标识确认和删除/修订日志
+- S4 社调：同意文本、问题和数据字段经教师批准，公开数据完成去标识。

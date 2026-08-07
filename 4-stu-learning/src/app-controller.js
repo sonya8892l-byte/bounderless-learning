@@ -15,6 +15,7 @@ import {
   Info,
   Lightbulb,
   ListChecks,
+  LockKeyhole,
   Map,
   MapPin,
   MapPinCheck,
@@ -48,6 +49,15 @@ import {
 } from './services/ai-service.js';
 import { getLesson } from './services/course-service.js';
 import { mountAmapNavigation, openAmapNavigation } from './services/amap-service.js';
+import { resolveStudentRuntime } from './services/runtime-mode.js';
+import { PLATFORM_COMPANION } from './engine/platform-config.js';
+import {
+  challengeSubmissionPassed,
+  challengeTaskAccess,
+  clampChallengePageIndex,
+  initialLearningView,
+  nextLearningView,
+} from './engine/learning-view.js';
 import {
   renderActivityTools,
   serializableToolValues,
@@ -57,7 +67,8 @@ import {
 const pageParams = new URLSearchParams(window.location.search);
 const lesson = getLesson(pageParams.get('lesson') || undefined);
 const app = document.querySelector('#studentApp');
-const standaloneMode = pageParams.get('mode') !== 'connected';
+const studentRuntime = resolveStudentRuntime(pageParams);
+const standaloneMode = studentRuntime.standalone;
 const demoSession = {
   groupName: '第 3 小组',
   members: lesson.roles.map((role, index) => ({
@@ -83,6 +94,7 @@ const iconSet = {
   Info,
   Lightbulb,
   ListChecks,
+  LockKeyhole,
   Map,
   MapPin,
   MapPinCheck,
@@ -109,8 +121,9 @@ const state = {
   currentRoleId: null,
   currentPhaseId: lesson.roleSystem.phaseId,
   activeTab: 'task',
+  learningView: initialLearningView(lesson.learningView),
   openSheetId: null,
-  teacherReleasedRoles: standaloneMode || pageParams.get('teacherStart') === '1',
+  teacherReleasedRoles: studentRuntime.teacherReleasedRoles,
   roleStates: Object.fromEntries(
     lesson.roles.map((role) => [role.id, {
       arrived: false,
@@ -124,9 +137,12 @@ const state = {
       guidanceStepIndices: {},
       entryStarted: false,
       agentSessionId: null,
+      teacherCommandSequence: 0,
       streamingMessageId: null,
       lastAgentRequestError: null,
       lastLocalActionAt: Date.now(),
+      challengePageIndex: 0,
+      challengeFeedback: {},
       locationStatus: {
         permission: 'unknown',
         insideFence: null,
@@ -146,7 +162,6 @@ const state = {
   toastTimer: null,
   agentBusy: false,
   agentQueue: [],
-  teacherCommandSequence: 0,
   activeTeacherCommand: null,
 };
 
@@ -160,6 +175,36 @@ function escapeHtml(value = '') {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function companionAvatar({ motion = 'idle', variant = 'message' } = {}) {
+  const videoAsset = motion === 'talk' ? PLATFORM_COMPANION.talkAsset : PLATFORM_COMPANION.idleAsset;
+  const variantClass = variant === 'floating' ? 'companion-avatar--floating' : 'companion-avatar--message';
+  return `
+    <span class="companion-avatar ${variantClass}" data-companion-avatar aria-hidden="true">
+      <img class="companion-avatar__fallback" src="${PLATFORM_COMPANION.posterAsset}" alt="" />
+      ${videoAsset ? `<video class="companion-avatar__video" data-companion-video src="${videoAsset}" poster="${PLATFORM_COMPANION.posterAsset}" autoplay muted loop playsinline preload="auto"></video>` : ''}
+    </span>
+  `;
+}
+
+function hydrateCompanionAvatars(root = document) {
+  root.querySelectorAll('[data-companion-avatar]').forEach((avatar) => {
+    const video = avatar.querySelector('[data-companion-video]');
+    if (!video) return;
+    if (avatar.dataset.hydrated !== 'true') {
+      avatar.dataset.hydrated = 'true';
+      video.addEventListener('playing', () => avatar.classList.add('is-playing'));
+      video.addEventListener('pause', () => avatar.classList.remove('is-playing'));
+      video.addEventListener('error', () => avatar.classList.remove('is-playing'));
+    }
+    if (!video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      avatar.classList.add('is-playing');
+    }
+    if (avatar.getClientRects().length) {
+      video.play().catch(() => avatar.classList.remove('is-playing'));
+    }
+  });
 }
 
 function refreshIcons() {
@@ -244,6 +289,9 @@ function showScreen(screenId) {
     if (screen.id === screenId) screen.scrollTop = 0;
   });
   refreshIcons();
+  if (screenId === 'learningShell') {
+    window.requestAnimationFrame(() => hydrateCompanionAvatars());
+  }
 }
 
 function showToast(message) {
@@ -303,7 +351,7 @@ function renderLaunch() {
     <span><i data-lucide="users"></i>${escapeHtml(lesson.groupRule)}</span>
     ${lesson.level ? `<span><i data-lucide="layers-3"></i>${escapeHtml(lesson.level)}</span>` : ''}
   `;
-  if (!standaloneMode) {
+  if (!state.teacherReleasedRoles) {
     document.querySelector('[data-action="start-course"] span').textContent = '进入课程导入';
     document.querySelector('.launch-note').textContent = '导入期间请观看现场内容，身份领取由老师统一开启';
   }
@@ -316,8 +364,8 @@ function renderLaunch() {
   document.querySelector('#teamSessionStatus').innerHTML = `<i data-lucide="navigation"></i> ${escapeHtml(demoSession.groupName)} · ${demoSession.members.filter((member) => member.online).length} 人在线`;
   document.querySelector('#roleSwitchDescription').textContent = `当前入口用于预览 ${lesson.roles.length} 个${lesson.roleSystem.itemName}的课程任务配置。`;
   document.querySelector('#chatDayLabel').textContent = `今天 · ${lesson.venue || '课程现场'}`;
-  document.querySelector('#chatInputLabel').textContent = `给${lesson.persona.name}发送消息`;
-  document.querySelector('#chatInput').placeholder = `和${lesson.persona.name}说说你的发现…`;
+  document.querySelector('#chatInputLabel').textContent = `给${PLATFORM_COMPANION.name}发送消息`;
+  document.querySelector('#chatInput').placeholder = `和${PLATFORM_COMPANION.name}说说你的发现…`;
 }
 
 function renderRoles() {
@@ -438,11 +486,9 @@ function renderTabs() {
 function assistantMessage(message) {
   return `
     <div class="message-row" data-message-id="${escapeHtml(message.id || '')}">
-      <div class="message-avatar" aria-hidden="true">
-        ${lesson.assets.companionIdle ? `<video src="${lesson.assets.companionIdle}" autoplay muted loop playsinline></video>` : '<i data-lucide="sparkles"></i>'}
-      </div>
+      ${companionAvatar()}
       <div class="message-content">
-        <p class="message-name">${escapeHtml(lesson.persona.name)} · AI 学习同伴</p>
+        <p class="message-name">${escapeHtml(PLATFORM_COMPANION.name)} · AI 学习同伴</p>
         <div class="message-bubble">
           <span data-message-text>${escapeHtml(message.text)}</span>
           ${message.source ? `<span class="source-label"><i data-lucide="book-open-check"></i>${escapeHtml(message.source)}</span>` : ''}
@@ -537,14 +583,30 @@ function taskVisual(role, task) {
   return task.image || role.cardImage;
 }
 
-function taskCard(message) {
-  const role = currentRole();
-  const roleState = currentRoleState();
-  const task = role.tasks[message.taskIndex];
+function defaultTaskPayload(task, taskIndex) {
+  return {
+    taskId: task.id,
+    taskIndex,
+    config: { tools: task.tools || [] },
+  };
+}
+
+function renderTaskWorkspace({
+  role,
+  roleState,
+  task,
+  taskIndex,
+  status = 'active',
+  payload = defaultTaskPayload(task, taskIndex),
+  callId = '',
+  view = 'dialogue',
+  readOnly = false,
+  lockedBrowse = false,
+}) {
   const evidence = taskEvidence(task.id);
-  const isComplete = message.status === 'complete';
-  const minimumEvidence = Number(message.payload?.config?.minEvidenceCount || 1);
-  const actionIcon = message.payload?.config?.tools?.[0]?.icon || task.tools?.[0]?.icon || 'notebook-pen';
+  const isComplete = status === 'complete' || readOnly;
+  const minimumEvidence = Number(payload?.config?.minEvidenceCount || 1);
+  const actionIcon = payload?.config?.tools?.[0]?.icon || task.tools?.[0]?.icon || 'notebook-pen';
   const stepDefinitions = task.steps?.length
     ? task.steps
     : (task.guidanceSteps?.length ? task.guidanceSteps : [task.requirement]).map((studentAction, index) => ({
@@ -558,18 +620,19 @@ function taskCard(message) {
   const activeStep = stepDefinitions[stepIndex];
   const activeTools = activeStep?.tools?.length
     ? activeStep.tools
-    : (message.payload?.config?.tools?.length ? message.payload.config.tools : (task.tools || []));
+    : (payload?.config?.tools?.length ? payload.config.tools : (task.tools || []));
   const stepId = activeStep?.id || `${task.id}-complete`;
-  const canCompleteStep = standaloneMode || !['teacher_confirm', 'location_event'].includes(activeStep?.completionMode);
+  const canCompleteStep = !lockedBrowse && (standaloneMode || !['teacher_confirm', 'location_event'].includes(activeStep?.completionMode));
+  const toolCallReady = !lockedBrowse && (standaloneMode || Boolean(callId));
 
   return `
-    <article class="tool-card" data-task-card="${task.id}">
+    <article class="tool-card task-workspace" data-task-card="${task.id}" data-learning-workspace="${escapeHtml(view)}">
       <div class="tool-card__visual">
         <img src="${taskVisual(role, task)}" alt="${escapeHtml(task.name)}任务素材" />
         <span class="tool-card__visual-badge"><i data-lucide="${actionIcon}"></i>${escapeHtml(task.modules || '任务工具')}</span>
       </div>
       <div class="tool-card__body">
-        <div class="tool-card__kicker"><span>任务 ${message.taskIndex + 1} / ${role.tasks.length}</span><span>${isComplete ? '已提交' : '进行中'}</span></div>
+        <div class="tool-card__kicker"><span>任务 ${taskIndex + 1} / ${role.tasks.length}</span><span>${isComplete ? '已提交' : lockedBrowse ? '待解锁' : '进行中'}</span></div>
         <h3>${escapeHtml(task.name)}</h3>
         <p>${escapeHtml(task.requirement)}</p>
         <div class="module-tags">
@@ -598,14 +661,185 @@ function taskCard(message) {
           <div class="evidence-form ${stepsComplete ? '' : 'is-locked'}">
             ${evidence.validationError ? `<p class="evidence-error"><i data-lucide="info"></i>${escapeHtml(evidence.validationError)}</p>` : ''}
             ${stepsComplete ? `<div class="activity-submit-summary"><i data-lucide="circle-check-big"></i><div><strong>所有小步已完成</strong><span>${evidence.imageUrls.length ? `已采集 ${evidence.imageUrls.length} 个文件；` : ''}工具结果将与补充说明一起提交。</span></div></div><textarea class="task-textarea" data-task-text="${task.id}" placeholder="可补充说明你的判断依据…">${escapeHtml(evidence.text)}</textarea>` : ''}
-            <button class="tool-primary" type="button" data-action="submit-task" data-task-id="${task.id}" data-tool-call-id="${escapeHtml(message.callId || '')}" data-min-evidence="${minimumEvidence}" ${stepsComplete ? '' : 'disabled'}>
-              <i data-lucide="sparkles"></i>${stepsComplete ? `提交给${escapeHtml(lesson.persona.name)}分析` : '完成当前小步后提交'}
+            ${view === 'challenge' && !toolCallReady && !lockedBrowse ? '<div class="challenge-tool-waiting"><i data-lucide="sparkles"></i>智能体正在准备本任务的提交通道，小步操作可以先继续。</div>' : ''}
+            <button class="tool-primary" type="button" data-action="submit-task" data-task-id="${task.id}" data-tool-call-id="${escapeHtml(callId)}" data-min-evidence="${minimumEvidence}" ${stepsComplete && toolCallReady ? '' : 'disabled'}>
+              <i data-lucide="sparkles"></i>${stepsComplete ? (toolCallReady ? `提交给${escapeHtml(PLATFORM_COMPANION.name)}分析` : '等待任务通道') : '完成当前小步后提交'}
             </button>
           </div>
         `}
       </div>
     </article>
   `;
+}
+
+function taskCard(message) {
+  const role = currentRole();
+  const roleState = currentRoleState();
+  const task = role.tasks[message.taskIndex];
+  if (!task) return '';
+  if (state.learningView === 'challenge') {
+    return `
+      <div class="challenge-task-summary">
+        <i data-lucide="list-checks"></i>
+        <div><strong>${escapeHtml(task.name)}</strong><span>${message.status === 'complete' ? '任务已完成' : '当前任务已在闯关视图中展开'}</span></div>
+      </div>
+    `;
+  }
+  return renderTaskWorkspace({
+    role,
+    roleState,
+    task,
+    taskIndex: message.taskIndex,
+    status: message.status,
+    payload: message.payload,
+    callId: message.callId,
+    view: 'dialogue',
+  });
+}
+
+function challengeFeedbackMarkup(taskId) {
+  const feedback = currentRoleState().challengeFeedback?.[taskId];
+  if (!feedback) return '';
+  const labels = {
+    checking: 'AI 正在检查',
+    passed: '本次检查通过',
+    revision: '请继续修改',
+    failed: '检查暂未完成',
+  };
+  const label = labels[feedback.status] || '任务反馈';
+  const text = feedback.text || (feedback.status === 'checking'
+    ? '正在核对当前 Step 的证据和完成条件…'
+    : '结果已记录。');
+  return `
+    <section class="challenge-feedback is-${escapeHtml(feedback.status || 'checking')}" data-challenge-feedback="${escapeHtml(taskId)}" aria-live="polite">
+      <strong>${escapeHtml(label)}</strong>
+      <p>${escapeHtml(text)}</p>
+    </section>
+  `;
+}
+
+function renderLearningViewControls() {
+  const config = lesson.learningView || {};
+  const fab = document.querySelector('#learningModeFab');
+  const button = document.querySelector('#learningModeButton');
+  const companionMount = document.querySelector('#learningModeCompanion');
+  const dialogueView = document.querySelector('#dialogueView');
+  const challengeView = document.querySelector('#challengeView');
+  const switchVisible = Boolean(config.enabled && config.allowStudentSwitch && state.activeTab === 'task');
+  const targetView = state.learningView === 'dialogue' ? 'challenge' : 'dialogue';
+  const targetLabel = targetView === 'challenge' ? '切换为闯关模式' : '切换为智能 AI 模式';
+  if (!companionMount.hasChildNodes()) companionMount.innerHTML = companionAvatar({ variant: 'floating' });
+  fab.hidden = !switchVisible;
+  fab.classList.toggle('is-dialogue', state.learningView === 'dialogue');
+  fab.classList.toggle('is-challenge', state.learningView === 'challenge');
+  button.dataset.learningView = targetView;
+  button.setAttribute('aria-label', targetLabel);
+  button.innerHTML = `<i data-lucide="${targetView === 'challenge' ? 'list-checks' : 'message-circle-more'}"></i><span>${targetLabel}</span>`;
+  dialogueView.classList.toggle('is-active', state.learningView === 'dialogue');
+  challengeView.classList.toggle('is-active', state.learningView === 'challenge');
+}
+
+function renderChallenge() {
+  const container = document.querySelector('#challengeContent');
+  if (!container) return;
+  if (state.learningView !== 'challenge') {
+    container.innerHTML = '';
+    return;
+  }
+  const role = currentRole();
+  const roleState = currentRoleState();
+  const allowFutureTaskBrowse = Boolean(lesson.learningView?.allowFutureTaskBrowse);
+  roleState.challengePageIndex = clampChallengePageIndex({
+    requestedIndex: roleState.challengePageIndex,
+    progress: roleState.progress,
+    taskCount: role.tasks.length,
+    roleCompleted: roleState.completed,
+    allowAll: allowFutureTaskBrowse,
+  });
+  const pageIndex = roleState.challengePageIndex;
+  const task = role.tasks[pageIndex];
+  const access = challengeTaskAccess({
+    taskIndex: pageIndex,
+    progress: roleState.progress,
+    taskCount: role.tasks.length,
+    roleCompleted: roleState.completed,
+  });
+  const payload = roleState.taskPayloads?.[task.id] || defaultTaskPayload(task, pageIndex);
+  const callId = roleState.taskCallIds?.[task.id] || (standaloneMode ? `local-${role.id}-${task.id}` : '');
+  const highestUnlocked = allowFutureTaskBrowse || roleState.completed
+    ? role.tasks.length - 1
+    : Math.min(roleState.progress, role.tasks.length - 1);
+  container.innerHTML = `
+    <header class="challenge-hero">
+      <span>${escapeHtml(role.name)} · 任务闯关</span>
+      <strong>${escapeHtml(task.name)}</strong>
+      <p>一页完成一项任务；每个 Step 通过后自动进入下一步。</p>
+    </header>
+    <nav class="challenge-pages" aria-label="角色任务分页">
+      ${role.tasks.map((item, index) => {
+        const itemAccess = challengeTaskAccess({
+          taskIndex: index,
+          progress: roleState.progress,
+          taskCount: role.tasks.length,
+          roleCompleted: roleState.completed,
+        });
+        return `<button class="challenge-page-button ${index === pageIndex ? 'is-active' : ''} ${itemAccess === 'completed' ? 'is-completed' : ''}" type="button" data-action="select-challenge-page" data-page-index="${index}" ${itemAccess === 'locked' && !allowFutureTaskBrowse ? 'disabled' : ''}><span>${itemAccess === 'completed' ? '已完成' : itemAccess === 'current' ? '当前任务' : '待解锁'}</span><strong>${index + 1}. ${escapeHtml(item.name)}</strong></button>`;
+      }).join('')}
+    </nav>
+    ${challengeFeedbackMarkup(task.id)}
+    ${access === 'locked' && !allowFutureTaskBrowse
+      ? '<div class="challenge-task-summary"><i data-lucide="lock-keyhole"></i><div><strong>任务尚未解锁</strong><span>完成当前任务后再来查看。</span></div></div>'
+      : renderTaskWorkspace({
+        role,
+        roleState,
+        task,
+        taskIndex: pageIndex,
+        status: access === 'completed' ? 'complete' : 'active',
+        payload,
+        callId,
+        view: 'challenge',
+        readOnly: access === 'completed',
+        lockedBrowse: access === 'locked',
+      })}
+    <nav class="challenge-page-nav" aria-label="上一项或下一项任务">
+      <button type="button" data-action="challenge-previous" ${pageIndex <= 0 ? 'disabled' : ''}><i data-lucide="chevron-left"></i>上一关</button>
+      <span>${pageIndex + 1} / ${role.tasks.length}</span>
+      <button type="button" data-action="challenge-next" ${pageIndex >= highestUnlocked ? 'disabled' : ''}>下一关<i data-lucide="arrow-right"></i></button>
+    </nav>
+  `;
+}
+
+function setLearningView(targetView) {
+  if (targetView === state.learningView) return;
+  const resolvedView = nextLearningView({ current: state.learningView, target: targetView, config: lesson.learningView });
+  if (resolvedView === state.learningView) return;
+  state.learningView = resolvedView;
+  const roleState = currentRoleState();
+  roleState.challengePageIndex = clampChallengePageIndex({
+    requestedIndex: roleState.challengePageIndex,
+    progress: roleState.progress,
+    taskCount: currentRole().tasks.length,
+    roleCompleted: roleState.completed,
+    allowAll: Boolean(lesson.learningView?.allowFutureTaskBrowse),
+  });
+  renderLearningShell();
+  if (resolvedView === 'dialogue') window.setTimeout(scrollChatToBottom, 20);
+  else document.querySelector('#challengeScroll')?.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function selectChallengePage(requestedIndex) {
+  const role = currentRole();
+  const roleState = currentRoleState();
+  const nextIndex = clampChallengePageIndex({
+    requestedIndex,
+    progress: roleState.progress,
+    taskCount: role.tasks.length,
+    roleCompleted: roleState.completed,
+    allowAll: Boolean(lesson.learningView?.allowFutureTaskBrowse),
+  });
+  roleState.challengePageIndex = nextIndex;
+  renderChat();
+  document.querySelector('#challengeScroll')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function tokenReveal() {
@@ -635,8 +869,8 @@ function renderMessage(message) {
   if (message.type === 'loading') {
     return `
       <div class="message-row">
-        <div class="message-avatar">${lesson.assets.companionTalk ? `<video src="${lesson.assets.companionTalk}" autoplay muted loop playsinline></video>` : '<i data-lucide="sparkles"></i>'}</div>
-        <div class="loading-bubble" aria-label="${escapeHtml(lesson.persona.name)}正在分析"><span></span><span></span><span></span></div>
+        ${companionAvatar({ motion: 'talk' })}
+        <div class="loading-bubble" aria-label="${escapeHtml(PLATFORM_COMPANION.name)}正在分析"><span></span><span></span><span></span></div>
       </div>
     `;
   }
@@ -696,15 +930,18 @@ function renderableChatMessages(role, roleState) {
 function renderChat() {
   if (!state.currentRoleId) return;
   resetShellScrollOffsets();
+  renderLearningViewControls();
   const role = currentRole();
   const roleState = currentRoleState();
   navigationMapInstances.forEach((map) => map?.destroy?.());
   navigationMapInstances = [];
   mapHydrationVersion += 1;
   document.querySelector('#chatMessages').innerHTML = renderableChatMessages(role, roleState).map(renderMessage).join('');
+  renderChallenge();
   resetShellScrollOffsets();
   refreshIcons();
-  hydrateNavigationMaps(mapHydrationVersion);
+  if (state.learningView === 'dialogue') hydrateNavigationMaps(mapHydrationVersion);
+  window.requestAnimationFrame(() => hydrateCompanionAvatars());
   window.requestAnimationFrame(hydrateSketchCanvases);
 }
 
@@ -792,7 +1029,57 @@ function waitFor(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
-function applyAgentEvent(event) {
+function beginChallengeFeedback({ taskId, stepId = '', beforeStepIndex = 0, taskIndex = 0, kind = 'step' }) {
+  if (state.learningView !== 'challenge') return null;
+  const roleState = currentRoleState();
+  const target = { taskId, stepId, beforeStepIndex, taskIndex, kind };
+  roleState.challengeFeedback[taskId] = {
+    status: 'checking',
+    text: '',
+    stepId,
+    kind,
+  };
+  renderChat();
+  return target;
+}
+
+function refreshChallengeFeedback(taskId) {
+  if (state.learningView !== 'challenge') return;
+  const node = document.querySelector(`[data-challenge-feedback="${CSS.escape(taskId)}"]`);
+  if (node) node.outerHTML = challengeFeedbackMarkup(taskId);
+}
+
+function applyChallengeFeedbackEvent(event, target) {
+  if (!target) return;
+  const roleState = currentRoleState();
+  const feedback = roleState.challengeFeedback?.[target.taskId];
+  if (!feedback) return;
+  if (event.type === 'assistant.delta') {
+    feedback.text += event.data.text || '';
+  }
+  if (event.type === 'assistant.completed') {
+    feedback.text = event.data.text || feedback.text;
+  }
+  if (event.type === 'state.updated') {
+    const passed = challengeSubmissionPassed({
+      kind: target.kind,
+      taskIndex: target.taskIndex,
+      beforeStepIndex: target.beforeStepIndex,
+      currentTaskIndex: roleState.progress,
+      runtimeTaskId: event.data.runtime?.taskId,
+      runtimeStepIndex: event.data.runtime?.guidanceStepIndex,
+      taskId: target.taskId,
+      roleCompleted: roleState.completed,
+    });
+    feedback.status = passed ? 'passed' : 'revision';
+    if (!feedback.text) {
+      feedback.text = passed ? '当前内容已经记录，可以继续下一步。' : '当前 Step 还需要补充，请根据完成条件继续修改。';
+    }
+  }
+  refreshChallengeFeedback(target.taskId);
+}
+
+function applyAgentEvent(event, feedbackTarget = null) {
   const role = currentRole();
   const roleState = currentRoleState();
   if (event.type === 'stage.started') {
@@ -910,6 +1197,7 @@ function applyAgentEvent(event) {
     }
   }
   if (event.type === 'state.updated') {
+    const previousProgress = roleState.progress;
     roleState.progress = event.data.currentTaskIndex;
     const completedCount = event.data.completedTaskIds.filter((id) => id.startsWith(`${role.id}:`)).length;
     if (completedCount >= role.tasks.length) {
@@ -921,6 +1209,9 @@ function applyAgentEvent(event) {
     const runtime = event.data.runtime;
     if (runtime?.taskId) {
       roleState.guidanceStepIndices[runtime.taskId] = Number(runtime.guidanceStepIndex || 0);
+    }
+    if (roleState.progress > previousProgress) {
+      roleState.challengePageIndex = Math.min(roleState.progress, role.tasks.length - 1);
     }
     if (location) {
       roleState.arrived = location.status === 'arrived' || location.status === 'not_required';
@@ -934,6 +1225,7 @@ function applyAgentEvent(event) {
       };
     }
   }
+  applyChallengeFeedbackEvent(event, feedbackTarget);
 }
 
 async function runAgentTurn(input, options = {}) {
@@ -942,6 +1234,7 @@ async function runAgentTurn(input, options = {}) {
     initialEmpty = false,
     showLoading = !passive && !initialEmpty,
     requestId = crypto.randomUUID(),
+    feedbackTarget = null,
   } = options;
   const roleState = currentRoleState();
   if (!roleState.agentSessionId) return;
@@ -954,6 +1247,7 @@ async function runAgentTurn(input, options = {}) {
           initialEmpty,
           showLoading,
           requestId,
+          feedbackTarget,
         },
       });
     }
@@ -977,7 +1271,7 @@ async function runAgentTurn(input, options = {}) {
     }, (event) => {
       if (event.type === 'assistant.delta') {
         shouldRender = true;
-        applyAgentEvent(event);
+        applyAgentEvent(event, feedbackTarget);
         return;
       }
       bufferedEvents.push(event);
@@ -994,7 +1288,7 @@ async function runAgentTurn(input, options = {}) {
         roleState.activeLoadingId = null;
       }
       if (['assistant.completed', 'stage.started', 'tool.requested', 'ui.quick_replies'].includes(event.type)) shouldRender = true;
-      applyAgentEvent(event);
+      applyAgentEvent(event, feedbackTarget);
       if (visuallyAddsMessage) {
         visibleEventCount += 1;
         renderLearningShell();
@@ -1019,6 +1313,14 @@ async function runAgentTurn(input, options = {}) {
       const task = currentTask();
       taskEvidence(task.id).validationError = error.message;
       shouldRender = true;
+    }
+    if (feedbackTarget) {
+      const feedback = roleState.challengeFeedback?.[feedbackTarget.taskId];
+      if (feedback) {
+        feedback.status = 'failed';
+        feedback.text = error.message || '检查暂未完成，请稍后重试。';
+        refreshChallengeFeedback(feedbackTarget.taskId);
+      }
     }
     const streamedMessage = roleState.messages.find((message) => message.id === roleState.streamingMessageId);
     if (!isToolSubmission && !isValidation && !streamedMessage?.text) {
@@ -1062,6 +1364,7 @@ async function sendContextTick() {
       lastLocalActionAt: roleState.lastLocalActionAt,
       pageVisible: !document.hidden,
       activeTab: state.activeTab,
+      learningView: state.learningView,
       hasDraft: hasActiveDraft(roleState),
       phaseRemainingSeconds: remaining,
       arrived: roleState.arrived,
@@ -1149,7 +1452,7 @@ function activeStepContext(taskId, requestedStepId = '') {
 }
 
 async function completeActivityStep(taskId, stepId) {
-  if (state.agentBusy) return showToast(`${lesson.persona.name}正在回应，请稍等一下。`);
+  if (state.agentBusy) return showToast(`${PLATFORM_COMPANION.name}正在回应，请稍等一下。`);
   const context = activeStepContext(taskId, stepId);
   if (!context.task || context.expired || !context.step) return showToast('当前小步已经切换，请按新提示继续。');
   const evidence = taskEvidence(taskId);
@@ -1162,9 +1465,24 @@ async function completeActivityStep(taskId, stepId) {
     return showToast(error);
   }
   evidence.validationError = '';
+  const feedbackTarget = beginChallengeFeedback({
+    taskId,
+    stepId,
+    beforeStepIndex: context.index,
+    taskIndex: currentRole().tasks.findIndex((task) => task.id === taskId),
+    kind: 'step',
+  });
   if (standaloneMode) {
     const roleState = currentRoleState();
     roleState.guidanceStepIndices[taskId] = context.index + 1;
+    if (feedbackTarget) {
+      roleState.challengeFeedback[taskId] = {
+        status: 'passed',
+        text: `第 ${context.index + 1} 个任务小步已记录，可以继续下一步。`,
+        stepId,
+        kind: 'step',
+      };
+    }
     roleState.messages.push({
       id: crypto.randomUUID(),
       type: 'assistant',
@@ -1196,7 +1514,7 @@ async function completeActivityStep(taskId, stepId) {
       toolValues: serializableToolValues(evidence),
       stepImages,
     },
-  });
+  }, { feedbackTarget });
 }
 
 async function toggleActivityRecording(taskId, stepId) {
@@ -1415,7 +1733,7 @@ function returnBuilderItem(taskId, stepId, zoneId, itemId) {
 
 async function completeTaskStep(taskId) {
   if (state.agentBusy) {
-    showToast(`${lesson.persona.name}正在回应，请稍等一下。`);
+    showToast(`${PLATFORM_COMPANION.name}正在回应，请稍等一下。`);
     return;
   }
   const roleState = currentRoleState();
@@ -1443,8 +1761,23 @@ async function completeTaskStep(taskId) {
   });
   renderLearningShell();
   window.setTimeout(scrollChatToBottom, 20);
+  const feedbackTarget = beginChallengeFeedback({
+    taskId,
+    stepId: stepDefinitions[stepIndex]?.id || '',
+    beforeStepIndex: stepIndex,
+    taskIndex: currentRole().tasks.findIndex((item) => item.id === taskId),
+    kind: 'step',
+  });
   if (standaloneMode) {
     roleState.guidanceStepIndices[taskId] = stepIndex + 1;
+    if (feedbackTarget) {
+      roleState.challengeFeedback[taskId] = {
+        status: 'passed',
+        text: `第 ${stepIndex + 1} 个任务小步已记录，可以继续下一步。`,
+        stepId: stepDefinitions[stepIndex]?.id || '',
+        kind: 'step',
+      };
+    }
     roleState.messages.push({
       id: crypto.randomUUID(),
       type: 'assistant',
@@ -1458,7 +1791,7 @@ async function completeTaskStep(taskId) {
     type: 'lifecycle_event',
     event: 'task_step_completed',
     data: { taskId, stepIndex, stepText: steps[stepIndex] },
-  });
+  }, { feedbackTarget });
 }
 
 async function dataUrlFile(dataUrl, filename) {
@@ -1513,6 +1846,12 @@ async function submitTask(taskId, toolCallId, minimumEvidence = 1) {
   }
 
   if (!toolCallId) return showToast('任务工具调用已经失效，请让智能体重新打开任务。');
+  const feedbackTarget = beginChallengeFeedback({
+    taskId,
+    beforeStepIndex: Number(roleState.guidanceStepIndices[taskId] || 0),
+    taskIndex,
+    kind: 'task',
+  });
   roleState.messages.push({
     id: crypto.randomUUID(),
     type: 'user',
@@ -1520,6 +1859,14 @@ async function submitTask(taskId, toolCallId, minimumEvidence = 1) {
   });
   if (standaloneMode) {
     roleState.progress = taskIndex + 1;
+    roleState.challengePageIndex = Math.min(roleState.progress, role.tasks.length - 1);
+    if (feedbackTarget) {
+      roleState.challengeFeedback[taskId] = {
+        status: 'passed',
+        text: `“${task.name}”已记录在本次体验进度中。`,
+        kind: 'task',
+      };
+    }
     roleState.messages.push({
       id: crypto.randomUUID(),
       type: 'assistant',
@@ -1543,8 +1890,16 @@ async function submitTask(taskId, toolCallId, minimumEvidence = 1) {
       type: 'tool_result',
       toolCallId,
       result: { status: 'completed', values: { text: evidence.text || '', toolValues, photoEvidenceCount: evidence.imageUrls.length }, evidence: uploaded },
-    });
+    }, { feedbackTarget });
   } catch (error) {
+    if (feedbackTarget) {
+      roleState.challengeFeedback[taskId] = {
+        status: 'failed',
+        text: error.message || '提交暂未完成，请稍后重试。',
+        kind: 'task',
+      };
+      renderChat();
+    }
     showToast(error.message);
   }
 }
@@ -1903,14 +2258,16 @@ async function applyTeacherCommand(command) {
 }
 
 async function pollTeacherCommands() {
-  const sessionId = currentRoleState()?.agentSessionId;
+  const roleState = currentRoleState();
+  const sessionId = roleState?.agentSessionId;
   if (!sessionId || document.hidden) return;
   try {
-    const result = await getTeacherCommands(sessionId, state.teacherCommandSequence);
+    const result = await getTeacherCommands(sessionId, roleState.teacherCommandSequence);
     for (const command of result.commands) {
       await applyTeacherCommand(command);
-      state.teacherCommandSequence = Math.max(state.teacherCommandSequence, command.sequence || 0);
+      roleState.teacherCommandSequence = Math.max(roleState.teacherCommandSequence, command.sequence || 0);
     }
+    roleState.teacherCommandSequence = Math.max(roleState.teacherCommandSequence, result.sequence || 0);
   } catch {
     // Polling is best-effort and resumes when connectivity returns.
   }
@@ -1948,6 +2305,10 @@ const actions = {
   'show-course-info': () => showToast(`${lesson.grades} · ${lesson.duration} · ${lesson.groupRule}`),
   'select-role': (target) => selectRole(target.dataset.roleId),
   'switch-role': (target) => selectRole(target.dataset.roleId),
+  'set-learning-view': (target) => setLearningView(target.dataset.learningView),
+  'select-challenge-page': (target) => selectChallengePage(Number(target.dataset.pageIndex)),
+  'challenge-previous': () => selectChallengePage(currentRoleState().challengePageIndex - 1),
+  'challenge-next': () => selectChallengePage(currentRoleState().challengePageIndex + 1),
   'open-role-switch': () => openSheet('roleSwitchSheet'),
   'close-sheet': closeSheet,
   'arrive-role-location': (target) => arriveRoleLocation(target.dataset.toolCallId),
@@ -2020,7 +2381,7 @@ const actions = {
     }
   },
   'send-rally': () => showToast('集合点已发送给全组，等待其他成员确认。'),
-  'open-quick-tools': () => showToast(`工具会根据当前任务由${lesson.persona.name}主动调用。`),
+  'open-quick-tools': () => showToast(`工具会根据当前任务由${PLATFORM_COMPANION.name}主动调用。`),
   'voice-input': startVoiceInput,
 };
 
@@ -2030,6 +2391,8 @@ app.addEventListener('click', (event) => {
   if (tab) {
     state.activeTab = tab.dataset.tab;
     renderTabs();
+    renderLearningViewControls();
+    refreshIcons();
     return;
   }
 

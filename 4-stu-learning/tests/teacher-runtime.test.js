@@ -67,10 +67,20 @@ test('教师指令支持版本冲突与幂等，并产生学生回执', async (t
   const first = await service.sendCommand(run.id, input);
   const duplicate = await service.sendCommand(run.id, input);
   assert.equal(duplicate.id, first.id);
+  assert.equal(first.receipts[0].status, 'accepted');
   const pending = await service.commandsForSession('ses_teacher_test', 0);
   assert.equal(pending.commands.length, 1);
+  const delivered = await service.confirmCommand('ses_teacher_test', first.id, 'delivered');
+  assert.equal(delivered.status, 'delivered');
+  const consumed = await service.commandsForSession('ses_teacher_test', 0);
+  assert.equal(consumed.commands.length, 0);
   const receipt = await service.confirmCommand('ses_teacher_test', first.id, 'confirmed');
   assert.equal(receipt.status, 'confirmed');
+  const confirmedAgain = await service.confirmCommand('ses_teacher_test', first.id, 'delivered');
+  assert.equal(confirmedAgain.status, 'confirmed');
+  await service.bindLearnerSession({ runId: run.id, participantId: participant.id, sessionId: 'ses_teacher_rebound' });
+  const rebound = await service.commandsForSession('ses_teacher_rebound', 0);
+  assert.equal(rebound.commands.length, 0);
   await assert.rejects(
     service.sendCommand(run.id, { ...input, idempotencyKey: 'idem-teacher-002', action: 'add_time' }),
     (error) => error.statusCode === 409,

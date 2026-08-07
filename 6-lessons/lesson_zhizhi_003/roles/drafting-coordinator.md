@@ -26,6 +26,17 @@
 - 配置：提前确定证据进入、利益冲突、听证、修订、表决与AI披露规则
 - 通过条件：程序日历、四线证据闸门和研究诚信协议经全组确认
 
+##### 引导
+- 四线闸门检查产物、来源、复核、局限和待核处理。
+- 表决、少数意见、回避和AI披露规则须在起草前确定。
+
+##### 脚手架
+| L0 | 先列四条证据线的最低产物。 |
+| L1 | 每线补复核人和局限。 |
+| L2 | 规定待核怎样处理。 |
+| L3 | 写听证、表决、少数意见和AI规则。 |
+| L4 | 教师批准程序与发布边界。 |
+
 #### Step 1：定义四线证据闸门
 - id：drafting-define-evidence-gate
 - 小步目标：防止条款在证据尚未形成时提前定案
@@ -36,15 +47,16 @@
 - 功能模块：A03(证据闸门)
 - 工具参数：{"builder":{"mode":"evidence_gate","prompt":"为四线设置最低产物、复核人、局限和待核处理。","minimumItems":4,"categories":["科学与风险","中国与域外规范","社会调查","成本与影响"]}}
 - 知识引用：K-20, K-22
-- 引导引用：guidance/drafting-coordinator.md#任务1
 - 限制引用：restrictions.md#规则模板
-- 评估引用：evaluation.md#S1
-- 脚手架引用：scaffolds/drafting-coordinator.md#任务1
 - 常见误区：只看是否交文件，不看来源与局限
 - 最大尝试：3
 - 失败处理：每条证据线补复核人和失败状态
 - 教师介入：闸门标准压缩某一角色研究空间
 - 通过后：step:drafting-adopt-procedure
+
+##### 验收标准
+四线均有产物、来源、复核、局限和未通过处理
+- S1 开题：范围、问题、方法、安全、伦理、AI计划由教师确认。
 
 #### Step 2：通过研究程序
 - id：drafting-adopt-procedure
@@ -56,15 +68,13 @@
 - 功能模块：A05(小组协商), A08(教师确认)
 - 工具参数：{"team":{"mode":"consensus","prompt":"逐项确认程序日历、意见处置、回避、表决、少数意见和AI披露。","minimumEntries":6},"teacher_confirm":{"prompt":"核对研究伦理、程序公平、发布边界和真实沟通授权。","required":true}}
 - 知识引用：K-21, K-22, K-23
-- 引导引用：guidance/drafting-coordinator.md#任务1
 - 限制引用：restrictions.md#法律与公共表达
-- 评估引用：evaluation.md#E6
-- 脚手架引用：scaffolds/drafting-coordinator.md#任务1
 - 常见误区：把“组长决定”当分歧处理规则
 - 最大尝试：1
 - 失败处理：修订程序后再次确认，研究任务可继续但不得起草
 - 教师介入：必须
 - 通过后：role-stage:drafting-three-drafts
+
 
 ### 任务2：主持三稿与听证
 - id：drafting-three-drafts
@@ -77,6 +87,17 @@
 - 配置：用规则五问和九要素起草，每条绑定证据，完成公开听证与版本处置
 - 通过条件：初稿、听证稿、终稿与逐条证据、意见处置完整
 
+##### 引导
+- 每轮只检查规则五问或九要素的一项。
+- 逐条区分证据事实、价值选择和效力表述；版本变化可追踪。
+
+##### 脚手架
+| L0 | 用五问检查初稿。 |
+| L1 | 再查九要素。 |
+| L2 | 每条绑定证据与价值选择。 |
+| L3 | 意见记录状态、理由和位置。 |
+| L4 | 教师处理法律与安全高风险条款。 |
+
 #### Step 1：生成证据绑定初稿
 - id：drafting-compose-first
 - 小步目标：形成可被质询的完整规则结构
@@ -87,15 +108,13 @@
 - 功能模块：A01(条款编辑器)
 - 工具参数：{"text":{"fields":[{"id":"draft-1","label":"建议稿初稿","type":"long_text","required":true,"minLength":700},{"id":"evidence-index","label":"逐条证据与价值选择索引","type":"long_text","required":true,"minLength":250}]}}
 - 知识引用：K-20, K-23
-- 引导引用：guidance/drafting-coordinator.md#任务2
 - 限制引用：restrictions.md#规则模板
-- 评估引用：evaluation.md#E5
-- 脚手架引用：scaffolds/drafting-coordinator.md#任务2
 - 常见误区：只有贴膜和关灯措施，没有责任、例外或申诉
 - 最大尝试：4
 - 失败处理：一次只提示一个九要素缺项
 - 教师介入：条款涉及结构改造、安全或确定性法律义务
 - 通过后：step:drafting-run-hearing
+
 
 #### Step 2：听证并完成三稿对照
 - id：drafting-run-hearing
@@ -107,15 +126,13 @@
 - 功能模块：A05(模拟听证), A05(三稿对照)
 - 工具参数：{"team":{"mode":"formal_hearing","prompt":"从科学、管理、使用者、权益与公平视角质询具体条款。","minimumEntries":8},"builder":{"mode":"version_compare","prompt":"对照初稿、听证稿、终稿，记录修改、理由、证据与未采纳意见。","minimumItems":8}}
 - 知识引用：K-21, K-22
-- 引导引用：guidance/drafting-coordinator.md#任务2
 - 限制引用：restrictions.md#规则效力
-- 评估引用：evaluation.md#E6
-- 脚手架引用：scaffolds/drafting-coordinator.md#任务2
 - 常见误区：为了显得开放而全部采纳互相冲突的意见
 - 最大尝试：3
 - 失败处理：要求说明资源、证据和规则目标如何支持处置
 - 教师介入：听证程序失衡或讨论人身化
 - 通过后：role-stage:drafting-vote-release
+
 
 ### 任务3：组织表决与真实转化
 - id：drafting-vote-release
@@ -128,6 +145,17 @@
 - 配置：完成终审、课程表决、少数意见、AI披露和真实状态记录
 - 通过条件：发布包通过人工终审，表决与外部状态准确分开
 
+##### 引导
+- 多数票不等于科学真理或正式生效。
+- 课程通过、提交、接收、反馈和采纳分别记录。
+
+##### 脚手架
+| L0 | 自查来源、匿名、AI和效力声明。 |
+| L1 | 记录赞成、反对、弃权和理由。 |
+| L2 | 保留少数意见。 |
+| L3 | 分开课程、提交、接收、反馈、采纳状态。 |
+| L4 | 教师批准发布和任何外部提交。 |
+
 #### Step 1：完成发布前终审与表决
 - id：drafting-final-audit-vote
 - 小步目标：确认建议稿科学、规范、伦理与程序边界
@@ -138,15 +166,16 @@
 - 功能模块：A05(表决), A08(教师确认)
 - 工具参数：{"team":{"mode":"vote","prompt":"记录票型与可选理由；表决只代表课程内部选择。","options":["赞成","反对","弃权"],"recordMinorityOpinion":true},"teacher_confirm":{"prompt":"核对科学、规范、伦理、程序、AI披露及“青少年建议稿”效力声明。","required":true}}
 - 知识引用：K-20, K-21, K-22, K-23
-- 引导引用：guidance/drafting-coordinator.md#任务3
 - 限制引用：restrictions.md#法律与公共表达
-- 评估引用：evaluation.md#S6
-- 脚手架引用：scaffolds/drafting-coordinator.md#任务3
 - 常见误区：把多数票写成规则已生效
 - 最大尝试：1
 - 失败处理：退回具体条款或披露位置，保留原表决版本记录
 - 教师介入：必须
 - 通过后：step:drafting-publish-status
+
+##### 验收标准
+终审清单、赞成/反对/弃权计数、理由和少数意见齐全
+- S6 发布：表决记录、少数意见、AI披露和“青少年建议稿”声明齐全。
 
 #### Step 2：发布并记录真实状态
 - id：drafting-publish-status
@@ -158,10 +187,7 @@
 - 功能模块：A01(发布包), A05(状态记录)
 - 工具参数：{"text":{"fields":[{"id":"release-note","label":"发布说明、AI披露与未解问题","type":"long_text","required":true,"minLength":180}]},"team":{"mode":"status_log","prompt":"分别记录课程表决、提交、接收、反馈和采纳的真实状态与日期。","minimumEntries":1}}
 - 知识引用：K-22, K-23
-- 引导引用：guidance/drafting-coordinator.md#任务3
 - 限制引用：restrictions.md#规则效力
-- 评估引用：evaluation.md#E6
-- 脚手架引用：scaffolds/drafting-coordinator.md#任务3
 - 常见误区：机构收件被表述为采纳
 - 最大尝试：2
 - 失败处理：改回准确状态并补证据日期

@@ -5,8 +5,21 @@ import { fileURLToPath } from 'node:url';
 import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
 import { findSpoiler, retrieveKnowledge, restrictionUnlocked } from '../server/course/retrieval.js';
 import { parseLesson } from '../src/engine/lesson-parser.js';
+import { PLATFORM_COMPANION } from '../src/engine/platform-config.js';
+import publicLessons from '../src/generated/lesson-public.js';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
+
+test('公开课程包默认开启双学习视图，只有故宫验收课开放未来关卡浏览', () => {
+  for (const [courseId, course] of Object.entries(publicLessons)) {
+    assert.deepEqual(course.learningView, {
+      enabled: true,
+      default: 'dialogue',
+      allowStudentSwitch: true,
+      allowFutureTaskBrowse: courseId === 'lesson_gewu_001',
+    });
+  }
+});
 
 test('课程编译器生成六角色、知识、限制和工具实例', async () => {
   clearCourseCache();
@@ -15,6 +28,12 @@ test('课程编译器生成六角色、知识、限制和工具实例', async ()
   assert.equal(course.knowledge.length, 19);
   assert.equal(course.roles.flatMap((role) => role.tools).length, 18);
   assert.ok(course.restrictions.length >= 9);
+  assert.deepEqual(course.publicLesson.learningView, {
+    enabled: true,
+    default: 'dialogue',
+    allowStudentSwitch: true,
+    allowFutureTaskBrowse: true,
+  });
   for (const role of course.roles) {
     for (const task of role.tasks) {
       assert.ok(task.location && typeof task.location.mode === 'string');
@@ -57,6 +76,12 @@ test('第二门课程可从课程配置解析新角色、工具和角色解锁�
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
   assert.deepEqual(course.publicLesson.mapCenter, [116.3953, 40.0071]);
   assert.equal(course.publicLesson.venue, '中国共产党历史展览馆');
+  assert.deepEqual(course.publicLesson.learningView, {
+    enabled: true,
+    default: 'dialogue',
+    allowStudentSwitch: true,
+    allowFutureTaskBrowse: false,
+  });
   assert.equal(course.roles.length, 5);
   assert.equal(course.knowledge.length, 21);
   assert.equal(course.roles.flatMap((role) => role.tools).length, 15);
@@ -102,9 +127,12 @@ test('第二门课程可从课程配置解析新角色、工具和角色解锁�
     assert.equal(publicToolConfig.includes(privateKey), false, `公开工具配置包含 ${privateKey}`);
   }
   assert.equal(course.phasePrompts['phase-4'].includes('课程情境材料｜史料出处待核'), true);
-  assert.equal(course.publicLesson.persona.name, '絮絮');
-  assert.equal(course.publicLesson.assets.companionIdle, '/assets/video/xuxu-idle.webm');
-  assert.equal(course.publicLesson.assets.companionTalk, '/assets/video/xuxu-talk.webm');
+  assert.equal(Object.hasOwn(course.publicLesson, 'persona'), false);
+  assert.equal(PLATFORM_COMPANION.posterAsset, '/assets/images/xuxu-avatar.png');
+  assert.equal(PLATFORM_COMPANION.idleAsset, '/assets/video/xuxu-idle.webm');
+  assert.equal(PLATFORM_COMPANION.talkAsset, '/assets/video/xuxu-talk.webm');
+  assert.equal(Object.hasOwn(course.publicLesson.assets, 'companionIdle'), false);
+  assert.equal(Object.hasOwn(course.publicLesson.assets, 'companionTalk'), false);
   assert.equal(course.roles.every((role) => role.tasks.every((task) => task.location.legacyMode === 'inherit_role')), true);
   assert.equal(course.roles.every((role) => role.tasks.every((task) => ['point', 'geofence'].includes(task.location.mode))), true);
 
@@ -163,6 +191,8 @@ test('浏览器课程包不包含课程答案和受保护值', async () => {
     '1935年3月21日至22日',
     '放弃进攻打鼓新场以及成立新的三人军事指挥小组',
     '失散小战士追赶队伍',
+    '禁止建议学生攀爬、跳跃、靠近水域边缘',
+    '不主动询问学生的家庭信息、联系方式、健康状况',
   ]) {
     assert.equal(source.includes(forbidden), false, `公开课程包包含 ${forbidden}`);
   }
@@ -178,8 +208,6 @@ test('结构化角色阶段小步保留稳定ID、位置和完成方式', () => 
 > 测试
 ## 基本信息
 - 主题模板：zhuhun
-## 智能体人设
-- 本课身份：观察伙伴
 ## 学生端角色体系
 - collectionName：观察员
 - itemName：身份
@@ -234,4 +262,28 @@ test('结构化角色阶段小步保留稳定ID、位置和完成方式', () => 
   assert.equal(roleStage.steps[1].completionMode, 'tool_result');
   assert.equal(roleStage.steps[1].location.mode, 'inherit');
   assert.equal(roleStage.steps[1].evidenceRequirement, '照片包含起点和终点');
+});
+
+test('课程学习视图拒绝未知默认值', () => {
+  assert.throws(() => parseLesson({
+    id: 'lesson_bad_view',
+    assetBase: 'lessons/lesson_bad_view/assets',
+    files: {
+      'course.md': `# 测试课程
+## 基本信息
+- 主题模板：gewu
+## 学生端角色体系
+- collectionName：观察员
+- itemName：身份
+- collectionItemName：线索
+- collectionPanelName：线索板
+- unlockTarget：总结
+- 任务阶段：phase-2
+## 学习视图
+- enabled：true
+- default：unknown`,
+      'phases.md': '',
+      'time-bank.md': '',
+    },
+  }), /学习视图 default 无效/);
 });

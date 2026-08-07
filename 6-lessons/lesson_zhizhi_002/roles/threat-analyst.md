@@ -26,6 +26,17 @@
 - 配置：把先入印象改写为可被证据支持或推翻的风险假设
 - 通过条件：至少2条假设，各有需要寻找的证据与可能反证
 
+##### 引导
+- 把威胁名词追问成有方向的关系假设。
+- 追问什么证据会降低学生对假设的信心。
+
+##### 脚手架
+| L0 | 自己写两条可能关系。 |
+| L1 | 用“如果—通过—导致”。 |
+| L2 | 补一条可能反证。 |
+| L3 | 将假设拆成四层链。 |
+| L4 | 教师帮助排除不可调查假设。 |
+
 #### Step 1：写风险假设
 - id：threat-write-hypotheses
 - 小步目标：形成可调查的关系判断
@@ -36,15 +47,16 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"hypotheses","label":"两条风险假设","type":"long_text","required":true,"minLength":60}]}}
 - 知识引用：K-08
-- 引导引用：guidance/threat-analyst.md#任务1
 - 限制引用：restrictions.md#风险排序
-- 评估引用：evaluation.md#S1
-- 脚手架引用：scaffolds/threat-analyst.md#任务1
 - 常见误区：只列“污染、捕猎”等名词
 - 最大尝试：3
 - 失败处理：提示补出箭头中间发生的变化
 - 教师介入：假设明显超出课程范围
 - 通过后：step:threat-plan-tests
+
+##### 验收标准
+每条包含起因、中间变化和物种结果
+- S1 开题：核心问题可调查，来源计划覆盖现场、名录/数据库和措施材料。
 
 #### Step 2：设计证伪办法
 - id：threat-plan-tests
@@ -56,15 +68,13 @@
 - 功能模块：A01(调查表)
 - 工具参数：{"text":{"fields":[{"id":"support","label":"要找的支持证据","type":"long_text","required":true},{"id":"counter","label":"可能削弱假设的证据","type":"long_text","required":true}]}}
 - 知识引用：K-05, K-09
-- 引导引用：guidance/threat-analyst.md#任务1
 - 限制引用：restrictions.md#事实边界
-- 评估引用：evaluation.md#E3
-- 脚手架引用：scaffolds/threat-analyst.md#任务1
 - 常见误区：把另一条支持材料当反证
 - 最大尝试：3
 - 失败处理：问“看到什么情况会让你降低信心”
 - 教师介入：无
 - 通过后：role-stage:threat-build-chain
+
 
 ### 任务2：搭建威胁链
 - id：threat-build-chain
@@ -77,6 +87,17 @@
 - 配置：将现场和资料证据放入四层因果链
 - 通过条件：至少4个节点、3条有方向连接、来源编号和1个替代解释
 
+##### 引导
+- 每轮只核对一条箭头、一个证据编号和一个边界。
+- 影响评分与证据强度分开，不给标准排序。
+
+##### 脚手架
+| L0 | 逐条读箭头方向。 |
+| L1 | 每条箭头补证据或推断标签。 |
+| L2 | 影响与证据分别评分。 |
+| L3 | 加入一个替代解释。 |
+| L4 | 教师协助处理专业争议。 |
+
 #### Step 1：连接风险节点
 - id：threat-connect-nodes
 - 小步目标：说明威胁如何从活动传导到种群结果
@@ -87,15 +108,13 @@
 - 功能模块：A03(因果链)
 - 工具参数：{"builder":{"mode":"causal_chain","prompt":"按人类活动—环境变化—直接威胁—种群结果连接，每条箭头附证据编号或推断标签。","minimumItems":4,"categories":["人类活动","环境或栖息地变化","直接威胁","种群结果"]}}
 - 知识引用：K-08
-- 引导引用：guidance/threat-analyst.md#任务2
 - 限制引用：restrictions.md#事实边界
-- 评估引用：evaluation.md#E3
-- 脚手架引用：scaffolds/threat-analyst.md#任务2
 - 常见误区：箭头方向与叙述相反
 - 最大尝试：3
 - 失败处理：逐条朗读“什么改变了什么”
 - 教师介入：因果主张涉及复杂专业争议
 - 通过后：step:threat-score-uncertainty
+
 
 #### Step 2：双轴评分
 - id：threat-score-uncertainty
@@ -107,15 +126,13 @@
 - 功能模块：A04(风险矩阵)
 - 工具参数：{"simulation":{"mode":"matrix","prompt":"分别给潜在影响与证据强度1—4分，并写评分依据。","axes":["潜在影响","证据强度"],"minimumItems":3},"text":{"fields":[{"id":"alternative","label":"替代解释或未知","type":"long_text","required":true}]}}
 - 知识引用：K-06, K-09
-- 引导引用：guidance/threat-analyst.md#任务2
 - 限制引用：restrictions.md#风险排序
-- 评估引用：evaluation.md#E3
-- 脚手架引用：scaffolds/threat-analyst.md#任务2
 - 常见误区：熟悉的威胁两项都给高分
 - 最大尝试：3
 - 失败处理：要求两项评分分别引用依据
 - 教师介入：小组争议无法通过证据讨论解决
 - 通过后：role-stage:threat-deliver-diagnosis
+
 
 ### 任务3：交付风险诊断
 - id：threat-deliver-diagnosis
@@ -128,6 +145,17 @@
 - 配置：用一页诊断支持方案答辩，并公开不确定性
 - 通过条件：核心链、优先风险、证据强度和未知项完整
 
+##### 引导
+- 检查诊断是否公开替代解释和未知。
+- 对反方质询只帮助记录维持、修改或待核。
+
+##### 脚手架
+| L0 | 选择两条最关键链。 |
+| L1 | 补来源、评分和局限。 |
+| L2 | 请同伴质疑一条连接。 |
+| L3 | 记录维持、修改或待核。 |
+| L4 | 教师终止人身化争论。 |
+
 #### Step 1：写诊断摘要
 - id：threat-compose-diagnosis
 - 小步目标：把模型转成可质询的诊断主张
@@ -138,15 +166,13 @@
 - 功能模块：A01(诊断摘要)
 - 工具参数：{"text":{"fields":[{"id":"diagnosis","label":"风险诊断摘要","type":"long_text","required":true,"minLength":160}]}}
 - 知识引用：K-08, K-09
-- 引导引用：guidance/threat-analyst.md#任务3
 - 限制引用：restrictions.md#表达与决策
-- 评估引用：evaluation.md#E3
-- 脚手架引用：scaffolds/threat-analyst.md#任务3
 - 常见误区：只公布排序，不解释证据强弱
 - 最大尝试：2
 - 失败处理：提示补齐链条、来源或局限
 - 教师介入：无
 - 通过后：step:threat-answer-challenge
+
 
 #### Step 2：回应反方质询
 - id：threat-answer-challenge
@@ -158,10 +184,7 @@
 - 功能模块：A05(质询)
 - 工具参数：{"team":{"mode":"challenge","prompt":"请质疑一条因果连接或评分；分析员记录处理结果与证据。","minimumEntries":2,"recordTypes":["反例或质疑","处理结果与理由"]}}
 - 知识引用：K-06
-- 引导引用：guidance/threat-analyst.md#任务3
 - 限制引用：restrictions.md#事实边界
-- 评估引用：evaluation.md#E6
-- 脚手架引用：scaffolds/threat-analyst.md#任务3
 - 常见误区：把质询者当作“答错的人”
 - 最大尝试：2
 - 失败处理：允许记录“现有证据无法判断”

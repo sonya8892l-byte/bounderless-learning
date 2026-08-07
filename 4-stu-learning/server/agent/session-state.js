@@ -37,6 +37,7 @@ function environmentDefaults() {
   return {
     pageVisible: true,
     activeTab: 'task',
+    learningView: 'dialogue',
     hasDraft: false,
     phaseRemainingSeconds: null,
     teacherCommand: null,
@@ -126,6 +127,8 @@ export function ensureSessionRuntime(session, task, now = Date.now()) {
     lastNudgeAt: null,
     nudgeCount: 0,
   };
+  // 教学决策历史：tutorPolicy 的防复读规则要看它。存量会话缺这个字段，按空数组补。
+  session.conversationState.recentTutorActions ||= [];
   session.dialogueState ||= dialogueDefaults(session);
   session.dialogueState.confirmedSlots ||= {
     arrival: Boolean(session.onboardingState.arrivedConfirmed),
@@ -138,7 +141,7 @@ export function ensureSessionRuntime(session, task, now = Date.now()) {
   session.learnerState ||= learnerDefaults(session);
   session.learnerState.grade ||= session.grade || '初中';
   session.learnerState.scaffoldLevel = Number(session.scaffoldLevel || session.learnerState.scaffoldLevel || 0);
-  session.environmentState ||= environmentDefaults();
+  session.environmentState = { ...environmentDefaults(), ...(session.environmentState || {}) };
   session.learningState ||= learningDefaults(session, task);
   session.taskState ||= {};
   if (session.taskState.taskId !== task?.id) {
@@ -327,6 +330,7 @@ export function recordClientContext(session, data = {}, now = Date.now()) {
   session.environmentState ||= environmentDefaults();
   if (typeof data.pageVisible === 'boolean') session.environmentState.pageVisible = data.pageVisible;
   if (typeof data.activeTab === 'string') session.environmentState.activeTab = data.activeTab;
+  if (['dialogue', 'challenge'].includes(data.learningView)) session.environmentState.learningView = data.learningView;
   if (typeof data.hasDraft === 'boolean') session.environmentState.hasDraft = data.hasDraft;
   if (Number.isFinite(Number(data.phaseRemainingSeconds))) {
     session.environmentState.phaseRemainingSeconds = Number(data.phaseRemainingSeconds);
@@ -381,12 +385,45 @@ export function updateDwell(session, now = Date.now()) {
   return session.locationState.dwellSeconds;
 }
 
+// 情绪枚举统一到 understanding.js 的五值集合。历史来源用过 worried/excited/distressed
+// 三个值（旧回合理解器与安全分支），在这里归一，避免三处对不齐。
+// distressed 走的是安全升级路径（call_teacher），不作为情绪字段保留。
+const EMOTION_ALIASES = Object.freeze({
+  worried: 'anxious',
+  excited: 'positive',
+  distressed: 'anxious',
+});
+const CANONICAL_EMOTIONS = Object.freeze(['neutral', 'positive', 'frustrated', 'tired', 'anxious']);
+
+export function normalizeEmotion(value = '') {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'neutral';
+  const mapped = EMOTION_ALIASES[raw] || raw;
+  return CANONICAL_EMOTIONS.includes(mapped) ? mapped : 'neutral';
+}
+
 export function recordIntent(session, intent, signal = 'neutral', now = Date.now()) {
   session.conversationState.lastIntent = intent;
   session.conversationState.lastIntentAt = iso(now);
   session.conversationState.studentSignal = signal;
   session.learnerState ||= learnerDefaults(session);
-  session.learnerState.emotion = signal === 'neutral' ? 'neutral' : signal;
+  session.learnerState.emotion = normalizeEmotion(signal);
+}
+
+const TUTOR_ACTION_HISTORY_LIMIT = 6;
+
+/** 记录一次教学决策，供 tutorPolicy 的防复读规则读取。 */
+export function recordTutorAction(session, { intent, action }, now = Date.now()) {
+  if (!action) return;
+  session.conversationState ||= {};
+  session.conversationState.recentTutorActions ||= [];
+  session.conversationState.recentTutorActions.push({
+    intent: String(intent || 'unknown'),
+    action: String(action),
+    at: iso(now),
+  });
+  session.conversationState.recentTutorActions = session.conversationState.recentTutorActions
+    .slice(-TUTOR_ACTION_HISTORY_LIMIT);
 }
 
 export function runtimeSnapshot(session, now = Date.now()) {

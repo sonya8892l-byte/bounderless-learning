@@ -26,6 +26,17 @@
 - 配置：为措施建立“目标—活动—结果—证据”问题框架
 - 通过条件：至少为两类候选措施提出完整审计问题
 
+##### 引导
+- 用“做了什么/改变了什么”帮助区分活动和结果。
+- 指标必须与目标变量有清楚关系。
+
+##### 脚手架
+| L0 | 先问材料说“做了”还是“改变了”。 |
+| L1 | 放入投入—活动—产出—结果—目标。 |
+| L2 | 为目标补一个指标。 |
+| L3 | 写基线和需要的成效资料。 |
+| L4 | 教师帮助解释复杂指标。 |
+
 #### Step 1：拆解措施说法
 - id：auditor-separate-claims
 - 小步目标：区分投入、活动、产出、结果和长期目标
@@ -36,15 +47,13 @@
 - 功能模块：A03(逻辑链分类)
 - 工具参数：{"builder":{"mode":"categorize","prompt":"判断材料说的是投入、活动、直接产出、短期结果还是长期目标。","minimumItems":5,"categories":["投入","活动","直接产出","短期结果","长期目标","待核"]}}
 - 知识引用：K-10, K-11
-- 引导引用：guidance/measure-auditor.md#任务1
 - 限制引用：restrictions.md#措施成效
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/measure-auditor.md#任务1
 - 常见误区：把“举办10次活动”归为物种成效
 - 最大尝试：3
 - 失败处理：问“它说明做了什么，还是改变了什么”
 - 教师介入：无
 - 通过后：step:auditor-plan-evidence
+
 
 #### Step 2：制定审计清单
 - id：auditor-plan-evidence
@@ -56,15 +65,16 @@
 - 功能模块：A01(审计表)
 - 工具参数：{"text":{"fields":[{"id":"audit-plan","label":"两项措施审计清单","type":"long_text","required":true,"minLength":100}]}}
 - 知识引用：K-10, K-13
-- 引导引用：guidance/measure-auditor.md#任务1
 - 限制引用：restrictions.md#措施成效
-- 评估引用：evaluation.md#S1
-- 脚手架引用：scaffolds/measure-auditor.md#任务1
 - 常见误区：指标与措施目标无关
 - 最大尝试：3
 - 失败处理：逐项追问“这个指标变化能说明目标变化吗”
 - 教师介入：无
 - 通过后：role-stage:auditor-audit-measures
+
+##### 验收标准
+两项措施各含5个字段，缺失可标待核
+- S1 开题：核心问题可调查，来源计划覆盖现场、名录/数据库和措施材料。
 
 ### 任务2：审计措施与缺口
 - id：auditor-audit-measures
@@ -77,6 +87,17 @@
 - 配置：建立措施—威胁矩阵，评估覆盖、成效证据和缺口
 - 通过条件：至少3项措施完成审计，产生2条有依据的保护缺口
 
+##### 引导
+- 对每项措施依次追问对应威胁、主体、活动证据、成效证据。
+- 证据不足时使用“效果待核”，不判定失败。
+
+##### 脚手架
+| L0 | 每项措施先连到一个威胁。 |
+| L1 | 再补主体、活动和成效证据。 |
+| L2 | 证据不足写“效果待核”。 |
+| L3 | 从覆盖、执行、资源、监测找缺口。 |
+| L4 | 教师排除不安全行动。 |
+
 #### Step 1：连接措施与威胁
 - id：auditor-map-measures
 - 小步目标：确认每项措施试图改变哪一段风险链
@@ -87,15 +108,13 @@
 - 功能模块：A03(审计矩阵)
 - 工具参数：{"builder":{"mode":"matrix","prompt":"每项措施连接一个威胁节点，并记录责任主体、活动证据和成效证据。","minimumItems":3,"categories":["措施","对应威胁","责任主体","活动证据","成效证据"]}}
 - 知识引用：K-10, K-11
-- 引导引用：guidance/measure-auditor.md#任务2
 - 限制引用：restrictions.md#措施成效
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/measure-auditor.md#任务2
 - 常见误区：没有成效证据却填“有效”
 - 最大尝试：3
 - 失败处理：改用“已开展、效果待核”并列出所需指标
 - 教师介入：材料方法或指标无法理解
 - 通过后：step:auditor-find-gaps
+
 
 #### Step 2：识别保护缺口
 - id：auditor-find-gaps
@@ -107,15 +126,13 @@
 - 功能模块：A01(缺口清单)
 - 工具参数：{"text":{"fields":[{"id":"gaps","label":"保护缺口清单","type":"long_text","required":true,"minLength":80}]}}
 - 知识引用：K-12
-- 引导引用：guidance/measure-auditor.md#任务2
 - 限制引用：restrictions.md#事实边界
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/measure-auditor.md#任务2
 - 常见误区：把“需要更多宣传”写成没有对象和证据的缺口
 - 最大尝试：3
 - 失败处理：要求补出对应威胁、责任或指标中的缺失
 - 教师介入：无
 - 通过后：role-stage:auditor-report-findings
+
 
 ### 任务3：报告审计结果
 - id：auditor-report-findings
@@ -128,6 +145,17 @@
 - 配置：向听证会报告措施覆盖、证据强弱和优先缺口
 - 通过条件：报告至少包含1项可保留措施、1项待改进措施和2项缺口
 
+##### 引导
+- 缺口必须回到威胁或审计矩阵。
+- 复核行动书时逐项追溯，不只查字段完整性。
+
+##### 脚手架
+| L0 | 各找一项保留、改进和缺口。 |
+| L1 | 每项补矩阵编号。 |
+| L2 | 需要的指标单列。 |
+| L3 | 逐项追溯行动书。 |
+| L4 | 教师确认高风险结论边界。 |
+
 #### Step 1：形成审计摘要
 - id：auditor-compose-summary
 - 小步目标：用审计依据支持方案保留、修改或新增行动
@@ -138,15 +166,13 @@
 - 功能模块：A03(审计摘要)
 - 工具参数：{"builder":{"mode":"board","prompt":"按保留、改进、保护缺口、所需指标整理，每条绑定证据。","minimumItems":4,"categories":["建议保留","需要改进","保护缺口","所需指标"]}}
 - 知识引用：K-11, K-12, K-13
-- 引导引用：guidance/measure-auditor.md#任务3
 - 限制引用：restrictions.md#方案效力
-- 评估引用：evaluation.md#E4
-- 脚手架引用：scaffolds/measure-auditor.md#任务3
 - 常见误区：把待核措施直接判为失败
 - 最大尝试：2
 - 失败处理：允许使用“证据不足，建议先监测”
 - 教师介入：无
 - 通过后：step:auditor-review-action
+
 
 #### Step 2：复核行动书对应关系
 - id：auditor-review-action
@@ -158,10 +184,7 @@
 - 功能模块：A05(团队核验)
 - 工具参数：{"team":{"mode":"review","prompt":"逐项核对行动—威胁—缺口—指标，记录通过或修改理由。","minimumEntries":3,"recordTypes":["通过","修改","待核"]}}
 - 知识引用：K-13, K-17
-- 引导引用：guidance/measure-auditor.md#任务3
 - 限制引用：restrictions.md#表达与决策
-- 评估引用：evaluation.md#E5, evaluation.md#E6
-- 脚手架引用：scaffolds/measure-auditor.md#任务3
 - 常见误区：只检查文字是否完整
 - 最大尝试：2
 - 失败处理：随机选择一项行动追溯到风险链

@@ -51,7 +51,7 @@
 
 `src/engine/lesson-parser.js` 将 Markdown 转换为统一课程对象：
 
-- `course.md`：标题、核心问题、本课身份、角色体系、主题和课程级素材；
+- `course.md`：标题、核心问题、角色体系、主题和课程级素材；
 - `phases.md`：课程阶段、时长、模式、地点和触发条件；
 - `roles/*.md`：N 个角色、角色阶段、结构化 Step、位置和课程活动工具；
 - `time-bank.md`：CM01 启用状态、规则、计量单位和任务池；
@@ -117,6 +117,7 @@ P01–P05 固定能力和 CM01 不加入活动工具注册表：
 客户端维护：
 
 - 当前屏幕、角色、Tab 和打开的浮层；
+- 当前学习视图 `learningView` 与闯关页码 `challengePageIndex`；
 - 可见消息、流式消息、快捷回复和加载状态；
 - 照片、录音、表单、画板及其他未提交工具草稿；
 - 本地定位观测、地图实例和临时媒体对象；
@@ -131,7 +132,30 @@ P01–P05 固定能力和 CM01 不加入活动工具注册表：
 
 服务端是进度推进的最终判定方。客户端刷新或接口重试时使用会话 ID 恢复；过期工具结果不能改变新任务状态。
 
-### 3.6 真实对话后端
+### 3.6 学习视图与共享任务工作区
+
+公开课程对象使用以下配置控制双视图 Gate：
+
+```js
+learningView: {
+  enabled: true,
+  default: 'dialogue',
+  allowStudentSwitch: true,
+  allowFutureTaskBrowse: false,
+}
+```
+
+平台默认开启双视图，所有未配置课程默认进入对话模式并允许学生切换；课程可在 `course.md / ## 学习视图` 中显式关闭或覆盖。`learningView` 只描述前端呈现方式，与 URL 中的 `mode=connected/standalone`、任务区的 `activeTab=task/team` 分开管理。Gate 开启时，“我的任务”右下角显示平台级絮絮悬浮按钮：对话页显示“切换为闯关模式”，闯关页显示“切换为智能 AI 模式”；进入“小组”页时隐藏。切换学习视图不能创建会话、调用 Agent、推进 Step 或插入对话消息。
+
+絮絮的名称、人设和媒体路径统一来自 `src/engine/platform-config.js / PLATFORM_COMPANION`。课程 Markdown 不提供这些字段，编译后的公开课程对象也不包含 `persona`、`companionIdle` 或 `companionTalk`。学生端消息头像、思考状态和学习视图悬浮入口共用 `companionAvatar()` 渲染组件；动画无法播放时统一显示平台静态头像。悬浮入口使用固定宽度与固定右下角锚点，切换文案和学习视图不会改变其位置。服务端 Agent 提示也直接读取同一份平台配置，保证更换课程时保持一致。
+
+对话模式和闯关模式共用 `renderTaskWorkspace(context)`。两种视图从同一份角色任务、`progress`、`guidanceStepIndices`、证据、工具值、`toolCallId` 和完成状态渲染，继续调用同一组完成小步与提交任务入口。任何时刻只能挂载当前视图的一套可交互工具节点；隐藏视图不得保留第二套答题、画板、录音或上传 DOM 实例。
+
+闯关页以角色任务为分页单位：已完成任务可只读回看，当前任务可操作，未来任务默认锁定。课程验收期可以临时设置 `allowFutureTaskBrowse: true`，放开未来任务页和“下一关”的浏览；未来任务仍标记为待解锁，不能完成 Step 或提交任务。上线前将该配置恢复为 `false`。`challengePageIndex` 只控制查看页，不能代表正式进度。页内 AI 反馈镜像同一轮 SSE 文本，并以随后的 `state.updated` 判断通过或继续修改；请求失败时保留草稿和原进度。
+
+客户端会在周期性 `context_tick` 中上报可选的 `learningView`。服务端只将其记录到 `environmentState`，不把它用于权限、工具有效性或状态推进判定。
+
+### 3.7 真实对话后端
 
 `src/services/ai-service.js` 是浏览器到服务端的 API 边界，当前负责：
 
@@ -213,9 +237,13 @@ P01–P05 固定能力和 CM01 不加入活动工具注册表：
 5. 检查公开课程对象不含答案、映射、期望识别结果和隐藏知识；
 6. 分别验证至少一个纯观察 Step、组合工具 Step、位置 Step 和教师确认 Step；
 7. 运行课程解析测试、智能体测试和前端构建；
-8. 使用 `?lesson=lesson_xxx&teacherStart=1` 进行移动端回归。
+8. 使用 `?lesson=lesson_xxx` 进行默认 AI connected 模式的移动端回归。
 
 课程 ID 最终应由登录会话、课程码或教师场次下发。URL 参数只服务本地演示和开发验证。
+
+学生端未提供 `mode` 时默认连接 API 与 AI，并为独立体验自动开放角色。显式
+`mode=connected` 用于教师管理场景，此时角色仍等待教师开放，也可在开发验证中附加
+`teacherStart=1`。只有显式 `mode=standalone` 才使用不调用 AI 的本地课程包模式。
 
 ## 7. 当前接入状态与后续接口
 

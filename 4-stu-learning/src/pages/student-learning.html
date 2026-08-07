@@ -103,26 +103,33 @@
     </nav>
 
     <main class="learning-content">
-      <section class="tab-panel is-active chat-panel" id="taskTab" aria-label="我的任务">
-        <div class="chat-scroll" id="chatScroll">
-          <div class="chat-day-label" id="chatDayLabel">今天 · 课程现场</div>
-          <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
-        </div>
-        <div class="composer" id="composer">
-          <button class="composer-icon-button" type="button" data-action="voice-input" aria-label="语音输入">
-            <i data-lucide="mic"></i>
-          </button>
-          <label class="composer-field">
-            <span class="sr-only" id="chatInputLabel">给AI学习同伴发送消息</span>
-            <input id="chatInput" type="text" placeholder="说说你的发现…" autocomplete="off" />
-          </label>
-          <button class="composer-icon-button" type="button" data-action="open-quick-tools" aria-label="更多工具">
-            <i data-lucide="plus"></i>
-          </button>
-          <button class="send-button" type="button" data-action="send-message" aria-label="发送消息">
-            <i data-lucide="arrow-up"></i>
-          </button>
-        </div>
+      <section class="tab-panel is-active task-panel" id="taskTab" aria-label="我的任务">
+        <section class="learning-view-panel dialogue-view is-active" id="dialogueView" aria-label="对话模式">
+          <div class="chat-scroll" id="chatScroll">
+            <div class="chat-day-label" id="chatDayLabel">今天 · 课程现场</div>
+            <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+          </div>
+          <div class="composer" id="composer">
+            <button class="composer-icon-button" type="button" data-action="voice-input" aria-label="语音输入">
+              <i data-lucide="mic"></i>
+            </button>
+            <label class="composer-field">
+              <span class="sr-only" id="chatInputLabel">给AI学习同伴发送消息</span>
+              <input id="chatInput" type="text" placeholder="说说你的发现…" autocomplete="off" />
+            </label>
+            <button class="composer-icon-button" type="button" data-action="open-quick-tools" aria-label="更多工具">
+              <i data-lucide="plus"></i>
+            </button>
+            <button class="send-button" type="button" data-action="send-message" aria-label="发送消息">
+              <i data-lucide="arrow-up"></i>
+            </button>
+          </div>
+        </section>
+        <section class="learning-view-panel challenge-view" id="challengeView" aria-label="闯关模式">
+          <div class="challenge-scroll" id="challengeScroll">
+            <div id="challengeContent"></div>
+          </div>
+        </section>
       </section>
 
       <section class="tab-panel team-panel" id="teamTab" aria-label="小组协作">
@@ -157,6 +164,14 @@
         </section>
       </section>
     </main>
+
+    <div class="learning-mode-fab" id="learningModeFab" hidden>
+      <div class="learning-mode-fab__companion" id="learningModeCompanion" aria-hidden="true"></div>
+      <button type="button" id="learningModeButton" data-action="set-learning-view" data-learning-view="challenge">
+        <i data-lucide="list-checks"></i>
+        <span id="learningModeLabel">切换为闯关模式</span>
+      </button>
+    </div>
 
     <nav class="utility-bar" aria-label="快捷面板">
       <button type="button" data-action="open-progress">

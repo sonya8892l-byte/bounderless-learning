@@ -98,8 +98,13 @@ const requiredCourseFiles = lessonEntries
   .map((entry) => `6-lessons/${entry.name}/course.md`)
   .sort();
 if (!requiredCourseFiles.length) fail('源码中没有找到任何课程 course.md。');
+const requiredPlatformFiles = [
+  '6-lessons/_platform/safety-rules.md',
+  '6-lessons/_platform/pedagogy-rules.md',
+  '6-lessons/_platform/privacy-rules.md',
+];
 
-for (const required of requiredCourseFiles) {
+for (const required of [...requiredPlatformFiles, ...requiredCourseFiles]) {
   try {
     await fs.access(path.join(repositoryRoot, required));
   } catch {

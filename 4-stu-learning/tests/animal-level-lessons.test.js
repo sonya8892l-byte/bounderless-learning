@@ -118,8 +118,8 @@ for (const config of cases) {
 
     for (const role of course.roles) {
       assert.equal(role.tasks.length, 3, `${role.id} 应有3个角色阶段`);
-      assert.ok(course.files[`guidance/${role.id}.md`], `${role.id} 缺少引导文件`);
-      assert.ok(course.files[`scaffolds/${role.id}.md`], `${role.id} 缺少脚手架文件`);
+      // v2 起引导与脚手架就地写在 roles/<role>.md 内，不再有独立目录；
+      // 装配结果按任务逐一断言（见下方 task.guidance / task.scaffold）。
       assertRoleStateFlow(course, role);
       for (const task of role.tasks) {
         assert.ok(task.steps.length >= 2 && task.steps.length <= 4, `${role.id}/${task.id} 应有2—4个Step`);

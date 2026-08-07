@@ -80,6 +80,7 @@ export function createSessionRecord(values = {}) {
     environmentState: {
       pageVisible: true,
       activeTab: 'task',
+      learningView: 'dialogue',
       hasDraft: false,
       phaseRemainingSeconds: null,
       teacherCommand: null,

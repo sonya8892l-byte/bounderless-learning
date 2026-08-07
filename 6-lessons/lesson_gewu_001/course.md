@@ -17,14 +17,6 @@
 ## 核心问题
 故宫建成600年，历经无数暴雨，为何几乎从不积水？
 
-## 智能体人设
-- 名字：絮絮
-- 形象：云朵精灵，半透明的白色小云团，能变换形状
-- 性格：亲切、好奇、有点调皮，像一个知识渊博的学长
-- 语气：少年感、清晰、节奏适中，偶尔幽默
-- 口头禅：「嘿，你发现了吗？」「有意思……再想想？」「走，去看看！」
-- 特殊行为：高兴时会飘高一点；学生答对时会变成笑脸云
-
 ## 学生端角色体系
 - collectionName：治水官
 - itemName：身份
@@ -36,6 +28,12 @@
 - unlockTarget：璇玑时刻
 - 任务阶段：phase-2
 
+## 学习视图
+- enabled：true
+- default：dialogue
+- allowStudentSwitch：true
+- allowFutureTaskBrowse：true
+
 ## 学生端视觉素材
 - 课程封面：assets/backgrounds/cover.png
 - 对话背景：assets/backgrounds/chat-bg.png
@@ -44,9 +42,6 @@
 - 导航地图：assets/maps/navigation-map.png
 - 导入占位图：assets/videos/video-storm-coming.png
 - 推演占位图：assets/videos/video-simulation.png
-- 智能体待机动画：assets/companion/xuxu-idle.webm
-- 智能体对话动画：assets/companion/xuxu-talk.webm
-
 ## 叙事框架
 - 开场：暴雨将至的紧迫感——600年古建筑面临考验
 - 中段：每个角色探索排水系统的一个环节

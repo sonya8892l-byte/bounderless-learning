@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseLesson } from '../../src/engine/lesson-parser.js';
+import { compilePlatformRules } from './platform-rules.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
 
 export {
@@ -8,6 +9,7 @@ export {
   resolveRestrictionReferences,
   resolveStepRestrictions,
 } from './restriction-sections.js';
+export { compilePlatformRules } from './platform-rules.js';
 
 const CACHE = new Map();
 
@@ -181,7 +183,9 @@ function buildToolInstances(role) {
 export async function compileCourse({ lessonsRoot, courseId }) {
   const resolvedLessonsRoot = path.resolve(lessonsRoot);
   const cacheKey = `${resolvedLessonsRoot}\0${courseId}`;
-  if (CACHE.has(cacheKey)) return CACHE.get(cacheKey);
+  const platformRules = await compilePlatformRules({ lessonsRoot: resolvedLessonsRoot });
+  const cached = CACHE.get(cacheKey);
+  if (cached?.platformRules?.version === platformRules.version) return cached;
   const directory = path.resolve(resolvedLessonsRoot, courseId);
   const files = await collectMarkdown(directory);
   if (!files['course.md']) throw new Error(`课程 ${courseId} 缺少 course.md`);
@@ -202,6 +206,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
   );
 
   const roles = publicLesson.roles.map((role) => {
+    // v2 就地内容优先；旧布局（guidance/、scaffolds/ 独立目录）作为兼容期回退。
     const guidance = guidanceFiles[`guidance/${role.id}.md`] || '';
     const scaffold = scaffoldFiles[`scaffolds/${role.id}.md`] || '';
     return {
@@ -209,8 +214,9 @@ export async function compileCourse({ lessonsRoot, courseId }) {
       tools: buildToolInstances(role),
       tasks: role.tasks.map((task, taskIndex) => ({
         ...task,
-        guidance: taskSection(guidance, taskIndex, '##') || task.guide,
-        scaffold: taskSection(scaffold, taskIndex, '##'),
+        guidance: task.inlineGuidance || taskSection(guidance, taskIndex, '##') || task.guide,
+        scaffold: task.inlineScaffold || taskSection(scaffold, taskIndex, '##'),
+        acceptance: task.inlineAcceptance || '',
       })),
       sourceMarkdown: roleFiles[`roles/${role.id}.md`] || '',
     };
@@ -228,6 +234,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
   const restrictionMarkdown = files['restrictions.md'] || '';
   const course = {
     id: courseId,
+    platformRules,
     publicLesson,
     roles,
     knowledge: parseKnowledge(files),

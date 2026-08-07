@@ -15,6 +15,7 @@
 ### 1.1 平台统一提供
 
 - 学生端小程序式页面壳、角色领取页、我的任务、小组页和时间银行入口；
+- 默认关闭的“对话 / 闯关”双视图 Gate，以及两种视图共用的任务工作区；
 - AI 学习同伴“絮絮”的名称、基础形象、待机动画和对话动画；
 - 对话状态、流式输出、意图判断、待回答问题、主动提醒和异常恢复；
 - A01–A07 活动工具注册表、工具调度和通用交互组件；
@@ -47,15 +48,16 @@
 | 内容 | 当前状态 | 配置时的处理方式 |
 |---|---|---|
 | `course.md`、`phases.md`、`roles/*.md` | 已解析并用于学生端和服务端 | 可按本文语法维护 |
+| 学习视图 Gate | 本课已开启，默认进入对话模式并允许学生切换闯关模式 | 在 `course.md / ## 学习视图` 维护；不改变服务端任务进度 |
 | A01–A07 工具注册表 | 已接入解析器、十种前端 renderer 和服务端基础 validator | 使用 `功能模块` 与 JSON `工具参数` |
-| 结构化 Step | 已解析 | 新增或重做任务时优先使用 |
-| 本课现有 18 个任务 | 仍以旧版 `引导步骤` 为主 | 可运行；后续逐角色迁移为结构化 Step |
+| 结构化 Step | 已解析并进入状态机 | 本课 18 个任务均已迁移，共 54 个显式 Step |
+| 本课现有 18 个任务 | 已完成结构化迁移 | 每个任务包含 3 个 Step，并显式配置 ID、位置、完成方式、证据、工具、引用和失败处理 |
 | `knowledge/*.md` | 已进入服务端检索 | 必须填写来源、角色和揭示时机 |
 | `guidance/*.md` | 已按角色和任务序号装配 | 当前主要提取任务段中的简短引导语 |
 | `scaffolds/*.md` | 已按角色和任务序号装配 | 当前自动使用 L1–L3；L0、L4保留为课程设计内容 |
 | `restrictions.md` | 已用于输出防剧透和公开包脱敏 | 解除条件只使用本文列出的格式 |
 | `prompts/*.md` | 已按 Phase 装配 | 当前每轮只取阶段文件前部的有限内容 |
-| `evaluation.md` | 平台已支持作为 `ai_evaluation` 验收上下文 | 本课现有兼容任务尚未逐步改成结构化 AI 验收 |
+| `evaluation.md` | 已作为 `ai_evaluation` 验收上下文 | 开放观察、计算说明、图像和报告小步已逐步绑定评估引用 |
 | `objectives.md` | 课程资料已保留 | 尚未进入运行时解析；`目标关联`目前是记录字段 |
 | Step 中的知识/引导/限制/评估/脚手架引用 | 部分接入 | 知识引用用于定向检索，角色 guidance/scaffold 按任务装配；精确标题定位仍待完善 |
 | photo/audio/text/sketch/quiz/builder/simulation/team/media/scanner | 已有前端操作与基础结果校验 | 上线前仍需逐任务验证参数和失败恢复 |
@@ -69,7 +71,7 @@
 ```text
 lesson_gewu_001/
 ├── README.md                   # 本手册
-├── course.md                   # 课程身份、角色体系、视觉素材、絮絮本课身份
+├── course.md                   # 课程身份、角色体系与课程视觉素材
 ├── phases.md                   # Phase 1–6 的名称、时长、地点、触发和流程
 ├── objectives.md               # K/S/C 课程目标体系；当前供教研和人工评估使用
 ├── evaluation.md               # 课程评估标准；供结构化 ai_evaluation 使用
@@ -199,11 +201,6 @@ time-bank.md                  unlock_after: phase2-start
 - 适用年级：小学高年级 / 初中 / 高中
 - 分组：6人一组，每人一个角色
 
-## 智能体人设
-- 本课身份：故宫排水探究学习同伴
-- 性格：亲切、好奇、尊重证据
-- 语气：少年感、清晰、一次只引导一个行动
-
 ## 学生端角色体系
 - collectionName：治水官
 - itemName：身份
@@ -214,11 +211,35 @@ time-bank.md                  unlock_after: phase2-start
 - collectionPanelName：小组密符
 - unlockTarget：璇玑时刻
 - 任务阶段：phase-2
+
+## 学习视图
+- enabled：true
+- default：dialogue
+- allowStudentSwitch：true
+- allowFutureTaskBrowse：true
 ```
 
 `collectionName` 等英文键区分大小写。角色选择文案支持 `{roleCount}`、`{collectionName}`、`{itemName}`、`{collectionItemName}`、`{unlockTarget}`。
 
-### 5.2 视觉素材
+### 5.2 学习视图 Gate
+
+平台默认值为：
+
+```yaml
+learningView:
+  enabled: true
+  default: dialogue
+  allowStudentSwitch: true
+  allowFutureTaskBrowse: false
+```
+
+平台默认开启双视图。本课在 `course.md` 中显式保留配置，并额外开启验收用的未来关卡浏览。`default` 只接受 `dialogue` 或 `challenge`；非法值会导致课程编译失败。`enabled: false` 的课程始终回到纯对话模式；只有 `enabled` 与 `allowStudentSwitch` 同时为 `true` 时，平台才在“我的任务”右下角显示絮絮悬浮切换按钮。对话页按钮文案为“切换为闯关模式”，闯关页按钮文案为“切换为智能 AI 模式”。
+
+`allowFutureTaskBrowse` 是课程验收期的临时浏览开关。本课当前设为 `true`，因此“下一关”和未来任务页可以直接查看，但未来任务仍不能提交或推进正式进度。上线前必须将它改为 `false`，恢复按进度逐关解锁。
+
+切换只改变当前页面的任务呈现方式。对话历史、任务证据、工具草稿、当前任务和 Step 均沿用同一份状态；已完成任务在闯关页只读。刷新后的本地照片与录音草稿恢复不属于当前版本能力。
+
+### 5.3 视觉素材
 
 ```md
 ## 学生端视觉素材
@@ -233,11 +254,11 @@ time-bank.md                  unlock_after: phase2-start
 
 路径相对于课程目录。统一写成 `assets/...`，区分大小写。
 
-`名字`、`智能体待机动画`、`智能体对话动画` 等历史字段不会覆盖平台统一 IP。当前目录中的 `assets/companion/*.webm` 不参与平台絮絮渲染。
+课程不配置絮絮的人设与媒体路径。运行时直接读取平台 `PLATFORM_COMPANION`，公开课程对象不会生成 `persona`，其 `assets` 也不会生成 `companionIdle` 或 `companionTalk`。当前目录中的 `assets/companion/*.webm` 仅为历史副本，不参与平台絮絮渲染。
 
-### 5.3 当前未读取字段
+### 5.4 当前未读取字段
 
-`编号`、`坐标中心`、`最大并行组数`、口头禅、特殊行为、叙事框架和密符机制可以作为课程说明保留，当前解析器不会用它们直接控制运行状态。
+`编号`、`坐标中心`、`最大并行组数`、叙事框架和密符机制可以作为课程说明保留，当前解析器不会用它们直接控制运行状态。
 
 ## 6. `phases.md` 与阶段提示词
 
@@ -337,15 +358,17 @@ time-bank.md                  unlock_after: phase2-start
 
 完成方式支持 `user_confirm`、`tool_result`、`ai_evaluation`、`teacher_confirm`、`location_event`、`compound`。当前主任务默认使用 `tool_result`。
 
-### 7.3 旧版 `引导步骤`
+### 7.3 历史兼容格式（本课已停用）
 
-本课当前角色文件使用：
+平台解析器仍能兼容下面的历史写法：
 
 ```md
 - 引导步骤：先观察一处螭首；换角度记录连接方式；补齐全景和细节照片
 ```
 
-解析器会按分号、换行或句号切成最多 5 个兼容小步，并自动生成 `{task-id}-step-N`。兼容小步统一按 `user_confirm` 处理，无法为每一步精确绑定不同工具和证据。因此，后续修改任务时建议迁移为结构化 Step。
+解析器会按分号、换行或句号切成最多 5 个兼容小步，并自动生成 `{task-id}-step-N`。兼容小步统一按 `user_confirm` 处理，无法为每一步精确绑定不同工具和证据。
+
+`lesson_gewu_001` 的 6 个角色文件已经移除全部 `引导步骤` 字段。当前 18 个任务共包含 54 个显式结构化 Step，后续维护不得重新加入兼容写法。
 
 ## 8. 结构化 Step
 
@@ -438,7 +461,7 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 
 不要自创未经脱敏器登记的私有键，也不要写入 API Key、教师评语、学生隐私或模型 System Prompt。每次新增验证字段后，都要先更新公开字段裁剪测试。
 
-当前服务端可校验客观 quiz、数值容差、builder 映射、scanner 预期结果和十种工具的基础完成条件。平台已为结构化 `ai_evaluation` 接入文字/图片/画板的真实模型验收，并在未通过时停留原 Step；本课旧版任务需要先迁移成结构化 Step 才能逐项启用。
+当前服务端可校验客观 quiz、数值容差、builder 映射、scanner 预期结果和十种工具的基础完成条件。平台已为结构化 `ai_evaluation` 接入文字、图片和画板的真实模型验收，并在未通过时停留原 Step；本课 54 个 Step 已按产出性质选择确定性工具校验或 AI 验收。
 
 ### 9.5 照片数量
 
@@ -470,25 +493,25 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 | 角色 | task | 任务名 | 当前解析工具 | 任务图 |
 |---|---|---|---|---|
 | 数龙官 | `task-1` | 观其形 | photo | `assets/tasks/chishou-front.jpg` |
-| 数龙官 | `task-2` | 算其数 | photo + quiz | 角色卡回退 |
-| 数龙官 | `task-3` | 验其差 | text + audio | 角色卡回退 |
-| 测坡官 | `task-1` | 察其势 | photo | `assets/maps/drainage-profile.png` |
-| 测坡官 | `task-2` | 量其度 | photo + quiz | 角色卡回退 |
+| 数龙官 | `task-2` | 算其数 | text | 角色卡回退 |
+| 数龙官 | `task-3` | 验其差 | text | 角色卡回退 |
+| 测坡官 | `task-1` | 察其势 | photo + sketch + text | `assets/maps/drainage-profile.png` |
+| 测坡官 | `task-2` | 量其度 | text | 角色卡回退 |
 | 测坡官 | `task-3` | 析其理 | text + sketch | 角色卡回退 |
-| 寻沟官 | `task-1` | 寻其踪 | photo | 角色卡回退 |
-| 寻沟官 | `task-2` | 探其网 | sketch + quiz | 角色卡回退 |
-| 寻沟官 | `task-3` | 绘其图 | sketch + builder | 角色卡回退 |
-| 引河官 | `task-1` | 追其源 | photo | `assets/maps/inner-river-path.png` |
-| 引河官 | `task-2` | 测其流 | photo + audio + quiz | 角色卡回退 |
+| 寻沟官 | `task-1` | 寻其踪 | photo + text | 角色卡回退 |
+| 寻沟官 | `task-2` | 探其网 | sketch + text | 角色卡回退 |
+| 寻沟官 | `task-3` | 绘其图 | builder + sketch + text | 角色卡回退 |
+| 引河官 | `task-1` | 追其源 | photo + text | `assets/maps/inner-river-path.png` |
+| 引河官 | `task-2` | 测其流 | text | 角色卡回退 |
 | 引河官 | `task-3` | 演其变 | text + simulation | `assets/videos/video-simulation.png` |
-| 护城官 | `task-1` | 观其堤 | photo | 角色卡回退 |
-| 护城官 | `task-2` | 验其深 | photo + audio + quiz | 角色卡回退 |
-| 护城官 | `task-3` | 解其用 | text + quiz | 角色卡回退 |
-| 真相官 | `task-1` | 汇其证 | photo + audio + text + scanner | 角色卡回退 |
-| 真相官 | `task-2` | 辨其伪 | text + quiz | 角色卡回退 |
-| 真相官 | `task-3` | 断其案 | text + audio + builder | 角色卡回退 |
+| 护城官 | `task-1` | 观其堤 | photo + text | 角色卡回退 |
+| 护城官 | `task-2` | 验其深 | text | 角色卡回退 |
+| 护城官 | `task-3` | 解其用 | text | 角色卡回退 |
+| 真相官 | `task-1` | 汇其证 | scanner + team + text + builder | 角色卡回退 |
+| 真相官 | `task-2` | 辨其伪 | builder + text | 角色卡回退 |
+| 真相官 | `task-3` | 断其案 | builder + text | 角色卡回退 |
 
-表中“当前解析工具”来自现有 `功能模块`。任务尚未填写显式工具 JSON 时会使用平台默认参数，上线前应逐任务补足最小张数、字段、题型、底图和完成要求。扫码只在任务明确要求二维码/对象识别时配置，例如真相官收集其他角色证据。
+表中“当前解析工具”汇总各任务 3 个 Step 的 `功能模块`。54 个 Step 均已填写单行 JSON `工具参数`；扫码只在真相官收集其他角色证据时启用。
 
 ## 11. `knowledge/*.md`
 
@@ -626,7 +649,7 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 | K3 螭首功能 | 任务证据与解释 | 照片 + 表单 | 能用证据说明结构和作用 |
 ```
 
-当前状态：服务端会在结构化 `ai_evaluation` 中携带 `evaluation.md` 原文与 Step 的评估引用，返回 `passed/retry`。本课当前任务仍以兼容引导步骤为主，尚未逐角色配置对应 AI 验收小步。
+当前状态：服务端会在结构化 `ai_evaluation` 中携带 `evaluation.md` 原文与 Step 的评估引用，返回 `passed/retry`。本课 54 个 Step 已全部配置完成方式，其中开放观察、解释、图像和报告产出会使用对应 AI 验收小步。
 
 客观题答案、数值容差、builder 映射和 scanner 预期结果由课程团队写入已登记的私有 `工具参数`，平台内置 validator 会执行基础校验。开放成果可以通过 `ai_evaluation` 获得 B5 通过/重试和图像语义反馈；教师终审、分维度分数和复杂组合条件仍需专项验收。
 

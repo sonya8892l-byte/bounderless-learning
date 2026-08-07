@@ -26,6 +26,17 @@
 - 配置：区分事件与风险变量，提交路线、变量和安全计划
 - 通过条件：机制假设、变量表、记录规则和安全路线经教师确认
 
+##### 引导
+- 先区分事件指标、风险变量和控制记录，再开放机制卡。
+- 每轮只完善一项变量或安全条件；路线必须人工批准。
+
+##### 脚手架
+| L0 | 先写你认为的两条机制。 |
+| L1 | 区分事件与风险变量。 |
+| L2 | 补路线、时段、天气和零发现。 |
+| L3 | 写可能削弱假设的证据。 |
+| L4 | 教师提供安全替代路线。 |
+
 #### Step 1：建立机制与变量表
 - id：science-frame-variables
 - 小步目标：把“玻璃危险”拆成可观察变量与有限假设
@@ -36,15 +47,16 @@
 - 功能模块：A03(变量表)
 - 工具参数：{"builder":{"mode":"research_variables","prompt":"区分事件指标、风险变量、控制记录和可能反证。","minimumItems":9,"categories":["事件指标","风险变量","控制记录","可能反证"]}}
 - 知识引用：K-01, K-02, K-06
-- 引导引用：guidance/science-researcher.md#任务1
 - 限制引用：restrictions.md#风险点位
-- 评估引用：evaluation.md#S1
-- 脚手架引用：scaffolds/science-researcher.md#任务1
 - 常见误区：把反射照片当作已发生鸟撞
 - 最大尝试：3
 - 失败处理：逐项追问“看到它说明风险，还是说明事件”
 - 教师介入：变量涉及不可安全获取的数据
 - 通过后：step:science-approve-route
+
+##### 验收标准
+至少2条假设、4个风险变量、2个控制记录和1个可能反证
+- S1 开题：范围、问题、方法、安全、伦理、AI计划由教师确认。
 
 #### Step 2：送审路线与记录规则
 - id：science-approve-route
@@ -56,15 +68,13 @@
 - 功能模块：A01(路线表), A08(教师确认)
 - 工具参数：{"text":{"fields":[{"id":"route","label":"路线、点位、时段与替代点","type":"long_text","required":true,"minLength":100},{"id":"safety","label":"陪同、安全和事件报告流程","type":"long_text","required":true,"minLength":60}]},"teacher_confirm":{"prompt":"踏勘路线并确认时段、陪同、隐私、替代点和鸟类事件报告流程。","required":true}}
 - 知识引用：K-03, K-05
-- 引导引用：guidance/science-researcher.md#任务1
 - 限制引用：restrictions.md#安全、隐私与伦理
-- 评估引用：evaluation.md#E1
-- 脚手架引用：scaffolds/science-researcher.md#任务1
 - 常见误区：只画路线，没有退出条件
 - 最大尝试：1
 - 失败处理：修改高风险点或改用教师提供的替代范围
 - 教师介入：必须
 - 通过后：role-stage:science-run-survey
+
 
 ### 任务2：执行建筑风险调查
 - id：science-run-survey
@@ -78,6 +88,17 @@
 - 配置：按相同规则重复观察，形成去标识数据和风险图
 - 通过条件：至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检
 
+##### 引导
+- 检查元数据、零发现和照片隐私，不补造缺失记录。
+- 风险图同时呈现事件、代理变量和不确定性。
+
+##### 脚手架
+| L0 | 每轮先填元数据。 |
+| L1 | 照片标反射、通透、绿植或照明。 |
+| L2 | 没发现也要记录。 |
+| L3 | 风险图分事件、变量与未知。 |
+| L4 | 教师处理事件和隐私。 |
+
 #### Step 1：完成重复记录
 - id：science-collect-observations
 - 小步目标：获得可比较的现场数据
@@ -88,15 +109,13 @@
 - 功能模块：A01(拍照), A01(调查数据)
 - 工具参数：{"photo":{"prompt":"拍玻璃与环境关系，避开人脸、门牌、工位和无关室内信息。","minCount":3,"maxCount":18},"text":{"fields":[{"id":"survey-log","label":"重复调查记录","type":"long_text","required":true,"minLength":180}]}}
 - 知识引用：K-03, K-04, K-05
-- 引导引用：guidance/science-researcher.md#任务2
 - 限制引用：restrictions.md#安全、隐私与伦理
-- 评估引用：evaluation.md#E1
-- 脚手架引用：scaffolds/science-researcher.md#任务2
 - 常见误区：只记录发现，不记零发现
 - 最大尝试：3
 - 失败处理：补录可确认的元数据；不可补录的明确标记缺失
 - 教师介入：发现鸟类事件、路线风险或隐私照片
 - 通过后：step:science-map-risk
+
 
 #### Step 2：形成风险图
 - id：science-map-risk
@@ -108,15 +127,13 @@
 - 功能模块：A01(风险图画板)
 - 工具参数：{"sketch":{"prompt":"在批准路线示意图上标注风险变量、事件/零发现、等级理由和编号。","width":960,"height":640,"backgroundImage":"assets/placeholders/navigation-map.svg","brushColors":["#b91c1c","#d97706","#15803d","#475569"]}}
 - 知识引用：K-02, K-04, K-06
-- 引导引用：guidance/science-researcher.md#任务2
 - 限制引用：restrictions.md#风险点位
-- 评估引用：evaluation.md#E2
-- 脚手架引用：scaffolds/science-researcher.md#任务2
 - 常见误区：没有事件的点位一律标低风险
 - 最大尝试：3
 - 失败处理：提示区分事件记录和代理变量
 - 教师介入：点位可能暴露敏感位置
 - 通过后：role-stage:science-deliver-evidence
+
 
 ### 任务3：交付科学证据线
 - id：science-deliver-evidence
@@ -129,6 +146,17 @@
 - 配置：将文献与现场数据转成条款可引用的证据摘要
 - 通过条件：机制、现场模式、局限和措施证据完整，接受一次反证质询
 
+##### 引导
+- 要求结论强度匹配证据，保留反例和局限。
+- 同行质询只推动维持、修改或待核中的一个决定。
+
+##### 脚手架
+| L0 | 写能判断和不能判断。 |
+| L1 | 补六个来源或数据编号。 |
+| L2 | 恢复反例与局限。 |
+| L3 | 接受一条替代解释质询。 |
+| L4 | 科学核验人确认高风险结论。 |
+
 #### Step 1：撰写科学证据摘要
 - id：science-compose-brief
 - 小步目标：说明能判断什么、不能判断什么
@@ -139,15 +167,13 @@
 - 功能模块：A01(研究摘要)
 - 工具参数：{"text":{"fields":[{"id":"science-brief","label":"科学证据摘要","type":"long_text","required":true,"minLength":300},{"id":"limits","label":"局限与不可判断事项","type":"long_text","required":true,"minLength":80}]}}
 - 知识引用：K-01, K-02, K-06
-- 引导引用：guidance/science-researcher.md#任务3
 - 限制引用：restrictions.md#AI代替研究
-- 评估引用：evaluation.md#E2
-- 脚手架引用：scaffolds/science-researcher.md#任务3
 - 常见误区：为支持规则删去零发现和局限
 - 最大尝试：3
 - 失败处理：要求恢复与结论不一致的证据
 - 教师介入：科学结论超出材料强度
 - 通过后：step:science-defend-evidence
+
 
 #### Step 2：接受反证质询
 - id：science-defend-evidence
@@ -159,10 +185,7 @@
 - 功能模块：A05(同行评议)
 - 工具参数：{"team":{"mode":"peer_review","prompt":"质疑一个变量、推断或推广范围；记录证据化回应。","minimumEntries":2,"recordTypes":["质疑","回应与处置"]}}
 - 知识引用：K-06, K-22
-- 引导引用：guidance/science-researcher.md#任务3
 - 限制引用：restrictions.md#规则模板
-- 评估引用：evaluation.md#E6
-- 脚手架引用：scaffolds/science-researcher.md#任务3
 - 常见误区：用权威身份代替证据回应
 - 最大尝试：2
 - 失败处理：允许降低结论强度或列为待核
