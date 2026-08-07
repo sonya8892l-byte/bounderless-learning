@@ -13,6 +13,7 @@ import {
   resolveStepRestrictions,
   restrictionReferenceTitles,
 } from '../server/course/restriction-sections.js';
+import { PHASE_TASK_EXECUTORS } from '../src/engine/lesson-parser.js';
 
 const COMPETENCY_PREFIX = /^(CC|CQ|DK|DS|DC)(-|$)/;
 const ASSET_PATH_RE = /lessons\/[A-Za-z0-9_./-]+\.(?:png|jpe?g|webp|svg|mp3|mp4)/gi;
@@ -47,6 +48,35 @@ function splitKnowledgeRefs(value = '') {
     .filter(Boolean);
 }
 
+function splitPrerequisites(value = '') {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  return String(value || '')
+    .split(/[,，、\s]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function requiresTeacherIntervention(step = {}) {
+  return String(step.teacherIntervention || '').trim() === '必须';
+}
+
+function isEmptyFailureHandling(value = '') {
+  const text = String(value || '').trim();
+  return !text || text === '无';
+}
+
+function buildTaskScopeIndexes(course = {}) {
+  const roleTasks = new Map();
+  const phaseTasks = new Map();
+  for (const role of course.roles || []) {
+    roleTasks.set(role.id, new Set((role.tasks || []).map((task) => task.id)));
+  }
+  for (const phase of course.lesson?.phases || []) {
+    phaseTasks.set(phase.id, new Set((phase.tasks || []).map((task) => task.id)));
+  }
+  return { roleTasks, phaseTasks };
+}
+
 function findStepLine(sourceMarkdown = '', stepId = '') {
   if (!stepId) return 1;
   const lines = String(sourceMarkdown).split(/\n/);
@@ -79,6 +109,55 @@ function escapeRegExp(value = '') {
 
 function roleFilePath(courseId, roleId) {
   return `6-lessons/${courseId}/roles/${roleId}.md`;
+}
+
+function phasesFilePath(courseId) {
+  return `6-lessons/${courseId}/phases.md`;
+}
+
+/**
+ * 阶段任务在 phases.md 里的行号。
+ *
+ * 阶段任务没有 sourceMarkdown（它不像角色那样一文件一角色），所以定位方式与
+ * findStepLine 不同：先锚到 `### 阶段任务N：<名字>` 那一行，再在本块内往下找字段行。
+ * 找不到字段就退回标题行——报在标题上仍然可用，报在第 1 行就没用了。
+ */
+function findPhaseTaskLine(markdown = '', task = {}, field = '') {
+  const lines = String(markdown).split(/\n/);
+  const idPattern = task.id ? new RegExp(`^\\s*-\\s*id\\s*[：:]\\s*${escapeRegExp(task.id)}\\s*$`, 'i') : null;
+  const namePattern = task.name
+    ? new RegExp(`^###\\s*阶段任务\\d+\\s*[：:]\\s*.*${escapeRegExp(task.name)}`)
+    : null;
+
+  let heading = -1;
+  for (let index = 0; index < lines.length; index += 1) {
+    if (namePattern?.test(lines[index])) { heading = index; break; }
+    // 没写名字或名字被改过时，用 `- id：` 反查，再往上回退到它所属的标题。
+    if (heading === -1 && idPattern?.test(lines[index])) {
+      for (let back = index; back >= 0; back -= 1) {
+        if (/^###\s*阶段任务\d+\s*[：:]/.test(lines[back])) { heading = back; break; }
+      }
+      if (heading !== -1) break;
+    }
+  }
+  if (heading === -1) return 1;
+  if (!field) return heading + 1;
+
+  const fieldPattern = new RegExp(`^\\s*-\\s*${escapeRegExp(field)}\\s*[：:]`);
+  for (let index = heading + 1; index < lines.length; index += 1) {
+    if (/^#{1,4}\s/.test(lines[index])) break;
+    if (fieldPattern.test(lines[index])) return index + 1;
+  }
+  return heading + 1;
+}
+
+function findPhaseTaskHeadingLines(markdown = '') {
+  const lines = String(markdown).split(/\n/);
+  const found = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    if (/^###\s*阶段任务\d+\s*[：:]/.test(lines[index])) found.push({ line: index + 1, text: lines[index].trim() });
+  }
+  return found;
 }
 
 function collectAssetPaths(value, bucket = new Set()) {
@@ -124,9 +203,19 @@ export function lintCourse(course, options = {}) {
     missingAcceptance: 0,
     nextEdges: 0,
     badNextEdges: 0,
+    phaseTasks: 0,
+    badExecutors: 0,
+    misplacedPhaseTasks: 0,
+    teacherInterventionMismatches: 0,
+    emptyFailureHandling: 0,
+    crossScopePrerequisites: 0,
+    unsupportedTraversalModes: 0,
   };
 
   const knowledgeIds = new Set((course?.knowledge || []).map((item) => item.id));
+  const scopeIndexes = buildTaskScopeIndexes(course);
+
+  const phasesMarkdown = course?.files?.['phases.md'] || '';
 
   const pushIssue = ({
     level,
@@ -134,12 +223,18 @@ export function lintCourse(course, options = {}) {
     message,
     roleId = '',
     stepId = '',
+    phaseTask = null,
+    field = '',
     line,
     file,
   }) => {
     const role = (course?.roles || []).find((item) => item.id === roleId);
-    const resolvedFile = file || (roleId ? roleFilePath(courseId, roleId) : `6-lessons/${courseId}/course.md`);
+    // 阶段任务不属于任何角色，落点是 phases.md；角色任务落 roles/<id>.md。
+    const resolvedFile = file
+      || (phaseTask ? phasesFilePath(courseId) : '')
+      || (roleId ? roleFilePath(courseId, roleId) : `6-lessons/${courseId}/course.md`);
     const resolvedLine = line
+      || (phaseTask ? findPhaseTaskLine(phasesMarkdown, phaseTask, field) : 0)
       || (stepId && role ? findStepLine(role.sourceMarkdown, stepId) : 1);
     issues.push({
       level,
@@ -150,26 +245,65 @@ export function lintCourse(course, options = {}) {
       courseId,
       roleId,
       stepId,
+      phaseId: phaseTask?.phaseId || '',
     });
   };
 
-  for (const role of course?.roles || []) {
-    for (const task of role.tasks || []) {
-      for (const tag of task.competencyTags || []) {
-        stats.competencyTags += 1;
-        if (!COMPETENCY_PREFIX.test(tag)) {
-          stats.badCompetencyTags += 1;
-          pushIssue({
-            level: 'error',
-            code: 'bad_competency_tag',
-            message: `能力标签前缀非法：${tag}（允许 CC/CQ/DK/DS/DC）`,
-            roleId: role.id,
-            stepId: task.steps?.[0]?.id || '',
-          });
-        }
+  /**
+   * 一个任务的全部检查。角色任务与阶段任务共用——两者的字段表本来就是同一套
+   * （`parseTaskBlock`），检查写两遍必然会漂：给角色任务加了新规则而阶段任务漏掉。
+   *
+   * `where` 决定 issue 报到哪个文件哪一行：角色任务靠 roleId + stepId，
+   * 阶段任务靠 phases.md 里的 `### 阶段任务N` 标题加字段名。
+   */
+  const checkTask = (task, where) => {
+    const prereqs = splitPrerequisites(task.prerequisites);
+    if (where.roleId && prereqs.length) {
+      const allowed = scopeIndexes.roleTasks.get(where.roleId) || new Set();
+      for (const prereq of prereqs) {
+        if (allowed.has(prereq)) continue;
+        stats.crossScopePrerequisites += 1;
+        pushIssue({
+          level: 'error',
+          code: 'cross_scope_prerequisite',
+          message: `前置「${prereq}」不在角色 ${where.roleId} 内（本轮只支持同作用域；跨角色/阶段任务等 R3 执行器）`,
+          ...where,
+          stepId: task.steps?.[0]?.id || '',
+          field: '前置',
+        });
       }
+    }
+    if (where.phaseTask && prereqs.length) {
+      const allowed = scopeIndexes.phaseTasks.get(where.phaseTask.phaseId) || new Set();
+      for (const prereq of prereqs) {
+        if (allowed.has(prereq)) continue;
+        stats.crossScopePrerequisites += 1;
+        pushIssue({
+          level: 'error',
+          code: 'cross_scope_prerequisite',
+          message: `前置「${prereq}」不在 Phase ${where.phaseTask.phaseId} 内（本轮只支持同 Phase 内阶段任务互相引用）`,
+          ...where,
+          field: '前置',
+        });
+      }
+    }
 
-      for (const step of task.steps || []) {
+    for (const tag of task.competencyTags || []) {
+      stats.competencyTags += 1;
+      if (!COMPETENCY_PREFIX.test(tag)) {
+        stats.badCompetencyTags += 1;
+        pushIssue({
+          level: 'error',
+          code: 'bad_competency_tag',
+          message: `能力标签前缀非法：${tag}（允许 CC/CQ/DK/DS/DC）`,
+          ...where,
+          stepId: where.stepId || task.steps?.[0]?.id || '',
+          field: '能力标签',
+        });
+      }
+    }
+
+    for (const step of task.steps || []) {
         const refs = splitKnowledgeRefs(step.knowledgeRef);
         for (const ref of refs) {
           stats.knowledgeRefs += 1;
@@ -179,7 +313,7 @@ export function lintCourse(course, options = {}) {
               level: 'error',
               code: 'dead_knowledge_ref',
               message: `知识引用不存在：${ref}`,
-              roleId: role.id,
+              ...where,
               stepId: step.id,
             });
           }
@@ -196,7 +330,7 @@ export function lintCourse(course, options = {}) {
               level: 'error',
               code: 'dead_restriction_ref',
               message: `限制引用无法解析：restrictions.md#${title}`,
-              roleId: role.id,
+              ...where,
               stepId: step.id,
             });
           }
@@ -210,20 +344,20 @@ export function lintCourse(course, options = {}) {
               level: 'error',
               code: 'bad_competency_tag',
               message: `能力标签前缀非法：${tag}（允许 CC/CQ/DK/DS/DC）`,
-              roleId: role.id,
+              ...where,
               stepId: step.id,
             });
           }
         }
 
         const acceptance = String(step.acceptance || step.inlineAcceptance || '').trim();
-        if (!acceptance) {
+        if (!acceptance && 'title' in step) {
           stats.missingAcceptance += 1;
           pushIssue({
             level: 'warning',
             code: 'missing_acceptance',
             message: `Step ${step.id} 缺就地验收标准（##### 验收标准）`,
-            roleId: role.id,
+            ...where,
             stepId: step.id,
           });
         }
@@ -238,12 +372,116 @@ export function lintCourse(course, options = {}) {
               level: 'error',
               code: 'bad_next_ref',
               message: `通过后目标无法解析：${nextText}`,
-              roleId: role.id,
+              ...where,
               stepId: step.id,
             });
           }
         }
+
+        const needsTeacher = requiresTeacherIntervention(step);
+        const isTeacherConfirm = step.completionMode === 'teacher_confirm';
+        if (needsTeacher && !isTeacherConfirm) {
+          stats.teacherInterventionMismatches += 1;
+          pushIssue({
+            level: 'error',
+            code: 'teacher_intervention_mismatch',
+            message: `Step ${step.id} 标了「教师介入：必须」但完成方式不是 teacher_confirm（当前：${step.completionMode || '未设置'}）`,
+            ...where,
+            stepId: step.id,
+            field: '教师介入',
+          });
+        }
+        if (isTeacherConfirm && !needsTeacher) {
+          stats.teacherInterventionMismatches += 1;
+          pushIssue({
+            level: 'error',
+            code: 'teacher_intervention_mismatch',
+            message: `Step ${step.id} 完成方式为 teacher_confirm 但未标「教师介入：必须」`,
+            ...where,
+            stepId: step.id,
+            field: '完成方式',
+          });
+        }
+
+        const maxAttempts = Number(step.maxAttempts || 0);
+        if (maxAttempts >= 1 && isEmptyFailureHandling(step.failureHandling)) {
+          stats.emptyFailureHandling += 1;
+          pushIssue({
+            level: 'warning',
+            code: 'empty_failure_handling',
+            message: `Step ${step.id} 最大尝试 ${maxAttempts} 次但失败处理为空或「无」——重试用完后学生没有指引`,
+            ...where,
+            stepId: step.id,
+            field: '失败处理',
+          });
+        }
+    }
+  };
+
+  for (const role of course?.roles || []) {
+    for (const task of role.tasks || []) checkTask(task, { roleId: role.id });
+  }
+
+  // 阶段任务（非角色任务）：走同一批检查，外加两条只对它成立的。
+  for (const phase of course?.lesson?.phases || []) {
+    for (const task of phase.tasks || []) {
+      const where = { phaseTask: { id: task.id, name: task.name, phaseId: phase.id } };
+      checkTask(task, where);
+
+      stats.phaseTasks += 1;
+      if (!PHASE_TASK_EXECUTORS.includes(task.executor)) {
+        stats.badExecutors += 1;
+        pushIssue({
+          level: 'error',
+          code: 'bad_executor',
+          // 解析层遇到非法值会落回「全班」并告警，所以这里不是"跑不起来"，
+          // 而是"跑起来了但不是作者想的那样"——静默走默认最难查，必须报成 error。
+          message: `执行单位非法：${task.executor || '(空)'}（允许 ${PHASE_TASK_EXECUTORS.join(' / ')}）`,
+          ...where,
+          field: '执行单位',
+        });
       }
+
+      const acceptance = String(task.inlineAcceptance || task.acceptance || '').trim();
+      if (!acceptance) {
+        stats.missingAcceptance += 1;
+        pushIssue({
+          level: 'warning',
+          code: 'missing_acceptance',
+          message: `阶段任务 ${task.id} 缺就地验收标准（##### 验收标准）`,
+          ...where,
+        });
+      }
+
+      for (const assetPath of collectAssetPaths({ tools: task.tools, image: task.image })) {
+        stats.assetRefs += 1;
+        const fsPath = resolveAssetFsPath(lessonsRoot, assetPath);
+        if (!fsPath || !fs.existsSync(fsPath)) {
+          stats.missingAssets += 1;
+          pushIssue({
+            level: 'error',
+            code: 'missing_asset',
+            message: `素材文件不存在：${assetPath}`,
+            ...where,
+            line: findAssetLine(phasesMarkdown, assetPath) || undefined,
+          });
+        }
+      }
+    }
+  }
+
+  // 位置写错：阶段任务写进了 roles/*.md。那里的 `### 阶段任务N` 谁都不读——
+  // parseRole 的正则不认它，parsePhases 也不看角色文件，于是整块内容静默消失。
+  for (const role of course?.roles || []) {
+    for (const { line, text } of findPhaseTaskHeadingLines(role.sourceMarkdown)) {
+      stats.misplacedPhaseTasks += 1;
+      pushIssue({
+        level: 'error',
+        code: 'phase_task_in_role_file',
+        message: `阶段任务写在角色文件里不会被解析：${text}（应移到 phases.md 的对应 Phase 下）`,
+        roleId: role.id,
+        line,
+      });
     }
   }
 
@@ -272,6 +510,19 @@ export function lintCourse(course, options = {}) {
         line: owner ? findAssetLine(owner.sourceMarkdown, assetPath) : 1,
       });
     }
+  }
+
+  const traversalMode = String(course?.lesson?.traversalMode || 'sequential').toLowerCase();
+  if (traversalMode === 'inquiry') {
+    stats.unsupportedTraversalModes += 1;
+    pushIssue({
+      level: 'warning',
+      code: 'unsupported_traversal_mode',
+      message: '遍历模式 inquiry 本期未实现，运行时将按 sequential 处理',
+      file: `6-lessons/${courseId}/course.md`,
+      line: 1,
+      field: '遍历模式',
+    });
   }
 
   return { issues, stats };
