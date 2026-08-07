@@ -39,6 +39,12 @@
 
 角色文案支持 `{roleCount}`、`{collectionName}`、`{itemName}`、`{collectionItemName}`、`{unlockTarget}` 占位符。
 
+### 数值缺省（可选）
+
+整门课统一调整时长与提醒节奏时写 `## 数值缺省`，可用键与 `_platform/defaults.md` 相同：`建议时长`、`无操作提醒`、`提醒冷却`、`最大主动提醒`、`最大尝试`、`推进方式`。
+
+优先级从高到低：角色阶段/Step 里的同名字段 → 本节 → `_platform/defaults.md` → 代码内缺省。整节省略时行为与平台缺省一致。
+
 ### 学生端视觉素材
 
 所有路径相对于课程目录的 `assets/`：

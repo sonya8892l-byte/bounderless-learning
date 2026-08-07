@@ -8,7 +8,7 @@
 
 | 文件 | 内容 | 覆盖属性 | 状态 |
 |---|---|---|---|
-| `rules/`→`safety-rules.md` | 安全边界 + 话题回避 | **immutable** | 已接入（现位于本目录根） |
+| `safety-rules.md` | 安全边界 + 话题回避 | **immutable** | 已接入 |
 | `pedagogy-rules.md` | 苏格拉底底线 + 角色边界 + 来源标注 | **immutable** | 已接入 |
 | `privacy-rules.md` | 数据隐私规则 | **immutable** | 已接入 |
 | `competency-framework.md` | CC 核心能力 / CQ 综合素质标签树 | immutable（课程只引用节点） | draft，无运行行为 |
@@ -17,7 +17,7 @@
 | `language-levels.md` | 学段表达规范（字数/句式/提问方式） | overridable | **待建**（现硬编码于 `prompt.js`） |
 | `scaffolding.md` | L0–L4 语义定义 + 升降策略 | overridable | **待建**（现散落于 `service.js`） |
 | `tool-defaults.md` | 十种活动工具的缺省参数与提示文案 | overridable | **待建**（现位于 `tool-registry.js`） |
-| `defaults.md` | 时长/提醒/冷却/推进方式等数值缺省 | overridable | **待建**（现硬编码于 `lesson-parser.js`） |
+| `defaults.md` | 时长/提醒/冷却/推进方式等数值缺省 | overridable | **已接入** |
 
 前三份规则文件为必需。缺失或内容为空时服务端课程编译失败，避免线上静默跳过平台底线。标"待建"的文件属于 M2 阶段，尚未建立时运行时继续使用 JS 中的现有缺省值，行为不变。
 
@@ -47,9 +47,12 @@
 > overridable: true
 > merge: by-key          # by-key 逐键覆盖 ｜ replace 整体替换 ｜ append 追加
 > course-field: 人设侧重  # 课程侧对应的字段或文件
+> locked: name、posterAsset  # 可选：本文件内不许课程覆盖的键
 ```
 
-`immutable` 文件同样声明，值为 `overridable: false`。
+`immutable` 文件同样声明，值为 `overridable: false`。声明块必须写在第一个 `## 小节` 之前，`overridable` 与 `merge` 取值非法时课程编译直接报错，不会静默按缺省处理。
+
+正文格式：`## 小节` 下的 `- 键：值` 是可覆盖的键值；小节里的其余正文行作为该小节的模板文本（`voice.md` 这类用它）。课程覆盖被 `locked` 或 `overridable: false` 拦下时不会静默丢弃，会产出一条 warning 挂在编译结果的 `course.platformDefaults.warnings` 上。
 
 ## 编译行为
 

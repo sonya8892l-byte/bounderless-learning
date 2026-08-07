@@ -1,4 +1,5 @@
 import { PLATFORM_LEARNING_VIEW } from './platform-config.js';
+import { mergeDefaults } from './platform-defaults.js';
 import { resolveActivityTools } from './tool-registry.js';
 
 function clean(value = '') {
@@ -48,6 +49,32 @@ function parseDurationSeconds(value, fallback = 0) {
 function parseCoordinates(value) {
   const values = String(value || '').match(/-?\d+(?:\.\d+)?/g)?.map(Number) || [];
   return values.length >= 2 && values.slice(0, 2).every(Number.isFinite) ? values.slice(0, 2) : null;
+}
+
+export const ADVANCE_MODES = Object.freeze(['ai_suggest', 'auto_after_validation', 'teacher']);
+
+// 平台缺省层未提供 _platform/defaults.md 时的回落值。双轨期内不要删除：它同时是
+// resolveTaskDefaults 的兜底基线，保证缺省层缺失时行为与建立缺省层之前完全一致。
+export const TASK_DEFAULTS = Object.freeze({
+  suggestedSeconds: 15 * 60,
+  idleNudgeSeconds: 3 * 60,
+  nudgeCooldownSeconds: 2 * 60,
+  maxNudges: 2,
+  maxAttempts: 3,
+  advanceMode: 'auto_after_validation',
+});
+
+/** 把缺省层的键值表转成带类型的任务缺省。缺键回落到 base，因此可以逐层叠加。 */
+export function resolveTaskDefaults(entries = {}, base = TASK_DEFAULTS) {
+  const advanceMode = clean(entries['推进方式'] || '').toLowerCase();
+  return Object.freeze({
+    suggestedSeconds: parseDurationSeconds(entries['建议时长'], base.suggestedSeconds),
+    idleNudgeSeconds: parseDurationSeconds(entries['无操作提醒'], base.idleNudgeSeconds),
+    nudgeCooldownSeconds: parseDurationSeconds(entries['提醒冷却'], base.nudgeCooldownSeconds),
+    maxNudges: Math.max(0, Math.round(parseNumber(entries['最大主动提醒'], base.maxNudges))),
+    maxAttempts: Math.max(1, Math.round(parseNumber(entries['最大尝试'], base.maxAttempts))),
+    advanceMode: ADVANCE_MODES.includes(advanceMode) ? advanceMode : base.advanceMode,
+  });
 }
 
 function resolveAssetPath(assetBase, value, fallback = '') {
@@ -204,7 +231,7 @@ function parseBlockFields(block) {
   return fields;
 }
 
-function parseStructuredSteps(block, roleStageId, assetBase) {
+function parseStructuredSteps(block, roleStageId, assetBase, defaults = TASK_DEFAULTS) {
   const matches = [...block.matchAll(/^####\s*(?:Step|小步)\s*(\d+)[：:]\s*(.+)$/gim)];
   return matches.map((match, index) => {
     const end = matches[index + 1]?.index ?? block.length;
@@ -244,7 +271,7 @@ function parseStructuredSteps(block, roleStageId, assetBase) {
       acceptance: inline.acceptance || '',
       competencyTags: parseCompetencyTags(fields['能力标签']),
       commonMisconception: fields['常见误区'] || '',
-      maxAttempts: Math.max(1, Math.round(parseNumber(fields['最大尝试'], 3))),
+      maxAttempts: Math.max(1, Math.round(parseNumber(fields['最大尝试'], defaults.maxAttempts))),
       failureHandling: fields['失败处理'] || '',
       teacherIntervention: fields['教师介入'] || '',
       next: fields['通过后'] || '',
@@ -252,7 +279,7 @@ function parseStructuredSteps(block, roleStageId, assetBase) {
   });
 }
 
-function parseTaskBlock(block, index, assetBase) {
+function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS) {
   const firstStepIndex = block.search(/^####\s*(?:Step|小步)\s*\d+[：:]/im);
   const roleStageBlock = firstStepIndex === -1 ? block : block.slice(0, firstStepIndex);
   const fields = parseBlockFields(fieldRegion(roleStageBlock));
@@ -272,7 +299,7 @@ function parseTaskBlock(block, index, assetBase) {
   const locationMode = normalizeLocationMode(rawLocationMode, Boolean(coordinates), Boolean(fields['地点']));
   const requirement = fields['配置'] || fields['通过条件'] || '提交你的现场发现';
   const id = clean(fields.id || fields.ID || `task-${index + 1}`);
-  const structuredSteps = parseStructuredSteps(block, id, assetBase);
+  const structuredSteps = parseStructuredSteps(block, id, assetBase, defaults);
   const guidanceSteps = structuredSteps.length
     ? structuredSteps.map((step) => step.studentAction)
     : parseGuidanceSteps(fields['引导步骤'], requirement);
@@ -318,27 +345,27 @@ function parseTaskBlock(block, index, assetBase) {
       minDwellSeconds: parseDurationSeconds(fields['最短停留']),
     },
     timing: {
-      suggestedSeconds: parseDurationSeconds(fields['建议时长'], 15 * 60),
-      idleNudgeSeconds: parseDurationSeconds(fields['无操作提醒'], 3 * 60),
-      nudgeCooldownSeconds: parseDurationSeconds(fields['提醒冷却'], 2 * 60),
+      suggestedSeconds: parseDurationSeconds(fields['建议时长'], defaults.suggestedSeconds),
+      idleNudgeSeconds: parseDurationSeconds(fields['无操作提醒'], defaults.idleNudgeSeconds),
+      nudgeCooldownSeconds: parseDurationSeconds(fields['提醒冷却'], defaults.nudgeCooldownSeconds),
     },
     nudgePolicy: {
-      maxNudges: Math.max(0, Math.round(parseNumber(fields['最大主动提醒'], 2))),
+      maxNudges: Math.max(0, Math.round(parseNumber(fields['最大主动提醒'], defaults.maxNudges))),
     },
-    advanceMode: ['ai_suggest', 'auto_after_validation', 'teacher'].includes(clean(fields['推进方式']).toLowerCase())
+    advanceMode: ADVANCE_MODES.includes(clean(fields['推进方式']).toLowerCase())
       ? clean(fields['推进方式']).toLowerCase()
-      : 'auto_after_validation',
+      : defaults.advanceMode,
   };
 }
 
-function parseRole(path, markdown, assetBase, index) {
+function parseRole(path, markdown, assetBase, index, defaults = TASK_DEFAULTS) {
   const slug = path.split('/').at(-1).replace('.md', '');
   const info = parseKeyValues(markdown, '## 基本信息');
   const taskMatches = [...markdown.matchAll(/^###\s*(?:任务|角色阶段)\d+[：:].*$/gm)];
   const tasks = taskMatches.map((match, taskIndex) => {
     const start = match.index;
     const end = taskMatches[taskIndex + 1]?.index ?? markdown.indexOf('\n## Phase 3', start);
-    return parseTaskBlock(markdown.slice(start, end === -1 ? markdown.length : end), taskIndex, assetBase);
+    return parseTaskBlock(markdown.slice(start, end === -1 ? markdown.length : end), taskIndex, assetBase, defaults);
   });
 
   const token = requiredField(info['收集物'], `${path} / 基本信息 / 收集物`);
@@ -455,8 +482,19 @@ function parseTimeBank(markdown = '') {
   };
 }
 
-export function parseLesson(source) {
+// 数值缺省的优先级：任务块字段 > course.md 的 `## 数值缺省` > `_platform/defaults.md` > TASK_DEFAULTS。
+function resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning) {
+  const document = platformDefaults?.documents?.defaults || null;
+  const overrides = parseKeyValues(courseMarkdown || '', '## 数值缺省');
+  if (!document) return resolveTaskDefaults(overrides);
+  const merged = mergeDefaults(document, overrides);
+  for (const warning of merged.warnings) onWarning?.(warning);
+  return resolveTaskDefaults(merged.entries);
+}
+
+export function parseLesson(source, { platformDefaults = null, onWarning = null } = {}) {
   const courseMarkdown = source.files['course.md'];
+  const taskDefaults = resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning);
   const courseInfo = parseKeyValues(courseMarkdown, '## 基本信息');
   const roleSystem = parseKeyValues(courseMarkdown, '## 学生端角色体系');
   const learningView = parseKeyValues(courseMarkdown, '## 学习视图');
@@ -465,7 +503,7 @@ export function parseLesson(source) {
   const roleFiles = Object.entries(source.files)
     .filter(([path]) => path.startsWith('roles/') && path.endsWith('.md'));
   const roles = roleFiles
-    .map(([path, markdown], index) => parseRole(path, markdown, assetBase, index))
+    .map(([path, markdown], index) => parseRole(path, markdown, assetBase, index, taskDefaults))
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
   const requestedLearningView = clean(learningView.default || PLATFORM_LEARNING_VIEW.default).toLowerCase();
   if (!['dialogue', 'challenge'].includes(requestedLearningView)) {

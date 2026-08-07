@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseLesson } from '../../src/engine/lesson-parser.js';
 import { compilePlatformRules } from './platform-rules.js';
+import { loadPlatformDefaults } from './platform-defaults.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
 
 export {
@@ -184,17 +185,20 @@ export async function compileCourse({ lessonsRoot, courseId }) {
   const resolvedLessonsRoot = path.resolve(lessonsRoot);
   const cacheKey = `${resolvedLessonsRoot}\0${courseId}`;
   const platformRules = await compilePlatformRules({ lessonsRoot: resolvedLessonsRoot });
+  const platformDefaults = await loadPlatformDefaults({ lessonsRoot: resolvedLessonsRoot });
   const cached = CACHE.get(cacheKey);
-  if (cached?.platformRules?.version === platformRules.version) return cached;
+  if (cached?.platformRules?.version === platformRules.version
+    && cached?.platformDefaults?.version === platformDefaults.version) return cached;
   const directory = path.resolve(resolvedLessonsRoot, courseId);
   const files = await collectMarkdown(directory);
   if (!files['course.md']) throw new Error(`课程 ${courseId} 缺少 course.md`);
 
+  const defaultWarnings = [];
   const publicLesson = parseLesson({
     id: courseId,
     files,
     assetBase: `lessons/${courseId}/assets`,
-  });
+  }, { platformDefaults, onWarning: (warning) => defaultWarnings.push(warning) });
   const roleFiles = Object.fromEntries(
     Object.entries(files).filter(([filename]) => filename.startsWith('roles/')),
   );
@@ -235,6 +239,11 @@ export async function compileCourse({ lessonsRoot, courseId }) {
   const course = {
     id: courseId,
     platformRules,
+    platformDefaults: {
+      version: platformDefaults.version,
+      missing: platformDefaults.missing,
+      warnings: defaultWarnings,
+    },
     publicLesson,
     roles,
     knowledge: parseKnowledge(files),

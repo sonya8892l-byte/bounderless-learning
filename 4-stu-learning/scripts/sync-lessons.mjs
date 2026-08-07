@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, extname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseLesson } from '../src/engine/lesson-parser.js';
+import { loadPlatformDefaults } from '../server/course/platform-defaults.js';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const lessonsRoot = resolve(projectRoot, '../6-lessons');
@@ -40,6 +41,9 @@ for (const name of staleDirectories) {
 if (staleDirectories.length) {
   console.log(`已清理 ${staleDirectories.length} 个过期课程产物：${staleDirectories.join(', ')}`);
 }
+
+// 公开包与服务端课程包读同一份平台缺省层，避免两条编译链各自持有一套数值缺省。
+const platformDefaults = await loadPlatformDefaults({ lessonsRoot });
 
 const publicLessons = {};
 
@@ -125,7 +129,10 @@ for (const lessonId of lessonIds) {
     files: await collectMarkdown(sourceDirectory),
     assetBase: `lessons/${lessonId}/assets`,
   };
-  const lesson = parseLesson(source);
+  const lesson = parseLesson(source, {
+    platformDefaults,
+    onWarning: (warning) => console.warn(`[${lessonId}] ${warning.message}`),
+  });
 
   // 浏览器只接收渲染所需的公开字段。真值、知识、限制和答案留在服务端课程包。
   lesson.roles.forEach((role) => {
