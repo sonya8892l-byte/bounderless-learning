@@ -1016,7 +1016,25 @@ function applyToolResult({ course, session, role, input }) {
   };
 }
 
-function finalizeToolResult({ session, role, input }) {
+function advanceBlockedMessage(role, blockedBy = []) {
+  const names = blockedBy.map((taskId) => role.tasks.find((task) => task.id === taskId)?.name || taskId);
+  if (!names.length) return '';
+  if (names.length === 1) return `还差「${names[0]}」没完成，先把它做完我们再继续。`;
+  return `还差「${names.join('」「')}」没完成，先把它们做完我们再继续。`;
+}
+
+function applyAdvanceOutcome(input, role, advance) {
+  if (advance.advanced) {
+    input.data.continueAtSameLocation = advance.continueAtSameLocation;
+    input.data.previousVerification = advance.previousVerification;
+    return;
+  }
+  if (advance.blockedBy?.length) {
+    input.data.advanceBlockedMessage = advanceBlockedMessage(role, advance.blockedBy);
+  }
+}
+
+function finalizeToolResult({ session, role, input, course }) {
   const completion = input.data?.pendingCompletion;
   if (!completion) return;
   const task = role.tasks[completion.taskIndex];
@@ -1048,11 +1066,8 @@ function finalizeToolResult({ session, role, input }) {
     else input.data.waitingForStudent = true;
     return;
   }
-  const advance = advanceToNextTask({ role, session, completion });
-  if (advance.advanced) {
-    input.data.continueAtSameLocation = advance.continueAtSameLocation;
-    input.data.previousVerification = advance.previousVerification;
-  }
+  const advance = advanceToNextTask({ role, session, completion, taskGraph: course?.taskGraph });
+  applyAdvanceOutcome(input, role, advance);
 }
 
 export function createAgentService({
@@ -1219,7 +1234,7 @@ export function createAgentService({
       if (['teacher_advance_task', 'student_advance_task'].includes(input.event)) {
         const actor = input.event === 'teacher_advance_task' ? 'teacher' : 'student';
         const outcome = resolvePendingAdvance({
-          role, session, actor, taskId: String(input.data?.taskId || ''),
+          role, session, actor, taskId: String(input.data?.taskId || ''), taskGraph: course?.taskGraph,
         });
         if (!outcome.ok) throw advanceRefusalError(actor, outcome.reason);
         input.data = {
@@ -1229,6 +1244,7 @@ export function createAgentService({
           previousVerification: outcome.result.previousVerification,
           allTasksCompleted: !outcome.result.advanced,
         };
+        applyAdvanceOutcome(input, role, outcome.result);
         markMeaningfulAction(session, Date.now(), 'other');
       }
     }
@@ -1406,7 +1422,10 @@ export function createAgentService({
       );
     }
     const taskIndexBeforeFinalize = session.currentTaskIndex;
-    finalizeToolResult({ session, role, input });
+    finalizeToolResult({ session, role, input, course });
+    if (input.data?.advanceBlockedMessage) {
+      result = { ...result, text: input.data.advanceBlockedMessage, toolCalls: [] };
+    }
     if (session.currentTaskIndex !== taskIndexBeforeFinalize) {
       task = currentTaskOf(role, session);
       ensureSessionRuntime(session, task);

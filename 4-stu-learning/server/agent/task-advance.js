@@ -29,6 +29,8 @@
  * 在同一个地点重新走一遍到达验证。
  */
 
+import { traversalOrder } from '../course/task-graph.js';
+
 /**
  * 当前任务。收敛 `role.tasks[Math.min(session.currentTaskIndex, ...)]` 这个到处重复的表达式。
  *
@@ -95,19 +97,15 @@ export function clearPendingAdvance(session) {
   session.pendingAdvance = null;
 }
 
-/**
- * 往前推一格。**唯一的写入点**。
- *
- * @returns {{ advanced: boolean, nextTask?: object, continueAtSameLocation?: boolean, previousVerification?: string }}
- */
-export function advanceToNextTask({ role, session, completion = {} }) {
-  const tasks = role?.tasks || [];
-  if (session.currentTaskIndex >= tasks.length - 1) {
-    session.events.push(`${role.id}:all-tasks-completed`);
-    return { advanced: false };
-  }
-  session.currentTaskIndex += 1;
-  const nextTask = tasks[session.currentTaskIndex];
+function completedTaskKey(roleId, taskId) {
+  return `${roleId}:${taskId}`;
+}
+
+function isTaskCompleted(session, roleId, taskId) {
+  return session.completedTaskIds.includes(completedTaskKey(roleId, taskId));
+}
+
+function advanceResult({ role, session, nextTask, completion = {} }) {
   return {
     advanced: true,
     nextTask,
@@ -120,6 +118,75 @@ export function advanceToNextTask({ role, session, completion = {} }) {
   };
 }
 
+/** 线性 +1：不传 taskGraph 时的唯一行为，也是图有环时的回退路径。 */
+function advanceLinear({ role, session, completion = {} }) {
+  const tasks = role?.tasks || [];
+  if (session.currentTaskIndex >= tasks.length - 1) {
+    session.events.push(`${role.id}:all-tasks-completed`);
+    return { advanced: false };
+  }
+  session.currentTaskIndex += 1;
+  return advanceResult({ role, session, nextTask: tasks[session.currentTaskIndex], completion });
+}
+
+/**
+ * 按任务图拓扑序找下一任务，并校验同角色 `前置` 是否都已出现在 completedTaskIds。
+ *
+ * 遍历模式口径（文档由 claude 收口）：
+ * - `sequential`：按图拓扑推进 + 前置门禁（5 门存量课未写该字段，解析回落 sequential）；
+ * - `open` / `inquiry`：仍不生效，维持预留（lesson-parser.js 注释口径不变）。
+ */
+function advanceWithGraph({ role, session, completion = {}, taskGraph }) {
+  const tasks = role?.tasks || [];
+  const roleId = role.id;
+  const roleNodes = [...taskGraph.nodes.values()].filter((node) => node.roleId === roleId);
+  const order = Array.isArray(taskGraph.testTraversalOrder)
+    ? taskGraph.testTraversalOrder
+    : traversalOrder(taskGraph, roleId);
+
+  if (order.length < roleNodes.length) {
+    console.warn(`[task-advance] 角色 ${roleId} 的任务图有环，回退线性推进`);
+    return advanceLinear({ role, session, completion });
+  }
+
+  for (const key of order) {
+    const node = taskGraph.nodes.get(key);
+    if (!node || isTaskCompleted(session, roleId, node.taskId)) continue;
+
+    const blockedBy = [];
+    for (const prereqKey of node.prerequisites) {
+      const prereqNode = taskGraph.nodes.get(prereqKey);
+      if (!prereqNode || prereqNode.roleId !== roleId) continue;
+      if (!isTaskCompleted(session, roleId, prereqNode.taskId)) {
+        blockedBy.push(prereqNode.taskId);
+      }
+    }
+    if (blockedBy.length) {
+      return { advanced: false, blockedBy };
+    }
+
+    const taskIndex = tasks.findIndex((task) => task.id === node.taskId);
+    if (taskIndex < 0) return { advanced: false };
+    session.currentTaskIndex = taskIndex;
+    return advanceResult({ role, session, nextTask: tasks[taskIndex], completion });
+  }
+
+  session.events.push(`${role.id}:all-tasks-completed`);
+  return { advanced: false };
+}
+
+/**
+ * 往前推一格。**唯一的写入点**。
+ *
+ * @returns {{ advanced: boolean, nextTask?: object, continueAtSameLocation?: boolean, previousVerification?: string, blockedBy?: string[] }}
+ */
+export function advanceToNextTask({ role, session, completion = {}, taskGraph = null }) {
+  if (!taskGraph?.nodes?.size) {
+    return advanceLinear({ role, session, completion });
+  }
+  return advanceWithGraph({ role, session, completion, taskGraph });
+}
+
 /**
  * 解除一条等待并推进。教师指令与学生确认共用。
  *
@@ -130,7 +197,7 @@ export function advanceToNextTask({ role, session, completion = {} }) {
  * @param {'teacher'|'student'} actor 谁在解除
  * @returns {{ ok: boolean, reason?: string, result?: object }}
  */
-export function resolvePendingAdvance({ role, session, actor, taskId = '' }) {
+export function resolvePendingAdvance({ role, session, actor, taskId = '', taskGraph = null }) {
   const task = currentTaskOf(role, session);
   const pending = pendingAdvanceOf(session, task);
   if (!pending) {
@@ -149,7 +216,7 @@ export function resolvePendingAdvance({ role, session, actor, taskId = '' }) {
     return { ok: false, reason: 'NOT_COMPLETED' };
   }
 
-  const result = advanceToNextTask({ role, session, completion: pending });
+  const result = advanceToNextTask({ role, session, completion: pending, taskGraph });
   clearPendingAdvance(session);
   return { ok: true, result };
 }
