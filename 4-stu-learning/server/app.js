@@ -359,6 +359,32 @@ export async function buildApp({
     };
   });
 
+  // 课程枚举：给教师端"新建开课"抽屉拉下拉列表用。
+  // 只回 id/title/series 元信息——列表接口不该把 roles/knowledge 等整包课程泄给前端。
+  // 单门课编译失败只跳过该门并记日志，不许把整门列表拖成 500。
+  app.get('/api/courses', async (request, reply) => {
+    reply.header('cache-control', 'no-store');
+    const entries = await fs.readdir(lessonsRoot, { withFileTypes: true });
+    const courseIds = entries
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith('lesson_'))
+      .map((entry) => entry.name)
+      .sort();
+    const courses = [];
+    for (const courseId of courseIds) {
+      try {
+        const course = await getCourse(courseId);
+        courses.push({
+          id: course.id,
+          title: course.lesson?.title || '',
+          series: course.lesson?.series || '',
+        });
+      } catch (error) {
+        app.log.warn({ err: error, courseId }, '课程编译失败，已从 /api/courses 列表中跳过。');
+      }
+    }
+    return { courses };
+  });
+
   app.post('/api/sessions', async (request, reply) => {
     const input = sessionSchema.parse(request.body);
     const { session } = await agent.createSession(input);

@@ -634,20 +634,61 @@ async function loadReview() {
   } catch (error) { showToast(error.message); }
 }
 
+// 课程列表接口挂掉时的兜底课单（与原硬编码两门一致），
+// 保证"新建开课"永远可用——开课是主流程，不能跟着列表接口一起死。
+const FALLBACK_COURSES = [
+  { id: 'lesson_gewu_001', title: '故宫600年不积水的秘密', series: '格物' },
+  { id: 'lesson_zhuhun_001', title: '四渡赤水研学课程', series: '铸魂' },
+];
+
+// 下拉显示格式：{series}系列 · {title}（courseId）。
+// Sonya 要求直接看到 courseId，方便复制到学生端 ?lesson= 参数换课。
+// series 本身已带"系列"二字时不再重复拼接；没有 series 就省略前缀。
+function courseOptionLabel(course) {
+  const seriesPrefix = course.series
+    ? `${course.series}${course.series.includes('系列') ? '' : '系列'} · `
+    : '';
+  return `${seriesPrefix}${course.title}（${course.id}）`;
+}
+
+function renderCourseOptions(courses) {
+  return courses
+    .map((course) => `<option value="${escapeHtml(course.id)}">${escapeHtml(courseOptionLabel(course))}</option>`)
+    .join('');
+}
+
+async function loadCourseOptions() {
+  const select = $('#newCourseId');
+  if (!select) return;
+  try {
+    const { courses } = await request('/api/courses');
+    if (!Array.isArray(courses) || !courses.length) throw new Error('empty course list');
+    if ($('#newCourseId') !== select) return;
+    select.innerHTML = renderCourseOptions(courses);
+  } catch {
+    // 接口失败就留在兜底两门课上，并在抽屉里给一行可见提示。
+    const notice = $('#newCourseNotice');
+    if (notice) {
+      notice.textContent = '课程列表服务暂不可用，当前显示内置课程。';
+      notice.hidden = false;
+    }
+  }
+}
+
 function newRunDrawer() {
   openDrawer({ eyebrow: '课前准备', title: '创建课程场次', html: `
     <form id="newRunForm">
       <div class="detail-block"><label class="field-label" for="newClassName">班级名称</label><input id="newClassName" name="className" required value="五年级研学班" /></div>
       <div class="detail-block">
         <label class="field-label" for="newCourseId">已发布课程</label>
-        <select id="newCourseId" name="courseId">
-          <option value="lesson_gewu_001">格物系列 · 故宫600年不积水的秘密</option>
-          <option value="lesson_zhuhun_001">铸魂系列 · 四渡赤水研学课程</option>
-        </select>
+        <select id="newCourseId" name="courseId">${renderCourseOptions(FALLBACK_COURSES)}</select>
+        <p id="newCourseNotice" class="field-hint" hidden></p>
       </div>
       <div class="detail-block"><label class="field-label" for="newGroupCount">学习小组</label><select id="newGroupCount" name="groupCount"><option value="5">5组 · 30人</option><option value="4">4组 · 24人</option><option value="3">3组 · 18人</option></select></div>
       <button class="primary-button" type="submit">创建并进入课前检查</button>
     </form>` });
+  // 抽屉先用兜底课单秒开，随后异步换成服务端枚举的完整课程列表。
+  loadCourseOptions();
 }
 
 async function createRun(form) {

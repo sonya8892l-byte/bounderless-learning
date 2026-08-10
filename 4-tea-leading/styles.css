@@ -204,6 +204,7 @@ h3 { margin: 0; font-size: 16px; }
 .dialog { position: fixed; z-index: 70; inset: 50% auto auto 50%; width: min(calc(100% - 32px), 430px); padding: 22px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow); transform: translate(-50%, -50%); }
 .dialog > p:not(.eyebrow) { color: var(--ink-2); font-size: 13px; line-height: 1.55; }
 .field-label { display: block; margin: 17px 0 7px; color: var(--ink-2); font-size: 12px; font-weight: 800; }
+.field-hint { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .dialog textarea, .dialog input, .dialog select { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); resize: vertical; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .toast { position: fixed; z-index: 90; right: 16px; bottom: calc(86px + env(safe-area-inset-bottom)); left: 16px; width: min(calc(100% - 32px), 448px); margin: auto; padding: 12px 15px; border-radius: 13px; background: #2b2623; color: #fff; text-align: center; font-size: 12px; opacity: 0; pointer-events: none; transform: translateY(14px); transition: .2s ease; }
