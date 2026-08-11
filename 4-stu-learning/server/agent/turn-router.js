@@ -2,7 +2,7 @@
 // 寒暄、感谢、道别、情绪等语义判断已交给 understandTurn（决策 D6）。
 const exactAffirmative = /^(好|好的|好了|嗯|嗯嗯|行|可以|没问题|ok|okay|yes|是|对|准备好了|开始吧)[呀啊哦嘛吗啦呢！!。.～~ ]*$/i;
 const exactNegative = /^(不|不要|不行|还没|没有|没好|等等|等一下|no|不是|不对)[呀啊哦嘛吗啦呢！!。.～~ ]*$/i;
-const complaintPattern = /你有毒|有病|傻|笨|烦死|真烦|一直重复|又问|说过了|听不懂人话|别催|别再问|怎么老是|卡住了|没反应/;
+const complaintPattern = /你有毒|你有病|你.{0,3}(?:傻|笨)|傻逼|烦死|真烦|一直重复|又问|说过了|听不懂人话|别催|别再问|怎么老是|卡住了|没反应/;
 
 function lowSemanticInput(text) {
   const compact = text.replace(/\s+/g, '');
@@ -67,10 +67,12 @@ export function routeInput(input) {
 
 // 语言输入里仍需规则优先拦截的两件事：安全求助与明确的位置求助。
 // 这两类不能等模型——安全有时效，位置有确定的工具动作。
-const SAFETY_PATTERN = /受伤|流血|摔倒|走失|迷路|危险|救命|不舒服|联系老师|叫老师|找老师/;
+const SAFETY_PATTERN = /受伤|流血|摔倒|走失|走散|落单|迷路|危险|救命|不舒服|头晕|恶心|胸闷|呼吸困难|喘不上气|晕倒|肚子疼|被困|被推|脚.{0,3}(?:扭|崴)|找不到.{0,6}(?:队伍|同学|小组|老师)|陌生人.{0,8}(?:跟|带|拉|叫)|有人.{0,5}(?:推我|打我|拉我)|着火|起火|有烟|烟味|滑下去|掉进水|联系老师|叫老师|找老师/;
+const UNSAFE_ACTION_PATTERN = /(?:翻|跨|爬).{0,5}护栏|护栏.{0,5}(?:翻|跨|爬)/;
 
 export function safetyOverride(text = '') {
-  return SAFETY_PATTERN.test(String(text).toLowerCase());
+  const value = String(text).toLowerCase();
+  return SAFETY_PATTERN.test(value) || UNSAFE_ACTION_PATTERN.test(value);
 }
 
 /**
@@ -203,6 +205,16 @@ export function classifyTurn({ input, session, nudge }) {
         includePhasePrompt: true,
         includeRestrictions: true,
         allowedTools: ['show_navigation', 'call_teacher'],
+        sourceMode: 'course-config',
+      });
+    }
+    if (input.event === 'phase_started') {
+      return base('phase_started', {
+        fastWorkflow: true,
+        includeTaskContext: true,
+        includePhasePrompt: true,
+        includeRestrictions: true,
+        allowedTools: ['open_task_tool', 'call_teacher'],
         sourceMode: 'course-config',
       });
     }

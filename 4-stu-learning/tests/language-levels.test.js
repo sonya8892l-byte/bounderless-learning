@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { clearCourseCache, compileCourse } from '../server/course/compiler.js';
 import { languageLevelFor, resolveLanguageLevels } from '../server/course/platform-defaults.js';
-import { applyGradeResponsePolicy } from '../server/agent/dialogue-policy.js';
+import { applyGradeResponsePolicy, splitGradeResponse } from '../server/agent/dialogue-policy.js';
 import { buildAgentPrompt } from '../server/agent/prompt.js';
 import { parsePlatformDefaultDocument } from '../src/engine/platform-defaults.js';
 
@@ -64,16 +64,14 @@ test('学段匹配顺序不变：低年级优先于小学，未命中按初中',
   assert.equal(languageLevelFor(null, '高三').id, '高中');
 });
 
-// 搬运前就存在：`一|二` 是裸字符匹配，任何含「一」「二」的年级都会先命中小学低年级。
-// M2 只换来源不改行为，这里把现状锁住，等确认后再单独修。
-test('已知遗留：初一/初二/高一/高二 会被判成小学低年级', () => {
+test('初一/初二与高一/高二按真实学段匹配，混合课程范围回落初中', () => {
   const levels = resolveLanguageLevels(null);
-  for (const grade of ['初一', '初二', '高一', '高二']) {
-    assert.equal(languageLevelFor(levels, grade).id, '小学低年级', grade);
-  }
+  for (const grade of ['初一', '初二']) assert.equal(languageLevelFor(levels, grade).id, '初中', grade);
+  for (const grade of ['高一', '高二']) assert.equal(languageLevelFor(levels, grade).id, '高中', grade);
+  assert.equal(languageLevelFor(levels, '小学高年级 / 初中 / 高中').id, '初中');
 });
 
-test('两个消费点读同一份定义：prompt 的字数规范与事后截断都跟着 md 走', async (t) => {
+test('两个消费点读同一份定义：prompt 管目标字数，硬上限完整分泡且不丢字', async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'language-levels-'));
   t.after(async () => {
     clearCourseCache();
@@ -90,11 +88,10 @@ test('两个消费点读同一份定义：prompt 的字数规范与事后截断�
   const before = await compileCourse({ lessonsRoot: root, courseId: 'lesson_gewu_001' });
   assert.match(promptFor(before, '初中'), /初中：50–80字为主/);
   const long = '喔'.repeat(200);
-  assert.equal(
-    applyGradeResponsePolicy(long, '初中', before.platformDefaults.languageLevels).length,
-    101,
-    '100 字上限加一个省略号',
-  );
+  const beforeParts = splitGradeResponse(long, '初中', before.platformDefaults.languageLevels);
+  assert.equal(applyGradeResponsePolicy(long, '初中', before.platformDefaults.languageLevels), long);
+  assert.equal(beforeParts.join(''), long);
+  assert.ok(beforeParts.every((part) => part.length <= 100));
 
   await fs.writeFile(
     path.join(root, '_platform', 'language-levels.md'),
@@ -104,7 +101,9 @@ test('两个消费点读同一份定义：prompt 的字数规范与事后截断�
   const after = await compileCourse({ lessonsRoot: root, courseId: 'lesson_gewu_001' });
 
   assert.match(promptFor(after, '初中'), /初中：20–30字为主，只说一件事。/);
-  assert.equal(applyGradeResponsePolicy(long, '初中', after.platformDefaults.languageLevels).length, 41);
+  const afterParts = splitGradeResponse(long, '初中', after.platformDefaults.languageLevels);
+  assert.equal(afterParts.join(''), long);
+  assert.ok(afterParts.every((part) => part.length <= 40));
   assert.equal(
     languageLevelFor(after.platformDefaults.languageLevels, '高三').limit,
     140,
@@ -124,7 +123,7 @@ test('课程可以用 ## 学段规范 覆盖单档，未覆盖的键保持平台
   assert.equal(levels['初中'].style, '鼓励先尝试');
 });
 
-test('硬上限写成非正数或非数字时忽略，不会把回复截成空串', () => {
+test('硬上限写成非正数或非数字时忽略，不会生成空气泡', () => {
   const document = parsePlatformDefaultDocument(
     '> overridable: true\n> merge: by-key\n\n## 初中\n\n- 硬上限：0\n',
     'language-levels.md',

@@ -92,12 +92,24 @@ test('问活动安排走组织信息回合，不被当成任务求助', async ()
   assert.ok(turn.text.trim(), '组织信息问题必须得到回答');
 });
 
-test('组织信息回合的 Prompt 只装配运营字段，且带上"不许猜"硬约束', async () => {
-  const { agent, session, prompts } = await harness();
+test('组织信息回合直接消费平台规则，Prompt 备用路径仍只装配运营字段', async () => {
+  const { agent, session, course, prompts } = await harness();
   await say(agent, session, '我已经到位，也准备好了', 'entry');
-  await say(agent, session, '我们几点结束', 'ask');
+  const promptCount = prompts.length;
+  const turn = await say(agent, session, '我们几点结束', 'ask');
 
-  const prompt = prompts.at(-1);
+  assert.equal(prompts.length, promptCount, '高置信度组织问题不应再调用主对话模型');
+  assert.match(turn.text, /计划|老师安排/);
+
+  const decision = decisionForTutorAction('answer_logistics', {});
+  const { instructions: prompt } = buildAgentPrompt({
+    course,
+    session,
+    role: course.roles[0],
+    knowledge: [],
+    input: { type: 'user_text', text: '我们几点结束' },
+    decision,
+  });
   assert.match(prompt, /活动组织信息/);
   assert.match(prompt, /国家动物博物馆/, '场地取自课程 md');
   assert.match(prompt, /不许推测/, '硬约束必须在 Prompt 里');

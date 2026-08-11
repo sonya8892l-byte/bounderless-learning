@@ -15,7 +15,13 @@ const MANAGED = [
   'OPENAI_UNDERSTAND_BASE_URL',
   'OPENAI_UNDERSTAND_API_KEY',
   'OPENAI_UNDERSTAND_WIRE_API',
+  'OPENAI_EVALUATION_MODEL',
+  'OPENAI_EVALUATION_BASE_URL',
+  'OPENAI_EVALUATION_API_KEY',
+  'OPENAI_EVALUATION_WIRE_API',
+  'AI_UNDERSTAND_PRIMARY_TIMEOUT_MS',
   'AI_UNDERSTAND_TIMEOUT_MS',
+  'AI_EVALUATION_TIMEOUT_MS',
   'AI_TIMEOUT_MS',
   'AI_TURN_TIMEOUT_MS',
   'AI_REQUEST_LEASE_MS',
@@ -40,7 +46,11 @@ test('轻量理解模型未配置时保持缺席，由 app 层回落到主模型
 
   assert.equal(env.OPENAI_UNDERSTAND_MODEL, undefined, '不配置就该是 undefined，不要偷偷填成主模型');
   assert.equal(env.OPENAI_MODEL, 'test-main-model');
-  assert.equal(env.AI_UNDERSTAND_TIMEOUT_MS, 8_000);
+  assert.equal(env.AI_TIMEOUT_MS, 25_000);
+  assert.equal(env.AI_UNDERSTAND_PRIMARY_TIMEOUT_MS, 3_500);
+  assert.equal(env.AI_UNDERSTAND_TIMEOUT_MS, 20_000);
+  assert.equal(env.AI_TURN_TIMEOUT_MS, 75_000);
+  assert.equal(env.AI_REQUEST_LEASE_MS, 85_000);
 });
 
 test('配置了轻量理解模型与预算时按配置读出', () => {
@@ -53,6 +63,34 @@ test('配置了轻量理解模型与预算时按配置读出', () => {
   assert.equal(env.AI_UNDERSTAND_TIMEOUT_MS, 4_500);
 });
 
+test('验收默认沿用主模型身份，但拥有独立的 28 秒预算', () => {
+  const env = withEnv({}, () => loadEnv());
+
+  assert.equal(env.OPENAI_EVALUATION_MODEL, undefined);
+  assert.equal(env.AI_EVALUATION_TIMEOUT_MS, 28_000);
+});
+
+test('验收的两次尝试必须装得进整轮预算', () => {
+  assert.throws(
+    () => withEnv({
+      AI_EVALUATION_TIMEOUT_MS: '30000',
+      AI_TURN_TIMEOUT_MS: '60000',
+      AI_REQUEST_LEASE_MS: '65000',
+    }, () => loadEnv()),
+    /AI_EVALUATION_TIMEOUT_MS/,
+  );
+});
+
+test('验收模型跨服务商时必须提供对应密钥', () => {
+  assert.throws(
+    () => withEnv({
+      OPENAI_EVALUATION_MODEL: 'evaluation-model',
+      OPENAI_EVALUATION_BASE_URL: 'https://evaluation.invalid/v1',
+    }, () => loadEnv()),
+    /OPENAI_EVALUATION_API_KEY/,
+  );
+});
+
 test('理解预算不小于整轮预算时启动即失败', () => {
   assert.throws(
     () => withEnv({
@@ -62,6 +100,16 @@ test('理解预算不小于整轮预算时启动即失败', () => {
       AI_UNDERSTAND_TIMEOUT_MS: '15000',
     }, () => loadEnv()),
     /AI_UNDERSTAND_TIMEOUT_MS/,
+  );
+});
+
+test('专用理解模型预算必须给主模型回退留出时间', () => {
+  assert.throws(
+    () => withEnv({
+      AI_UNDERSTAND_PRIMARY_TIMEOUT_MS: '5000',
+      AI_UNDERSTAND_TIMEOUT_MS: '5000',
+    }, () => loadEnv()),
+    /AI_UNDERSTAND_PRIMARY_TIMEOUT_MS/,
   );
 });
 

@@ -60,14 +60,35 @@ async function consumeTextStream(response, responses, onTextDelta) {
   let buffer = '';
   let text = '';
   let finalPayload = null;
+  let sawTerminal = false;
+  let terminalError = '';
+  let finishReason = '';
 
   function consumeLine(line) {
     if (!line.startsWith('data:')) return;
     const data = line.slice(5).trim();
-    if (!data || data === '[DONE]') return;
+    if (!data) return;
+    if (data === '[DONE]') {
+      if (!responses) sawTerminal = true;
+      return;
+    }
     let payload;
     try { payload = JSON.parse(data); } catch { return; }
-    if (payload.type === 'response.completed') finalPayload = payload.response;
+    if (payload.type === 'response.completed') {
+      finalPayload = payload.response;
+      sawTerminal = true;
+    }
+    if (['response.incomplete', 'response.failed', 'error'].includes(payload.type)) {
+      finalPayload = payload.response || finalPayload;
+      terminalError = payload.response?.incomplete_details?.reason
+        || payload.error?.message
+        || payload.type;
+      sawTerminal = true;
+    }
+    if (!responses && payload?.choices?.[0]?.finish_reason) {
+      finishReason = payload.choices[0].finish_reason;
+      sawTerminal = true;
+    }
     const delta = responses
       ? (payload.type === 'response.output_text.delta' ? payload.delta : '')
       : payload?.choices?.[0]?.delta?.content;
@@ -86,6 +107,12 @@ async function consumeTextStream(response, responses, onTextDelta) {
     if (done) break;
   }
   if (buffer) consumeLine(buffer);
+  if (!sawTerminal) throw new LLMError('模型流在完整结束前中断。');
+  if (terminalError || finalPayload?.status === 'incomplete' || finishReason === 'length') {
+    throw new LLMError('模型回复未完整生成，请缩短后重试。', {
+      body: terminalError || finalPayload?.incomplete_details || finishReason,
+    });
+  }
   if (!text && finalPayload) text = responseText(finalPayload);
   return { text, toolCalls: [], raw: finalPayload };
 }
@@ -257,6 +284,14 @@ export function createLLM({
           throw new LLMError('模型返回了无法解析的内容。', { body: rawText, cause });
         }
         const message = responses ? null : payload?.choices?.[0]?.message;
+        const responseIncomplete = responses
+          && (payload?.status === 'incomplete' || Boolean(payload?.incomplete_details));
+        const chatFinishReason = responses ? '' : payload?.choices?.[0]?.finish_reason;
+        if (responseIncomplete || chatFinishReason === 'length') {
+          throw new LLMError('模型回复未完整生成，请缩短后重试。', {
+            body: responses ? payload?.incomplete_details : chatFinishReason,
+          });
+        }
         const result = {
           text: responses ? responseText(payload) : message?.content || '',
           toolCalls: responses ? responseTools(payload) : chatTools(message),

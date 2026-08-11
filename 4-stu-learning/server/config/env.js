@@ -29,6 +29,11 @@ const schema = z.object({
   // 允许留空：配置文件里留着占位的空行不该导致服务起不来，空值等于"沿用主模型的 key"。
   OPENAI_UNDERSTAND_API_KEY: z.string().optional(),
   OPENAI_UNDERSTAND_WIRE_API: z.enum(['responses', 'chat_completions']).optional(),
+  // 验收可以独立选模型和服务商；不配置时仍使用主模型，但拥有自己的超时与重试预算。
+  OPENAI_EVALUATION_MODEL: z.string().min(1).optional(),
+  OPENAI_EVALUATION_BASE_URL: z.string().url().optional(),
+  OPENAI_EVALUATION_API_KEY: z.string().optional(),
+  OPENAI_EVALUATION_WIRE_API: z.enum(['responses', 'chat_completions']).optional(),
   OPENAI_WIRE_API: z.enum(['responses', 'chat_completions']).default('responses'),
   AI_TOOL_MODE: z.enum(['auto', 'native', 'structured']).default('auto'),
   // 当前未实现：services/llm.js 硬编码 webSearch: false；接线前配置它没有效果。
@@ -36,11 +41,15 @@ const schema = z.object({
   AI_VISION_MODE: z.enum(['auto', 'enabled', 'disabled']).default('auto'),
   AI_REASONING_EFFORT: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).default('minimal'),
   AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(64).max(2000).default(192),
-  AI_TIMEOUT_MS: z.coerce.number().int().min(5000).max(60000).default(18000),
-  // 语义理解的总预算（含一次重试），必须明显短于整轮预算：它只是回合的第一段。
-  AI_UNDERSTAND_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30000).default(8000),
-  AI_TURN_TIMEOUT_MS: z.coerce.number().int().min(10000).max(75000).default(70000),
-  AI_REQUEST_LEASE_MS: z.coerce.number().int().min(15000).max(85000).default(80000),
+  AI_TIMEOUT_MS: z.coerce.number().int().min(5000).max(60000).default(25000),
+  // 专用理解模型应快速响应；超过这个窗口就把剩余预算交给主模型兜底。
+  AI_UNDERSTAND_PRIMARY_TIMEOUT_MS: z.coerce.number().int().min(500).max(10000).default(3500),
+  // 语义理解的总预算（含专用模型尝试与主模型兜底），必须短于整轮预算。
+  AI_UNDERSTAND_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30000).default(20000),
+  // 验收最多重试一次。默认 28s × 2 加退避仍能留在 70s 整轮预算内。
+  AI_EVALUATION_TIMEOUT_MS: z.coerce.number().int().min(5000).max(34000).default(28000),
+  AI_TURN_TIMEOUT_MS: z.coerce.number().int().min(10000).max(75000).default(75000),
+  AI_REQUEST_LEASE_MS: z.coerce.number().int().min(15000).max(85000).default(85000),
   VITE_AMAP_KEY: z.string().default(''),
   VITE_AMAP_SECURITY_CODE: z.string().default(''),
   VITE_AMAP_STYLE: z.string().default('amap://styles/normal'),
@@ -98,12 +107,23 @@ export function loadEnv({
   if (values.AI_UNDERSTAND_TIMEOUT_MS >= values.AI_TURN_TIMEOUT_MS) {
     throw new Error('AI_UNDERSTAND_TIMEOUT_MS 必须小于 AI_TURN_TIMEOUT_MS：语义理解只是回合的第一段。');
   }
+  if (values.AI_UNDERSTAND_PRIMARY_TIMEOUT_MS >= values.AI_UNDERSTAND_TIMEOUT_MS) {
+    throw new Error('AI_UNDERSTAND_PRIMARY_TIMEOUT_MS 必须小于 AI_UNDERSTAND_TIMEOUT_MS，给主模型回退保留时间。');
+  }
+  if ((values.AI_EVALUATION_TIMEOUT_MS * 2) + 1_000 >= values.AI_TURN_TIMEOUT_MS) {
+    throw new Error('AI_EVALUATION_TIMEOUT_MS 的两次尝试加退避必须小于 AI_TURN_TIMEOUT_MS。');
+  }
   // 轻量模型指到了别的服务商却没给对应的 key，等于拿甲家的钥匙敲乙家的门：
   // 每个回合的第一段都会 401，而降级链会把它咽下去，只在日志里留痕。启动时就说清楚。
   if (values.OPENAI_UNDERSTAND_BASE_URL
     && values.OPENAI_UNDERSTAND_BASE_URL !== values.OPENAI_BASE_URL
     && !values.OPENAI_UNDERSTAND_API_KEY) {
     throw new Error('配了 OPENAI_UNDERSTAND_BASE_URL 指向另一个服务商，就必须同时配 OPENAI_UNDERSTAND_API_KEY，否则语义理解会一直认证失败。');
+  }
+  if (values.OPENAI_EVALUATION_BASE_URL
+    && values.OPENAI_EVALUATION_BASE_URL !== values.OPENAI_BASE_URL
+    && !values.OPENAI_EVALUATION_API_KEY) {
+    throw new Error('配了 OPENAI_EVALUATION_BASE_URL 指向另一个服务商，就必须同时配 OPENAI_EVALUATION_API_KEY，否则验收会一直认证失败。');
   }
   return values;
 }

@@ -2,10 +2,35 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createUnderstanding,
+  fastUnderstanding,
   FALLBACK_UNDERSTANDING,
   INTENTS,
   EMOTIONS,
 } from '../server/agent/understanding.js';
+
+test('高置信度常见表达本地分诊，歧义和课程外问题仍交给模型', () => {
+  const knowledgeTerms = ['螭首', '排水', '证据类型', '地图'];
+  const samples = [
+    ['我没看懂任务卡。', 'help_stuck'],
+    ['地图能再打开一次吗？', 'asking_location'],
+    ['午饭在哪里吃？', 'asking_logistics'],
+    ['我能换到朋友那一组吗？', 'asking_logistics'],
+    ['现场工作人员和老师说的不一样怎么办？', 'asking_logistics'],
+    ['我弄好了。', 'claim_done'],
+    ['螭首除了装饰还有什么作用？', 'asking_knowledge'],
+    ['谢谢你没有笑我。', 'chat_offtopic'],
+    ['我感觉自己的观察完全没有价值。', 'emotional_low'],
+    ['你好呀，我第一次来，有点紧张。', 'emotional_low'],
+    ['还有呢？', 'chat_offtopic'],
+    ['记录一个网络来源至少要写哪些信息？', 'asking_knowledge'],
+    ['看地图证据时应该先看什么？', 'asking_knowledge'],
+  ];
+  for (const [text, intent] of samples) {
+    assert.equal(fastUnderstanding(text, { knowledgeTerms })?.intent, intent, text);
+  }
+  assert.equal(fastUnderstanding('你们那儿今天下雨了吗', { knowledgeTerms }), null);
+  assert.equal(fastUnderstanding('那个到底怎么回事', { knowledgeTerms }), null);
+});
 
 function mockLLM(handler) {
   const calls = [];

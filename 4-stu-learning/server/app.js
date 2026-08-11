@@ -9,6 +9,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import { z } from 'zod';
 import { compileCourse } from './course/compiler.js';
 import { createLLM } from './services/llm.js';
+import { createFallbackLLM } from './services/fallback-llm.js';
 import { createSessionStore } from './services/store.js';
 import { AgentActionError, createAgentService } from './agent/service.js';
 import { createCourseRunStore } from './runtime/course-run-store.js';
@@ -23,7 +24,7 @@ import { createLearnerRequestStore } from './database/learner-request-store.js';
 
 const sessionSchema = z.object({
   courseId: z.string().regex(/^[a-zA-Z0-9_-]+$/),
-  roleId: z.string().regex(/^[a-zA-Z0-9_-]+$/),
+  roleId: z.string().regex(/^[a-zA-Z0-9_-]+$/).or(z.literal('')).optional().default(''),
   studentId: z.string().min(1).max(100),
   groupId: z.string().min(1).max(100),
   runId: z.string().min(1).max(100).optional(),
@@ -79,6 +80,13 @@ function publicSession(session) {
     runId: session.runId || null,
     participantId: session.participantId || null,
     phaseId: session.phaseId,
+    phaseTaskContext: session.phaseTaskState || (!session.roleId ? {
+      phaseId: session.phaseId,
+      currentTaskIndex: session.currentTaskIndex,
+      completedTaskIds: [...(session.completedTaskIds || [])],
+      taskId: session.taskState?.taskId || '',
+      guidanceStepIndex: Number(session.taskState?.guidanceStepIndex || 0),
+    } : null),
     currentTaskIndex: session.currentTaskIndex,
     completedTaskIds: session.completedTaskIds,
     scaffoldLevel: session.scaffoldLevel,
@@ -179,7 +187,7 @@ function unavailableEvidenceStore() {
   return { put: fail, get: fail, findById: fail, kind: 'unavailable' };
 }
 
-async function dependencyConfiguration(env, { databasePool, databaseProbe }) {
+async function dependencyConfiguration(env, { databasePool, databaseProbe, modelFallbacks = {} }) {
   const persistentStateRequired = ['preview', 'production'].includes(env.APP_ENV);
   const evidenceStorageRequired = persistentStateRequired || env.EVIDENCE_UPLOAD_MODE === 'direct';
   const dependencies = {
@@ -200,6 +208,7 @@ async function dependencyConfiguration(env, { databasePool, databaseProbe }) {
       configured: evidenceStorageConfigured(env),
     },
   };
+  if (Object.keys(modelFallbacks).length) dependencies.ai.fallbacks = modelFallbacks;
   dependencies.evidenceStorage.healthy = dependencies.evidenceStorage.configured;
   if (dependencies.database.configured) {
     try {
@@ -217,6 +226,7 @@ async function dependencyConfiguration(env, { databasePool, databaseProbe }) {
 export async function buildApp({
   env,
   llm: providedLLM,
+  evaluationLlm: providedEvaluationLLM,
   sessionStore: providedSessionStore,
   courseRunStore: providedCourseRunStore,
   evidenceStore: providedEvidenceStore,
@@ -278,9 +288,8 @@ export async function buildApp({
   });
   // 语义理解（D6 第一段）走独立的轻量客户端：不需要工具、不需要视觉，输出只有一个小 JSON。
   // 未配置 OPENAI_UNDERSTAND_MODEL 时复用主客户端，行为与配置前完全一致。
-  const understandingLlm = (providedLLM || !env.OPENAI_UNDERSTAND_MODEL)
-    ? llm
-    : createLLM({
+  const understandingPrimaryLlm = (!providedLLM && env.OPENAI_UNDERSTAND_MODEL)
+    ? createLLM({
       // 轻量模型可以在另一个服务商；三项默认沿用主模型那套。
       baseUrl: env.OPENAI_UNDERSTAND_BASE_URL || env.OPENAI_BASE_URL,
       apiKey: env.OPENAI_UNDERSTAND_API_KEY || env.OPENAI_API_KEY,
@@ -290,8 +299,59 @@ export async function buildApp({
       visionMode: 'disabled',
       reasoningEffort: 'none',
       maxOutputTokens: 192,
-      timeoutMs: env.AI_UNDERSTAND_TIMEOUT_MS,
+      timeoutMs: env.AI_UNDERSTAND_PRIMARY_TIMEOUT_MS || 3_500,
+    })
+    : null;
+  const understandingLlm = understandingPrimaryLlm
+    ? createFallbackLLM({
+      primary: understandingPrimaryLlm,
+      fallback: llm,
+      purpose: 'understanding',
+      logger: app.log,
+    })
+    : llm;
+  // AI 验收有独立客户端：结构化小结果不需要主对话的工具能力和推理预算，
+  // 但需要比普通回复更宽的等待窗口。显式配置时也可以迁到专用模型／服务商。
+  const evaluationFallbackLlm = providedLLM
+    ? llm
+    : createLLM({
+      baseUrl: env.OPENAI_BASE_URL,
+      apiKey: env.OPENAI_API_KEY,
+      model: env.OPENAI_MODEL,
+      wireApi: env.OPENAI_WIRE_API,
+      toolMode: 'structured',
+      visionMode: env.AI_VISION_MODE,
+      reasoningEffort: 'none',
+      maxOutputTokens: 192,
+      timeoutMs: env.AI_EVALUATION_TIMEOUT_MS || 28_000,
     });
+  const hasDedicatedEvaluation = Boolean(
+    env.OPENAI_EVALUATION_MODEL
+    || env.OPENAI_EVALUATION_BASE_URL
+    || env.OPENAI_EVALUATION_API_KEY
+    || env.OPENAI_EVALUATION_WIRE_API
+  );
+  const evaluationPrimaryLlm = (!providedLLM && hasDedicatedEvaluation)
+    ? createLLM({
+      baseUrl: env.OPENAI_EVALUATION_BASE_URL || env.OPENAI_BASE_URL,
+      apiKey: env.OPENAI_EVALUATION_API_KEY || env.OPENAI_API_KEY,
+      model: env.OPENAI_EVALUATION_MODEL || env.OPENAI_MODEL,
+      wireApi: env.OPENAI_EVALUATION_WIRE_API || env.OPENAI_WIRE_API,
+      toolMode: 'structured',
+      visionMode: env.AI_VISION_MODE,
+      reasoningEffort: 'none',
+      maxOutputTokens: 192,
+      timeoutMs: env.AI_EVALUATION_TIMEOUT_MS || 28_000,
+    })
+    : null;
+  const evaluationLlm = providedEvaluationLLM || (evaluationPrimaryLlm
+    ? createFallbackLLM({
+      primary: evaluationPrimaryLlm,
+      fallback: evaluationFallbackLlm,
+      purpose: 'evaluation',
+      logger: app.log,
+    })
+    : evaluationFallbackLlm);
   const getCourse = providedGetCourse || ((courseId) => compileCourse({ lessonsRoot, courseId }));
   const evidenceStore = providedEvidenceStore
     || (persistentInfrastructureRequired && !evidenceStorageConfigured(env)
@@ -307,6 +367,7 @@ export async function buildApp({
   };
   const agent = createAgentService({
     llm,
+    evaluationLlm,
     understandingLlm,
     understandingTimeoutMs: env.AI_UNDERSTAND_TIMEOUT_MS,
     store,
@@ -315,6 +376,11 @@ export async function buildApp({
     logger: app.log,
   });
   const runtime = createCourseRunService({ store: runStore, getCourse, realtime });
+  const modelFallbackStatus = () => Object.fromEntries([
+    ['understanding', understandingLlm],
+    ['evaluation', evaluationLlm],
+  ].filter(([, client]) => typeof client?.status === 'function')
+    .map(([name, client]) => [name, client.status()]));
 
   await app.register(cors, { origin: true });
   await app.register(multipart, {
@@ -343,7 +409,11 @@ export async function buildApp({
       reply.header('www-authenticate', 'Bearer');
       return reply.code(401).send({ error: '未授权访问 readiness。' });
     }
-    const dependencies = await dependencyConfiguration(env, { databasePool, databaseProbe });
+    const dependencies = await dependencyConfiguration(env, {
+      databasePool,
+      databaseProbe,
+      modelFallbacks: modelFallbackStatus(),
+    });
     const ready = Object.values(dependencies)
       .every((dependency) => !dependency.required || (dependency.configured && dependency.healthy));
     return reply.code(ready ? 200 : 503).send({ ok: ready, dependencies });

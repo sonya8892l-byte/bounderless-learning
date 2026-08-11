@@ -260,6 +260,27 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     };
   });
 
+  // 阶段任务也要经过与角色任务相同的工具实例装配，服务端才能把它们当成一条
+  // 真正可执行的任务轨道。它只留在私有 Course 对象里，公开课程包仍由 toPublic 裁剪。
+  const phaseTracks = Object.fromEntries((lesson.phases || []).map((phase) => {
+    const track = {
+      id: phase.id,
+      scope: 'phase',
+      phaseId: phase.id,
+      name: phase.name || '课程导入',
+      location: phase.location || lesson.venue || '',
+      geofence: '',
+      tasks: (phase.tasks || []).map((task) => ({
+        ...task,
+        guidance: task.inlineGuidance || task.guide || '',
+        scaffold: task.inlineScaffold || '',
+        acceptance: task.inlineAcceptance || '',
+      })),
+    };
+    track.tools = buildToolInstances(track);
+    return [phase.id, track];
+  }));
+
   const phasePrompts = Object.fromEntries(
     Object.entries(files)
       .filter(([filename]) => /^prompts\/phase\d+-.+\.md$/.test(filename))
@@ -333,6 +354,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
       logistics: logistics.logistics,
     },
     roles,
+    phaseTracks,
     taskGraph,
     knowledge: parseKnowledge(files),
     restrictions,

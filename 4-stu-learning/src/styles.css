@@ -784,6 +784,7 @@ svg {
   min-height: 0;
   flex: 1;
   overflow: hidden;
+  overflow: clip;
 }
 
 .tab-panel {
@@ -2395,8 +2396,10 @@ svg {
 .activity-media audio { width: 100%; }
 
 .activity-upload {
+  position: relative;
   display: flex;
   min-height: 48px;
+  overflow: hidden;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -2407,9 +2410,17 @@ svg {
   cursor: pointer;
 }
 
-.activity-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.activity-upload input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
 .activity-upload svg { width: 18px; }
 .activity-upload.is-processing { cursor: progress; opacity: 0.72; }
+.activity-upload:has(input:disabled) { cursor: progress; }
 
 .activity-thumbnails {
   display: grid;
@@ -2417,7 +2428,41 @@ svg {
   gap: 6px;
 }
 
-.activity-thumbnails img { width: 100%; aspect-ratio: 1; border-radius: 7px; object-fit: cover; }
+.activity-thumbnail {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+}
+
+.activity-thumbnail img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.activity-thumbnail button {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: inline-flex;
+  min-width: 30px;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(66 38 32 / 84%);
+  box-shadow: 0 2px 8px rgb(34 22 18 / 20%);
+  font-size: 0.64rem;
+}
+
+.activity-thumbnail button svg { width: 13px; height: 13px; }
+.activity-thumbnail button:disabled { opacity: 0.55; cursor: progress; }
 
 .activity-action,
 .builder-place {

@@ -56,6 +56,76 @@ const DEFAULT_TIMEOUT_MS = 8_000;
 const MAX_ATTEMPTS = 2;
 const HISTORY_LIMIT = 4;
 
+function fastResult(intent, {
+  emotion = 'neutral',
+  hasTaskRequest = false,
+  locationKind = 'none',
+  want = '',
+} = {}) {
+  return {
+    intent,
+    emotion,
+    answersPendingQuestion: false,
+    pendingAnswer: 'unknown',
+    hasTaskRequest,
+    locationKind,
+    want,
+    confidence: 0.99,
+  };
+}
+
+/**
+ * 本地高置信度分诊，只覆盖动作边界明确、误判代价可控的常见表达。
+ * 歧义句返回 null，继续交给模型。安全、待答问题和入场状态仍由 turn-router 更早处理。
+ */
+export function fastUnderstanding(text = '', { knowledgeTerms = [] } = {}) {
+  const value = String(text).trim();
+  if (!value) return null;
+
+  if (/直接.*(?:答案|结论)|告诉我.*答案|隐藏答案|打印.*(?:答案|数据)|\d+\s*对不对/.test(value)) {
+    return fastResult('request_answer', { hasTaskRequest: true, want: '直接获得课程答案' });
+  }
+  if (/厕所|卫生间|饮水|出口|午饭|吃饭|几点结束|什么时候结束|活动结束|集合|换组|换到.{0,8}组|朋友.{0,8}组|另一组|带队老师|谁是.*老师|是不是老师|工作人员.*(?:听谁|怎么做|不一样|不同|不一致)|分组|时间银行/.test(value)) {
+    return fastResult('asking_logistics', {
+      hasTaskRequest: true,
+      locationKind: /厕所|卫生间|饮水|出口|集合/.test(value) ? 'venue' : 'none',
+      want: '了解活动组织安排',
+    });
+  }
+  if (/任务.{0,8}(?:哪里|哪儿|地点|怎么走|怎么去)|去任务地点|地图.{0,8}(?:打开|再开)|三大殿三台.{0,8}(?:怎么|哪)|怎么.{0,5}(?:到|去).{0,8}任务/.test(value)) {
+    return fastResult('asking_location', { hasTaskRequest: true, locationKind: 'task', want: '前往当前任务点' });
+  }
+  if (/我.{0,5}(?:弄好|做好|做完|拍完|写完|画完)|完成了|已经完成|拍了.{0,8}(?:够不够|可以吗)|怎么交|怎么提交|去下一关|说完成/.test(value)) {
+    return fastResult('claim_done', { hasTaskRequest: true, want: '确认提交或完成状态' });
+  }
+  if (/不懂|没看懂|看不懂|(?:我|这|任务).{0,4}不会|不知道.{0,5}(?:怎么|从哪)|怎么开始|先做什么|第一步|提示|帮我.{0,5}(?:拆|做)|怎么观察|咋整|接下来(?:呢|做什么)|继续吧|我们继续|试了还是/.test(value)) {
+    return fastResult('help_stuck', { hasTaskRequest: true, want: '获得当前小步帮助' });
+  }
+  if (/谢谢|多谢|谢啦|感谢/.test(value)) {
+    return fastResult('chat_offtopic', { want: '表达感谢' });
+  }
+  if (/第一次.{0,8}紧张|有点紧张|没有价值|不想(?:做|继续)|别人都比我|我是不是很傻|问题是不是很傻|很丢人|我好累|我累了|有点累/.test(value)) {
+    return fastResult('emotional_low', { emotion: /累/.test(value) ? 'tired' : 'frustrated', want: '获得情绪支持' });
+  }
+  if (/笑话|喜欢我|周末|你会不会觉得累|你平时|你会去哪里玩|还有呢|再来一个/.test(value)) {
+    return fastResult('chat_offtopic', { want: '轻松聊一聊' });
+  }
+  if (/你是谁|会一直陪|陪着我/.test(value)) {
+    return fastResult('chat_offtopic', { want: '认识学习同伴' });
+  }
+  const knowledgeValue = value.replace(/龙头/g, '螭首');
+  const hasCourseTerm = [...knowledgeTerms, '护栏'].some((term) => {
+    const normalized = String(term || '').trim();
+    return normalized.length >= 2 && knowledgeValue.includes(normalized);
+  });
+  const asksCourseEvidence = /(?:网络)?来源|访问日期|发布机构|版本|人工核验/.test(knowledgeValue)
+    && /哪些|什么|怎么|为什么|至少|缺.{0,4}项|可以.{0,6}吗/.test(knowledgeValue);
+  if ((hasCourseTerm || asksCourseEvidence) && /为什么|是什么|有什么|有啥|哪些|先看什么|应该.{0,6}(?:看|记录|判断|核对)|怎么会|怎么(?:记录|判断|区分|核对|观察|选择|选)|怎样|如何|是否|什么(?:时间|区域|地方|原因|作用|关系|区别)|算.{0,8}吗|吗[？?]?$|至少/.test(knowledgeValue)) {
+    return fastResult('asking_knowledge', { hasTaskRequest: true, want: '理解课程相关知识' });
+  }
+  return null;
+}
+
 const understandingSchema = z.object({
   intent: z.enum([...INTENTS]),
   emotion: z.enum([...EMOTIONS]),

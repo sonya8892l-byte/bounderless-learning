@@ -112,3 +112,58 @@ test('模型内部超时返回 LLM_TIMEOUT，不伪装成客户端取消', async
   );
   assert.equal(calls, 1);
 });
+
+test('流式模型以 length 结束时不把半截文本当成完整回复', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => new Response([
+    `data: ${JSON.stringify({ choices: [{ delta: { content: '这是一句还没说完的' }, finish_reason: null }] })}`,
+    '',
+    `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: 'length' }] })}`,
+    '',
+    'data: [DONE]',
+    '',
+  ].join('\n'), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+
+  const llm = createLLM({
+    baseUrl: 'https://example.test/v1',
+    apiKey: 'test-key',
+    model: 'test-model',
+    wireApi: 'chat_completions',
+    timeoutMs: 5000,
+  });
+
+  await assert.rejects(
+    llm.generate({
+      instructions: '回答问题。',
+      messages: [{ role: 'user', content: '请完整回答' }],
+      onTextDelta: () => {},
+    }),
+    /未完整生成/,
+  );
+});
+
+test('模型流 EOF 前没有终态时不产出完成消息', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => new Response(
+    `data: ${JSON.stringify({ choices: [{ delta: { content: '半句' }, finish_reason: null }] })}\n\n`,
+    { status: 200, headers: { 'content-type': 'text/event-stream' } },
+  );
+  const llm = createLLM({
+    baseUrl: 'https://example.test/v1',
+    apiKey: 'test-key',
+    model: 'test-model',
+    wireApi: 'chat_completions',
+    timeoutMs: 5000,
+  });
+
+  await assert.rejects(
+    llm.generate({
+      instructions: '回答问题。',
+      messages: [{ role: 'user', content: '请完整回答' }],
+      onTextDelta: () => {},
+    }),
+    /完整结束前中断/,
+  );
+});

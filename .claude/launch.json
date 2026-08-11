@@ -9,6 +9,12 @@
       "autoPort": false
     },
     {
+      "name": "student",
+      "port": 5173,
+      "url": "http://localhost:5173",
+      "autoPort": false
+    },
+    {
       "name": "pr-docs",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8766", "--directory", "/Users/sonyal/Library/Mobile Documents/com~apple~CloudDocs/狗生4 - SRT/27 培训学习新产品设计/6 研学/5 故宫课程/3-pr"],

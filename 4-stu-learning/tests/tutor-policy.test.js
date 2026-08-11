@@ -314,7 +314,7 @@ test('重复：知识族与社交族分开计数，互不污染', () => {
   assert.equal(decision.params.refocus, undefined, '之前的闲聊不该让第一个知识问题就被拉回');
 });
 
-test('重复：连续闲聊两次附拉回句，第三次才指回任务', () => {
+test('重复：连续闲聊只附温和拉回，不突然打开任务', () => {
   const twice = decideTutorAction(
     understanding({ intent: 'chat_offtopic' }),
     context({
@@ -337,7 +337,8 @@ test('重复：连续闲聊两次附拉回句，第三次才指回任务', () =>
       ],
     }),
   );
-  assert.equal(thrice.action, 'redirect_task');
+  assert.equal(thrice.action, 'reply_natural');
+  assert.equal(thrice.params.refocus, true);
 });
 
 test('重复：连续澄清仍没读懂时给一个可操作的下一步', () => {
@@ -354,7 +355,7 @@ test('重复：连续澄清仍没读懂时给一个可操作的下一步', () =>
   assert.equal(decision.action, 'redirect_task');
 });
 
-test('重复：连续指回任务无进展时改给分级提示', () => {
+test('重复：连续询问提交边界仍按进度处理，不切成无关观察提示', () => {
   const decision = decideTutorAction(
     understanding({ intent: 'claim_done' }),
     context({
@@ -365,7 +366,7 @@ test('重复：连续指回任务无进展时改给分级提示', () => {
     }),
   );
 
-  assert.equal(decision.action, 'give_scaffold');
+  assert.equal(decision.action, 'redirect_task');
 });
 
 test('重复：问路与待答问题豁免——问两次路要给两次导航', () => {

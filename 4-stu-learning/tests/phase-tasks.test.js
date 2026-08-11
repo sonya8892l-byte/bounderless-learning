@@ -135,16 +135,15 @@ test('5 门课的角色任务节点数与终止节点数不受阶段任务影响
   assert.equal(roleNodes, 87, '角色任务仍是 87 个节点');
 });
 
-test('lesson_gewu_001 的 Phase 1 从散文变成三个可执行单元，其余阶段仍为空', async () => {
+test('lesson_gewu_001 的 Phase 1 有两个领角色前任务，其余阶段仍为空', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const [first, ...rest] = course.lesson.phases;
 
-  assert.equal(first.tasks.length, 3);
-  assert.deepEqual(first.tasks.map((task) => task.executor), ['全班', '个人', '个人']);
+  assert.equal(first.tasks.length, 2);
+  assert.deepEqual(first.tasks.map((task) => task.executor), ['全班', '个人']);
   assert.equal(first.tasks[0].tools[0].id, 'media');
   assert.equal(first.tasks[1].completionMode, 'ai_evaluation');
-  assert.equal(first.tasks[2].tools[0].id, 'scanner');
   assert.equal(first.flow.length, 6, '原有流程叙述保留');
   assert.equal(first.duration, '20min');
   assert.deepEqual(rest.map((phase) => phase.tasks.length), [0, 0, 0, 0, 0], '只迁移了 Phase 1');
@@ -189,7 +188,7 @@ test('lint 报到 phases.md 的正确行号，而不是笼统的第 1 行', asyn
   const { issues } = lintCourse(lintFixture(course), { lessonsRoot, courseId: course.id });
   const missing = issues.filter((item) => item.code === 'missing_acceptance' && item.file.endsWith('phases.md'));
 
-  assert.equal(missing.length, 2, '阶段任务 1 和 3 没写验收标准');
+  assert.equal(missing.length, 1, '阶段任务 1 没写就地验收标准');
   const phasesMarkdown = course.files['phases.md'].split('\n');
   for (const issue of missing) {
     assert.match(phasesMarkdown[issue.line - 1], /^###\s*阶段任务\d+[：:]/, `第 ${issue.line} 行不是阶段任务标题`);

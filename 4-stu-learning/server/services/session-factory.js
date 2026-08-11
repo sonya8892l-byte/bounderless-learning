@@ -15,7 +15,8 @@ export function createSessionRecord(values = {}) {
     groupId: values.groupId,
     runId: values.runId || null,
     participantId: values.participantId || null,
-    roleId: values.roleId,
+    // 领取角色前也有一段正式学习过程；空字符串表示当前正在跑阶段任务轨道。
+    roleId: values.roleId || '',
     // 课程 md＋平台包的联合内容指纹。主体未产出时存空串，不阻塞建会话。
     contentVersion: values.contentVersion || '',
     grade: values.grade || '初中',
@@ -24,6 +25,8 @@ export function createSessionRecord(values = {}) {
     currentTaskIndex: 0,
     scaffoldLevel: 0,
     completedTaskIds: [],
+    // 角色补绑后把前置阶段的完成快照归档到这里，当前角色进度仍使用 completedTaskIds。
+    phaseTaskState: values.phaseTaskState || null,
     events: [],
     messages: [],
     pendingTools: {},

@@ -36,7 +36,7 @@ export default {
           "AI向每个学生提问：「你觉得故宫暴雨时会积水吗？为什么？」",
           "收集学生的初始假设（C类数据：C2认知数据）",
           "引出核心问题：「600年，为什么不积水？今天我们一起找答案」",
-          "发放角色卡（扫码确认角色）"
+          "完成导入任务，进入角色选择页"
         ],
         "tasks": [
           {
@@ -181,73 +181,6 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 300,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
-            },
-            "nudgePolicy": {
-              "maxNudges": 2
-            },
-            "advanceMode": "auto_after_validation",
-            "scope": "phase",
-            "phaseId": "phase-1",
-            "executor": "个人"
-          },
-          {
-            "id": "phase-1-task-3",
-            "roleStageId": "",
-            "name": "扫码领取角色卡",
-            "phase": "课程任务",
-            "modules": "A07(扫码)",
-            "tools": [
-              {
-                "id": "scanner",
-                "module": "A07",
-                "name": "扫码识别",
-                "icon": "scan-line",
-                "output": "scanResult",
-                "config": {
-                  "mode": "qr",
-                  "allowManualEntry": true,
-                  "prompt": ""
-                }
-              }
-            ],
-            "requirement": "扫码成功并确认角色",
-            "guidanceSteps": [
-              "扫码成功并确认角色"
-            ],
-            "steps": [
-              {
-                "id": "phase-1-task-3-step-1",
-                "objective": "扫码成功并确认角色",
-                "studentAction": "扫码成功并确认角色",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
-                "location": {
-                  "mode": "inherit"
-                },
-                "tools": []
-              }
-            ],
-            "completionMode": "tool_result",
-            "evidenceRequirement": "扫码结果",
-            "passCondition": "扫码成功并确认角色",
-            "goals": "",
-            "prerequisites": [],
-            "toolType": "capture",
-            "image": "",
-            "location": {
-              "mode": "none",
-              "legacyMode": "none",
-              "name": "",
-              "coordinates": null,
-              "radiusMeters": null,
-              "geofence": "",
-              "verification": "none",
-              "minDwellSeconds": 0
-            },
-            "timing": {
-              "suggestedSeconds": 180,
               "idleNudgeSeconds": 180,
               "nudgeCooldownSeconds": 120
             },
@@ -425,7 +358,7 @@ export default {
                       "maxCount": 2,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "拍下螭首正面全景，同时保留台基边缘和周围位置；不要跨越护栏。"
+                      "prompt": "请安全拍摄，让螭首、台基边缘和周围位置同时入镜。"
                     }
                   }
                 ]

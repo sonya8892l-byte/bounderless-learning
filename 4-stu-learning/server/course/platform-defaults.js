@@ -171,10 +171,12 @@ export const LANGUAGE_LEVEL_DEFAULTS = Object.freeze({
 
 export const DEFAULT_LANGUAGE_LEVEL = '初中';
 
-// 年级文本 → 学段的匹配留在代码里：这是解析逻辑不是文案，顺序敏感（低年级先于小学）。
+// 年级文本 → 学段的匹配留在代码里。混合学段课程不能冒充某一个学生的真实年级；
+// 同时命中多档时回落初中，等学生档案或 URL 的 grade 提供唯一值。
 const GRADE_MATCHERS = Object.freeze([
-  Object.freeze({ id: '小学低年级', pattern: /一|二|三年级|低年级/ }),
-  Object.freeze({ id: '小学高年级', pattern: /四|五|六年级|小学/ }),
+  Object.freeze({ id: '小学低年级', pattern: /小学[一二三](?:年级)?|低年级|(?:^|[\s/、，,])[一二三]年级/ }),
+  Object.freeze({ id: '小学高年级', pattern: /小学[四五六](?:年级)?|小学高年级|(?:^|[\s/、，,])[四五六]年级/ }),
+  Object.freeze({ id: '初中', pattern: /初中|初[一二三]/ }),
   Object.freeze({ id: '高中', pattern: /高中|高一|高二|高三/ }),
 ]);
 
@@ -207,7 +209,11 @@ export function languageLevelFor(languageLevels, grade = '') {
   const levels = languageLevels && Object.keys(languageLevels).length
     ? languageLevels
     : resolveLanguageLevels(null);
-  const matched = GRADE_MATCHERS.find((matcher) => matcher.pattern.test(String(grade || '')))?.id;
+  const value = String(grade || '');
+  const matches = GRADE_MATCHERS.filter((matcher) => matcher.pattern.test(value));
+  const matched = matches.length === 1
+    ? matches[0].id
+    : (!matches.length && /小学/.test(value) ? '小学高年级' : DEFAULT_LANGUAGE_LEVEL);
   return levels[matched] || levels[DEFAULT_LANGUAGE_LEVEL];
 }
 

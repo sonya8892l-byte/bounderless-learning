@@ -195,7 +195,7 @@ function sameFamilyStreak(recentActions, family) {
  * 重复治理。按族分开处理，因为"重复"在不同族里意味着不同的事：
  *   求助族重复 = 提示不够用了 → 升档；到顶还在求助 → 转教师（不是撤走帮助）
  *   知识/组织族重复 = 学生确实有一串问题 → 照答，只在情绪允许时附一句拉回
- *   社交族重复 = 真的在跑题 → 附一句拉回，再连续则指回任务
+ *   社交族重复 = 真的在跑题 → 先回应当下，再附一句拉回
  */
 function withRepeatPolicy(decision, understanding, context) {
   const family = ACTION_FAMILY[decision.action];
@@ -243,18 +243,11 @@ function withRepeatPolicy(decision, understanding, context) {
   }
 
   if (family === 'social') {
-    if (streak >= REPEAT_LIMIT + 1 && mayRefocus) {
-      return {
-        action: 'redirect_task',
-        params: { ...params, refocus: true },
-        reason: '连续多轮无关闲聊且情绪平稳，改为指回当前任务。',
-      };
-    }
     if (streak >= REPEAT_LIMIT && mayRefocus) {
       return {
         ...decision,
         params: { ...params, refocus: true },
-        reason: `${decision.reason}连续多轮闲聊，回应后附一句拉回当前场景。`,
+        reason: `${decision.reason}连续多轮闲聊，仍先回应学生当前的话，再附一句邀请回到当前场景。`,
       };
     }
     return { ...decision, params };
@@ -269,13 +262,9 @@ function withRepeatPolicy(decision, understanding, context) {
     };
   }
 
-  if (family === 'progress' && streak >= REPEAT_LIMIT) {
-    return {
-      action: 'give_scaffold',
-      params: { ...params },
-      reason: '连续指回任务仍无进展，改为给当前小步的分级提示。',
-    };
-  }
+  // 多个“拍了够不够／纸上内容怎么交／能否去下一关”虽然都属于 progress，
+  // 实际是在追问不同的提交边界。继续按当前问题回答，不能换成无关的观察提示。
+  if (family === 'progress') return { ...decision, params };
 
   return { ...decision, params };
 }

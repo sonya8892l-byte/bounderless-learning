@@ -38,9 +38,18 @@ function renderPhoto(tool, context) {
       <i data-lucide="camera"></i>
       <span>${value.processing ? '正在准备图像检查…' : count ? `继续拍摄（已选 ${count} 张）` : '打开相机或相册'}</span>
       <input type="file" accept="${escapeHtml(config.accept || 'image/*')}" capture="environment" multiple
-        data-task-file="${escapeHtml(taskId)}" data-tool-step="${escapeHtml(stepId)}" />
+        data-task-file="${escapeHtml(taskId)}" data-tool-step="${escapeHtml(stepId)}" ${value.processing ? 'disabled' : ''} />
     </label>
-    ${count ? `<div class="activity-thumbnails">${images.map((url, index) => `<img src="${url}" alt="本小步现场证据 ${index + 1}" />`).join('')}</div>` : ''}
+    ${count ? `<div class="activity-thumbnails">${images.map((url, index) => `
+      <figure class="activity-thumbnail">
+        <img src="${escapeHtml(url)}" alt="本小步现场证据 ${index + 1}" />
+        <button type="button" data-action="remove-photo" data-task-id="${escapeHtml(taskId)}"
+          data-step-id="${escapeHtml(stepId)}" data-photo-index="${index}"
+          aria-label="删除第 ${index + 1} 张照片" ${value.processing ? 'disabled' : ''}>
+          <i data-lucide="x"></i><span>删除</span>
+        </button>
+      </figure>
+    `).join('')}</div>` : ''}
   `, `${count}/${minimum}`);
 }
 

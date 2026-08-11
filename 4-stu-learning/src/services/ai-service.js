@@ -153,6 +153,15 @@ async function sendAgentTurnAttempt(payload, onEvent, { timeoutMs }) {
       }
     }
     if (agentError) throw agentError;
+    if (
+      events.some((event) => event.type === 'assistant.delta')
+      && !events.some((event) => event.type === 'assistant.completed')
+    ) {
+      throw new AgentRequestError('絮絮的回复没有完整传到，请重试。', {
+        code: 'AGENT_STREAM_INCOMPLETE',
+        retryable: true,
+      });
+    }
     return events;
   } catch (error) {
     throw normalizeTransportError(error, timedOut);

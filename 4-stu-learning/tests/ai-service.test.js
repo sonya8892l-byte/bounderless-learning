@@ -219,3 +219,19 @@ test('流中断后的回放会抑制重复终态事件，delta 仍允许相同�
     agentEventReplayKey(completedEvent()),
   );
 });
+
+test('收到 delta 却没有 completed 时按不完整回复报错', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => sseResponse([
+    { type: 'assistant.delta', data: { text: '这是一句没有传完的' } },
+  ]);
+
+  await assert.rejects(
+    sendAgentTurn(turnPayload, () => {}, {
+      maxTransportRetries: 0,
+      maxPendingRetries: 0,
+    }),
+    (error) => error.code === 'AGENT_STREAM_INCOMPLETE' && error.retryable === true,
+  );
+});

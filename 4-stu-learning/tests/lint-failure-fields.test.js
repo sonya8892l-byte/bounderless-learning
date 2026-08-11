@@ -82,9 +82,9 @@ test('配对正确且有实质失败处理 → 两条规则都不报', async () 
   assert.equal(issues.filter((item) => item.code === 'empty_failure_handling').length, 0);
 });
 
-test('5 门真课程仍 0 error、57 warning（配对回归锁）', async () => {
+test('5 门真课程仍 0 error、56 warning（配对回归锁）', async () => {
   const { issues } = await lintAllCourses({ lessonsRoot });
   const summary = summarizeIssues(issues);
   assert.equal(summary.errors, 0);
-  assert.equal(summary.warnings, 57);
+  assert.equal(summary.warnings, 56);
 });

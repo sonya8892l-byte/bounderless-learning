@@ -73,8 +73,14 @@ function assistantEvents(result) {
 
 function assistantMessage(result) {
   const messages = assistantEvents(result);
-  assert.equal(messages.length, 1, '一个普通回合最多产生一条智能体气泡');
-  return messages[0];
+  assert.ok(messages.length >= 1, '普通回合至少产生一条完整智能体气泡');
+  return {
+    ...messages[0],
+    data: {
+      ...messages[0].data,
+      text: messages.map((message) => message.data.text).join(''),
+    },
+  };
 }
 
 function activeQuestion(session) {

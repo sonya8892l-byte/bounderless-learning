@@ -5,6 +5,7 @@ import { TOOL_DEFINITIONS, validateClientTool } from './tools.js';
 import { findSpoiler, retrieveKnowledge } from '../course/retrieval.js';
 import { renderVoice } from '../course/voice.js';
 import { resolveStepRestrictions } from '../course/restriction-sections.js';
+import { toLogisticsContext } from '../course/agent-context.js';
 import { evaluateNudge, recordNudge } from './nudge-policy.js';
 import {
   advanceToNextTask,
@@ -43,7 +44,7 @@ import {
   routeInput,
   toolsForDecision,
 } from './turn-router.js';
-import { createUnderstanding } from './understanding.js';
+import { createUnderstanding, fastUnderstanding } from './understanding.js';
 import { phaseNumber } from '../services/session-factory.js';
 import { decideTutorAction } from './tutor-policy.js';
 import {
@@ -55,6 +56,7 @@ import {
   conversationRepair,
   nextOnboardingQuestion,
   readinessQuestion,
+  splitGradeResponse,
   taskRequiresArrival,
   unclearInputReply,
 } from './dialogue-policy.js';
@@ -68,24 +70,215 @@ export class AgentActionError extends Error {
   }
 }
 
+function courseConversationTrack(course, phaseId) {
+  const phase = course.lesson.phases.find((item) => item.id === phaseId)
+    || course.lesson.phases[0]
+    || { id: phaseId || 'phase-1', name: '课程导入', tasks: [] };
+  return {
+    id: phase.id,
+    phaseId: phase.id,
+    scope: 'phase',
+    name: phase.name || '课程导入',
+    location: phase.location || course.lesson.venue || '',
+    geofence: '',
+    tasks: [{
+      id: `${phase.id}-conversation`,
+      roleStageId: `${phase.id}-conversation`,
+      name: phase.name || '课程交流',
+      requirement: '可以向絮絮询问本次课程、现场安排和学习方法。',
+      passCondition: '保持对话并等待课程任务开始',
+      evidenceRequirement: '',
+      guidanceSteps: ['说说你现在最想了解的问题'],
+      steps: [{
+        id: `${phase.id}-conversation-step-1`,
+        objective: '提出当前问题',
+        studentAction: '说说你现在最想了解的问题',
+        completionMode: 'user_confirm',
+        evidenceRequirement: '',
+        tools: [],
+      }],
+      tools: [],
+      location: { mode: 'none', verification: 'none' },
+      timing: {},
+      nudgePolicy: {},
+      advanceMode: 'auto_after_validation',
+      scope: 'phase',
+      phaseId: phase.id,
+      executor: '个人',
+    }],
+    tools: [],
+  };
+}
+
+function phaseTrackFor(course, phaseId) {
+  const track = course.phaseTracks?.[phaseId];
+  return track?.tasks?.length ? track : courseConversationTrack(course, phaseId);
+}
+
+function entryPhaseTrackFor(course) {
+  const rolePhaseIndex = course.lesson.phases.findIndex(
+    (item) => item.id === course.lesson.roleSystem.phaseId,
+  );
+  const preRolePhases = rolePhaseIndex > 0
+    ? course.lesson.phases.slice(0, rolePhaseIndex)
+    : [];
+  const phase = preRolePhases.find((item) => course.phaseTracks?.[item.id]?.tasks?.length)
+    || course.lesson.phases.find((item) => item.id === course.lesson.roleSystem.phaseId)
+    || course.lesson.phases[0];
+  return phaseTrackFor(course, phase?.id || course.lesson.roleSystem.phaseId);
+}
+
 function roleFor(course, session) {
+  if (!session.roleId) return phaseTrackFor(course, session.phaseId);
   const role = course.roles.find((item) => item.id === session.roleId);
   if (!role) throw new Error(`会话角色 ${session.roleId} 不存在。`);
   return role;
+}
+
+function bindRoleToSession({ course, session, roleId }) {
+  const role = course.roles.find((item) => item.id === roleId);
+  if (!role) throw new AgentActionError(`角色 ${roleId} 不存在。`, 'ROLE_NOT_FOUND');
+  if (session.roleId) {
+    if (session.roleId !== role.id) {
+      throw new AgentActionError('当前会话已经领取了其他角色，请返回原角色继续。', 'ROLE_ALREADY_ASSIGNED');
+    }
+    return role;
+  }
+
+  const phaseTrack = phaseTrackFor(course, session.phaseId);
+  const configuredPhaseTasks = course.phaseTracks?.[session.phaseId]?.tasks || [];
+  const missing = configuredPhaseTasks.filter(
+    (task) => !session.completedTaskIds.includes(`${phaseTrack.id}:${task.id}`),
+  );
+  if (missing.length) {
+    throw new AgentActionError(
+      `请先完成「${missing[0].name}」，再领取角色。`,
+      'PHASE_TASKS_INCOMPLETE',
+      { missingTaskIds: missing.map((task) => task.id) },
+    );
+  }
+
+  // 角色补绑只切换任务轨道，消息、证据引用和对话记忆都留在原会话里。
+  session.phaseTaskState = {
+    phaseId: session.phaseId,
+    currentTaskIndex: session.currentTaskIndex,
+    completedTaskIds: [...session.completedTaskIds],
+    completedAt: new Date().toISOString(),
+  };
+  session.roleId = role.id;
+  session.phaseId = course.lesson.roleSystem.phaseId;
+  session.phaseNumber = phaseNumber(session.phaseId);
+  session.currentTaskIndex = 0;
+  session.completedTaskIds = [];
+  session.pendingTools = {};
+  session.pendingAdvance = null;
+  session.taskState = {};
+  session.locationState = null;
+  session.onboardingState = {
+    arrivedConfirmed: false,
+    readyConfirmed: false,
+    completed: false,
+  };
+  session.dialogueState = null;
+  session.learningState = null;
+  session.events.push(`${role.id}:role-assigned`);
+  return role;
+}
+
+function compactSourceLabel(source = '') {
+  const value = String(source).split(/https?:\/\/|；|;/)[0].trim();
+  return value.length > 42 ? `${value.slice(0, 40)}…` : value;
+}
+
+function titleBigrams(value = '') {
+  const compact = String(value).replace(/[^\p{L}\p{N}]+/gu, '');
+  const values = [];
+  for (let index = 0; index < compact.length - 1; index += 1) values.push(compact.slice(index, index + 2));
+  return values;
+}
+
+function platformSocialReply(text, course) {
+  const value = String(text || '');
+  const name = course?.platformDefaults?.companion?.name || PLATFORM_COMPANION.name;
+  if (/你是谁|会一直陪|陪着我/.test(value)) {
+    return `我是${name}，今天会在这门课里陪你观察、提问和完成任务。遇到不懂或不舒服的地方，都可以直接告诉我。`;
+  }
+  if (/笑话/.test(value)) return '来一个小小的：古建筑最怕什么？最怕大家只顾拍照，却忘了抬头观察。这个有一点冷，但我还挺喜欢。';
+  if (/喜欢我/.test(value)) return '我很愿意和你一起学习，也会认真听你说。你不需要讨好我，真实说出自己的想法就很好。';
+  if (/周末|你会去哪里玩/.test(value)) return `我不会自己出去玩，不过会留在这里等你。你下次回来时，${name}还会继续听你的新发现。`;
+  if (/你会不会觉得累/.test(value)) return '我不会像人一样身体疲惫，不过也可能有没听懂的时候。你发现我答偏了，直接提醒我就好。';
+  if (/你平时/.test(value)) return '我平时会帮学生理清问题、找课程线索、检查证据，也会在需要时帮忙联系老师。';
+  if (/还有呢|再来一个/.test(value)) return '再来一个：为什么古建筑里的龙总爱张着嘴？因为它们遇到下雨天，还要认真上班呀。你也可以观察一下，它的嘴和排水有什么关系。';
+  if (/谢谢|多谢|谢啦|感谢/.test(value)) return '不客气呀。你的问题很值得认真听，我们按你的节奏继续。';
+  return '';
+}
+
+function platformLogisticsReply(text, { course, session, role } = {}) {
+  const value = String(text || '');
+  const context = toLogisticsContext({ course, session, role, teacherName: session?.teacherName || '' });
+  const phrases = context.phrases || {};
+  const teacherName = context.teacherName || '带队老师';
+  if (/穿.{0,12}衣服.{0,8}是不是老师|那个人.{0,8}是不是老师/.test(value)) {
+    return '只看衣服还不能确认身份。先找胸牌或带队标识，也可以直接问带队老师；没有确认前，不要单独跟着陌生人离开小组。';
+  }
+  if (/工作人员.*老师.*(?:不一样|不同|不一致)|工作人员.*(?:听谁|怎么做)/.test(value)) {
+    return '先停在原地，不要自己改路线。把工作人员说的内容告诉带队老师，以带队老师确认后的安排为准；如果现场有即时安全管控，先服从工作人员的安全指令。';
+  }
+  if (/谁是.{0,4}(?:我的)?带队老师|带队老师.{0,6}(?:是谁|在哪里|在哪)/.test(value)) {
+    if (teacherName !== '带队老师') return `你的带队老师是${teacherName}。如果现场一时找不到老师，先和小组待在一起，不要独自离开。`;
+    return '我这里没有你的带队老师姓名。请看小组或活动信息里的带队标识；如果现场一时找不到老师，先和小组待在一起，不要独自离开。';
+  }
+  if (/厕所|卫生间/.test(value) && /跟谁说|先说|告诉谁/.test(value)) {
+    return `先跟${teacherName}说，不要自己离开小组；具体位置以老师或现场工作人员指引为准。`;
+  }
+  if (/厕所|卫生间|饮水|出口/.test(value)) {
+    return phrases['设施位置'] || '这个我没有场馆平面图，问带队老师或者现场工作人员最快。';
+  }
+  if (/午饭|吃饭|集合.{0,8}(?:哪里|哪儿|地点)|(?:哪里|哪儿).{0,5}集合/.test(value)) {
+    return phrases['信息缺失'] || '我这里没有这个信息，问一下带队老师最快。';
+  }
+  if (/几点结束|什么时候结束|活动结束/.test(value)) {
+    const duration = context.phaseDuration || context.duration;
+    if (duration) return (phrases['时间安排'] || '这个阶段计划{duration}。具体几点结束要看现场进度，以带队老师的安排为准。').replace('{duration}', duration);
+    return phrases['信息缺失'] || '我这里没有这个信息，问一下带队老师最快。';
+  }
+  if (/换组|换到.{0,8}组|朋友.{0,8}组|另一组/.test(value)) {
+    return phrases['需要老师定'] || '这个要带队老师决定，我没法替老师安排。你现在就可以去问问。';
+  }
+  return '';
+}
+
+function platformEmotionReply(text) {
+  const value = String(text || '');
+  if (/第一次.{0,8}紧张|有点紧张/.test(value)) {
+    return '第一次来有点紧张很正常。你先跟紧小组，不用急着把所有事情一次做好；我会陪你把任务一步一步拆开。';
+  }
+  if (/别人都比我|我是不是很傻|问题是不是很傻|很丢人/.test(value)) {
+    return '你愿意把不懂的地方说出来，已经是在认真学习了。先不用和别人比，我们只找眼前最小的一步；你卡在观察、理解，还是表达上？';
+  }
+  if (/没有价值|不想(?:做|继续)/.test(value)) {
+    return '我听到你现在有点泄气。先不用勉强自己往前冲，我们可以停一下，再只做一个很小的动作；如果你愿意，告诉我最难受或最卡的地方。';
+  }
+  if (/我好累|我累了|有点累/.test(value)) {
+    return '累了可以先停一停，和同伴待在一起，喝口水、缓一缓。等你觉得可以了，我们再从最小的一步继续。';
+  }
+  return '';
 }
 
 function sourceMeta(knowledge, input, decision) {
   if (knowledge.length) {
     return {
       mode: 'course',
-      label: `[课程知识库｜${knowledge[0].source}]`,
+      label: `[课程知识库｜${compactSourceLabel(knowledge[0].source)}]`,
       citations: knowledge.map(({ id, topic, source }) => ({ id, title: topic, source })),
     };
+  }
+  if (decision.needsKnowledge) {
+    return { mode: 'course-missing', label: '[课程资料暂未覆盖]', citations: [] };
   }
   if (decision.sourceMode === 'course-config' || input.type !== 'user_text') {
     return { mode: 'course-config', label: '', citations: [] };
   }
-  if (decision.needsKnowledge) return { mode: 'model', label: '[根据AI已有知识]', citations: [] };
   return { mode: 'conversation', label: '', citations: [] };
 }
 
@@ -271,18 +464,25 @@ function parseEvaluationResult(text = '') {
     if (typeof result.passed !== 'boolean') return null;
     return {
       passed: result.passed,
-      feedback: String(result.feedback || '').trim().slice(0, 260),
-      missing: Array.isArray(result.missing) ? result.missing.map((item) => String(item).slice(0, 80)).slice(0, 4) : [],
+      feedback: String(result.feedback || '').trim(),
+      missing: Array.isArray(result.missing)
+        ? [...new Set(result.missing.map((item) => String(item).trim()).filter(Boolean))].slice(0, 2)
+        : [],
+      safetyIssue: Boolean(result.safetyIssue),
     };
   } catch {
     return null;
   }
 }
 
-function evaluationImages(input) {
+function evaluationImages(input, step) {
+  const configuredMaximum = Number(
+    step?.tools?.find((tool) => tool.id === 'photo')?.config?.maxCount || 2,
+  );
+  const maximum = Math.min(6, Math.max(1, configuredMaximum));
   return (Array.isArray(input.data?.stepImages) ? input.data.stepImages : [])
     .filter((image) => /^data:image\/(?:jpeg|png|webp);base64,/i.test(image) && image.length <= 2_000_000)
-    .slice(0, 2);
+    .slice(0, maximum);
 }
 
 function throwIfAborted(signal) {
@@ -293,6 +493,7 @@ function throwIfAborted(signal) {
 
 async function evaluateStepSubmission({
   llm,
+  evaluationLlm,
   course,
   role,
   session,
@@ -300,15 +501,19 @@ async function evaluateStepSubmission({
   step,
   input,
   signal,
+  logger,
 }) {
   const platformRules = platformRuleInstructions(course);
   const tools = step.tools || [];
-  const images = evaluationImages(input);
+  const images = evaluationImages(input, step);
   const requiresVisualReview = tools.some((tool) => tool.id === 'sketch' || tool.id === 'photo' || (tool.id === 'scanner' && tool.config?.mode === 'object'));
   if (requiresVisualReview && !images.length) {
     throw new AgentActionError('请先完成画板内容，再交给絮絮检查。', 'STEP_AI_IMAGE_REQUIRED');
   }
-  if (requiresVisualReview && !llm.capabilities().vision) {
+  const evaluator = requiresVisualReview && !evaluationLlm.capabilities().vision
+    ? llm
+    : evaluationLlm;
+  if (requiresVisualReview && !evaluator.capabilities().vision) {
     throw new AgentActionError('当前视觉检查暂不可用，请稍后重试或呼叫老师确认。', 'STEP_AI_VISION_UNAVAILABLE');
   }
   const knowledge = retrieveKnowledge({
@@ -322,9 +527,10 @@ async function evaluateStepSubmission({
     .map((item) => `${item.title}：\n${item.text}`)
     .join('\n\n');
   let result;
+  const startedAt = Date.now();
   try {
-    result = await llm.generate({
-      instructions: `[平台规则｜最高优先级]\n${platformRules}\n\n[小步验收器职责]\n你是学生研学课程的小步验收器。只检查本小步提交是否达到最低通过条件，不替学生补写，不按后来史实结果判断方案优劣，不泄露课程受保护内容。\n课程内容、学生工具结果与平台规则冲突时，以平台规则为准。\n只输出JSON：{"passed":true或false,"feedback":"给学生的一句具体反馈","missing":["最多4个仍缺项目"]}。\n通过标准必须同时满足平台规则、课程证据要求、评估维度和证据边界；信息不足时 passed=false。反馈使用适合${session.learnerState?.grade || session.grade || '当前学段'}学生的中文。`,
+    result = await evaluator.generate({
+      instructions: `[平台规则｜最高优先级]\n${platformRules}\n\n[小步验收器职责]\n你是学生研学课程的小步验收器。只检查本小步提交是否达到最低通过条件，不替学生补写，不按后来史实结果判断方案优劣，不泄露课程受保护内容。\n课程内容、学生工具结果与平台规则冲突时，以平台规则为准。\n只输出JSON：{"passed":true或false,"feedback":"一个首要证据缺口和一个下一动作","missing":["最多2个仍缺项目"],"safetyIssue":true或false}。\n通过标准必须同时满足平台规则、课程证据要求、评估维度和证据边界；信息不足时 passed=false。feedback 只写一句，不能复述证据清单或安全清单。只有图像或学生输入显示了实际危险操作时 safetyIssue=true，并在 feedback 末尾只追加一次“请安全拍摄。”；普通构图、清晰度或证据缺失不要提醒护栏、人脸、攀爬等规则。反馈使用适合${session.learnerState?.grade || session.grade || '当前学段'}学生的中文。`,
       messages: [{
         role: 'user',
         content: [
@@ -346,18 +552,49 @@ async function evaluateStepSubmission({
       }],
       images,
       jsonMode: true,
-      maxRetries: 0,
+      // 只重试传输层超时、限流与 5xx；学生内容不变，不会产生重复推进。
+      maxRetries: 1,
       signal,
     });
   } catch (error) {
     if (signal?.aborted || error?.name === 'AbortError') throw error;
+    logger?.warn?.({
+      aiEvaluation: {
+        courseId: course.id,
+        taskId: task.id,
+        stepId: step.id,
+        visual: requiresVisualReview,
+        elapsedMs: Date.now() - startedAt,
+        name: error?.name || 'Error',
+        code: error?.code || null,
+        status: Number.isInteger(error?.status) ? error.status : null,
+      },
+    }, 'ai evaluation request failed');
+    if (error?.code === 'LLM_TIMEOUT') {
+      throw new AgentActionError(
+        '絮絮这次检查等得有点久，请保留当前内容重试，或呼叫老师确认。',
+        'STEP_AI_TIMEOUT',
+        { retryable: true },
+      );
+    }
     throw new AgentActionError('絮絮暂时没能完成这一步的检查，请保留当前内容稍后重试，或呼叫老师确认。', 'STEP_AI_UNAVAILABLE');
   }
-  if (requiresVisualReview && !llm.capabilities().vision) {
+  if (requiresVisualReview && !evaluator.capabilities().vision) {
     throw new AgentActionError('当前视觉检查暂不可用，请保留画板内容稍后重试，或呼叫老师确认。', 'STEP_AI_VISION_UNAVAILABLE');
   }
   const evaluation = parseEvaluationResult(result.text);
   if (!evaluation) {
+    logger?.warn?.({
+      aiEvaluation: {
+        courseId: course.id,
+        taskId: task.id,
+        stepId: step.id,
+        visual: requiresVisualReview,
+        elapsedMs: Date.now() - startedAt,
+        code: 'INVALID_RESULT',
+        responseChars: String(result.text || '').length,
+      },
+    }, 'ai evaluation result invalid');
     throw new AgentActionError('絮絮收到了一份无法解析的检查结果，请稍后再试。', 'STEP_AI_INVALID_RESULT');
   }
   if (findSpoiler(evaluation.feedback, course, session)) {
@@ -366,6 +603,16 @@ async function evaluateStepSubmission({
       : '这一步仍缺少可核对的证据，请回看小步要求后补充。';
   }
   evaluation.missing = evaluation.missing.filter((item) => !findSpoiler(item, course, session));
+  logger?.debug?.({
+    aiEvaluation: {
+      courseId: course.id,
+      taskId: task.id,
+      stepId: step.id,
+      visual: requiresVisualReview,
+      elapsedMs: Date.now() - startedAt,
+      passed: evaluation.passed,
+    },
+  }, 'ai evaluation completed');
   return evaluation;
 }
 
@@ -452,6 +699,16 @@ function workflowResult({ decision, role, session, course, input }) {
   const voice = course?.platformDefaults?.voice;
   const say = (key, params = {}) => renderVoice(voice, key, params);
   const locationName = task.location?.name || role.location;
+  if (decision.intent === 'phase_started') {
+    // 阶段任务发生在角色领取前，不需要再问一次“是否到达／是否准备好”。
+    // 前端点击进入课程就是明确的开始信号，直接打开当前阶段任务。
+    session.onboardingState.arrivedConfirmed = true;
+    session.onboardingState.readyConfirmed = true;
+    session.onboardingState.completed = true;
+    confirmDialogueSlot(session, 'arrival', true);
+    confirmDialogueSlot(session, 'readiness', true);
+    return startCurrentRoleStage({ session, task, tool });
+  }
   if (decision.intent === 'role_assigned') {
     if (!taskRequiresArrival(task) || session.locationState?.status === 'arrived') {
       confirmDialogueSlot(session, 'arrival', true);
@@ -697,8 +954,10 @@ function workflowResult({ decision, role, session, course, input }) {
       const evaluation = input.data.aiEvaluation;
       return {
         text: [
-          evaluation.feedback || say('task_step_completed.补充默认语'),
-          evaluation.missing?.length ? say('task_step_completed.还需要', { items: evaluation.missing.join('、') }) : '',
+          evaluation.feedback
+            || (evaluation.missing?.length
+              ? say('task_step_completed.还需要', { items: evaluation.missing.join('、') })
+              : say('task_step_completed.补充默认语')),
           evaluation.teacherRecommended ? say('task_step_completed.可呼叫老师') : '',
         ].filter(Boolean).join(' '),
         toolCalls: [],
@@ -781,18 +1040,6 @@ function immediatePrelude(decision, role, session, course) {
   // 澄清回合也要先接住一句：读不懂学生时最不该做的就是沉默几秒再问一句。
   if (decision.intent === 'clarify_intent') return renderVoice(voice, 'prelude.澄清');
   return '';
-}
-
-function knowledgeExcerptReply(knowledge, course) {
-  const content = String(knowledge[0]?.content || '')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^[-*]\s+/gm, '')
-    .replace(/\|/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!content) return '';
-  const excerpt = content.length > 110 ? `${content.slice(0, 108)}……` : content;
-  return renderVoice(course?.platformDefaults?.voice, 'knowledge.摘录', { excerpt });
 }
 
 function toolNarration(call, role, session, course) {
@@ -931,7 +1178,9 @@ function advanceRefusalError(actor, reason) {
   return new AgentActionError(messages[reason] || '这次推进没有生效。', `ADVANCE_${reason}`);
 }
 
-function applyToolResult({ course, session, role, input }) {
+async function applyToolResult({
+  course, session, role, input, llm, evaluationLlm, signal, logger,
+}) {
   if (input.type !== 'tool_result') return;
   const pending = session.pendingTools[input.toolCallId];
   if (!pending) throw new AgentActionError('当前任务卡已经失效，请让絮絮重新打开任务。', 'TOOL_CALL_EXPIRED');
@@ -989,7 +1238,8 @@ function applyToolResult({ course, session, role, input }) {
   const evidence = input.result?.evidence || [];
   const text = String(input.result?.values?.text || '').trim();
   const toolValues = input.result?.values?.toolValues || {};
-  const minimum = Number(pending.payload?.config?.minEvidenceCount || 1);
+  // 0 是“本任务不要求照片”的有效配置（视频、文字、扫码都会用到），不能被 || 吞掉。
+  const minimum = Number(pending.payload?.config?.minEvidenceCount ?? 1);
   const photoEvidenceCount = Number(input.result?.values?.photoEvidenceCount ?? evidence.length);
   if (minimum > 0 && photoEvidenceCount < minimum) {
     throw new AgentActionError(
@@ -1000,6 +1250,50 @@ function applyToolResult({ course, session, role, input }) {
   }
   if (!evidence.length && !text && !Object.keys(toolValues).length) {
     throw new AgentActionError('请先提交现场证据或观察记录。', 'EVIDENCE_REQUIRED');
+  }
+  if (task.completionMode === 'ai_evaluation') {
+    // 少数阶段任务只有任务级「完成方式」，没有手写 Step。它们的最终提交仍需真正经过
+    // AI 验收；否则课程写了 ai_evaluation，运行时却会直接判定完成。
+    const evaluationStep = {
+      id: `${task.id}-task-evaluation`,
+      objective: task.requirement || task.name,
+      studentAction: task.requirement || task.name,
+      evidenceRequirement: task.evidenceRequirement || task.passCondition,
+      tools: task.tools || [],
+      acceptance: task.acceptance || '',
+      knowledgeRef: task.goals || '',
+      commonMisconception: '',
+    };
+    const evaluationInput = {
+      ...input,
+      data: {
+        ...(input.data || {}),
+        toolValues: { [evaluationStep.id]: toolValues },
+      },
+    };
+    const evaluation = await evaluateStepSubmission({
+      llm,
+      evaluationLlm,
+      course,
+      role,
+      session,
+      task,
+      step: evaluationStep,
+      input: evaluationInput,
+      signal,
+      logger,
+    });
+    session.taskState.taskEvaluationAttempts = Number(
+      session.taskState.taskEvaluationAttempts || 0,
+    ) + 1;
+    input.data = { ...(input.data || {}), aiEvaluation: evaluation };
+    if (!evaluation.passed) {
+      throw new AgentActionError(
+        evaluation.feedback || '这项提交还需要补充后再试。',
+        'TASK_AI_EVALUATION_FAILED',
+        { missing: evaluation.missing || [] },
+      );
+    }
   }
   input.data = {
     ...(input.data || {}),
@@ -1072,6 +1366,8 @@ function finalizeToolResult({ session, role, input, course }) {
 
 export function createAgentService({
   llm,
+  // 验收默认复用主模型；应用装配层会提供带独立超时预算的专用客户端。
+  evaluationLlm = llm,
   store,
   getCourse,
   loadEvidence = async () => null,
@@ -1100,7 +1396,15 @@ export function createAgentService({
 
     const pendingQuestion = session.dialogueState?.pendingQuestion || null;
     const currentStep = currentStepOf(task, session);
-    const result = await understanding.understandTurn({
+    const knowledgeTerms = [
+      ...titleBigrams(course.lesson?.title),
+      ...(course.knowledge || []).flatMap((entry) => [
+      entry.topic,
+      entry.title,
+      ...(entry.tags || []),
+      ]),
+    ];
+    const result = fastUnderstanding(text, { knowledgeTerms }) || await understanding.understandTurn({
       text,
       pendingQuestion: pendingQuestion
         ? { prompt: pendingQuestion.prompt, type: pendingQuestion.kind || pendingQuestion.type || '' }
@@ -1154,11 +1458,15 @@ export function createAgentService({
 
   async function createSession(input) {
     const course = await getCourse(input.courseId);
-    const role = course.roles.find((item) => item.id === input.roleId);
+    const role = input.roleId
+      ? course.roles.find((item) => item.id === input.roleId)
+      : entryPhaseTrackFor(course);
     if (!role) throw new Error(`角色 ${input.roleId} 不存在。`);
+    const phaseId = input.roleId ? course.lesson.roleSystem.phaseId : role.phaseId;
     const session = await store.create({
       ...input,
-      phaseId: course.lesson.roleSystem.phaseId,
+      roleId: input.roleId || '',
+      phaseId,
       timeBalance: course.lesson.timeBank.initialBalance,
       contentVersion: course.contentVersion || '',
     });
@@ -1182,7 +1490,12 @@ export function createAgentService({
       return { duplicate: true, session, events: [] };
     }
     const course = await getCourse(session.courseId);
-    const role = roleFor(course, session);
+    const requestedRoleId = input.type === 'lifecycle_event' && input.event === 'role_assigned'
+      ? String(input.data?.roleId || '')
+      : '';
+    const role = requestedRoleId
+      ? bindRoleToSession({ course, session, roleId: requestedRoleId })
+      : roleFor(course, session);
     let task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
     if (['user_text', 'quick_reply'].includes(input.type)) markMeaningfulAction(session, Date.now(), 'user');
@@ -1201,7 +1514,7 @@ export function createAgentService({
           if (completionMode === 'ai_evaluation') {
             const step = task.steps[currentIndex];
             const evaluation = await evaluateStepSubmission({
-              llm, course, role, session, task, step, input, signal,
+              llm, evaluationLlm, course, role, session, task, step, input, signal, logger,
             });
             session.taskState.stepAttempts ||= {};
             session.taskState.stepAttempts[step.id] = Number(session.taskState.stepAttempts[step.id] || 0) + 1;
@@ -1234,7 +1547,11 @@ export function createAgentService({
       if (['teacher_advance_task', 'student_advance_task'].includes(input.event)) {
         const actor = input.event === 'teacher_advance_task' ? 'teacher' : 'student';
         const outcome = resolvePendingAdvance({
-          role, session, actor, taskId: String(input.data?.taskId || ''), taskGraph: course?.taskGraph,
+          role,
+          session,
+          actor,
+          taskId: String(input.data?.taskId || ''),
+          taskGraph: session.roleId ? course?.taskGraph : null,
         });
         if (!outcome.ok) throw advanceRefusalError(actor, outcome.reason);
         input.data = {
@@ -1248,7 +1565,9 @@ export function createAgentService({
         markMeaningfulAction(session, Date.now(), 'other');
       }
     }
-    applyToolResult({ course, session, role, input });
+    await applyToolResult({
+      course, session, role, input, llm, evaluationLlm, signal, logger,
+    });
     task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
     if (input.data?.continueAtSameLocation && task.location?.mode !== 'none') {
@@ -1304,16 +1623,29 @@ export function createAgentService({
       : input.type === 'quick_reply'
         ? input.value
       : `${input.event || input.type} ${task?.name || ''}`;
+    const recentStudentQuestions = (session.messages || [])
+      .filter((message) => message.role === 'user')
+      .slice(-2)
+      .map((message) => message.content || message.text || '')
+      .join(' ');
+    const needsConversationContext = /^(?:那|它|这个|这些)|刚才|还要|缺了|缺少|还有/.test(query);
+    const knowledgeQuery = decision.intent === 'course_knowledge'
+      ? (needsConversationContext ? `${recentStudentQuestions} ${query}`.trim() : query)
+      : query;
     const knowledge = decision.needsKnowledge
       ? retrieveKnowledge({
         course,
         session,
         role,
-        query,
-        references: [
-          task.steps?.[Number(session.taskState?.guidanceStepIndex || 0)]?.knowledgeRef,
-          task.goals,
-        ].filter(Boolean).join(' '),
+        query: knowledgeQuery,
+        // 学生主动问知识时，以问题相关性为主；当前小步引用不能用 +100 权重
+        // 把所有问题都压回同一张知识卡。验收与任务回合仍保留显式引用优先。
+        references: decision.intent === 'course_knowledge'
+          ? ''
+          : [
+            task.steps?.[Number(session.taskState?.guidanceStepIndex || 0)]?.knowledgeRef,
+            task.goals,
+          ].filter(Boolean).join(' '),
       })
       : [];
     const prompt = buildAgentPrompt({
@@ -1332,12 +1664,27 @@ export function createAgentService({
     let modelFailure = null;
 
     if (!decision.silent) {
-      if (decision.fastWorkflow) {
+      const localReply = decision.intent === 'social'
+        ? platformSocialReply(query, course)
+        : decision.intent === 'activity_logistics'
+          ? platformLogisticsReply(query, { course, session, role })
+          : decision.intent === 'emotion'
+            ? platformEmotionReply(query)
+          : '';
+      if (localReply) {
+        result = { text: localReply, toolCalls: [], dialogueMove: decision.intent };
+      } else if (input.type === 'tool_result' && input.data?.aiEvaluation?.passed === true) {
+        // 验收器已经给出经过防剧透处理的结构化反馈，直接复用即可。
+        // 再调用一次主对话模型只会增加延迟，并让一次提交承担两次模型故障概率。
+        result = {
+          text: input.data.aiEvaluation.feedback || '这项提交已经达到继续条件。',
+          toolCalls: [],
+          dialogueMove: 'confirm_evidence',
+        };
+      } else if (decision.fastWorkflow) {
         result = workflowResult({ decision, role, session, course, input });
       } else if (decision.fastGuidance) {
         result.text = immediatePrelude(decision, role, session, course);
-      } else if (decision.intent === 'course_knowledge' && knowledge.length) {
-        result.text = knowledgeExcerptReply(knowledge, course);
       } else {
         try {
         let shouldUseStructured = Boolean(tools.length && !llm.capabilities().nativeTools);
@@ -1390,6 +1737,16 @@ export function createAgentService({
             text: '这个精确结论仍在探索区。把你的观察方法或现场证据告诉我，我可以陪你检查推理过程。',
           };
         }
+        result.text = String(result.text || '').replaceAll(
+          '[待学生探索的数据]',
+          '尚待你通过现场证据验证的内容',
+        );
+        if (decision.intent === 'course_knowledge') {
+          result.text = result.text.replaceAll(
+            '根据我的认知',
+            knowledge.length ? '根据这份课程材料' : '按当前可用材料',
+          );
+        }
         } catch (error) {
           if (signal?.aborted || error?.name === 'AbortError') throw error;
           modelFailure = error;
@@ -1422,7 +1779,7 @@ export function createAgentService({
       );
     }
     const taskIndexBeforeFinalize = session.currentTaskIndex;
-    finalizeToolResult({ session, role, input, course });
+    finalizeToolResult({ session, role, input, course: session.roleId ? course : null });
     if (input.data?.advanceBlockedMessage) {
       result = { ...result, text: input.data.advanceBlockedMessage, toolCalls: [] };
     }
@@ -1440,18 +1797,25 @@ export function createAgentService({
     if (result.text) {
       session.messages.push({ role: 'user', content: query, createdAt: new Date().toISOString() });
       session.messages.push({ role: 'assistant', content: result.text, createdAt: new Date().toISOString() });
-      events.push({
+      const parts = splitGradeResponse(
+        result.text,
+        session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
+      );
+      parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
         data: {
           id: `msg_${crypto.randomUUID()}`,
-          text: result.text,
+          text,
           source: responseSource,
           intent: decision.intent,
           dialogueMove: result.dialogueMove || decision.intent,
-          streamed,
+          streamed: streamed && partIndex === 0,
           degraded: Boolean(modelFailure),
+          partIndex,
+          partCount: parts.length,
         },
-      });
+      }));
       recordDialogueMove(session, {
         move: result.dialogueMove || decision.intent,
         text: result.text,
@@ -1474,18 +1838,25 @@ export function createAgentService({
         course?.platformDefaults?.languageLevels,
       );
       session.messages.push({ role: 'assistant', content: timelineText, createdAt: new Date().toISOString() });
-      events.push({
+      const parts = splitGradeResponse(
+        timelineText,
+        session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
+      );
+      parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
         data: {
           id: `msg_${crypto.randomUUID()}`,
-          text: timelineText,
+          text,
           source: responseSource,
           intent: decision.intent,
           dialogueMove: item.dialogueMove || result.dialogueMove || decision.intent,
           streamed: false,
           degraded: false,
+          partIndex,
+          partCount: parts.length,
         },
-      });
+      }));
       recordDialogueMove(session, {
         move: item.dialogueMove || result.dialogueMove || decision.intent,
         text: timelineText,
@@ -1522,7 +1893,16 @@ export function createAgentService({
     events.push({
       type: 'state.updated',
       data: {
+        roleId: session.roleId || '',
+        taskScope: session.roleId ? 'role' : 'phase',
         phaseId: session.phaseId,
+        phaseTaskContext: session.phaseTaskState || (!session.roleId ? {
+          phaseId: session.phaseId,
+          currentTaskIndex: session.currentTaskIndex,
+          completedTaskIds: [...session.completedTaskIds],
+          taskId: session.taskState?.taskId || '',
+          guidanceStepIndex: Number(session.taskState?.guidanceStepIndex || 0),
+        } : null),
         currentTaskIndex: session.currentTaskIndex,
         completedTaskIds: session.completedTaskIds,
         scaffoldLevel: session.scaffoldLevel,

@@ -95,12 +95,35 @@ export function unclearInputReply(session, voice = null) {
 }
 
 export function applyGradeResponsePolicy(text, grade, languageLevels = null) {
-  const value = String(text || '').trim();
-  const limit = languageLevelFor(languageLevels, grade).limit;
-  if (value.length <= limit) return value;
-  const slice = value.slice(0, limit);
-  const boundary = Math.max(slice.lastIndexOf('。'), slice.lastIndexOf('！'), slice.lastIndexOf('？'));
-  return `${(boundary >= Math.floor(limit * 0.55) ? slice.slice(0, boundary + 1) : slice).trim()}…`;
+  // 学段“硬上限”现在约束单个气泡；全文会由 splitGradeResponse 分泡保留。
+  // 这里继续作为统一的清理入口，禁止再用字符切片丢掉后半句。
+  languageLevelFor(languageLevels, grade);
+  return String(text || '').trim();
+}
+
+function preferredBubbleBreak(value, limit) {
+  const window = value.slice(0, limit);
+  const strong = ['\n', '。', '！', '？', '!', '?', '；', ';'];
+  const soft = ['，', ',', '：', ':', ' '];
+  for (const boundaries of [strong, soft]) {
+    const index = Math.max(...boundaries.map((mark) => window.lastIndexOf(mark)));
+    if (index >= Math.floor(limit * 0.45)) return index + 1;
+  }
+  return limit;
+}
+
+export function splitGradeResponse(text, grade, languageLevels = null) {
+  const limit = Math.max(1, Number(languageLevelFor(languageLevels, grade).limit || 1));
+  let remaining = applyGradeResponsePolicy(text, grade, languageLevels);
+  const parts = [];
+  while (remaining.length > limit) {
+    const end = preferredBubbleBreak(remaining, limit);
+    const part = remaining.slice(0, end);
+    if (part) parts.push(part);
+    remaining = remaining.slice(end);
+  }
+  if (remaining) parts.push(remaining);
+  return parts;
 }
 
 export function avoidRepeatedReply(session, text, { intent = '', dialogueMove = '', voice = null } = {}) {
@@ -109,7 +132,10 @@ export function avoidRepeatedReply(session, text, { intent = '', dialogueMove = 
   if (/conversation_repair/.test(move)) {
     return renderVoice(voice, 'avoid_repeat.conversation_repair');
   }
-  if (/emotion|safety_help/.test(move)) {
+  if (/safety_help/.test(move)) {
+    return renderVoice(voice, 'avoid_repeat.safety');
+  }
+  if (/emotion/.test(move)) {
     return renderVoice(voice, 'avoid_repeat.emotion');
   }
   if (/greeting|gratitude|goodbye|social|course_knowledge/.test(move)) {

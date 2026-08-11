@@ -191,23 +191,27 @@ flowchart TD
 | `buildTaskGraph()` | 装配任务图 | `server/course/task-graph.js` |
 | `courseVersionFor()` | 算课程内容指纹 | `server/course/compiler.js` |
 
-### 5.2 学生入场
+### 5.2 学生入场：先跑阶段任务，再在同一会话领取角色
 
 ```mermaid
 flowchart TD
-    A["学生打开 /student/"] --> B["等教师开放角色<br/>教师端 release_roles 指令"]
-    B --> C["学生选角色"]
-    C --> D["POST /api/sessions<br/>建会话 ＋ 绑定教师场次座位"]
-    D --> E["lifecycle_event: role_assigned<br/>领到角色（第一个回合）"]
-    E --> F{"当前任务要求到达地点吗？<br/>读 位置模式 字段"}
-    F -->|要求| G["问「你到 XX 了吗」<br/>askNextOnboarding() 问下一个入场问题"]
-    G -->|还没到| H["打开导航<br/>navigationToolCall() 发导航工具"]
-    H --> G
-    G -->|已到达| I["问「准备好了吗」"]
-    F -->|不要求| I
-    I -->|准备好| J["stage.started 阶段开场<br/>beginStage() 播报任务名／小步数／建议时长"]
-    J --> K["tool.requested 开工具卡<br/>taskToolCall() 发当前任务的工具"]
+    A["学生打开 /student/"] --> B{"当前课程有领取角色前的阶段任务吗？"}
+    B -->|有| C["POST /api/sessions<br/>roleId 为空，建立阶段任务会话"]
+    C --> D["lifecycle_event: phase_started<br/>依次完成阶段任务"]
+    D --> E["学生选择角色"]
+    B -->|没有| E
+    E --> F["lifecycle_event: role_assigned<br/>在原 sessionId 上补绑角色"]
+    F --> G{"当前角色任务要求到达地点吗？<br/>读 位置模式 字段"}
+    G -->|要求| H["问「你到 XX 了吗」<br/>askNextOnboarding() 问下一个入场问题"]
+    H -->|还没到| I["打开导航<br/>navigationToolCall() 发导航工具"]
+    I --> H
+    H -->|已到达| J["问「准备好了吗」"]
+    G -->|不要求| J
+    J -->|准备好| K["stage.started 阶段开场<br/>beginStage() 播报任务名／小步数／建议时长"]
+    K --> L["tool.requested 开工具卡<br/>taskToolCall() 发当前任务的工具"]
 ```
+
+无角色会话仍是正式 Agent 会话：基础人设取平台统一的「絮絮」，任务、Step、工具和验收上下文取当前 Phase 的阶段任务。补绑角色时只切换任务轨道；对话消息、证据引用和学习记忆保留，阶段完成快照归档到 `phaseTaskState`（阶段任务快照）。没有阶段任务的课程继续直接进入角色选择。
 
 **为什么入场要问两次。** 到达确认与就绪确认是两件事：学生可能到了地方但还在喘气，也可能没到就想先看任务。两个门禁分开，学生端才能在"还没到"时给导航而不是硬推任务。
 
@@ -244,7 +248,7 @@ flowchart TD
 
 **两个刻意的例外**，改这块前必须知道：
 - `guide_location`（给导航）／`advance_pending_question`（推进待答问题）**不参与防复读**：它们带确定性副作用，学生问两次路就该得到两次导航。防复读只治"话术复读"。
-- 三个模型角色分工：主模型（自由表达）、轻量理解模型（语义理解，可独立配置）、验收模型（小步 `ai_evaluation` 判定）。三者可以指向不同模型服务。
+- 三个模型角色分工：主模型（自由表达）、轻量理解模型（语义理解，可独立配置）、验收模型（小步 `ai_evaluation` 判定）。验收模型由 `OPENAI_EVALUATION_*` 独立配置，缺省沿用主模型身份，但使用专用的 28 秒超时与一次传输层重试；三者可以指向不同模型服务。
 
 | 函数 | 中文名 | 位置 |
 |---|---|---|
@@ -284,7 +288,7 @@ flowchart TD
     C --> D["写入 completedTaskIds<br/>已完成任务清单"]
     D --> E{"读 推进方式 字段<br/>advanceWaitModeOf()"}
 
-    E -->|"auto_after_validation<br/>（默认，85 个任务走这条）"| F["advanceToNextTask()<br/>当轮就往前推一格"]
+    E -->|"auto_after_validation<br/>（默认，85 个任务走这条）"| F["advanceToNextTask()<br/>按任务图拓扑序寻找下一项"]
     E -->|"ai_suggest<br/>（学生自主停顿整理）"| G["markPendingAdvance(mode: student)<br/>记下等待态，进度不动"]
     E -->|"teacher<br/>（集体讲评／小组发布）"| H["markPendingAdvance(mode: teacher)<br/>记下等待态，进度不动"]
 
@@ -309,6 +313,8 @@ flowchart TD
 **两条硬门禁的意义。** 教师是现场权威，可以推进；但**不能推过还没做的任务**——那不是"干预"，是丢进度。所以必须①真的处于等待态，②等的必须是这个 actor。教师按不动学生自己的 `ai_suggest` 等待（认人不认权限）。
 
 **`advanceToNextTask()`（往前推一格）是唯一写入点。** 全仓只有这一个地方改 `currentTaskIndex`（当前任务下标）。要改推进规则只动这一个文件。
+
+角色任务的 `sequential`（线性遍历）已接通任务图：先按 `traversalOrder()`（拓扑遍历）找下一项，再检查该节点同角色的 `前置` 是否都在 `completedTaskIds`（已完成任务清单）中；缺前置时不改下标并返回 `blockedBy`（未满足前置）。图有环时记录警告并回退原来的数组线性推进，避免学生死锁。`open`（开放自选）与 `inquiry`（探究遍历）仍为预留值，按 2026-08-10 产品决策暂不实现。
 
 | 函数／字段 | 中文名 | 位置 |
 |---|---|---|
@@ -390,7 +396,9 @@ flowchart TD
    ＋ saveWithRequestResult()（会话与请求结果同事务提交）
 ```
 
-**超时不变式**（启动即校验，违反直接拒绝启动）：`AI_TIMEOUT_MS`(18s) < `AI_TURN_TIMEOUT_MS`(70s)，`AI_REQUEST_LEASE_MS`(80s) ≥ 回合超时 +5s，客户端预算 100s。三个数字必须**外层比内层宽**，否则外层先超时、内层还在跑，租约永远不释放。
+**超时不变式**（启动即校验，违反直接拒绝启动）：普通模型 `AI_TIMEOUT_MS`(18s) < 整轮 `AI_TURN_TIMEOUT_MS`(70s)；验收模型最多尝试两次，所以 `2 × AI_EVALUATION_TIMEOUT_MS + 1s` 也必须小于整轮预算；`AI_REQUEST_LEASE_MS`(80s) ≥ 回合超时 +5s，客户端预算 100s。外层预算必须比内层宽，否则外层先超时、内层仍在运行，租约无法及时释放。
+
+角色补绑同样走这条回合链：`role_assigned`（角色已领取）带自己的 `requestId`（请求去重键），在一次原子会话写入里归档阶段任务、写入 `roleId`、重置角色任务游标。网络重试复用同一请求 ID，不会把同一个角色重复领取两次。
 
 ### 6.3 存储双轨：本地文件 vs 生产 Postgres
 
@@ -500,15 +508,15 @@ Vercel 平台
 
 **生产公网发布被明确门禁在这一项完成之后。** 详见 [教师端安全待办](1-docs/教师端安全待办.md)。
 
-### 8.2 编译进去了但运行时没人读
+### 8.2 字段接入状态
 
 | 字段 | 状态 |
 |---|---|
-| `前置` | 已装配成任务图（节点与边都是真的），但推进仍是线性 +1，**运行时不读前置**。教师跳过某任务后没有前置校验 |
-| `遍历模式` | **只有 `sequential` 会执行**。`open`／`inquiry` 是预留，写了会收到 lint 警告，运行时按线性处理 |
+| `前置` | **角色任务已生效**：装配为任务图，`advanceToNextTask()` 按拓扑序推进并校验同角色前置；阶段任务当前仍按阶段内数组顺序执行 |
+| `遍历模式` | `sequential` 已按任务图拓扑序执行；`open`／`inquiry` 维持预留，写了会收到 lint 警告并按 `sequential` 处理（Sonya 决策 2026-08-10） |
 | `能力标签` | 零运行行为（不进浏览器包、不进 Prompt、无 UI、无计算）。**这是刻意的边界**，评价体系只预留挂点 |
 | `失败处理`／`教师介入` | 有 lint 配对校验，但无运行时挂点 |
-| `阶段任务` | 能写、能编译、能校验、能进任务图，但**学生端不渲染**（需要"无 roleId 会话"或"小组共享会话"，是独立一轮） |
+| `阶段任务` | **领取角色前的个人阶段任务已接通**：无 `roleId` 会话、学生端任务卡、工具验收与原会话补绑角色均生效；领角色后的全班／小组共享执行语义仍待后续实现 |
 
 ### 8.3 演示数据与真实数据的区别（容易误判）
 
@@ -558,4 +566,3 @@ shasum -a 256 4-stu-learning/src/generated/lesson-public.js
 ### 单独调工具
 
 打开 `4-stu-learning/tools.html`（隔离工具沙盒），可加载真实课程小步、查看本地证据 JSON、跑完成条件校验并随时重置。改活动工具渲染器时用它比在完整流程里点快得多。
-

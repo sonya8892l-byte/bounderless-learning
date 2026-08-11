@@ -174,6 +174,52 @@ test('普通问候不会误命中课程知识', async () => {
   assert.deepEqual(entries, []);
 });
 
+test('知识检索按问题相关性选卡，不用共同大词硬塞无关首条', async () => {
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const dragon = course.roles.find((item) => item.id === 'dragon-counter');
+  const dragonSession = {
+    roleId: dragon.id,
+    phaseNumber: 2,
+    completedTaskIds: ['dragon-counter:task-1'],
+    events: [],
+  };
+
+  const mechanism = retrieveKnowledge({
+    course,
+    role: dragon,
+    session: dragonSession,
+    query: '螭首有什么用？为什么它能排水？',
+  });
+  assert.equal(mechanism[0]?.id, 'K-03', '具体机制应优先命中工程功能，而非列表第一条基本信息');
+
+  const unavailableBoundary = retrieveKnowledge({
+    course,
+    role: dragon,
+    session: dragonSession,
+    query: '故宫排水有什么局限？',
+  });
+  assert.deepEqual(unavailableBoundary, [], '局限卡尚未解锁时不能拿普通排水卡冒充答案');
+});
+
+test('已解锁的追问能命中对应来源卡', async () => {
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const truth = course.roles.find((item) => item.id === 'truth-seeker');
+  const entries = retrieveKnowledge({
+    course,
+    role: truth,
+    session: {
+      roleId: truth.id,
+      phaseNumber: 2,
+      completedTaskIds: ['truth-seeker:task-2'],
+      events: [],
+    },
+    query: '六百年真的从来没有积水吗？',
+  });
+
+  assert.equal(entries[0]?.id, 'K-19');
+  assert.match(entries[0]?.source || '', /新闻报道|维修记录/);
+});
+
 test('浏览器课程包不包含课程答案和受保护值', async () => {
   const source = await fs.readFile(new URL('../src/generated/lesson-public.js', import.meta.url), 'utf8');
   for (const forbidden of [
