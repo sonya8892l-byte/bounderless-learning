@@ -1,12 +1,12 @@
 // 此文件由 scripts/sync-lessons.mjs 自动生成，只包含学生端公开课程字段。
 export default {
-  "lesson_zhuhun_001": {
-    "id": "lesson_zhuhun_001",
+  "lesson_gewu_001": {
+    "id": "lesson_gewu_001",
     "title": "故宫600年不积水的秘密",
     "subtitle": "故宫排水智慧 · 跨学科研学课例",
-    "series": "铸魂",
-    "seriesCode": "zhuhun",
-    "themeTemplate": "zhuhun",
+    "series": "格物",
+    "seriesCode": "gewu",
+    "themeTemplate": "gewu",
     "venue": "故宫博物院（中轴线区域）",
     "mapCenter": [
       116.397,
@@ -15,13 +15,10 @@ export default {
     "duration": "6小时（含午休）",
     "grades": "小学高年级 / 初中 / 高中",
     "groupRule": "6人一组，每人一个角色",
+    "level": "",
+    "levelCode": "",
+    "traversalMode": "sequential",
     "coreQuestion": "故宫建成600年，历经无数暴雨，为何几乎从不积水？",
-    "persona": {
-      "name": "絮絮",
-      "courseRole": "",
-      "character": "亲切、好奇、有少年感，尊重学生的观察和试错过程；本课侧重：亲切、好奇、有点调皮，像一个知识渊博的学长",
-      "tone": "清晰、自然、耐心，偶尔幽默；本课侧重：少年感、清晰、节奏适中，偶尔幽默"
-    },
     "phases": [
       {
         "id": "phase-1",
@@ -39,7 +36,162 @@ export default {
           "AI向每个学生提问：「你觉得故宫暴雨时会积水吗？为什么？」",
           "收集学生的初始假设（C类数据：C2认知数据）",
           "引出核心问题：「600年，为什么不积水？今天我们一起找答案」",
-          "发放角色卡（扫码确认角色）"
+          "完成导入任务，进入角色选择页"
+        ],
+        "tasks": [
+          {
+            "id": "phase-1-task-1",
+            "roleStageId": "",
+            "name": "看\"暴雨将至\"短片",
+            "phase": "课程任务",
+            "modules": "A06(沉浸媒体)",
+            "tools": [
+              {
+                "id": "media",
+                "module": "A06",
+                "name": "沉浸媒体",
+                "icon": "play",
+                "output": "playback",
+                "config": {
+                  "type": "video",
+                  "url": "",
+                  "poster": "lessons/lesson_gewu_001/assets/videos/video-storm-coming.png",
+                  "title": "暴雨将至",
+                  "requireCompletion": true
+                }
+              }
+            ],
+            "requirement": "短片播放完毕",
+            "guidanceSteps": [
+              "短片播放完毕"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-1-step-1",
+                "objective": "短片播放完毕",
+                "studentAction": "短片播放完毕",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "inherit"
+                },
+                "tools": []
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "无需提交，播放完成即通过",
+            "passCondition": "短片播放完毕",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "media",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "全班"
+          },
+          {
+            "id": "phase-1-task-2",
+            "roleStageId": "",
+            "name": "写下你最初的猜想",
+            "phase": "课程任务",
+            "modules": "A01(文字输入)",
+            "tools": [
+              {
+                "id": "text",
+                "module": "A01",
+                "name": "文字表单",
+                "icon": "notebook-pen",
+                "output": "fields",
+                "config": {
+                  "fields": [
+                    {
+                      "id": "observation",
+                      "label": "观察记录",
+                      "type": "long_text",
+                      "required": true
+                    }
+                  ]
+                }
+              }
+            ],
+            "requirement": "写出是否会积水的判断，并给出至少一条理由",
+            "guidanceSteps": [
+              "写出是否会积水的判断",
+              "并给出至少一条理由"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-2-step-1",
+                "objective": "写出是否会积水的判断",
+                "studentAction": "写出是否会积水的判断",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "inherit"
+                },
+                "tools": []
+              },
+              {
+                "id": "phase-1-task-2-step-2",
+                "objective": "并给出至少一条理由",
+                "studentAction": "并给出至少一条理由",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "inherit"
+                },
+                "tools": []
+              }
+            ],
+            "completionMode": "ai_evaluation",
+            "evidenceRequirement": "一段文字，含判断与理由",
+            "passCondition": "写出是否会积水的判断，并给出至少一条理由",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 300,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "个人"
+          }
         ]
       },
       {
@@ -57,7 +209,8 @@ export default {
           "每个角色执行3个递进任务（见 roles/*.md）",
           "任务完成后获得密符字母",
           "时间银行分支任务可并行进行"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-3",
@@ -74,7 +227,8 @@ export default {
           "每个角色撰写\"我的发现报告\"（文字+照片）",
           "小组汇合后，用拼合工具将6个角色的发现整合",
           "尝试还原完整的故宫排水路径"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-4",
@@ -92,7 +246,8 @@ export default {
           "运行模拟——观察水流路径",
           "AI揭示：「你们搭建的系统……能撑过暴雨吗？」",
           "播放暴雨动画验证"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-5",
@@ -109,7 +264,8 @@ export default {
           "AI辅助生成组间对比（不做排名，聚焦差异）",
           "回顾初始假设——「你最初的猜想对了吗？」",
           "AI引导元认知反思：「如果再来一次，你会改变哪一步？」"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-6",
@@ -125,7 +281,8 @@ export default {
           "AI生成个人学习报告预览（完整版后续推送）",
           "絮絮告别：「今天很开心陪你探索！下次见~」",
           "课程结束标记"
-        ]
+        ],
+        "tasks": []
       }
     ],
     "roleSystem": {
@@ -139,6 +296,12 @@ export default {
       "unlockTarget": "璇玑时刻",
       "phaseId": "phase-2"
     },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": true
+    },
     "roles": [
       {
         "id": "dragon-counter",
@@ -150,76 +313,132 @@ export default {
         "geofence": "中心(116.3972, 39.9171) 半径100m",
         "type": "核心角色",
         "collectionItem": "Y",
-        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/mifu-Y.png",
+        "collectionItemImage": "lessons/lesson_gewu_001/assets/tokens/mifu-Y.png",
         "tasks": [
           {
             "id": "task-1",
             "roleStageId": "task-1",
             "name": "观其形",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "拍照最少5张，含正面/侧面/细节",
             "guidanceSteps": [
-              "先选择一处螭首，拍下它在台基上的正面全景",
-              "换到安全的侧面角度，记录螭首与台基的连接方式",
-              "再拍材质、出水口和排列细节，检查照片是否至少5张"
+              "选择一处可安全观察的螭首，拍摄1—2张同时包含螭首、台基边缘和周围位置的正面全景",
+              "换到安全侧面，拍摄1—2张能看清螭首、出水口和台基连接位置的照片",
+              "再拍至少3张照片，分别记录材质或纹理、出水口细节和相邻螭首的排列关系"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先选择一处螭首，拍下它在台基上的正面全景",
-                "studentAction": "先选择一处螭首，拍下它在台基上的正面全景",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "拍摄螭首正面全景",
+                "objective": "获得能够确认螭首及其台基位置关系的现场全景证据",
+                "studentAction": "选择一处可安全观察的螭首，拍摄1—2张同时包含螭首、台基边缘和周围位置的正面全景",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张清楚照片；画面同时包含螭首主体与台基环境；不得跨越护栏或拍入其他参观者正脸",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "请安全拍摄，让螭首、台基边缘和周围位置同时入镜。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "换到安全的侧面角度，记录螭首与台基的连接方式",
-                "studentAction": "换到安全的侧面角度，记录螭首与台基的连接方式",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录连接方式",
+                "objective": "观察螭首如何嵌入台基并承担出水功能",
+                "studentAction": "换到安全侧面，拍摄1—2张能看清螭首、出水口和台基连接位置的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张侧面或斜侧面照片；能够辨认螭首与台基的连接处或出水口",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "从安全侧面拍清螭首与台基的连接处或出水口，不要攀爬、触摸文物。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "再拍材质、出水口和排列细节，检查照片是否至少5张",
-                "studentAction": "再拍材质、出水口和排列细节，检查照片是否至少5张",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐形态细节",
+                "objective": "用多角度细节证据描述螭首的材质、开口和排列特征",
+                "studentAction": "再拍至少3张照片，分别记录材质或纹理、出水口细节和相邻螭首的排列关系",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3张照片；三类内容中至少覆盖材质或纹理、出水口、排列关系；本任务累计不少于5张",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 3,
+                      "maxCount": 5,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "分别补拍材质或纹理、出水口细节、相邻螭首排列；避免重复同一画面。"
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "完成5张有效照片采集",
             "passCondition": "完成5张有效照片采集",
             "goals": "K1(排水系统构成), K3(螭首功能), S4(史料实证)",
-            "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_001/assets/tasks/chishou-front.jpg",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_gewu_001/assets/tasks/chishou-front.jpg",
             "location": {
               "mode": "geofence",
               "legacyMode": "inherit_role",
@@ -249,80 +468,189 @@ export default {
             "roleStageId": "task-2",
             "name": "算其数",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集), A02(答题评测)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "表单字段：[上层台基数量, 中层台基数量, 下层台基数量, 总计]",
             "guidanceSteps": [
-              "先观察三层台基的排列规律，决定逐个数还是分段估算",
-              "分别估算上层、中层和下层的数量，记录每层的方法",
-              "把三层结果相加，检查总数与现场观察是否匹配"
+              "观察三层台基的重复规律，选择逐个计数、分段抽样或间距估算，并写清选择理由",
+              "填写上层、中层和下层的估算数量，并分别说明这些数量怎样得到",
+              "计算三层总计，再比较三层大小关系和现场排列，说明这个结果为何合理或哪里仍不确定"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "先观察三层台基的排列规律，决定逐个数还是分段估算",
-                "studentAction": "先观察三层台基的排列规律，决定逐个数还是分段估算",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "选择估算策略",
+                "objective": "根据现场排列特点形成可执行的估算办法",
+                "studentAction": "观察三层台基的重复规律，选择逐个计数、分段抽样或间距估算，并写清选择理由",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "写明一种主要估算方法、一个现场观察依据和准备怎样复核",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "method",
+                          "label": "主要估算方法",
+                          "type": "select",
+                          "options": [
+                            "逐个计数",
+                            "分段抽样",
+                            "按间距估算",
+                            "组合方法"
+                          ],
+                          "required": true
+                        },
+                        {
+                          "id": "basis",
+                          "label": "现场观察依据",
+                          "type": "long_text",
+                          "placeholder": "例如排列是否重复、哪些区域便于计数",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "check",
+                          "label": "准备怎样复核",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "分别估算上层、中层和下层的数量，记录每层的方法",
-                "studentAction": "分别估算上层、中层和下层的数量，记录每层的方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录三层估算",
+                "objective": "分别保留三层台基的估算数据和推算依据",
+                "studentAction": "填写上层、中层和下层的估算数量，并分别说明这些数量怎样得到",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "三层估算值均已填写；至少说明抽样段、重复次数、间距或逐个计数记录中的一种推算依据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "upper",
+                          "label": "上层估算数量",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "middle",
+                          "label": "中层估算数量",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "lower",
+                          "label": "下层估算数量",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "分层推算过程",
+                          "type": "long_text",
+                          "placeholder": "写明数了哪一段、怎样扩大到整层",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "把三层结果相加，检查总数与现场观察是否匹配",
-                "studentAction": "把三层结果相加，检查总数与现场观察是否匹配",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "合计并做合理性检查",
+                "objective": "把分层估算合成为总数，并用现场证据检查结果是否自洽",
+                "studentAction": "计算三层总计，再比较三层大小关系和现场排列，说明这个结果为何合理或哪里仍不确定",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "填写总计；总计与三层数据能够对应；至少写出一条合理性检查和一项不确定性",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "total",
+                          "label": "三层估算总计",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "reasonableness",
+                          "label": "合理性检查",
+                          "type": "long_text",
+                          "placeholder": "比较三层大小、排列密度或现场范围",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "最大不确定性",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "提交估算值 + 说明估算方法",
             "passCondition": "提交估算值 + 说明估算方法",
             "goals": "K3(螭首功能), S1(估算计数), C1(证据意识), C4(科学精神)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -353,85 +681,157 @@ export default {
             "roleStageId": "task-3",
             "name": "验其差",
             "phase": "Phase 2 现场采证 / Phase 3 推演",
-            "modules": "A01(文字输入/语音录入)",
-            "tools": [
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "反思文本最少50字",
             "guidanceSteps": [
-              "先对比各组或各次估算结果，找出差异最大的一处",
-              "列出至少两个可能造成误差的原因",
-              "写下如果重新计数会怎样改进，完成至少50字的反思"
+              "录入本组与另一组或本组两次估算结果，指出总数或分层数据中差异最大的一项",
+              "列出至少两个具体误差来源，并说明它们可能让估算偏大还是偏小",
+              "写一段不少于50字的反思，说明如果重新计数会保留什么、改变什么以及怎样验证改进是否有效"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先对比各组或各次估算结果，找出差异最大的一处",
-                "studentAction": "先对比各组或各次估算结果，找出差异最大的一处",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "定位估算差异",
+                "objective": "通过对比至少两次结果找到差异最明显的位置",
+                "studentAction": "录入本组与另一组或本组两次估算结果，指出总数或分层数据中差异最大的一项",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少有两组可比较的数据，并明确写出差异最大的一项",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "estimate-a",
+                          "label": "结果A",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "estimate-b",
+                          "label": "结果B",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "largest-gap",
+                          "label": "差异最大的一项",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "列出至少两个可能造成误差的原因",
-                "studentAction": "列出至少两个可能造成误差的原因",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "分析误差来源",
+                "objective": "区分观察、抽样、计算和记录环节可能产生的误差",
+                "studentAction": "列出至少两个具体误差来源，并说明它们可能让估算偏大还是偏小",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2个不同的具体误差来源；每项包含发生环节和可能影响方向",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "source-1",
+                          "label": "误差来源1及影响",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-2",
+                          "label": "误差来源2及影响",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "写下如果重新计数会怎样改进，完成至少50字的反思",
-                "studentAction": "写下如果重新计数会怎样改进，完成至少50字的反思",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "形成改进反思",
+                "objective": "根据误差分析提出下一次能够执行的改进方案",
+                "studentAction": "写一段不少于50字的反思，说明如果重新计数会保留什么、改变什么以及怎样验证改进是否有效",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于50字；包含具体误差来源、至少一项可执行改进和一种复核方法",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "reflection",
+                          "label": "估算改进反思",
+                          "type": "long_text",
+                          "placeholder": "结合自己的数据和误差分析来写",
+                          "required": true,
+                          "minLength": 50,
+                          "maxLength": 300
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "提交包含\"误差来源分析\"的反思",
             "passCondition": "提交包含\"误差来源分析\"的反思",
             "goals": "C3(元认知), C4(科学精神), S1(估算计数)",
-            "toolType": "audio",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -458,8 +858,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-dragon-counter.png",
-        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-dragon-counter.png"
+        "cardImage": "lessons/lesson_gewu_001/assets/roles/role-card-dragon-counter.png",
+        "badgeImage": "lessons/lesson_gewu_001/assets/roles/badge-dragon-counter.png"
       },
       {
         "id": "slope-surveyor",
@@ -471,76 +871,155 @@ export default {
         "geofence": "中心(116.3970, 39.9155) 半径150m",
         "type": "核心角色",
         "collectionItem": "I",
-        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/mifu-I.png",
+        "collectionItemImage": "lessons/lesson_gewu_001/assets/tokens/mifu-I.png",
         "tasks": [
           {
             "id": "task-1",
             "roleStageId": "task-1",
             "name": "察其势",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "拍摄至少3个位置的地面对比照",
             "guidanceSteps": [
-              "先找到一处看起来较高和一处较低的地面",
-              "从相似高度和角度拍下至少3个位置",
-              "对比照片，用箭头标出你判断的水流方向"
+              "在安全动线内找到一处看起来较高和一处较低的地面，各拍1张包含固定参照物的照片",
+              "保持与前两张相近的拍摄高度和方向，再拍1—2张中间位置或另一处地面的照片",
+              "在剖面图上标出高点、低点和一条初步水流箭头，再写明箭头对应的照片线索"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先找到一处看起来较高和一处较低的地面",
-                "studentAction": "先找到一处看起来较高和一处较低的地面",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "寻找高低参照",
+                "objective": "通过可见参照建立一组可能存在高差的观察点",
+                "studentAction": "在安全动线内找到一处看起来较高和一处较低的地面，各拍1张包含固定参照物的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2张照片；高点和低点各1张；画面包含台阶、墙根、沟渠边缘或其他可复核参照物",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 2,
+                      "maxCount": 3,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "分别拍下可能的高点和低点，并保留台阶、墙根或沟渠等固定参照。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "从相似高度和角度拍下至少3个位置",
-                "studentAction": "从相似高度和角度拍下至少3个位置",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补充第三观察点",
+                "objective": "用第三个位置检查最初的高低判断是否只是局部错觉",
+                "studentAction": "保持与前两张相近的拍摄高度和方向，再拍1—2张中间位置或另一处地面的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张新增照片；拍摄高度和方向能够与前两张进行比较；本任务累计不少于3个位置",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "补拍第三个位置，尽量保持与前两张相近的拍摄高度和方向。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "对比照片，用箭头标出你判断的水流方向",
-                "studentAction": "对比照片，用箭头标出你判断的水流方向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "标出初步流向",
+                "objective": "依据照片中的高差线索提出可核验的水流方向判断",
+                "studentAction": "在剖面图上标出高点、低点和一条初步水流箭头，再写明箭头对应的照片线索",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "画板包含高点、低点和至少1条方向箭头；文字说明引用台阶、沟渠、积水痕迹或建筑线中的至少一种线索",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注), A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#b42318",
+                        "#2563eb",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
+                      "prompt": "在图上标出高点、低点和你判断的水流方向。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "clue",
+                          "label": "流向判断依据",
+                          "type": "long_text",
+                          "placeholder": "写明对应哪张照片和哪一种高差线索",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "拍照完成 + 描述观察到的高差线索",
             "passCondition": "拍照完成 + 描述观察到的高差线索",
             "goals": "K4(坡度与排水), S2(坡度与流向判断)",
-            "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_001/assets/maps/drainage-profile.png",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
             "location": {
               "mode": "geofence",
               "legacyMode": "inherit_role",
@@ -570,80 +1049,183 @@ export default {
             "roleStageId": "task-2",
             "name": "量其度",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照), A02(答题评测)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "工具：目测+步测法（或提供简易水平仪AR模拟）\n表单字段：[估测高差(m), 估测距离(m), 计算坡度(%)]",
             "guidanceSteps": [
-              "选定一高一低两个安全观测点",
-              "用目测和步测记录高差与水平距离",
-              "根据高差和距离计算坡度，并写下估测方法"
+              "记录高点和低点的位置特征，说明测量区间为何适合进行目测或步测",
+              "用目测和步测记录高差与水平距离，填写单位、步数换算或其他估测依据",
+              "按“高差÷水平距离×100%”计算坡度，选择水可能流向的方向，并写出一项结果不确定性"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "选定一高一低两个安全观测点",
-                "studentAction": "选定一高一低两个安全观测点",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "确定测量区间",
+                "objective": "选定一组安全、可描述且能够比较的高低观测点",
+                "studentAction": "记录高点和低点的位置特征，说明测量区间为何适合进行目测或步测",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "高低点都有清楚位置描述；说明安全边界；写出至少一个适合测量的理由",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "high-point",
+                          "label": "高点位置特征",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        },
+                        {
+                          "id": "low-point",
+                          "label": "低点位置特征",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        },
+                        {
+                          "id": "why",
+                          "label": "区间选择与安全说明",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "用目测和步测记录高差与水平距离",
-                "studentAction": "用目测和步测记录高差与水平距离",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录高差与距离",
+                "objective": "保留能够复算的高差、水平距离和测量过程",
+                "studentAction": "用目测和步测记录高差与水平距离，填写单位、步数换算或其他估测依据",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "高差和距离均有数值与单位；说明步数、步长或目测参照；没有虚构精密仪器读数",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "height-difference",
+                          "label": "估测高差（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "horizontal-distance",
+                          "label": "估测水平距离（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "method",
+                          "label": "步测或目测过程",
+                          "type": "long_text",
+                          "placeholder": "记录步数、步长换算或参照物",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "根据高差和距离计算坡度，并写下估测方法",
-                "studentAction": "根据高差和距离计算坡度，并写下估测方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "计算坡度并判断方向",
+                "objective": "用高差与距离计算坡度，并把数值与现场流向联系起来",
+                "studentAction": "按“高差÷水平距离×100%”计算坡度，选择水可能流向的方向，并写出一项结果不确定性",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "坡度数值带百分号或明确单位；计算过程可复算；方向判断与所选高低点一致；包含至少一项不确定性",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "slope",
+                          "label": "计算坡度（%）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "direction",
+                          "label": "水流方向判断",
+                          "type": "short_text",
+                          "required": true,
+                          "placeholder": "从哪个观察点流向哪个观察点"
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "计算过程",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "一项不确定性",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "正确判断坡度方向（北高南低）+ 给出估算值",
             "passCondition": "正确判断坡度方向（北高南低）+ 给出估算值",
             "goals": "K4(坡度与排水), S2(坡度判断), S1(估算), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -674,88 +1256,137 @@ export default {
             "roleStageId": "task-3",
             "name": "析其理",
             "phase": "Phase 2 / Phase 3",
-            "modules": "A01(文字输入), A01(画板草图)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "sketch",
-                "module": "A01",
-                "name": "画板标注",
-                "icon": "pen-tool",
-                "output": "image",
-                "config": {
-                  "width": 720,
-                  "height": 420,
-                  "brushColors": [
-                    "#8d211f",
-                    "#245c4f",
-                    "#1f2937"
-                  ],
-                  "backgroundImage": ""
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "画出水流方向示意图 + 文字解释坡度的排水作用",
             "guidanceSteps": [
-              "把观测到的高点、低点和排水设施标在示意图上",
-              "用箭头连出水可能经过的路径",
-              "用现场证据解释坡度如何帮助水流向低处"
+              "在示意图上标出至少1个高点、1个低点和2处观察到的排水设施，并写上照片编号",
+              "用箭头从高点经过排水设施连向低点，并把无法确认的连接标成“待核”",
+              "写一段解释，说明高差如何改变水流方向、排水设施如何接住水，以及目前还有什么没有确认"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "把观测到的高点、低点和排水设施标在示意图上",
-                "studentAction": "把观测到的高点、低点和排水设施标在示意图上",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "建立高低与设施图层",
+                "objective": "把分散的高低点和排水设施放入同一空间表示",
+                "studentAction": "在示意图上标出至少1个高点、1个低点和2处观察到的排水设施，并写上照片编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "画板包含高点、低点、至少2处排水设施和对应照片编号",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#b42318",
+                        "#2563eb",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
+                      "prompt": "先标高点、低点和两处排水设施，再在旁边写对应照片编号。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "用箭头连出水可能经过的路径",
-                "studentAction": "用箭头连出水可能经过的路径",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "连出可能水路",
+                "objective": "依据重力方向把地势和排水设施连接成一条可讨论的路径",
+                "studentAction": "用箭头从高点经过排水设施连向低点，并把无法确认的连接标成“待核”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2段连续箭头；箭头总体由高到低；推测连接与已观察连接有明确区分",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#64748b",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "lessons/lesson_gewu_001/assets/maps/drainage-profile.png",
+                      "prompt": "用实线画现场能够支持的水路，用虚线或“待核”标出推测连接。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "用现场证据解释坡度如何帮助水流向低处",
-                "studentAction": "用现场证据解释坡度如何帮助水流向低处",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "解释坡度作用",
+                "objective": "用现场证据解释坡度怎样帮助排水，同时保留结论边界",
+                "studentAction": "写一段解释，说明高差如何改变水流方向、排水设施如何接住水，以及目前还有什么没有确认",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于60字；包含高差、重力流向、排水设施和至少一项未确认内容；引用至少1条现场证据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "explanation",
+                          "label": "坡度与排水解释",
+                          "type": "long_text",
+                          "placeholder": "结合你的测量、照片和示意图说明",
+                          "required": true,
+                          "minLength": 60,
+                          "maxLength": 300
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "示意图标注正确的流向 + 文字解释逻辑通顺",
             "passCondition": "示意图标注正确的流向 + 文字解释逻辑通顺",
             "goals": "K2([待学生探索]), C2(系统思维), S2(坡度判断)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "",
             "location": {
@@ -783,8 +1414,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-slope-surveyor.png",
-        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-slope-surveyor.png"
+        "cardImage": "lessons/lesson_gewu_001/assets/roles/role-card-slope-surveyor.png",
+        "badgeImage": "lessons/lesson_gewu_001/assets/roles/badge-slope-surveyor.png"
       },
       {
         "id": "ditch-finder",
@@ -796,75 +1427,149 @@ export default {
         "geofence": "中心(116.3985, 39.9185) 半径120m",
         "type": "核心角色",
         "collectionItem": "N",
-        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/mifu-N.png",
+        "collectionItemImage": "lessons/lesson_gewu_001/assets/tokens/mifu-N.png",
         "tasks": [
           {
             "id": "task-1",
             "roleStageId": "task-1",
             "name": "寻其踪",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "找到并拍照至少3处可见的排水设施（明沟/暗沟口/雨水篦子）",
             "guidanceSteps": [
-              "先低头观察地面和墙根，找到第一处可见排水设施",
-              "继续寻找不同位置或不同类型的设施，完成至少3张照片",
-              "为每张照片标注设施类型和周围水可能流入的方向"
+              "在安全动线内找到第一处疑似排水设施，拍摄1张全景和1张结构细节",
+              "再寻找至少1处不同位置或不同类型的排水设施，各拍1张能看清环境和结构的照片",
+              "为至少3张照片填写设施类型、判断依据和周围水可能流入的方向；不能确认时标“待核”"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先低头观察地面和墙根，找到第一处可见排水设施",
-                "studentAction": "先低头观察地面和墙根，找到第一处可见排水设施",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "确认第一处排水设施",
+                "objective": "从地面、墙根或台基边缘识别一处具有排水特征的现场对象",
+                "studentAction": "在安全动线内找到第一处疑似排水设施，拍摄1张全景和1张结构细节",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2张照片；一张说明设施所在环境，一张能看清开口、沟槽、篦子或汇水边缘；不得俯身进入危险区域",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 2,
+                      "maxCount": 3,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "先拍设施所在环境，再拍开口、沟槽或篦子等结构细节。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "继续寻找不同位置或不同类型的设施，完成至少3张照片",
-                "studentAction": "继续寻找不同位置或不同类型的设施，完成至少3张照片",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐不同位置证据",
+                "objective": "用不同位置或不同形态的证据避免以单个对象代表整个沟渠系统",
+                "studentAction": "再寻找至少1处不同位置或不同类型的排水设施，各拍1张能看清环境和结构的照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张新增照片；与第一处在位置或结构类型上存在可说明的差别；本任务累计不少于3张有效照片",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 3,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "补拍另一处不同位置或不同类型的排水设施，并保留周围环境。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "为每张照片标注设施类型和周围水可能流入的方向",
-                "studentAction": "为每张照片标注设施类型和周围水可能流入的方向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "标注类型与来水方向",
+                "objective": "把照片中的结构特征转成可核验的设施分类和流向假设",
+                "studentAction": "为至少3张照片填写设施类型、判断依据和周围水可能流入的方向；不能确认时标“待核”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3条照片标注；每条包含照片编号、设施类型或待核、结构依据和来水方向",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "record-1",
+                          "label": "照片1：类型、依据与来水方向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "record-2",
+                          "label": "照片2：类型、依据与来水方向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "record-3",
+                          "label": "照片3：类型、依据与来水方向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "3张有效照片 + 标注每处设施类型",
             "passCondition": "3张有效照片 + 标注每处设施类型",
             "goals": "K5(明暗沟系统), S4(史料实证), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -895,84 +1600,150 @@ export default {
             "roleStageId": "task-2",
             "name": "探其网",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(画板草图), A02(答题)",
-            "tools": [
-              {
-                "id": "sketch",
-                "module": "A01",
-                "name": "画板标注",
-                "icon": "pen-tool",
-                "output": "image",
-                "config": {
-                  "width": 720,
-                  "height": 420,
-                  "brushColors": [
-                    "#8d211f",
-                    "#245c4f",
-                    "#1f2937"
-                  ],
-                  "backgroundImage": ""
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "画出发现的排水设施之间的连接关系\n问答：明沟和暗沟有什么区别？各有什么优势？",
             "guidanceSteps": [
-              "把已发现的排水设施按位置摆列出来",
-              "根据高低和开口方向画出至少3个节点的连接关系",
-              "对比明沟和暗沟的外观、连接方式和优势"
+              "在画板上放置至少3个设施节点，写明照片编号、所在位置和暂定类型",
+              "用箭头连接至少3个节点，并在每条箭头旁写明“现场可见”或“根据高低推测”",
+              "分别写出明沟和暗沟的可见特征、可能优势和局限，并引用至少一张现场照片"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "把已发现的排水设施按位置摆列出来",
-                "studentAction": "把已发现的排水设施按位置摆列出来",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "摆放设施节点",
+                "objective": "把现场发现转换成具有位置和来源的网络节点",
+                "studentAction": "在画板上放置至少3个设施节点，写明照片编号、所在位置和暂定类型",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个节点；每个节点包含照片编号和位置；不能确认的类型标“待核”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#0f766e",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "",
+                      "prompt": "把至少3处设施画成节点，旁边写照片编号、位置和暂定类型。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "根据高低和开口方向画出至少3个节点的连接关系",
-                "studentAction": "根据高低和开口方向画出至少3个节点的连接关系",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "提出连接假设",
+                "objective": "依据高低、开口和沟槽方向提出节点之间的连接关系",
+                "studentAction": "用箭头连接至少3个节点，并在每条箭头旁写明“现场可见”或“根据高低推测”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2条连接箭头；形成至少3个节点的关系；每条连接标明证据状态和流向依据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#64748b",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "",
+                      "prompt": "用箭头连接节点；实线表示现场可见，虚线表示推测，并写出流向依据。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "对比明沟和暗沟的外观、连接方式和优势",
-                "studentAction": "对比明沟和暗沟的外观、连接方式和优势",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "比较明沟与暗沟",
+                "objective": "从外观、连接和维护三个角度比较明沟与暗沟",
+                "studentAction": "分别写出明沟和暗沟的可见特征、可能优势和局限，并引用至少一张现场照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "明沟与暗沟各有一条特征；至少比较一个优势和一个局限；引用照片编号；未知部分明确标注",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "open-ditch",
+                          "label": "明沟：特征、优势与局限",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "covered-ditch",
+                          "label": "暗沟：特征、优势与局限",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "evidence",
+                          "label": "对应照片编号与依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "画出至少3个节点的连接关系图 + 正确区分明暗沟",
             "passCondition": "画出至少3个节点的连接关系图 + 正确区分明暗沟",
             "goals": "K5(明暗沟系统), S5(系统分级), C2(系统思维)",
-            "toolType": "sketch",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1003,85 +1774,180 @@ export default {
             "roleStageId": "task-3",
             "name": "绘其图",
             "phase": "Phase 3 推演",
-            "modules": "A01(画板草图), A03(拼合搭建)",
-            "tools": [
-              {
-                "id": "sketch",
-                "module": "A01",
-                "name": "画板标注",
-                "icon": "pen-tool",
-                "output": "image",
-                "config": {
-                  "width": 720,
-                  "height": 420,
-                  "brushColors": [
-                    "#8d211f",
-                    "#245c4f",
-                    "#1f2937"
-                  ],
-                  "backgroundImage": ""
-                }
-              },
-              {
-                "id": "builder",
-                "module": "A03",
-                "name": "拼合搭建",
-                "icon": "blocks",
-                "output": "layout",
-                "config": {
-                  "mode": "evidence-wall",
-                  "items": [],
-                  "zones": [],
-                  "connections": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "绘制完整的\"院落→支沟→干沟→河\"分级排水网络图",
             "guidanceSteps": [
-              "先把已发现的沟渠放入院落、支沟、干沟和河道对应层级",
-              "按水从小范围汇入大范围的方向连线",
-              "检查网络是否至少包含3级且每条水路都标有流向"
+              "把院落地表水、支沟、干沟和河道四张卡放入对应层级",
+              "在画板上画出至少3级网络和连续流向箭头，实线表示有证据支持，虚线表示待核",
+              "对照现场照片检查网络图，写明两条有证据支持的连接和一条仍需核验的连接"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先把已发现的沟渠放入院落、支沟、干沟和河道对应层级",
-                "studentAction": "先把已发现的沟渠放入院落、支沟、干沟和河道对应层级",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "完成排水层级分类",
+                "objective": "理解雨水从小范围收集设施逐级进入更大通道的层级关系",
+                "studentAction": "把院落地表水、支沟、干沟和河道四张卡放入对应层级",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "4张卡全部完成分类，层级从局部集水到河道汇流排列",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(分类搭建)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "courtyard-water",
+                          "label": "院落地表水"
+                        },
+                        {
+                          "id": "branch-ditch",
+                          "label": "支沟"
+                        },
+                        {
+                          "id": "trunk-ditch",
+                          "label": "干沟"
+                        },
+                        {
+                          "id": "river",
+                          "label": "河道"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "level-1",
+                          "label": "第1级：局部集水"
+                        },
+                        {
+                          "id": "level-2",
+                          "label": "第2级：小范围转运"
+                        },
+                        {
+                          "id": "level-3",
+                          "label": "第3级：主通道汇集"
+                        },
+                        {
+                          "id": "level-4",
+                          "label": "第4级：河道承接"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "把四张排水对象卡放入对应层级。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "按水从小范围汇入大范围的方向连线",
-                "studentAction": "按水从小范围汇入大范围的方向连线",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "连接分级水路",
+                "objective": "把层级分类转换成带方向的排水网络",
+                "studentAction": "在画板上画出至少3级网络和连续流向箭头，实线表示有证据支持，虚线表示待核",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个层级、2条以上连续箭头；每条路径有流向；已知和推测使用不同线型或文字标识",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(画板标注)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2563eb",
+                        "#64748b",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "",
+                      "prompt": "从院落或设施节点开始，逐级连向支沟、干沟和河道；实线画已知，虚线画待核。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "检查网络是否至少包含3级且每条水路都标有流向",
-                "studentAction": "检查网络是否至少包含3级且每条水路都标有流向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "检查网络边界",
+                "objective": "检验网络图是否能够解释现场证据，同时承认地下连接的不确定性",
+                "studentAction": "对照现场照片检查网络图，写明两条有证据支持的连接和一条仍需核验的连接",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少引用2条现场证据；指出1条待核连接；说明待核连接还需要什么证据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "supported-1",
+                          "label": "有证据支持的连接1",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "supported-2",
+                          "label": "有证据支持的连接2",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "unknown",
+                          "label": "待核连接及所需证据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "网络图包含3级以上层级 + 标注流向",
             "passCondition": "网络图包含3级以上层级 + 标注流向",
             "goals": "K5(明暗沟系统), K2([待学生探索]), S5(系统分级), C2(系统思维)",
-            "toolType": "sketch",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "none",
@@ -1104,8 +1970,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-ditch-finder.png",
-        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-ditch-finder.png"
+        "cardImage": "lessons/lesson_gewu_001/assets/roles/role-card-ditch-finder.png",
+        "badgeImage": "lessons/lesson_gewu_001/assets/roles/badge-ditch-finder.png"
       },
       {
         "id": "river-guide",
@@ -1117,76 +1983,169 @@ export default {
         "geofence": "中心(116.3968, 39.9160) 半径80m",
         "type": "核心角色",
         "collectionItem": "S",
-        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/mifu-S.png",
+        "collectionItemImage": "lessons/lesson_gewu_001/assets/tokens/mifu-S.png",
         "tasks": [
           {
             "id": "task-1",
             "roleStageId": "task-1",
             "name": "追其源",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "沿河行走拍照至少4处关键节点（入水口/桥下/弯道/出水口）",
             "guidanceSteps": [
-              "先找到安全可观察的入水口，记录水从哪里来",
-              "沿老师指定路线记录桥下、弯道等中间节点",
-              "找到出水方向，按上游到下游整理至少4张照片"
+              "在老师指定的安全观察点拍摄1张河段全景，并记录你判断来水方向的依据",
+              "沿老师指定路线，在桥下、弯道或岸线变化处拍摄至少2张不同节点照片",
+              "再拍1张下游或出水方向照片，把至少4张照片按上游到下游排序并逐张标注位置"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先找到安全可观察的入水口，记录水从哪里来",
-                "studentAction": "先找到安全可观察的入水口，记录水从哪里来",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录可观察的入水方向",
+                "objective": "找到河段的一端或来水方向，并保留可定位的现场证据",
+                "studentAction": "在老师指定的安全观察点拍摄1张河段全景，并记录你判断来水方向的依据",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张包含河道和固定参照物的全景；文字说明引用水面、河道形态、桥位或地图中的至少一种依据；不得向水中投放物品",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照), A01(文字)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍下河道全景和桥、岸线等固定参照，不靠近水边。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "inflow-basis",
+                          "label": "来水方向与判断依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "沿老师指定路线记录桥下、弯道等中间节点",
-                "studentAction": "沿老师指定路线记录桥下、弯道等中间节点",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "采集中间节点",
+                "objective": "用多个中间位置观察河道路径和方向变化",
+                "studentAction": "沿老师指定路线，在桥下、弯道或岸线变化处拍摄至少2张不同节点照片",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2张照片；来自两个不同节点或呈现两种不同河道特征；每张保留可定位参照",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 2,
+                      "maxCount": 4,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "在两个不同节点拍照，优先记录桥下、弯道或岸线变化，并保留定位参照。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "找到出水方向，按上游到下游整理至少4张照片",
-                "studentAction": "找到出水方向，按上游到下游整理至少4张照片",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "整理上下游序列",
+                "objective": "把分散照片整理成有依据的河道路径序列",
+                "studentAction": "再拍1张下游或出水方向照片，把至少4张照片按上游到下游排序并逐张标注位置",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "新增至少1张照片；本任务累计不少于4张；提交照片顺序和每张位置标注；无法确认的端点明确写“待核”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照), A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "补拍下游或出水方向的节点，并保留岸线或桥位参照。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "sequence",
+                          "label": "照片顺序与节点标注",
+                          "type": "long_text",
+                          "placeholder": "例：照片1入水方向→照片2桥下→照片3弯道→照片4出水方向",
+                          "required": true,
+                          "minLength": 40
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "4张有效照片 + 标注上下游方向",
             "passCondition": "4张有效照片 + 标注上下游方向",
             "goals": "K5(明暗沟系统), K2([待学生探索]), S2(流向判断)",
-            "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_001/assets/maps/inner-river-path.png",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_gewu_001/assets/maps/inner-river-path.png",
             "location": {
               "mode": "geofence",
               "legacyMode": "inherit_role",
@@ -1216,93 +2175,174 @@ export default {
             "roleStageId": "task-2",
             "name": "测其流",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照/语音), A02(答题)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "观察法估测流速（投叶片/观水面）\n表单：[估测河宽(m), 估测河深(m), 估测流速(m/s), 计算流量]\n允许较大误差，重在方法",
             "guidanceSteps": [
-              "先在安全位置选择流速观察方法，说明观察依据",
-              "估测河宽、河深和流速，记录数值与单位",
-              "用估测值计算流量，并标出哪个数据的不确定性最大"
+              "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和安全边界",
+              "填写河宽、河深和流速估测值，逐项注明观察或推算依据",
+              "按“河宽×河深×流速”计算流量，写出单位，并选择不确定性最大的输入解释原因"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "先在安全位置选择流速观察方法，说明观察依据",
-                "studentAction": "先在安全位置选择流速观察方法，说明观察依据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "设计安全观察方法",
+                "objective": "形成不接触河水、不投放物体的可执行流速观察方案",
+                "studentAction": "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和安全边界",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "方法可在岸上完成；包含固定参照、观察时长或距离中的至少两项；明确不向水中投放物品",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "method",
+                          "label": "流速观察方法",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 35
+                        },
+                        {
+                          "id": "safety",
+                          "label": "安全边界",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "估测河宽、河深和流速，记录数值与单位",
-                "studentAction": "估测河宽、河深和流速，记录数值与单位",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录宽深与流速估测",
+                "objective": "获得带单位、带方法说明的河宽、河深和流速估测数据",
+                "studentAction": "填写河宽、河深和流速估测值，逐项注明观察或推算依据",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "三个数值均有单位；河深明确标注为观察推测或资料值；每项至少有一个依据",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "width",
+                          "label": "估测河宽（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "depth",
+                          "label": "估测河深（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "speed",
+                          "label": "估测流速（米/秒）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "basis",
+                          "label": "三项数据的观察或推算依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "用估测值计算流量，并标出哪个数据的不确定性最大",
-                "studentAction": "用估测值计算流量，并标出哪个数据的不确定性最大",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "计算流量并识别不确定性",
+                "objective": "用简化模型计算流量，并判断哪个输入最影响结果可信度",
+                "studentAction": "按“河宽×河深×流速”计算流量，写出单位，并选择不确定性最大的输入解释原因",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "计算过程可复算；结果单位为立方米/秒或等价写法；指出一个最大不确定性并说明它怎样影响结果",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "flow",
+                          "label": "估算流量（立方米/秒）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "计算过程与单位",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "uncertain-input",
+                          "label": "最大不确定性及影响",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "给出估测方法说明 + 估测值",
             "passCondition": "给出估测方法说明 + 估测值",
             "goals": "S1(估算), S3(实验设计), C1(证据意识), C4(科学精神)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1333,86 +2373,220 @@ export default {
             "roleStageId": "task-3",
             "name": "演其变",
             "phase": "Phase 3 推演",
-            "modules": "A01(文字), A04(沙盘推演)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "simulation",
-                "module": "A04",
-                "name": "沙盘推演",
-                "icon": "waves",
-                "output": "rounds",
-                "config": {
-                  "rounds": 1,
-                  "resources": {},
-                  "choices": [],
-                  "metrics": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "在沙盘中设置不同降水量，观察内金水河水位变化",
             "guidanceSteps": [
-              "先设置正常降水量，记录河道水位和流动状态",
-              "分别调到中雨和暴雨，观察哪个环节最先发生变化",
-              "对比三种情况，说明河道的容量边界和多出的水可能去向"
+              "依次运行常规降雨、中雨和暴雨三种情景，保存每轮水位、流速和溢流风险变化",
+              "比较三轮记录，指出水位、流速、河道余量或下游承接中最先明显变化的一项，并引用对应轮次",
+              "写出三种降雨下的河道状态变化，说明容量边界出现的条件和多余水可能去向，并标注推测部分"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先设置正常降水量，记录河道水位和流动状态",
-                "studentAction": "先设置正常降水量，记录河道水位和流动状态",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "完成三轮降雨推演",
+                "objective": "观察降雨负荷逐步增加时河道压力的相对变化",
+                "studentAction": "依次运行常规降雨、中雨和暴雨三种情景，保存每轮水位、流速和溢流风险变化",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "完成3轮且三种情景不重复；保留每轮指标变化记录",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A04(沙盘推演)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 3,
+                      "resources": {
+                        "河道容量": "固定",
+                        "上游来水": "随降雨增加"
+                      },
+                      "choices": [
+                        {
+                          "id": "normal",
+                          "label": "常规降雨",
+                          "publicFeedback": "河道处于基线状态；记录水位、流速和剩余空间。",
+                          "effects": {
+                            "water-level": 1,
+                            "flow-speed": 1,
+                            "overflow-risk": 0
+                          }
+                        },
+                        {
+                          "id": "medium",
+                          "label": "中雨",
+                          "publicFeedback": "来水增加；观察水位和流速中哪一项变化更明显。",
+                          "effects": {
+                            "water-level": 2,
+                            "flow-speed": 2,
+                            "overflow-risk": 1
+                          }
+                        },
+                        {
+                          "id": "storm",
+                          "label": "暴雨",
+                          "publicFeedback": "系统压力达到高位；检查哪个环节最先接近容量边界。",
+                          "effects": {
+                            "water-level": 4,
+                            "flow-speed": 3,
+                            "overflow-risk": 4
+                          }
+                        }
+                      ],
+                      "metrics": [
+                        {
+                          "id": "water-level",
+                          "label": "水位压力",
+                          "initial": 0,
+                          "initialLabel": "基线待测"
+                        },
+                        {
+                          "id": "flow-speed",
+                          "label": "流速变化",
+                          "initial": 0,
+                          "initialLabel": "基线待测"
+                        },
+                        {
+                          "id": "overflow-risk",
+                          "label": "溢流风险",
+                          "initial": 0,
+                          "initialLabel": "未观察"
+                        }
+                      ],
+                      "allowRepeat": false,
+                      "prompt": "依次运行三种降雨情景，观察河道压力怎样变化。",
+                      "roundPrompts": [
+                        "第1轮：选择常规降雨，建立基线。",
+                        "第2轮：选择中雨，比较指标变化。",
+                        "第3轮：选择暴雨，寻找容量边界。"
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "分别调到中雨和暴雨，观察哪个环节最先发生变化",
-                "studentAction": "分别调到中雨和暴雨，观察哪个环节最先发生变化",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "定位最先变化的环节",
+                "objective": "从三轮指标变化中识别系统压力首先出现在哪里",
+                "studentAction": "比较三轮记录，指出水位、流速、河道余量或下游承接中最先明显变化的一项，并引用对应轮次",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "明确指出一个首先变化的环节；引用至少两轮数据或现象进行比较；保留其他可能解释",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "first-change",
+                          "label": "最先明显变化的环节",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "comparison",
+                          "label": "对应轮次与比较证据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 35
+                        },
+                        {
+                          "id": "alternative",
+                          "label": "另一种可能解释",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "对比三种情况，说明河道的容量边界和多出的水可能去向",
-                "studentAction": "对比三种情况，说明河道的容量边界和多出的水可能去向",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "说明容量边界与去向",
+                "objective": "用系统关系解释河道容量有限时多余来水可能怎样转移",
+                "studentAction": "写出三种降雨下的河道状态变化，说明容量边界出现的条件和多余水可能去向，并标注推测部分",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "同时描述常规、中雨、暴雨三种状态；包含容量边界条件、至少一个可能去向和一项不确定性",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "three-scenarios",
+                          "label": "三种降雨状态对比",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 60
+                        },
+                        {
+                          "id": "capacity-boundary",
+                          "label": "容量边界与多余水去向",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "仍需核验的内容",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "描述\"正常/中雨/暴雨\"三种情况下河道状态变化",
             "passCondition": "描述\"正常/中雨/暴雨\"三种情况下河道状态变化",
             "goals": "K2([待学生探索]), C2(系统思维), S5(系统分级)",
+            "prerequisites": [],
             "toolType": "text",
-            "image": "lessons/lesson_zhuhun_001/assets/videos/video-simulation.png",
+            "image": "lessons/lesson_gewu_001/assets/videos/video-simulation.png",
             "location": {
               "mode": "none",
               "legacyMode": "none",
@@ -1434,8 +2608,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-river-guide.png",
-        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-river-guide.png"
+        "cardImage": "lessons/lesson_gewu_001/assets/roles/role-card-river-guide.png",
+        "badgeImage": "lessons/lesson_gewu_001/assets/roles/badge-river-guide.png"
       },
       {
         "id": "moat-guard",
@@ -1447,75 +2621,149 @@ export default {
         "geofence": "中心(116.3995, 39.9165) 半径130m",
         "type": "核心角色",
         "collectionItem": "H",
-        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/mifu-H.png",
+        "collectionItemImage": "lessons/lesson_gewu_001/assets/tokens/mifu-H.png",
         "tasks": [
           {
             "id": "task-1",
             "roleStageId": "task-1",
             "name": "观其堤",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照采集)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "拍照河堤结构、排水口、水位标记至少4处",
             "guidanceSteps": [
-              "先观察河堤轮廓，找到排水口或水位痕迹",
-              "分别拍摄河堤结构、排水口和水位标记，完成至少4张照片",
-              "为照片分类，写下每种结构可能承担的作用"
+              "在老师指定的安全观察点拍摄1—2张河堤和水面全景，保留城墙、岸线或桥位参照",
+              "再拍至少3张照片，分别寻找排水口、岸壁结构、水位痕迹或其他可说明水位变化的细节",
+              "选择至少3张照片，分别填写结构类型、可见特征和可能作用；证据不足时使用“可能”或“待核”"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先观察河堤轮廓，找到排水口或水位痕迹",
-                "studentAction": "先观察河堤轮廓，找到排水口或水位痕迹",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "记录河堤整体结构",
+                "objective": "获得能够说明河堤轮廓、岸线与水体关系的现场全景",
+                "studentAction": "在老师指定的安全观察点拍摄1—2张河堤和水面全景，保留城墙、岸线或桥位参照",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张清楚全景；画面同时包含河堤和水体，并有可定位参照；不得靠近无护栏水边",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍下河堤与水体的整体关系，并保留城墙、岸线或桥位参照。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "分别拍摄河堤结构、排水口和水位标记，完成至少4张照片",
-                "studentAction": "分别拍摄河堤结构、排水口和水位标记，完成至少4张照片",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐排水与水位证据",
+                "objective": "观察河堤上可能与进排水或水位变化有关的细节",
+                "studentAction": "再拍至少3张照片，分别寻找排水口、岸壁结构、水位痕迹或其他可说明水位变化的细节",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3张新增照片；至少覆盖两类不同结构或痕迹；本任务累计不少于4张；不确定对象标“待核”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(拍照)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 3,
+                      "maxCount": 5,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "从安全位置补拍排水口、岸壁结构或水位痕迹，避免重复同一画面。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "为照片分类，写下每种结构可能承担的作用",
-                "studentAction": "为照片分类，写下每种结构可能承担的作用",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "分类并提出功能假设",
+                "objective": "把河堤照片分类，并用结构证据提出谨慎的功能解释",
+                "studentAction": "选择至少3张照片，分别填写结构类型、可见特征和可能作用；证据不足时使用“可能”或“待核”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3条照片记录；每条包含照片编号、可见特征和功能假设；观察事实与推测表达清楚区分",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "record-1",
+                          "label": "照片1：结构、特征与可能作用",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "record-2",
+                          "label": "照片2：结构、特征与可能作用",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "record-3",
+                          "label": "照片3：结构、特征与可能作用",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "4张有效照片 + 描述观察到的结构特征",
             "passCondition": "4张有效照片 + 描述观察到的结构特征",
             "goals": "K6(护城河蓄排并用), S4(史料实证), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1546,93 +2794,174 @@ export default {
             "roleStageId": "task-2",
             "name": "验其深",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照/语音), A02(答题)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "步测法估测河宽 + 观察法推测河深\n表单：[估测河宽(m), 估测深度(m), 估测周长(m), 计算蓄水体积]\n引导计算蓄水量（简化为矩形截面×周长）",
             "guidanceSteps": [
-              "用步测法估测河宽，记录步数和换算方法",
-              "根据可见结构推测河深和周长，标出估算依据",
-              "按简化截面计算蓄水量量级，检查单位和结果是否合理"
+              "在不靠近水边的前提下，记录步数、个人步长或地图比例，计算一处河宽估测值",
+              "根据可见岸壁、课程材料或地图记录河深和周长估测值，并逐项标注“观察推测”或“资料值”",
+              "按“河宽×河深×周长”计算简化蓄水量，写出计算过程、单位和模型可能造成的偏差"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "用步测法估测河宽，记录步数和换算方法",
-                "studentAction": "用步测法估测河宽，记录步数和换算方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "估测河宽",
+                "objective": "用步测或地图比例形成可复算的河宽估测",
+                "studentAction": "在不靠近水边的前提下，记录步数、个人步长或地图比例，计算一处河宽估测值",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "包含河宽数值和单位；写明步数与步长或地图比例；说明测量路线的安全边界",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "width",
+                          "label": "估测河宽（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "method",
+                          "label": "步数、步长或地图比例换算",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "safety",
+                          "label": "安全边界说明",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "根据可见结构推测河深和周长，标出估算依据",
-                "studentAction": "根据可见结构推测河深和周长，标出估算依据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "建立深度与长度假设",
+                "objective": "为无法直接测量的河深和周长建立有来源的估算假设",
+                "studentAction": "根据可见岸壁、课程材料或地图记录河深和周长估测值，并逐项标注“观察推测”或“资料值”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "河深与周长均有数值和单位；每项标明数据性质和依据；不得把推测写成现场实测",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "depth",
+                          "label": "估测河深（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "perimeter",
+                          "label": "估测周长（米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "sources",
+                          "label": "数据性质与估算依据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "按简化截面计算蓄水量量级，检查单位和结果是否合理",
-                "studentAction": "按简化截面计算蓄水量量级，检查单位和结果是否合理",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "估算蓄水量级",
+                "objective": "用简化截面模型估算护城河蓄水量，并检查量级和单位",
+                "studentAction": "按“河宽×河深×周长”计算简化蓄水量，写出计算过程、单位和模型可能造成的偏差",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "计算式使用本组前三项数据；结果单位为立方米；能够判断结果所在数量级；至少说明一个简化假设",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "volume",
+                          "label": "估算蓄水量（立方米）",
+                          "type": "number",
+                          "required": true
+                        },
+                        {
+                          "id": "calculation",
+                          "label": "计算过程与数量级",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "assumption",
+                          "label": "模型简化与可能偏差",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "给出蓄水量量级估算（万级m³即可）",
             "passCondition": "给出蓄水量量级估算（万级m³即可）",
             "goals": "K6(护城河), S1(估算), C1(证据意识), C4(科学精神)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1663,83 +2992,165 @@ export default {
             "roleStageId": "task-3",
             "name": "解其用",
             "phase": "Phase 2 / Phase 3",
-            "modules": "A01(文字输入), A02(答题)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "问答：护城河至少有哪3个功能？（防御/排水/景观/消防/交通）\n文字：解释\"蓄排并用\"——为什么先蓄后排而不是直接排走？",
             "guidanceSteps": [
-              "根据现场结构和课程材料列出护城河的至少3个功能",
-              "为每个功能匹配一条观察或资料证据",
-              "结合降雨和排水速度，解释先蓄后排的作用"
+              "列出至少3个不同功能，并分别用一句话说明该功能解决什么问题",
+              "为三个功能各匹配一条照片、计算结果或课程材料，并标明证据来源和强弱",
+              "结合自己的蓄水量估算和排水路径，解释为什么护城河需要先承接一部分来水，再逐步排向城外水系"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "根据现场结构和课程材料列出护城河的至少3个功能",
-                "studentAction": "根据现场结构和课程材料列出护城河的至少3个功能",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "提出三个功能主张",
+                "objective": "从现场结构和课程材料中识别护城河可能承担的多重功能",
+                "studentAction": "列出至少3个不同功能，并分别用一句话说明该功能解决什么问题",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个功能；功能之间含义不重复；每项包含所解决的问题；允许写“待核”主张",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "function-1",
+                          "label": "功能1及解决的问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "function-2",
+                          "label": "功能2及解决的问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "function-3",
+                          "label": "功能3及解决的问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "为每个功能匹配一条观察或资料证据",
-                "studentAction": "为每个功能匹配一条观察或资料证据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "为功能匹配证据",
+                "objective": "用现场观察或资料来源支持每一个功能主张",
+                "studentAction": "为三个功能各匹配一条照片、计算结果或课程材料，并标明证据来源和强弱",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "3条功能均有对应证据；每条写明来源；能够区分现场一手证据与课程资料",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "evidence-1",
+                          "label": "功能1的证据与来源",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "evidence-2",
+                          "label": "功能2的证据与来源",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        },
+                        {
+                          "id": "evidence-3",
+                          "label": "功能3的证据与来源",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 25
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "结合降雨和排水速度，解释先蓄后排的作用",
-                "studentAction": "结合降雨和排水速度，解释先蓄后排的作用",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "解释蓄排并用",
+                "objective": "理解先蓄后排如何调节暴雨来水并兼顾其他功能",
+                "studentAction": "结合自己的蓄水量估算和排水路径，解释为什么护城河需要先承接一部分来水，再逐步排向城外水系",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于60字；包含来水增加、暂时蓄存、下游排放和容量有限四个关系；引用至少一项本组数据或照片",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "storage-discharge",
+                          "label": "蓄排并用解释",
+                          "type": "long_text",
+                          "placeholder": "结合你的估算和现场证据说明",
+                          "required": true,
+                          "minLength": 60,
+                          "maxLength": 320
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "列出≥3个功能 + 解释蓄排并用逻辑",
             "passCondition": "列出≥3个功能 + 解释蓄排并用逻辑",
             "goals": "K6(护城河), K2([待学生探索]), C2(系统思维), C5(文化认同)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "",
             "location": {
@@ -1767,8 +3178,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-moat-guard.png",
-        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-moat-guard.png"
+        "cardImage": "lessons/lesson_gewu_001/assets/roles/role-card-moat-guard.png",
+        "badgeImage": "lessons/lesson_gewu_001/assets/roles/badge-moat-guard.png"
       },
       {
         "id": "truth-seeker",
@@ -1780,117 +3191,239 @@ export default {
         "geofence": "中心(116.3970, 39.9170) 半径200m（较大范围）",
         "type": "整合角色",
         "collectionItem": "U",
-        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/mifu-U.png",
+        "collectionItemImage": "lessons/lesson_gewu_001/assets/tokens/mifu-U.png",
         "tasks": [
           {
             "id": "task-1",
             "roleStageId": "task-1",
             "name": "汇其证",
             "phase": "Phase 2 现场采证",
-            "modules": "A01(拍照/文字/语音), A07(扫码)",
-            "tools": [
-              {
-                "id": "photo",
-                "module": "A01",
-                "name": "拍照采集",
-                "icon": "camera",
-                "output": "files",
-                "config": {
-                  "minCount": 1,
-                  "maxCount": 6,
-                  "accept": "image/*",
-                  "recognition": "course-evidence"
-                }
-              },
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "scanner",
-                "module": "A07",
-                "name": "扫码识别",
-                "icon": "scan-line",
-                "output": "scanResult",
-                "config": {
-                  "mode": "qr",
-                  "allowManualEntry": true,
-                  "prompt": ""
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "收集至少5条来自不同角色的\"证据摘要\"\n扫描其他角色完成任务后生成的证据二维码\n每条证据标注来源（哪个角色、什么方法获得）",
             "guidanceSteps": [
-              "先向不同角色索取或扫码获取证据摘要",
-              "收集至少5条后，为每条标注角色、地点和获取方法",
-              "区分自己观察的一手证据和他人提供的二手证据"
+              "至少扫码获取1条角色证据，再把共计不少于5条证据摘要录入协作账本并标明贡献角色",
+              "按证据编号整理至少5条来源，逐条写明角色、地点、获取方法和对应照片或记录编号",
+              "把5张证据卡分到“一手证据”“二手证据”或“暂无法判断”，并写出一条分类原则"
             ],
             "steps": [
               {
                 "id": "task-1-step-1",
-                "objective": "先向不同角色索取或扫码获取证据摘要",
-                "studentAction": "先向不同角色索取或扫码获取证据摘要",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "建立跨角色证据账本",
+                "objective": "从不同角色取得至少5条可追溯的证据摘要",
+                "studentAction": "至少扫码获取1条角色证据，再把共计不少于5条证据摘要录入协作账本并标明贡献角色",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "完成至少1次扫码；账本不少于5条；每条包含贡献角色和简短证据摘要；不得索取其他角色的完整答案或最终结论",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A07(二维码), A05(证据汇总)",
+                "next": "step:task-1-step-2",
+                "tools": [
+                  {
+                    "id": "scanner",
+                    "module": "A07",
+                    "name": "扫码识别",
+                    "icon": "scan-line",
+                    "output": "scanResult",
+                    "config": {
+                      "mode": "qr",
+                      "allowManualEntry": true,
+                      "prompt": "扫描其他角色完成任务后生成的证据摘要二维码；只收集证据摘要。"
+                    }
+                  },
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "evidence_log",
+                      "prompt": "记录至少5条来自不同角色或不同方法的证据摘要，并标明贡献角色。",
+                      "minimumEntries": 5,
+                      "roles": [
+                        "数龙官",
+                        "测坡官",
+                        "寻沟官",
+                        "引河官",
+                        "护城官",
+                        "真相官"
+                      ],
+                      "recordTypes": [
+                        "现场照片",
+                        "测量数据",
+                        "观察记录",
+                        "角色摘要"
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-2",
-                "objective": "收集至少5条后，为每条标注角色、地点和获取方法",
-                "studentAction": "收集至少5条后，为每条标注角色、地点和获取方法",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "补齐来源元数据",
+                "objective": "让每条证据都能回到具体角色、地点和获取方法进行复查",
+                "studentAction": "按证据编号整理至少5条来源，逐条写明角色、地点、获取方法和对应照片或记录编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5条编号记录；每条均包含角色、地点、方法和证据编号；缺失信息明确写“待补”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-1-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "source-1",
+                          "label": "证据1来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-2",
+                          "label": "证据2来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-3",
+                          "label": "证据3来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-4",
+                          "label": "证据4来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        },
+                        {
+                          "id": "source-5",
+                          "label": "证据5来源记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-1-step-3",
-                "objective": "区分自己观察的一手证据和他人提供的二手证据",
-                "studentAction": "区分自己观察的一手证据和他人提供的二手证据",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "区分一手与二手证据",
+                "objective": "根据证据获得方式区分自己直接观察与他人转述",
+                "studentAction": "把5张证据卡分到“一手证据”“二手证据”或“暂无法判断”，并写出一条分类原则",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "5张证据卡全部分类；允许使用“暂无法判断”；分类原则能够说明直接观察、他人提供和来源不清的区别",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(分类搭建), A01(文字)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "evidence-1",
+                          "label": "证据1"
+                        },
+                        {
+                          "id": "evidence-2",
+                          "label": "证据2"
+                        },
+                        {
+                          "id": "evidence-3",
+                          "label": "证据3"
+                        },
+                        {
+                          "id": "evidence-4",
+                          "label": "证据4"
+                        },
+                        {
+                          "id": "evidence-5",
+                          "label": "证据5"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "first-hand",
+                          "label": "一手证据：自己直接获得"
+                        },
+                        {
+                          "id": "second-hand",
+                          "label": "二手证据：他人提供"
+                        },
+                        {
+                          "id": "unclear",
+                          "label": "暂无法判断"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "根据自己的证据账本，把5条证据按获得方式分类。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "rule",
+                          "label": "你的分类原则",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "收集≥5条 + 每条有来源标注",
             "passCondition": "收集≥5条 + 每条有来源标注",
             "goals": "S4(史料实证), S6(信息整合), C1(证据意识)",
-            "toolType": "capture",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "geofence",
@@ -1921,83 +3454,201 @@ export default {
             "roleStageId": "task-2",
             "name": "辨其伪",
             "phase": "Phase 2 / Phase 3",
-            "modules": "A01(文字), A02(答题)",
-            "tools": [
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "quiz",
-                "module": "A02",
-                "name": "答题评测",
-                "icon": "list-checks",
-                "output": "answers",
-                "config": {
-                  "type": "single_choice",
-                  "question": "",
-                  "options": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "对每条证据做可信度评级（强/中/弱）\n问答：\"600年不积水\"这个说法精确吗？有没有反例？\n提供[待学生探索]故宫局部积水的新闻资料（AI适时出示）",
             "guidanceSteps": [
-              "先按来源、方法和是否可复核将每条证据评为强、中或弱",
-              "用已收集证据检查“600年不积水”这句话成立需要哪些条件",
-              "阅读局部积水反例资料，修正为能够被证据支持的结论"
+              "把5张证据卡分为强、中、弱或待核，并写出你使用的三个评级标准",
+              "用已收集证据分析“600年不积水”需要在哪些降雨、维护、区域和时间条件下才可能成立",
+              "阅读絮絮在本步解锁的局部积水材料，写出修正后的结论，并说明哪些原判断保留、哪些需要收窄"
             ],
             "steps": [
               {
                 "id": "task-2-step-1",
-                "objective": "先按来源、方法和是否可复核将每条证据评为强、中或弱",
-                "studentAction": "先按来源、方法和是否可复核将每条证据评为强、中或弱",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "评定证据强弱",
+                "objective": "依据来源、方法和可复核性评定证据强度",
+                "studentAction": "把5张证据卡分为强、中、弱或待核，并写出你使用的三个评级标准",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "5张卡全部评级；允许使用“待核”；评级标准至少覆盖来源、获取方法和能否复核",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(分类搭建), A01(文字)",
+                "next": "step:task-2-step-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "evidence-1",
+                          "label": "证据1"
+                        },
+                        {
+                          "id": "evidence-2",
+                          "label": "证据2"
+                        },
+                        {
+                          "id": "evidence-3",
+                          "label": "证据3"
+                        },
+                        {
+                          "id": "evidence-4",
+                          "label": "证据4"
+                        },
+                        {
+                          "id": "evidence-5",
+                          "label": "证据5"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "strong",
+                          "label": "强证据"
+                        },
+                        {
+                          "id": "medium",
+                          "label": "中等证据"
+                        },
+                        {
+                          "id": "weak",
+                          "label": "弱证据"
+                        },
+                        {
+                          "id": "pending",
+                          "label": "待核"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "依据来源、获取方法和可复核性，为5条证据评级。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "criteria",
+                          "label": "评级标准",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-2",
-                "objective": "用已收集证据检查“600年不积水”这句话成立需要哪些条件",
-                "studentAction": "用已收集证据检查“600年不积水”这句话成立需要哪些条件",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "写出主张成立条件",
+                "objective": "把绝对化口号拆成可以被证据检验的条件性主张",
+                "studentAction": "用已收集证据分析“600年不积水”需要在哪些降雨、维护、区域和时间条件下才可能成立",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少提出3项成立条件；引用至少2条已评级证据；区分“未发现积水证据”和“从未积水”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-2-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "conditions",
+                          "label": "主张成立所需条件",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 70
+                        },
+                        {
+                          "id": "evidence-links",
+                          "label": "对应证据编号与等级",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-2-step-3",
-                "objective": "阅读局部积水反例资料，修正为能够被证据支持的结论",
-                "studentAction": "阅读局部积水反例资料，修正为能够被证据支持的结论",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "用反例修正结论",
+                "objective": "理解反例不会抹去系统价值，但会限定结论的适用范围",
+                "studentAction": "阅读絮絮在本步解锁的局部积水材料，写出修正后的结论，并说明哪些原判断保留、哪些需要收窄",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "修正结论包含适用条件和边界；引用局部积水反例；同时说明排水系统仍有何能力；不把单个反例扩大成“系统完全无效”",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "revised-claim",
+                          "label": "修正后的条件性结论",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 70
+                        },
+                        {
+                          "id": "kept-and-revised",
+                          "label": "保留了什么、收窄了什么",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "完成证据评级 + 对\"600年不积水\"给出带条件的判断",
             "passCondition": "完成证据评级 + 对\"600年不积水\"给出带条件的判断",
             "goals": "C4(科学精神), C1(证据意识), S4(史料实证)",
+            "prerequisites": [],
             "toolType": "text",
             "image": "",
             "location": {
@@ -2029,98 +3680,197 @@ export default {
             "roleStageId": "task-3",
             "name": "断其案",
             "phase": "Phase 3 推演",
-            "modules": "A01(文字/语音), A03(拼合)",
-            "tools": [
-              {
-                "id": "audio",
-                "module": "A01",
-                "name": "语音记录",
-                "icon": "mic",
-                "output": "recording",
-                "config": {
-                  "minSeconds": 3,
-                  "maxSeconds": 90,
-                  "language": "zh-CN",
-                  "transcribe": true
-                }
-              },
-              {
-                "id": "text",
-                "module": "A01",
-                "name": "文字表单",
-                "icon": "notebook-pen",
-                "output": "fields",
-                "config": {
-                  "fields": [
-                    {
-                      "id": "observation",
-                      "label": "观察记录",
-                      "type": "long_text",
-                      "required": true
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "builder",
-                "module": "A03",
-                "name": "拼合搭建",
-                "icon": "blocks",
-                "output": "layout",
-                "config": {
-                  "mode": "evidence-wall",
-                  "items": [],
-                  "zones": [],
-                  "connections": []
-                }
-              }
-            ],
+            "modules": "",
+            "tools": [],
             "requirement": "撰写\"真相报告\"——总结排水系统的真实能力和边界",
             "guidanceSteps": [
-              "先把证据按地势、沟渠、河道和蓄水功能分组",
-              "用强证据总结排水系统在什么条件下有效",
-              "加入已知局限和反例，写出带边界的最终结论"
+              "把五张角色证据卡分别放入快速排出、重力驱动、沟渠转运、河道汇流和终端蓄排五个环节",
+              "选择至少3条强或中等证据，分别说明系统能力、适用条件和证据来源",
+              "撰写真相报告，回答排水系统为何有效、在哪些条件下有效、已知局限是什么，以及“600年不积水”应怎样准确表达"
             ],
             "steps": [
               {
                 "id": "task-3-step-1",
-                "objective": "先把证据按地势、沟渠、河道和蓄水功能分组",
-                "studentAction": "先把证据按地势、沟渠、河道和蓄水功能分组",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "拼合五条系统证据",
+                "objective": "把五个角色的证据放回排水系统的不同功能环节",
+                "studentAction": "把五张角色证据卡分别放入快速排出、重力驱动、沟渠转运、河道汇流和终端蓄排五个环节",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "5张角色卡全部完成匹配，形成从局部排水到终端承接的功能链",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A03(证据拼合)",
+                "next": "step:task-3-step-2",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "classification",
+                      "items": [
+                        {
+                          "id": "dragon",
+                          "label": "数龙官证据"
+                        },
+                        {
+                          "id": "slope",
+                          "label": "测坡官证据"
+                        },
+                        {
+                          "id": "ditch",
+                          "label": "寻沟官证据"
+                        },
+                        {
+                          "id": "river",
+                          "label": "引河官证据"
+                        },
+                        {
+                          "id": "moat",
+                          "label": "护城官证据"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "rapid-release",
+                          "label": "快速排出"
+                        },
+                        {
+                          "id": "gravity",
+                          "label": "重力驱动"
+                        },
+                        {
+                          "id": "transfer",
+                          "label": "沟渠转运"
+                        },
+                        {
+                          "id": "river-collection",
+                          "label": "河道汇流"
+                        },
+                        {
+                          "id": "terminal-storage",
+                          "label": "终端蓄排"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "把五个角色的证据贡献放入对应系统功能环节。"
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-2",
-                "objective": "用强证据总结排水系统在什么条件下有效",
-                "studentAction": "用强证据总结排水系统在什么条件下有效",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "总结能力与有效条件",
+                "objective": "用强证据说明排水系统能够做什么，以及这些能力依赖哪些条件",
+                "studentAction": "选择至少3条强或中等证据，分别说明系统能力、适用条件和证据来源",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3条证据；覆盖至少3个系统环节；每条包含证据编号、证据等级、支持的能力和成立条件",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "step:task-3-step-3",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "ability-1",
+                          "label": "能力证据1",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "ability-2",
+                          "label": "能力证据2",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "ability-3",
+                          "label": "能力证据3",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        },
+                        {
+                          "id": "conditions",
+                          "label": "共同有效条件",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 45
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               {
                 "id": "task-3-step-3",
-                "objective": "加入已知局限和反例，写出带边界的最终结论",
-                "studentAction": "加入已知局限和反例，写出带边界的最终结论",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "提交带边界的真相报告",
+                "objective": "形成同时包含系统成效、局限、反例和条件的最终结论",
+                "studentAction": "撰写真相报告，回答排水系统为何有效、在哪些条件下有效、已知局限是什么，以及“600年不积水”应怎样准确表达",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "不少于150字；包含系统能力总结、至少3条证据、已知局限或反例、适用条件和最终条件性结论",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "truth-report",
+                          "label": "故宫排水真相报告",
+                          "type": "long_text",
+                          "placeholder": "用证据说明能力，也写清局限和适用条件",
+                          "required": true,
+                          "minLength": 150,
+                          "maxLength": 800
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
             "evidenceRequirement": "报告包含：系统能力总结 + 已知局限 + 带条件的结论",
             "passCondition": "报告包含：系统能力总结 + 已知局限 + 带条件的结论",
             "goals": "C4(科学精神), C2(系统思维), S6(信息整合), C5(文化认同)",
-            "toolType": "audio",
+            "prerequisites": [],
+            "toolType": "text",
             "image": "",
             "location": {
               "mode": "none",
@@ -2143,8 +3893,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-truth-seeker.png",
-        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-truth-seeker.png"
+        "cardImage": "lessons/lesson_gewu_001/assets/roles/role-card-truth-seeker.png",
+        "badgeImage": "lessons/lesson_gewu_001/assets/roles/badge-truth-seeker.png"
       }
     ],
     "timeBank": {
@@ -2302,19 +4052,9418 @@ export default {
       ]
     },
     "assets": {
-      "cover": "lessons/lesson_zhuhun_001/assets/backgrounds/cover.png",
-      "chat": "lessons/lesson_zhuhun_001/assets/backgrounds/chat-bg.png",
-      "transition": "lessons/lesson_zhuhun_001/assets/backgrounds/phase-transition.png",
-      "certificate": "lessons/lesson_zhuhun_001/assets/backgrounds/certificate-bg.png",
-      "navigationMap": "lessons/lesson_zhuhun_001/assets/maps/navigation-map.png",
-      "importPlaceholder": "lessons/lesson_zhuhun_001/assets/videos/video-storm-coming.png",
-      "simulationPlaceholder": "lessons/lesson_zhuhun_001/assets/videos/video-simulation.png",
-      "companionIdle": "/assets/video/xuxu-idle.webm",
-      "companionTalk": "/assets/video/xuxu-talk.webm"
+      "cover": "lessons/lesson_gewu_001/assets/backgrounds/cover.png",
+      "chat": "lessons/lesson_gewu_001/assets/backgrounds/chat-bg.png",
+      "transition": "lessons/lesson_gewu_001/assets/backgrounds/phase-transition.png",
+      "certificate": "lessons/lesson_gewu_001/assets/backgrounds/certificate-bg.png",
+      "navigationMap": "lessons/lesson_gewu_001/assets/maps/navigation-map.png",
+      "importPlaceholder": "lessons/lesson_gewu_001/assets/videos/video-storm-coming.png",
+      "simulationPlaceholder": "lessons/lesson_gewu_001/assets/videos/video-simulation.png"
     }
   },
-  "lesson_zhuhun_002": {
-    "id": "lesson_zhuhun_002",
+  "lesson_zhizhi_001": {
+    "id": "lesson_zhizhi_001",
+    "title": "万兽城议事厅Ⅰ：地球村居民ID Card",
+    "subtitle": "在国家动物博物馆，用真实证据为一种动物办理“地球村居民证”",
+    "series": "致知",
+    "seriesCode": "zhizhi",
+    "themeTemplate": "zhizhi",
+    "venue": "国家动物博物馆",
+    "mapCenter": null,
+    "duration": "120分钟",
+    "grades": "小学3—6年级 / 亲子",
+    "groupRule": "6人一组，共同代言一种动物",
+    "level": "大众体验版",
+    "levelCode": "experience",
+    "traversalMode": "sequential",
+    "coreQuestion": "如果一种动物也要办理地球村居民证，我们需要用哪些证据说明它怎样生活、与谁相连，以及人类可以为它做什么？",
+    "phases": [
+      {
+        "id": "phase-1",
+        "number": 1,
+        "name": "居民招募",
+        "duration": "8min",
+        "mode": "集体导入",
+        "location": "入口集合区",
+        "modules": "A06(沉浸媒体), A01(文字)",
+        "trigger": "教师手动启动",
+        "endCondition": "每组领取物种并提交3个问题",
+        "flow": [
+          "观看“万兽城换发居民证”任务邀请。",
+          "每组领取一种动物剪影与候选点位。",
+          "学生写下三个真正想查明的问题。",
+          "絮絮说明四类信息：观察、资料、推断、期待。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-2",
+        "number": 2,
+        "name": "身份与生活取证",
+        "duration": "27min",
+        "mode": "角色分工 + 小组汇合",
+        "location": "经踏勘确认的展品主点或替代点",
+        "modules": "A07(实物识别), A01(拍照/文字)",
+        "trigger": "Phase 1结束 + 教师开放角色领取",
+        "endCondition": "身份、家园和生活事实完成初审",
+        "flow": [
+          "确认标本与展签来源。",
+          "记录物种名、学名、形态、栖息地和生活方式。",
+          "每条事实绑定照片或信息卡编号。",
+          "冲突或缺失信息标记“待核”，不由AI补写。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-3",
+        "number": 3,
+        "name": "关系与影响",
+        "duration": "27min",
+        "mode": "个人采证 + 小组拼合",
+        "location": "展品点位附近允许停留区",
+        "modules": "A03(拼合搭建), A01(画板/文字)",
+        "trigger": "Phase 2结束",
+        "endCondition": "生态关系图与人类影响链完成",
+        "flow": [
+          "拼出食物、天敌、伙伴和栖息地条件。",
+          "用箭头说明关系方向。",
+          "将人类活动分为帮助、威胁和待判断。",
+          "从已有证据推导一种基本需要。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-4",
+        "number": 4,
+        "name": "角色发声",
+        "duration": "32min",
+        "mode": "个人创作 + 同伴核验",
+        "location": "馆内安静区或教育空间",
+        "modules": "A01(文字/录音), A05(同伴核验)",
+        "trigger": "Phase 3结束",
+        "endCondition": "60秒脚本与录音通过事实复核",
+        "flow": [
+          "按身份、生活、关系、影响、期待五段写脚本。",
+          "同伴逐句标记证据编号和信息类型。",
+          "修改无来源、过度拟人或绝对化表达。",
+          "录制30—60秒真人旁白。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-5",
+        "number": 5,
+        "name": "居民证制作",
+        "duration": "16min",
+        "mode": "小组协作",
+        "location": "教育空间",
+        "modules": "A03(档案搭建), A01(文字)",
+        "trigger": "Phase 4结束",
+        "endCondition": "ID Card字段完整并通过人工终审",
+        "flow": [
+          "汇总身份、家园、生态角色、主要风险、基本需要和保障建议。",
+          "检查事实、推断和期待标签。",
+          "生成居民ID Card草稿。",
+          "教师或引导员完成事实复核。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-6",
+        "number": 6,
+        "name": "居民发布会",
+        "duration": "10min",
+        "mode": "小组发布 + 个人行动",
+        "location": "教育空间",
+        "modules": "A05(提问), A01(文字/语音)",
+        "trigger": "Phase 5结束",
+        "endCondition": "完成一次证据质询和一项行动承诺",
+        "flow": [
+          "每组展示ID Card并播放自述。",
+          "回答一个“证据在哪里”的问题。",
+          "保留仍待核验的信息。",
+          "每人提交一项具体、可观察、在一周内可复盘的行动。"
+        ],
+        "tasks": []
+      }
+    ],
+    "roleSystem": {
+      "collectionName": "居民档案官",
+      "itemName": "身份",
+      "pickerEyebrow": "6种分工 · 共同完成1张居民证",
+      "pickerTitle": "选择你的{collectionName}身份",
+      "pickerDescription": "每位成员负责一种证据。集齐6枚{collectionItemName}，才能解锁{unlockTarget}。",
+      "collectionItemName": "证据章",
+      "collectionPanelName": "小组证据章",
+      "unlockTarget": "居民发布会",
+      "phaseId": "phase-2"
+    },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
+    },
+    "roles": [
+      {
+        "id": "identity-observer",
+        "order": 1,
+        "name": "身份观察员",
+        "question": "哪些现场特征能够帮助我们确认“它是谁”？",
+        "selectionDescription": "负责确认标本身份、观察身体特征，并把“看到的”和“资料说的”分开。",
+        "location": "教师分配的动物标本主点或替代点",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "身份章",
+        "collectionItemImage": "lessons/lesson_zhizhi_001/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "identity-confirm-resident",
+            "roleStageId": "identity-confirm-resident",
+            "name": "确认居民",
+            "phase": "Phase 2 身份与生活取证",
+            "modules": "",
+            "tools": [],
+            "requirement": "确认标本、展签和小组物种一致，留下可复核的现场证据",
+            "guidanceSteps": [
+              "把标本主体和展签标题同时放入识别画面",
+              "拍摄1—2张标本全景，并给照片写来源编号"
+            ],
+            "steps": [
+              {
+                "id": "identity-scan-specimen",
+                "title": "识别标本",
+                "objective": "确认眼前标本属于小组分配物种",
+                "studentAction": "把标本主体和展签标题同时放入识别画面",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "画面包含标本主体与可定位来源的展签区域；不得拍入他人正脸",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A07(实物识别)",
+                "next": "step:identity-photo-context",
+                "tools": [
+                  {
+                    "id": "scanner",
+                    "module": "A07",
+                    "name": "扫码识别",
+                    "icon": "scan-line",
+                    "output": "scanResult",
+                    "config": {
+                      "mode": "object",
+                      "allowManualEntry": true,
+                      "prompt": "请同时拍入标本主体和展签标题区域；识别失败时保留人工记录。"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "identity-photo-context",
+                "title": "保存身份全景",
+                "objective": "获得可以复核标本身份和观察环境的图像",
+                "studentAction": "拍摄1—2张标本全景，并给照片写来源编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张清楚照片和1个来源编号",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(拍照), A01(文字)",
+                "next": "role-stage:identity-observe-features",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍下标本全景和展签相对位置，不拍其他参观者正脸。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "source-id",
+                          "label": "来源编号",
+                          "type": "short_text",
+                          "required": true,
+                          "placeholder": "例：展签01"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "完成实物识别并提交1张同时保留标本与来源区域的照片",
+            "passCondition": "完成实物识别并提交1张同时保留标本与来源区域的照片",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "point",
+              "name": "教师分配的动物标本点",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "teacher",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "identity-observe-features",
+            "roleStageId": "identity-observe-features",
+            "name": "观察特征",
+            "phase": "Phase 2 身份与生活取证",
+            "modules": "",
+            "tools": [],
+            "requirement": "记录两个能直接观察的身体特征，并说明其可能与生活方式有什么关系",
+            "guidanceSteps": [
+              "在示意画板上圈出两个显著特征，并写照片编号",
+              "选择一个特征，写出“我看到……所以我推测……还需用……核验”"
+            ],
+            "steps": [
+              {
+                "id": "identity-mark-features",
+                "title": "圈出特征",
+                "objective": "把注意力放在可直接观察的身体结构",
+                "studentAction": "在示意画板上圈出两个显著特征，并写照片编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2个特征标注，均能对应现场照片",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(画板标注)",
+                "next": "step:identity-feature-inference",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 520,
+                      "brushColors": [
+                        "#2f6f5e",
+                        "#c65f3d",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+                      "prompt": "圈出两个你能直接看见的身体特征，并在旁边写照片编号。"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "identity-feature-inference",
+                "title": "提出有边界的推断",
+                "objective": "尝试解释结构与生活方式的关系",
+                "studentAction": "选择一个特征，写出“我看到……所以我推测……还需用……核验”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "同时包含观察、推断和核验办法",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "role-stage:identity-organize-facts",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "observation",
+                          "label": "我看到",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 10
+                        },
+                        {
+                          "id": "inference",
+                          "label": "我推测",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 10
+                        },
+                        {
+                          "id": "verify",
+                          "label": "还需怎样核验",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 10
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "2个观察事实 + 1条明确标为推断的结构功能关系",
+            "passCondition": "2个观察事实 + 1条明确标为推断的结构功能关系",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "inherit_role",
+              "name": "动物标本点",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "国家动物博物馆课程允许动线",
+              "verification": "none",
+              "minDwellSeconds": 0,
+              "inherited": true
+            },
+            "timing": {
+              "suggestedSeconds": 600,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "identity-organize-facts",
+            "roleStageId": "identity-organize-facts",
+            "name": "整理身份事实",
+            "phase": "Phase 5 居民证制作",
+            "modules": "",
+            "tools": [],
+            "requirement": "向小组提交身份、显著特征和一条带边界的结构功能判断",
+            "guidanceSteps": [
+              "填写物种名、学名、两个显著特征及来源",
+              "向小组提交身份条目，并记录一条同伴确认或待核意见"
+            ],
+            "steps": [
+              {
+                "id": "identity-submit-profile",
+                "title": "填写身份条目",
+                "objective": "形成可直接进入ID Card的身份资料",
+                "studentAction": "填写物种名、学名、两个显著特征及来源",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "五个字段完整；看不清的学名可以写“待核”",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:identity-share-team",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "name",
+                          "label": "物种名",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "scientific-name",
+                          "label": "学名或待核",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "feature-1",
+                          "label": "特征1",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "feature-2",
+                          "label": "特征2",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "source",
+                          "label": "来源编号",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "identity-share-team",
+                "title": "交给小组复核",
+                "objective": "让身份资料接受同伴检查",
+                "studentAction": "向小组提交身份条目，并记录一条同伴确认或待核意见",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少1条身份资料和1条复核记录",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(团队核验)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "discussion",
+                      "prompt": "核对物种名、显著特征和来源；无法确认时记录待核。",
+                      "minimumEntries": 2,
+                      "roles": [
+                        "身份观察员",
+                        "展签记录员"
+                      ],
+                      "recordTypes": [
+                        "身份资料",
+                        "确认或待核意见"
+                      ],
+                      "requiredRecordTypes": [
+                        "身份资料",
+                        "确认或待核意见"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "三项内容完整且关键事实有来源",
+            "passCondition": "三项内容完整且关键事实有来源",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_001/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_001/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "label-recorder",
+        "order": 2,
+        "name": "展签记录员",
+        "question": "怎样把展签信息变成别人能够复核的事实？",
+        "selectionDescription": "负责展签、来源编号和事实类型，让每条关键信息都能回到出处。",
+        "location": "教师分配的动物标本点",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "来源章",
+        "collectionItemImage": "lessons/lesson_zhizhi_001/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "label-capture-label",
+            "roleStageId": "label-capture-label",
+            "name": "采集展签",
+            "phase": "Phase 2 身份与生活取证",
+            "modules": "",
+            "tools": [],
+            "requirement": "拍摄或抄录展签，建立来源编号",
+            "guidanceSteps": [
+              "在允许拍摄时拍下展签全貌；禁止拍摄时完整抄录标题",
+              "为展签建立编号，并写下访问日期"
+            ],
+            "steps": [
+              {
+                "id": "label-capture-sign",
+                "title": "记录展签全貌",
+                "objective": "保留展签标题和正文的上下文",
+                "studentAction": "在允许拍摄时拍下展签全貌；禁止拍摄时完整抄录标题",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "照片可读或文字记录含展签标题和点位",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(拍照), A01(文字)",
+                "next": "step:label-assign-source-id",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 0,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍下展签全貌，避免只拍一句话。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "title",
+                          "label": "展签标题",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "location",
+                          "label": "展厅/点位",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "label-assign-source-id",
+                "title": "建立来源编号",
+                "objective": "让后续事实可以引用同一来源",
+                "studentAction": "为展签建立编号，并写下访问日期",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "编号、来源类型和日期完整",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "role-stage:label-extract-facts",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "source-id",
+                          "label": "来源编号",
+                          "type": "short_text",
+                          "required": true,
+                          "placeholder": "例：展签01"
+                        },
+                        {
+                          "id": "source-type",
+                          "label": "来源类型",
+                          "type": "select",
+                          "options": [
+                            "标本观察",
+                            "展签",
+                            "馆方资料",
+                            "补充知识卡"
+                          ],
+                          "required": true
+                        },
+                        {
+                          "id": "date",
+                          "label": "访问日期",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "1份可读展签证据 + 1个唯一来源编号",
+            "passCondition": "1份可读展签证据 + 1个唯一来源编号",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "point",
+              "name": "动物标本点",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "teacher",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "label-extract-facts",
+            "roleStageId": "label-extract-facts",
+            "name": "提取事实",
+            "phase": "Phase 2 身份与生活取证",
+            "modules": "",
+            "tools": [],
+            "requirement": "从展签提取三条事实，不加入个人解释",
+            "guidanceSteps": [
+              "用自己的话写三条展签事实，每条附来源编号",
+              "把六张示例卡放入四类信息区"
+            ],
+            "steps": [
+              {
+                "id": "label-extract-facts",
+                "title": "填写三条事实",
+                "objective": "准确转述展签信息",
+                "studentAction": "用自己的话写三条展签事实，每条附来源编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "3条内容均能在展签找到依据，不添加情绪和想象",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:label-sort-information",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "fact-1",
+                          "label": "事实1+来源",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "fact-2",
+                          "label": "事实2+来源",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "fact-3",
+                          "label": "事实3+来源",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "label-sort-information",
+                "title": "分类信息",
+                "objective": "区分观察、资料、推断与期待",
+                "studentAction": "把六张示例卡放入四类信息区",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "六张卡全部分类",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(分类搭建)",
+                "next": "role-stage:label-build-fact-pack",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "evidence-wall",
+                      "items": [
+                        {
+                          "id": "fur-color",
+                          "label": "照片显示毛色"
+                        },
+                        {
+                          "id": "label-habitat",
+                          "label": "展签写明栖息地"
+                        },
+                        {
+                          "id": "guess-mood",
+                          "label": "它看起来很难过"
+                        },
+                        {
+                          "id": "hope-home",
+                          "label": "我希望家园保持连通"
+                        },
+                        {
+                          "id": "source-food",
+                          "label": "知识卡说明食物"
+                        },
+                        {
+                          "id": "guess-number",
+                          "label": "馆里只有一件所以野外很少"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "observation",
+                          "label": "亲眼观察"
+                        },
+                        {
+                          "id": "source",
+                          "label": "资料事实"
+                        },
+                        {
+                          "id": "inference",
+                          "label": "合理推断"
+                        },
+                        {
+                          "id": "expectation",
+                          "label": "角色期待"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "按信息从哪里来分类。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "3条事实逐条绑定来源编号",
+            "passCondition": "3条事实逐条绑定来源编号",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "inherit_role",
+              "name": "动物标本点附近",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "国家动物博物馆课程允许动线",
+              "verification": "none",
+              "minDwellSeconds": 0,
+              "inherited": true
+            },
+            "timing": {
+              "suggestedSeconds": 600,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "label-build-fact-pack",
+            "roleStageId": "label-build-fact-pack",
+            "name": "制作事实包",
+            "phase": "Phase 5 居民证制作",
+            "modules": "",
+            "tools": [],
+            "requirement": "向小组提交三条事实、来源清单和待核项",
+            "guidanceSteps": [
+              "填写展签、观察和知识卡三个来源条目；没有的写“未使用”",
+              "向小组提交三条事实、来源清单和一条待核项"
+            ],
+            "steps": [
+              {
+                "id": "label-build-source-list",
+                "title": "汇总来源清单",
+                "objective": "形成ID Card可引用的最小来源清单",
+                "studentAction": "填写展签、观察和知识卡三个来源条目；没有的写“未使用”",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "三个来源字段和访问日期完整",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:label-submit-fact-pack",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "observation",
+                          "label": "观察来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "label",
+                          "label": "展签来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "card",
+                          "label": "知识卡来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "date",
+                          "label": "访问日期",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "label-submit-fact-pack",
+                "title": "提交事实包",
+                "objective": "让全组使用同一套可追溯事实",
+                "studentAction": "向小组提交三条事实、来源清单和一条待核项",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少5条团队记录，含事实、来源和待核",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(证据汇总)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "evidence-merge",
+                      "prompt": "逐条提交事实与来源，并保留至少一条待核或证据边界。",
+                      "minimumEntries": 5,
+                      "roles": [
+                        "展签记录员",
+                        "身份观察员",
+                        "ID设计员"
+                      ],
+                      "recordTypes": [
+                        "事实",
+                        "来源",
+                        "待核项"
+                      ],
+                      "requiredRecordTypes": [
+                        "事实",
+                        "来源",
+                        "待核项"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "事实包完整且无未标注推断",
+            "passCondition": "事实包完整且无未标注推断",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_001/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_001/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "ecology-mapper",
+        "order": 3,
+        "name": "生态关系员",
+        "question": "这种动物怎样与食物、栖息地、其他生命和人类活动相连？",
+        "selectionDescription": "负责寻找关系节点、画生态关系图，并解释一条人类影响链。",
+        "location": "动物标本点与教育空间",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "关系章",
+        "collectionItemImage": "lessons/lesson_zhizhi_001/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "ecology-collect-nodes",
+            "roleStageId": "ecology-collect-nodes",
+            "name": "收集关系节点",
+            "phase": "Phase 3 关系与影响",
+            "modules": "",
+            "tools": [],
+            "requirement": "找到食物、栖息地、其他动物和人类活动四类节点",
+            "guidanceSteps": [
+              "分别填写食物、栖息地条件、相关动物和人类活动",
+              "把人类活动卡放到帮助、威胁或待判断区，并为一张卡写理由"
+            ],
+            "steps": [
+              {
+                "id": "ecology-collect-nodes",
+                "title": "填写四类节点",
+                "objective": "为关系图准备可追溯节点",
+                "studentAction": "分别填写食物、栖息地条件、相关动物和人类活动",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四个字段完整；每项附来源编号或“待核”",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:ecology-sort-human-impact",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "food",
+                          "label": "食物+来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "habitat",
+                          "label": "栖息地条件+来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "animal",
+                          "label": "相关动物+来源/待核",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "human",
+                          "label": "人类活动+来源/待核",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "ecology-sort-human-impact",
+                "title": "判断人类影响",
+                "objective": "认识同一活动的影响需要条件",
+                "studentAction": "把人类活动卡放到帮助、威胁或待判断区，并为一张卡写理由",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "全部卡片完成分类，至少1条带条件理由",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(分类搭建), A01(文字)",
+                "next": "role-stage:ecology-draw-network",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "evidence-wall",
+                      "items": [
+                        {
+                          "id": "reserve",
+                          "label": "建设和管理保护地"
+                        },
+                        {
+                          "id": "feeding",
+                          "label": "游客投喂"
+                        },
+                        {
+                          "id": "monitor",
+                          "label": "科学监测"
+                        },
+                        {
+                          "id": "road",
+                          "label": "道路穿过栖息地"
+                        },
+                        {
+                          "id": "rescue",
+                          "label": "专业救助"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "help",
+                          "label": "可能帮助"
+                        },
+                        {
+                          "id": "threat",
+                          "label": "可能威胁"
+                        },
+                        {
+                          "id": "depends",
+                          "label": "要看条件"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "先分类，再允许保留待判断。",
+                      "zoneMinimums": {
+                        "help": 1,
+                        "threat": 1,
+                        "depends": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "reason",
+                          "label": "选择一张卡说明条件",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "四类节点各至少1项并标来源或待核",
+            "passCondition": "四类节点各至少1项并标来源或待核",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "point",
+              "name": "动物标本点附近",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "teacher",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "ecology-draw-network",
+            "roleStageId": "ecology-draw-network",
+            "name": "绘制关系网",
+            "phase": "Phase 3 关系与影响",
+            "modules": "",
+            "tools": [],
+            "requirement": "把节点连成食物、栖息地和人类影响关系网",
+            "guidanceSteps": [
+              "把动物放在中心，连接食物、环境、其他动物和人类活动",
+              "选择一个威胁节点，写“变化—直接影响—下一步影响”"
+            ],
+            "steps": [
+              {
+                "id": "ecology-build-network",
+                "title": "搭建生态关系",
+                "objective": "建立多节点关系而非单条知识链",
+                "studentAction": "把动物放在中心，连接食物、环境、其他动物和人类活动",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5个节点、4条箭头，每条关系有来源或待核标签",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(关系搭建)",
+                "next": "step:ecology-explain-chain",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "network",
+                      "items": [
+                        {
+                          "id": "animal",
+                          "label": "研究动物"
+                        },
+                        {
+                          "id": "food",
+                          "label": "食物"
+                        },
+                        {
+                          "id": "habitat",
+                          "label": "栖息地条件"
+                        },
+                        {
+                          "id": "other",
+                          "label": "其他动物"
+                        },
+                        {
+                          "id": "human-help",
+                          "label": "人类帮助"
+                        },
+                        {
+                          "id": "human-threat",
+                          "label": "人类威胁"
+                        },
+                        {
+                          "id": "unknown",
+                          "label": "待核关系"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "network",
+                          "label": "生态关系网"
+                        },
+                        {
+                          "id": "pending",
+                          "label": "待核区"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "把研究动物放在中心，用箭头连接四类节点；未知关系保留待核。",
+                      "zoneMinimums": {
+                        "network": 5,
+                        "pending": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "ecology-explain-chain",
+                "title": "解释连锁影响",
+                "objective": "说明一个节点变化怎样继续影响系统",
+                "studentAction": "选择一个威胁节点，写“变化—直接影响—下一步影响”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "三段因果完整，并说明证据和不确定性",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "role-stage:ecology-propose-needs",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "change",
+                          "label": "发生什么变化",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "direct",
+                          "label": "直接影响",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "next",
+                          "label": "下一步影响",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "boundary",
+                          "label": "证据或待核点",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少5个节点、4条有说明的关系和1个待核节点",
+            "passCondition": "至少5个节点、4条有说明的关系和1个待核节点",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "ecology-propose-needs",
+            "roleStageId": "ecology-propose-needs",
+            "name": "提出基本需要",
+            "phase": "Phase 5 居民证制作",
+            "modules": "",
+            "tools": [],
+            "requirement": "从关系网推导一项基本需要和一项保障建议",
+            "guidanceSteps": [
+              "填写基本需要、对应证据、主要威胁和一项措施",
+              "向小组提交关系图、连锁影响和需要—措施链"
+            ],
+            "steps": [
+              {
+                "id": "ecology-need-measure-chain",
+                "title": "形成需要—措施链",
+                "objective": "把生态理解转化为有依据的建议",
+                "studentAction": "填写基本需要、对应证据、主要威胁和一项措施",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四个字段相互对应，措施具体",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:ecology-share-map",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "need",
+                          "label": "基本需要",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "evidence",
+                          "label": "证据编号",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "threat",
+                          "label": "主要威胁",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "measure",
+                          "label": "对应措施",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "ecology-share-map",
+                "title": "共享关系图",
+                "objective": "让ID和自述使用同一套生态关系",
+                "studentAction": "向小组提交关系图、连锁影响和需要—措施链",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "团队记录包含关系图结论、待核点和措施",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(证据汇总)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "evidence-merge",
+                      "prompt": "共享关系图结论，同时保留待核节点。",
+                      "minimumEntries": 3,
+                      "roles": [
+                        "生态关系员",
+                        "ID设计员",
+                        "议事发言人"
+                      ],
+                      "recordTypes": [
+                        "关系结论",
+                        "待核点",
+                        "需要与措施"
+                      ],
+                      "requiredRecordTypes": [
+                        "关系结论",
+                        "待核点",
+                        "需要与措施"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "需要、证据、威胁和措施形成对应链",
+            "passCondition": "需要、证据、威胁和措施形成对应链",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_001/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_001/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "voice-recorder",
+        "order": 4,
+        "name": "声音记录员",
+        "question": "怎样让动物“开口”，同时不替它编造经历？",
+        "selectionDescription": "负责把小组证据整理成第一人称脚本，并留下真实的学生声音。",
+        "location": "动物标本点与安静录音区",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "声音章",
+        "collectionItemImage": "lessons/lesson_zhizhi_001/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "voice-select-evidence",
+            "roleStageId": "voice-select-evidence",
+            "name": "选择脚本证据",
+            "phase": "Phase 4 角色发声",
+            "modules": "",
+            "tools": [],
+            "requirement": "从小组证据中选出身份、生活、关系、影响和期待五类材料",
+            "guidanceSteps": [
+              "填写身份、生活、关系、影响和期待五栏",
+              "选择最符合证据边界的表达"
+            ],
+            "steps": [
+              {
+                "id": "voice-collect-evidence",
+                "title": "收集五类材料",
+                "objective": "为脚本准备有来源的内容",
+                "studentAction": "填写身份、生活、关系、影响和期待五栏",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "前四栏有证据编号，期待栏写明“角色期待”",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:voice-check-boundary",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "identity",
+                          "label": "身份事实+编号",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "life",
+                          "label": "生活事实+编号",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "relation",
+                          "label": "生态关系+编号",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "impact",
+                          "label": "人类影响+编号",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "expectation",
+                          "label": "角色期待",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "voice-check-boundary",
+                "title": "检查叙述边界",
+                "objective": "识别适合进入科学角色表达的句子",
+                "studentAction": "选择最符合证据边界的表达",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "完成选择并阅读反馈",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A02(单选)",
+                "next": "role-stage:voice-record-story",
+                "tools": [
+                  {
+                    "id": "quiz",
+                    "module": "A02",
+                    "name": "答题评测",
+                    "icon": "list-checks",
+                    "output": "answers",
+                    "config": {
+                      "type": "single_choice",
+                      "question": "哪一句最适合进入动物第一人称脚本？",
+                      "options": [
+                        "我每天都在想念故乡，心里非常孤独",
+                        "资料显示我依赖连通的山地森林；作为角色，我期待家园少一些阻断",
+                        "我很可爱，所以人类必须先保护我"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "五类材料完整且期待与事实分开",
+            "passCondition": "五类材料完整且期待与事实分开",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "voice-record-story",
+            "roleStageId": "voice-record-story",
+            "name": "完成自述",
+            "phase": "Phase 4 角色发声",
+            "modules": "",
+            "tools": [],
+            "requirement": "写80—150字第一人称脚本并录制30—60秒",
+            "guidanceSteps": [
+              "按五段结构写80—150字脚本",
+              "朗读经核验的脚本，录制30—60秒旁白"
+            ],
+            "steps": [
+              {
+                "id": "voice-write-script",
+                "title": "写脚本初稿",
+                "objective": "形成有证据的第一人称表达",
+                "studentAction": "按五段结构写80—150字脚本",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "包含身份、生活、关系、影响和期待；至少3个证据编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:voice-record-narration",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "script",
+                          "label": "动物自述脚本",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 80,
+                          "maxLength": 150,
+                          "placeholder": "用自己的话写，事实后标证据编号。"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "voice-record-narration",
+                "title": "录制真人旁白",
+                "objective": "留下学生自己的科学表达",
+                "studentAction": "朗读经核验的脚本，录制30—60秒旁白",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "录音30—60秒、中文转写开启、内容与脚本一致",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(录音)",
+                "next": "role-stage:voice-peer-verify",
+                "tools": [
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 30,
+                      "maxSeconds": 60,
+                      "language": "zh-CN",
+                      "transcribe": true,
+                      "prompt": "用自己的声音朗读经核验的脚本；不要模仿或克隆他人声音。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "脚本完整、事实可追溯、录音时长合格",
+            "passCondition": "脚本完整、事实可追溯、录音时长合格",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "point",
+              "name": "安静录音区",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "teacher",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 840,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "voice-peer-verify",
+            "roleStageId": "voice-peer-verify",
+            "name": "同伴事实核验",
+            "phase": "Phase 4 角色发声",
+            "modules": "",
+            "tools": [],
+            "requirement": "邀请同伴逐句核验脚本并记录修改",
+            "guidanceSteps": [
+              "和展签记录员逐句核对，记录保留、修改和待核意见",
+              "勾选AI参与环节，并写下自己修改或拒绝的一项建议"
+            ],
+            "steps": [
+              {
+                "id": "voice-peer-review",
+                "title": "提交同伴核验",
+                "objective": "让脚本接受外部检查",
+                "studentAction": "和展签记录员逐句核对，记录保留、修改和待核意见",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少3条核验记录，包含事实来源和角色期待检查",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(团队核验)",
+                "next": "step:voice-log-ai-use",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "review",
+                      "prompt": "逐句核对事实编号，并单独检查角色期待。",
+                      "minimumEntries": 3,
+                      "roles": [
+                        "声音记录员",
+                        "展签记录员"
+                      ],
+                      "recordTypes": [
+                        "保留",
+                        "修改",
+                        "待核"
+                      ],
+                      "requiredRecordTypes": [
+                        "保留",
+                        "修改"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "voice-log-ai-use",
+                "title": "记录AI参与",
+                "objective": "披露AI在作品中的实际作用",
+                "studentAction": "勾选AI参与环节，并写下自己修改或拒绝的一项建议",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "AI环节和人工修改记录完整",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "ai-use",
+                          "label": "AI参与环节",
+                          "type": "select",
+                          "options": [
+                            "未使用",
+                            "转写",
+                            "结构整理",
+                            "字幕或降噪",
+                            "多项"
+                          ],
+                          "required": true
+                        },
+                        {
+                          "id": "human-change",
+                          "label": "我修改或拒绝的建议",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 10
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少1条保留、1条修改或确认无需修改的理由",
+            "passCondition": "至少1条保留、1条修改或确认无需修改的理由",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_001/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_001/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "id-designer",
+        "order": 5,
+        "name": "ID设计员",
+        "question": "怎样把不同角色的证据组织成一张清楚、可信的居民证？",
+        "selectionDescription": "负责汇总事实、关系、需要与来源，制作并审查居民ID Card。",
+        "location": "教育空间",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "档案章",
+        "collectionItemImage": "lessons/lesson_zhizhi_001/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "designer-receive-evidence",
+            "roleStageId": "designer-receive-evidence",
+            "name": "接收证据",
+            "phase": "Phase 5 居民证制作",
+            "modules": "",
+            "tools": [],
+            "requirement": "接收身份、来源、关系和声音四类成果",
+            "guidanceSteps": [
+              "把四类成果卡放入已到齐或待补区",
+              "将身份、家园、生态角色、风险、需要、措施和来源放入ID正反面"
+            ],
+            "steps": [
+              {
+                "id": "id-check-evidence",
+                "title": "检查证据到齐",
+                "objective": "确认ID Card有足够证据基础",
+                "studentAction": "把四类成果卡放入已到齐或待补区",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "四张成果卡全部归位，待补内容保留",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(证据墙)",
+                "next": "step:id-select-fields",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "evidence-wall",
+                      "items": [
+                        {
+                          "id": "identity",
+                          "label": "身份与特征"
+                        },
+                        {
+                          "id": "sources",
+                          "label": "事实与来源"
+                        },
+                        {
+                          "id": "ecology",
+                          "label": "生态关系图"
+                        },
+                        {
+                          "id": "voice",
+                          "label": "角色脚本与录音"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "ready",
+                          "label": "已到齐"
+                        },
+                        {
+                          "id": "pending",
+                          "label": "待补或待核"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "按当前实际完成状态归位；缺失不要假装到齐。",
+                      "zoneMinimums": {
+                        "ready": 3,
+                        "pending": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "id-select-fields",
+                "title": "匹配ID字段",
+                "objective": "把证据放到正确的成果字段",
+                "studentAction": "将身份、家园、生态角色、风险、需要、措施和来源放入ID正反面",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "七类字段全部放置",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(档案搭建)",
+                "next": "role-stage:designer-make-id",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "card-layout",
+                      "items": [
+                        {
+                          "id": "identity",
+                          "label": "物种名与学名"
+                        },
+                        {
+                          "id": "home",
+                          "label": "家园"
+                        },
+                        {
+                          "id": "role",
+                          "label": "生态角色"
+                        },
+                        {
+                          "id": "risk",
+                          "label": "主要风险"
+                        },
+                        {
+                          "id": "need",
+                          "label": "基本需要"
+                        },
+                        {
+                          "id": "measure",
+                          "label": "保障措施"
+                        },
+                        {
+                          "id": "sources",
+                          "label": "证据编号"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "front",
+                          "label": "ID正面"
+                        },
+                        {
+                          "id": "back",
+                          "label": "ID背面"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "正面回答它是谁，背面回答怎样生活、面临什么和需要什么。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "四类成果和至少1条待核项进入档案区",
+            "passCondition": "四类成果和至少1条待核项进入档案区",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 360,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "designer-make-id",
+            "roleStageId": "designer-make-id",
+            "name": "制作居民证",
+            "phase": "Phase 5 居民证制作",
+            "modules": "",
+            "tools": [],
+            "requirement": "填写ID Card全部核心字段",
+            "guidanceSteps": [
+              "根据小组成果填写九个字段",
+              "填写来源清单、访问日期和AI使用说明"
+            ],
+            "steps": [
+              {
+                "id": "id-fill-card",
+                "title": "填写ID Card",
+                "objective": "形成可发布的居民证初稿",
+                "studentAction": "根据小组成果填写九个字段",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "全部字段完整；事实字段附来源，待核内容有标签",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:id-add-ai-disclosure",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "name",
+                          "label": "物种名/学名",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "feature",
+                          "label": "代表特征+来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "home",
+                          "label": "家园+来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "ecology-role",
+                          "label": "生态角色+来源/待核",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "life",
+                          "label": "生活方式+来源",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "risk",
+                          "label": "主要风险+来源/待核",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "need",
+                          "label": "基本需要",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "expectation",
+                          "label": "角色期待",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "measure",
+                          "label": "人类保障措施",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "id-add-ai-disclosure",
+                "title": "添加来源与AI披露",
+                "objective": "让作品来源和制作方法透明",
+                "studentAction": "填写来源清单、访问日期和AI使用说明",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个来源编号、日期和人工复核人",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "role-stage:designer-preflight-review",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "sources",
+                          "label": "来源编号（至少3个）",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        },
+                        {
+                          "id": "date",
+                          "label": "访问日期",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "ai",
+                          "label": "AI参与和人工修改",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        },
+                        {
+                          "id": "reviewer",
+                          "label": "事实复核人",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "核心字段完整，事实有编号，期待和措施标签清楚",
+            "passCondition": "核心字段完整，事实有编号，期待和措施标签清楚",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "designer-preflight-review",
+            "roleStageId": "designer-preflight-review",
+            "name": "发布前审查",
+            "phase": "Phase 5 居民证制作",
+            "modules": "",
+            "tools": [],
+            "requirement": "完成事实、边界、隐私和授权四项检查",
+            "guidanceSteps": [
+              "分别检查事实、标签、隐私和AI披露，记录一项修改",
+              "把ID Card和来源清单交给教师或引导员终审"
+            ],
+            "steps": [
+              {
+                "id": "id-four-checks",
+                "title": "完成四项自检",
+                "objective": "发现发布前仍需处理的问题",
+                "studentAction": "分别检查事实、标签、隐私和AI披露，记录一项修改",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四项检查均有结论，至少记录1项修改或无需修改的理由",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:id-teacher-review",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "facts",
+                          "label": "事实与来源检查",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "labels",
+                          "label": "推断/期待标签检查",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "privacy",
+                          "label": "隐私与授权检查",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "ai",
+                          "label": "AI披露检查",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "change",
+                          "label": "本轮修改及理由",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "id-teacher-review",
+                "title": "教师终审",
+                "objective": "确认公开事实和授权范围",
+                "studentAction": "把ID Card和来源清单交给教师或引导员终审",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "教师确认事实、隐私、授权和课程作品标识",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(提交审核)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "review",
+                      "prompt": "提交ID Card、来源清单和发布范围。",
+                      "minimumEntries": 3,
+                      "roles": [
+                        "ID设计员",
+                        "教师"
+                      ],
+                      "recordTypes": [
+                        "ID Card",
+                        "来源清单",
+                        "发布范围"
+                      ],
+                      "requiredRecordTypes": [
+                        "ID Card",
+                        "来源清单",
+                        "发布范围"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "小组自检完成且教师确认可发布",
+            "passCondition": "小组自检完成且教师确认可发布",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 360,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "teacher"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_001/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_001/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "assembly-speaker",
+        "order": 6,
+        "name": "议事发言人",
+        "question": "怎样用证据回应质询，并把认识变成一项能检查的行动？",
+        "selectionDescription": "负责组织小组发布、回应证据问题，并带领每个人形成行动承诺。",
+        "location": "教育空间",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "议事章",
+        "collectionItemImage": "lessons/lesson_zhizhi_001/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "speaker-prepare-release",
+            "roleStageId": "speaker-prepare-release",
+            "name": "准备发布",
+            "phase": "Phase 6 居民发布会",
+            "modules": "",
+            "tools": [],
+            "requirement": "从ID Card中选出一个核心判断和两条证据",
+            "guidanceSteps": [
+              "填写“我们的判断—证据1—证据2—仍待核”",
+              "请同伴提出一个“证据在哪里”的问题并记录回答"
+            ],
+            "steps": [
+              {
+                "id": "speaker-build-claim",
+                "title": "形成证据陈述",
+                "objective": "让发布围绕一个清楚判断展开",
+                "studentAction": "填写“我们的判断—证据1—证据2—仍待核”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "两条证据来源不同，待核项真实存在",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:speaker-rehearse-question",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "claim",
+                          "label": "我们的核心判断",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "evidence-1",
+                          "label": "证据1+来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "evidence-2",
+                          "label": "证据2+来源",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "boundary",
+                          "label": "仍待核或适用边界",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "speaker-rehearse-question",
+                "title": "练习回应质询",
+                "objective": "学会用证据、推断或待核回应问题",
+                "studentAction": "请同伴提出一个“证据在哪里”的问题并记录回答",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "包含问题、回答和使用的证据编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(质询练习)",
+                "next": "role-stage:speaker-present-assembly",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "discussion",
+                      "prompt": "只提出一个最关键的证据问题；回答可以承认待核。",
+                      "minimumEntries": 2,
+                      "roles": [
+                        "议事发言人",
+                        "质询同伴"
+                      ],
+                      "recordTypes": [
+                        "证据问题",
+                        "证据回应"
+                      ],
+                      "requiredRecordTypes": [
+                        "证据问题",
+                        "证据回应"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "判断、证据和边界完整",
+            "passCondition": "判断、证据和边界完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 240,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "speaker-present-assembly",
+            "roleStageId": "speaker-present-assembly",
+            "name": "完成议事发布",
+            "phase": "Phase 6 居民发布会",
+            "modules": "",
+            "tools": [],
+            "requirement": "发布ID Card、自述和证据陈述，回应一次质询",
+            "guidanceSteps": [
+              "用不超过90秒展示ID Card和核心判断",
+              "回答一个现场问题，记录是否需要修改ID Card"
+            ],
+            "steps": [
+              {
+                "id": "speaker-present",
+                "title": "小组发布",
+                "objective": "向真实受众清楚呈现小组成果",
+                "studentAction": "用不超过90秒展示ID Card和核心判断",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "展示课程作品标识、至少两条证据和一项待核边界",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(录音)",
+                "next": "step:speaker-answer-live-question",
+                "tools": [
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 30,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true,
+                      "prompt": "记录小组发布，用自己的话说明判断、证据和边界。"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "speaker-answer-live-question",
+                "title": "回答现场问题",
+                "objective": "接受公开检验并保留证据边界",
+                "studentAction": "回答一个现场问题，记录是否需要修改ID Card",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "回答引用证据、标明推断或承认待核，并写修改决定",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "role-stage:speaker-action-commitment",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "question",
+                          "label": "现场问题",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "answer",
+                          "label": "我们的回答与证据",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "revision",
+                          "label": "保留/修改/待核及理由",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "教师确认发布与回应完成",
+            "passCondition": "教师确认发布与回应完成",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 240,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "teacher"
+          },
+          {
+            "id": "speaker-action-commitment",
+            "roleStageId": "speaker-action-commitment",
+            "name": "形成行动承诺",
+            "phase": "Phase 6 居民发布会",
+            "modules": "",
+            "tools": [],
+            "requirement": "带领每名组员提交一周内可观察的行动",
+            "guidanceSteps": [
+              "写下动作、对象、时间和一周后的观察方法",
+              "收集全组行动，确认每个人都有一条可识别记录"
+            ],
+            "steps": [
+              {
+                "id": "speaker-design-action",
+                "title": "设计个人行动",
+                "objective": "把保护意愿转化为可检查行动",
+                "studentAction": "写下动作、对象、时间和一周后的观察方法",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四项完整，行动安全且由学生自己能够完成",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:speaker-collect-actions",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "action",
+                          "label": "我要做什么",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "target",
+                          "label": "面向什么对象或场景",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "time",
+                          "label": "何时做",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "check",
+                          "label": "一周后怎样检查",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "speaker-collect-actions",
+                "title": "汇总行动墙",
+                "objective": "形成可在课后复盘的小组行动记录",
+                "studentAction": "收集全组行动，确认每个人都有一条可识别记录",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少6条匿名行动记录",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(行动墙)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "commitment",
+                      "prompt": "每人提交一条匿名行动，不比较难度。",
+                      "minimumEntries": 6,
+                      "roles": [
+                        "全体组员"
+                      ],
+                      "recordTypes": [
+                        "个人行动"
+                      ],
+                      "requiredRecordTypes": [
+                        "个人行动"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "小组至少6条行动记录，每条含时间和观察方法",
+            "passCondition": "小组至少6条行动记录，每条含时间和观察方法",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_001/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_001/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_001/assets/placeholders/badge.svg"
+      }
+    ],
+    "timeBank": {
+      "enabled": true,
+      "initialBalance": 0,
+      "currencyUnit": "分钟",
+      "earnRules": {
+        "maxTotal": 12,
+        "maxPerTask": 2,
+        "tasksVisibleAtOnce": 3
+      },
+      "giftRules": {
+        "allowGiftToSelf": false,
+        "maxPerAction": 3,
+        "minAmount": 1,
+        "target": "same_group_only"
+      },
+      "tasks": [
+        {
+          "id": "tb-01",
+          "type": "quiz",
+          "question": "哪一句最适合写进“亲眼观察”一栏？",
+          "options": [
+            "我看见它的前肢有长爪",
+            "它一定很孤独",
+            "它希望人类保护森林"
+          ],
+          "answerType": "",
+          "hint": "只选择眼睛或耳朵能够直接确认的内容",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-02",
+          "type": "quiz",
+          "question": "展签和已开放信息卡都没有提到某个结论时，应该怎样记录？",
+          "options": [
+            "先标为待核实",
+            "凭感觉补完整",
+            "写成动物亲口告诉我"
+          ],
+          "answerType": "",
+          "hint": "",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-03",
+          "type": "quiz",
+          "question": "下面哪一种做法更能保护证据的可追溯性？",
+          "options": [
+            "事实旁写来源",
+            "只记最有趣的结论",
+            "把观察和猜测混在一起"
+          ],
+          "answerType": "",
+          "hint": "",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-04",
+          "type": "photo_checkpoint",
+          "question": "拍下一处能支持动物外形特征判断的展项局部，不拍其他参观者正脸",
+          "options": [],
+          "answerType": "",
+          "hint": "遵守展馆当日拍摄规定；不允许拍摄时请教师改为人工确认",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-05",
+          "type": "quiz",
+          "question": "写下一条亲眼观察到的事实，并说明你观察的是展品、模型、图片还是展签。",
+          "options": [],
+          "answerType": "open_ended",
+          "hint": "",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 20,
+          "requiresText": false
+        },
+        {
+          "id": "tb-06",
+          "type": "quiz",
+          "question": "写出一项你愿意做到的动物友好行动，并说明它可能帮助谁。",
+          "options": [],
+          "answerType": "open_ended",
+          "hint": "",
+          "reward": 2,
+          "unlockAfter": "phase5-start",
+          "minLength": 20,
+          "requiresText": false
+        }
+      ]
+    },
+    "assets": {
+      "cover": "lessons/lesson_zhizhi_001/assets/placeholders/cover.svg",
+      "chat": "lessons/lesson_zhizhi_001/assets/placeholders/chat-bg.svg",
+      "transition": "lessons/lesson_zhizhi_001/assets/placeholders/phase-transition.svg",
+      "certificate": "lessons/lesson_zhizhi_001/assets/placeholders/certificate.svg",
+      "navigationMap": "lessons/lesson_zhizhi_001/assets/placeholders/navigation-map.svg",
+      "importPlaceholder": "lessons/lesson_zhizhi_001/assets/placeholders/opening.svg",
+      "simulationPlaceholder": "lessons/lesson_zhizhi_001/assets/placeholders/simulation.svg"
+    }
+  },
+  "lesson_zhizhi_002": {
+    "id": "lesson_zhizhi_002",
+    "title": "万兽城议事厅Ⅱ：物种守护调查",
+    "subtitle": "像一支保护调查队那样，用多源证据诊断风险、审计措施并提出行动方案",
+    "series": "致知",
+    "seriesCode": "zhizhi",
+    "themeTemplate": "zhizhi",
+    "venue": "国家动物博物馆及教育空间",
+    "mapCenter": null,
+    "duration": "270分钟",
+    "grades": "小学高年级—高中",
+    "groupRule": "6人一组，共同调查一种物种",
+    "level": "深度探究版",
+    "levelCode": "inquiry",
+    "traversalMode": "sequential",
+    "coreQuestion": "一个物种为什么面临风险，现有保护措施解决了什么、还缺什么，我们怎样提出有证据且可执行的守护方案？",
+    "phases": [
+      {
+        "id": "phase-1",
+        "number": 1,
+        "name": "调查开题",
+        "duration": "30min",
+        "mode": "情境导入 + 小组开题",
+        "location": "教育空间",
+        "modules": "A06(沉浸媒体), A01(文字), A05(讨论)",
+        "trigger": "教师手动启动",
+        "endCondition": "物种、核心问题、证据计划和角色分工明确",
+        "flow": [
+          "阅读一份信息相互矛盾的“保护简报”。",
+          "区分保护身份、受威胁等级、种群趋势与措施成效。",
+          "选择物种并提出可调查的核心问题。",
+          "制定六线取证计划和来源编号规则。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-2",
+        "number": 2,
+        "name": "展厅多源取证",
+        "duration": "90min",
+        "mode": "角色分线 + 两次汇合",
+        "location": "踏勘确认的展厅点位",
+        "modules": "A07(实物识别), A01(拍照/文字), A05(证据墙)",
+        "trigger": "开题通过教师确认",
+        "endCondition": "每条关键主张至少有现场来源，动态主张有第二来源或待核标记",
+        "flow": [
+          "获取标本、展签、展陈图表和馆方资料。",
+          "用“来源—主张—日期—局限”格式登记证据。",
+          "将一致、冲突和缺失信息分别上墙。",
+          "教师完成第一次来源与点位抽检。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-3",
+        "number": 3,
+        "name": "风险诊断",
+        "duration": "45min",
+        "mode": "小组建模",
+        "location": "教育空间",
+        "modules": "A03(趋势图/威胁链), A05(核验)",
+        "trigger": "证据墙达到最低完整度",
+        "endCondition": "风险诊断包含趋势、直接威胁、驱动因素和不确定性",
+        "flow": [
+          "绘制带时间与来源的种群趋势。",
+          "搭建“人类活动—环境变化—直接威胁—种群结果”链。",
+          "对威胁重要性和证据强度分别评分。",
+          "保留至少一个替代解释或未知项。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-4",
+        "number": 4,
+        "name": "保护措施审计",
+        "duration": "45min",
+        "mode": "审计工作坊",
+        "location": "教育空间",
+        "modules": "A03(审计矩阵), A04(资源模拟)",
+        "trigger": "风险诊断通过小组复核",
+        "endCondition": "形成措施—威胁对应表、成效证据和保护缺口清单",
+        "flow": [
+          "核对每项措施试图改变哪一段威胁链。",
+          "区分“已经开展”与“已有成效证据”。",
+          "用覆盖度、可执行性、公平性和可监测性审计。",
+          "识别保护缺口并模拟有限资源配置。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-5",
+        "number": 5,
+        "name": "方案听证",
+        "duration": "40min",
+        "mode": "利益相关者听证 + 版本修订",
+        "location": "教育空间",
+        "modules": "A05(听证), A04(方案答辩)",
+        "trigger": "审计和缺口清单完成",
+        "endCondition": "方案回应至少三类利益相关者，并完成一次有记录的修订",
+        "flow": [
+          "公布方案目标、行动、责任主体、资源与指标。",
+          "利益相关者代表从影响、成本和公平性提出质询。",
+          "调查组用证据回应，不能回答的列入待核。",
+          "记录采纳、部分采纳或暂不采纳及理由。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-6",
+        "number": 6,
+        "name": "行动书发布",
+        "duration": "20min",
+        "mode": "小组发布 + 同伴评议",
+        "location": "教育空间",
+        "modules": "A01(文档), A05(互评)",
+        "trigger": "听证修订完成",
+        "endCondition": "行动书通过来源、逻辑、执行和边界四项检查",
+        "flow": [
+          "发布物种档案、风险诊断、措施审计和保护缺口。",
+          "提交含目标、行动、主体、资源、指标和复盘日期的行动书。",
+          "披露AI使用位置、人工核验人和未解决问题。",
+          "每组接受一次可追溯的证据质询。"
+        ],
+        "tasks": []
+      }
+    ],
+    "roleSystem": {
+      "collectionName": "守护调查员",
+      "itemName": "证据",
+      "pickerEyebrow": "6种调查分工 · 共写1份行动书",
+      "pickerTitle": "选择你的{collectionName}身份",
+      "pickerDescription": "每位成员负责一条证据线。集齐6枚{collectionItemName}，才能解锁{unlockTarget}。",
+      "collectionItemName": "调查章",
+      "collectionPanelName": "小组调查章",
+      "unlockTarget": "守护方案听证会",
+      "phaseId": "phase-2"
+    },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
+    },
+    "roles": [
+      {
+        "id": "species-profiler",
+        "order": 1,
+        "name": "物种档案员",
+        "question": "我们关于这个物种的基础判断，分别来自哪里、适用于什么范围？",
+        "selectionDescription": "建立可追溯物种档案，整理形态、分布、栖息地与种群线索。",
+        "location": "教师确认的物种展项与教育空间",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "档案章",
+        "collectionItemImage": "lessons/lesson_zhizhi_002/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "profiler-baseline",
+            "roleStageId": "profiler-baseline",
+            "name": "建立档案骨架",
+            "phase": "Phase 1 调查开题",
+            "modules": "",
+            "tools": [],
+            "requirement": "先写已知、未知和需要的来源，不让AI直接填档案",
+            "guidanceSteps": [
+              "选择身份、形态、分布、栖息地、食性和种群中的至少4项，写出待查问题",
+              "把现场展签、馆方资料、权威数据库或研究材料分配给档案字段"
+            ],
+            "steps": [
+              {
+                "id": "profiler-frame-questions",
+                "title": "提出档案问题",
+                "objective": "把笼统的“了解物种”转成可调查字段",
+                "studentAction": "选择身份、形态、分布、栖息地、食性和种群中的至少4项，写出待查问题",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少4个问题，每个问题指向一个明确字段",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:profiler-plan-sources",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "questions",
+                          "label": "档案问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40,
+                          "placeholder": "例：资料所说的分布范围对应哪一年？"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "profiler-plan-sources",
+                "title": "规划来源",
+                "objective": "为不同字段匹配合适来源",
+                "studentAction": "把现场展签、馆方资料、权威数据库或研究材料分配给档案字段",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少4条字段—来源计划，含一条动态信息核验计划",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(来源配对)",
+                "next": "role-stage:profiler-field-evidence",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "mapping",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "把每个档案字段连到最合适的来源类型；动态字段增加日期和人工核验。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "现场展签",
+                        "馆方资料",
+                        "权威名录或数据库",
+                        "监测或研究材料"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少4个档案字段，分别标记已有证据或待核",
+            "passCondition": "至少4个档案字段，分别标记已有证据或待核",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "profiler-field-evidence",
+            "roleStageId": "profiler-field-evidence",
+            "name": "现场建档",
+            "phase": "Phase 2 展厅多源取证",
+            "modules": "",
+            "tools": [],
+            "requirement": "用现场观察和展签建立带编号的物种档案",
+            "guidanceSteps": [
+              "拍摄展品与展签，填写三条事实及其照片编号",
+              "选择一条分布或种群信息，记录日期、范围、局限和待核办法"
+            ],
+            "steps": [
+              {
+                "id": "profiler-capture-facts",
+                "title": "采集现场事实",
+                "objective": "保存可回到展项复核的身份、形态和生态线索",
+                "studentAction": "拍摄展品与展签，填写三条事实及其照片编号",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张照片、3条事实和对应来源编号；不拍[待学生探索]",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(拍照), A01(文字)",
+                "next": "step:profiler-register-limit",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 4,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍摄展品主体和可定位的展签区域，避开[待学生探索]。"
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "facts",
+                          "label": "三条现场事实与来源编号",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 50
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "profiler-register-limit",
+                "title": "登记范围与局限",
+                "objective": "说明档案信息适用的时间、空间和证据范围",
+                "studentAction": "选择一条分布或种群信息，记录日期、范围、局限和待核办法",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "日期/版本、空间范围、局限、核验办法四项齐全",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(档案表单)",
+                "next": "role-stage:profiler-publish-file",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "claim",
+                          "label": "动态主张",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "date",
+                          "label": "发布日期或版本",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "scope",
+                          "label": "空间范围",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "limit",
+                          "label": "局限与待核办法",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少3条现场事实和1条动态待核项，均有来源编号",
+            "passCondition": "至少3条现场事实和1条动态待核项，均有来源编号",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "point",
+              "name": "教师确认的物种展项",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "teacher",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1680,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "profiler-publish-file",
+            "roleStageId": "profiler-publish-file",
+            "name": "发布物种档案",
+            "phase": "Phase 6 行动书发布",
+            "modules": "",
+            "tools": [],
+            "requirement": "将档案压缩成行动书可用的事实底稿",
+            "guidanceSteps": [
+              "按身份、分布、栖息地、食性、种群线索和未知项整理",
+              "邀请名录核验员和威胁链分析员各核对一处"
+            ],
+            "steps": [
+              {
+                "id": "profiler-compose-file",
+                "title": "生成档案条目",
+                "objective": "形成清楚、可引用且保留未知的物种档案",
+                "studentAction": "按身份、分布、栖息地、食性、种群线索和未知项整理",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5个字段；关键事实带来源编号；至少1个未知项",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(结构化文档)",
+                "next": "step:profiler-peer-check",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "profile",
+                          "label": "物种档案",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 180
+                        },
+                        {
+                          "id": "unknown",
+                          "label": "仍待核验",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "profiler-peer-check",
+                "title": "交叉复核",
+                "objective": "确认档案与名录、威胁证据没有概念冲突",
+                "studentAction": "邀请名录核验员和威胁链分析员各核对一处",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "两条复核记录，含确认、修订或待核及理由",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(团队核验)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "review",
+                      "prompt": "分别核对保护身份/趋势和威胁背景，写明依据。",
+                      "minimumEntries": 2,
+                      "roles": [
+                        "名录核验员",
+                        "威胁链分析员"
+                      ],
+                      "recordTypes": [
+                        "确认",
+                        "修订",
+                        "待核"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "档案字段、来源表和未知项完整，并通过同伴复核",
+            "passCondition": "档案字段、来源表和未知项完整，并通过同伴复核",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_002/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_002/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "status-verifier",
+        "order": 2,
+        "name": "名录核验员",
+        "question": "不同保护标签各自回答什么问题，当前版本与适用范围是什么？",
+        "selectionDescription": "核对国内法律保护身份、IUCN评估和种群趋势，维护版本与日期记录。",
+        "location": "教育空间与指定资料终端",
+        "geofence": "国家动物博物馆课程允许区域",
+        "type": "核心角色",
+        "collectionItem": "核验章",
+        "collectionItemImage": "lessons/lesson_zhizhi_002/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "verifier-separate-labels",
+            "roleStageId": "verifier-separate-labels",
+            "name": "拆分保护标签",
+            "phase": "Phase 1 调查开题",
+            "modules": "",
+            "tools": [],
+            "requirement": "把简报中的保护说法分成法律身份、[待学生探索]、趋势和措施成效",
+            "guidanceSteps": [
+              "把简报主张拖入四类证据槽，并标出不能判断的条目",
+              "写两条“知道A仍不能直接知道B”的边界句"
+            ],
+            "steps": [
+              {
+                "id": "verifier-sort-claims",
+                "title": "分类主张",
+                "objective": "识别同一句话中混在一起的不同判断",
+                "studentAction": "把简报主张拖入四类证据槽，并标出不能判断的条目",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少4条分类，允许保留“信息不足”",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(证据分类)",
+                "next": "step:verifier-write-boundary",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "categorize",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "按主张实际回答的问题分类；信息不足可进入待核。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "国内法律保护身份",
+                        "IUCN受威胁等级",
+                        "种群趋势",
+                        "措施成效",
+                        "待核"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "verifier-write-boundary",
+                "title": "写出推理边界",
+                "objective": "说明四类证据之间不能直接推出什么",
+                "studentAction": "写两条“知道A仍不能直接知道B”的边界句",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "两条边界句涉及不同概念",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "role-stage:verifier-check-sources",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "boundaries",
+                          "label": "两条推理边界",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "完成至少4条主张分类并指出一处不可互推",
+            "passCondition": "完成至少4条主张分类并指出一处不可互推",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "verifier-check-sources",
+            "roleStageId": "verifier-check-sources",
+            "name": "核验版本与范围",
+            "phase": "Phase 2 展厅多源取证",
+            "modules": "",
+            "tools": [],
+            "requirement": "分别登记国内保护身份、IUCN条目和趋势材料",
+            "guidanceSteps": [
+              "填写国内法律/名录条目与IUCN条目，缺失内容写待核",
+              "记录趋势判断、时间范围、空间范围、方法线索和局限"
+            ],
+            "steps": [
+              {
+                "id": "verifier-register-status",
+                "title": "登记国内与IUCN条目",
+                "objective": "形成两条互不替代的保护状态记录",
+                "studentAction": "填写国内法律/名录条目与IUCN条目，缺失内容写待核",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "两条记录均含来源名称、发布机构、版本/评估年、访问日期",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(核验表单)",
+                "next": "step:verifier-trend-record",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "domestic",
+                          "label": "国内法律或名录记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 50
+                        },
+                        {
+                          "id": "iucn",
+                          "label": "IUCN评估记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 50
+                        },
+                        {
+                          "id": "access",
+                          "label": "访问日期与人工核验人",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "verifier-trend-record",
+                "title": "核验趋势材料",
+                "objective": "判断资料是否真的支持趋势",
+                "studentAction": "记录趋势判断、时间范围、空间范围、方法线索和局限",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "趋势不是单一数量；若只能找到单点数据则明确写“无法判断趋势”",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(趋势记录)",
+                "next": "role-stage:verifier-issue-note",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "trend",
+                          "label": "趋势或无法判断",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "time",
+                          "label": "时间范围",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "space",
+                          "label": "空间范围",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "limit",
+                          "label": "方法线索与局限",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "三类记录独立成行，含来源、版本/日期、范围、访问日期与核验人",
+            "passCondition": "三类记录独立成行，含来源、版本/日期、范围、访问日期与核验人",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间或指定资料终端",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1680,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "verifier-issue-note",
+            "roleStageId": "verifier-issue-note",
+            "name": "出具核验说明",
+            "phase": "Phase 6 行动书发布",
+            "modules": "",
+            "tools": [],
+            "requirement": "向行动书提供四维状态表和效力日期说明",
+            "guidanceSteps": [
+              "分别填写国内身份、[待学生探索]、趋势、措施成效及待核项",
+              "提交需要教师或专家核验的条目清单，记录核验人、日期和处理结果"
+            ],
+            "steps": [
+              {
+                "id": "verifier-compose-matrix",
+                "title": "制作四维状态表",
+                "objective": "让读者一眼看出四类结论、来源和边界",
+                "studentAction": "分别填写国内身份、[待学生探索]、趋势、措施成效及待核项",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四行独立；每行有来源编号、日期/版本和适用范围",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(状态矩阵)",
+                "next": "step:verifier-human-signoff",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "matrix",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "四类状态独立成行，填写结论、来源、日期或版本、范围和待核项。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "国内法律身份",
+                        "IUCN评估",
+                        "种群趋势",
+                        "措施成效"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "verifier-human-signoff",
+                "title": "完成人工核验签注",
+                "objective": "对动态和高风险信息留下人工责任链",
+                "studentAction": "提交需要教师或专家核验的条目清单，记录核验人、日期和处理结果",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "至少核验国内身份与IUCN条目；未完成项保留待核",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A08(教师确认)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "observation",
+                          "label": "观察记录",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ],
+                      "teacher_confirm": {
+                        "prompt": "核对来源对象、版本/效力日期、适用范围；不能确认的条目标记待核。",
+                        "required": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "四维状态表清楚，动态项有复核提示，冲突项未被隐藏",
+            "passCondition": "四维状态表清楚，动态项有复核提示，冲突项未被隐藏",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_002/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_002/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "threat-analyst",
+        "order": 3,
+        "name": "威胁链分析员",
+        "question": "哪些因素怎样相连并影响物种，证据能支持到哪一步？",
+        "selectionDescription": "收集威胁证据，搭建因果链并区分影响重要性与证据强度。",
+        "location": "物种展项、相关生态展项与教育空间",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "诊断章",
+        "collectionItemImage": "lessons/lesson_zhizhi_002/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "threat-frame-hypotheses",
+            "roleStageId": "threat-frame-hypotheses",
+            "name": "提出风险假设",
+            "phase": "Phase 1 调查开题",
+            "modules": "",
+            "tools": [],
+            "requirement": "把先入印象改写为可被证据支持或推翻的风险假设",
+            "guidanceSteps": [
+              "用“如果……通过……可能导致……”写两条假设",
+              "为每条假设写一个支持证据和一个可能反证"
+            ],
+            "steps": [
+              {
+                "id": "threat-write-hypotheses",
+                "title": "写风险假设",
+                "objective": "形成可调查的关系判断",
+                "studentAction": "用“如果……通过……可能导致……”写两条假设",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "每条包含起因、中间变化和物种结果",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字)",
+                "next": "step:threat-plan-tests",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "hypotheses",
+                          "label": "两条风险假设",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 60
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "threat-plan-tests",
+                "title": "设计证伪办法",
+                "objective": "主动寻找能支持和削弱假设的证据",
+                "studentAction": "为每条假设写一个支持证据和一个可能反证",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "两条假设均有支持与反证计划",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(调查表)",
+                "next": "role-stage:threat-build-chain",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "support",
+                          "label": "要找的支持证据",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "counter",
+                          "label": "可能削弱假设的证据",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少2条假设，各有需要寻找的证据与可能反证",
+            "passCondition": "至少2条假设，各有需要寻找的证据与可能反证",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "threat-build-chain",
+            "roleStageId": "threat-build-chain",
+            "name": "搭建威胁链",
+            "phase": "Phase 3 风险诊断",
+            "modules": "",
+            "tools": [],
+            "requirement": "将现场和资料证据放入四层因果链",
+            "guidanceSteps": [
+              "搭建四层威胁链，为每条箭头绑定证据或推断标签",
+              "分别评估潜在影响与证据强度，补充替代解释"
+            ],
+            "steps": [
+              {
+                "id": "threat-connect-nodes",
+                "title": "连接风险节点",
+                "objective": "说明威胁如何从活动传导到种群结果",
+                "studentAction": "搭建四层威胁链，为每条箭头绑定证据或推断标签",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少4节点、3连接；每条连接有证据编号或“推断”",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(因果链)",
+                "next": "step:threat-score-uncertainty",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "causal_chain",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "按人类活动—环境变化—直接威胁—种群结果连接，每条箭头附证据编号或推断标签。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "人类活动",
+                        "环境或栖息地变化",
+                        "直接威胁",
+                        "种群结果"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "threat-score-uncertainty",
+                "title": "双轴评分",
+                "objective": "把影响大小和证据把握分开",
+                "studentAction": "分别评估潜在影响与证据强度，补充替代解释",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个威胁有双轴评分、理由和1个替代解释",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A04(风险矩阵)",
+                "next": "role-stage:threat-deliver-diagnosis",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 1,
+                      "resources": {},
+                      "choices": [],
+                      "metrics": [],
+                      "mode": "matrix",
+                      "prompt": "分别给潜在影响与证据强度1—4分，并写评分依据。",
+                      "axes": [
+                        "潜在影响",
+                        "证据强度"
+                      ],
+                      "minimumItems": 3
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少4个节点、3条有方向连接、来源编号和1个替代解释",
+            "passCondition": "至少4个节点、3条有方向连接、来源编号和1个替代解释",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1500,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "threat-deliver-diagnosis",
+            "roleStageId": "threat-deliver-diagnosis",
+            "name": "交付风险诊断",
+            "phase": "Phase 5 方案听证",
+            "modules": "",
+            "tools": [],
+            "requirement": "用一页诊断支持方案答辩，并公开不确定性",
+            "guidanceSteps": [
+              "选择两条关键链，说明证据、评分和不确定性",
+              "邀请一名同伴提出反例，记录维持、修改或待核及理由"
+            ],
+            "steps": [
+              {
+                "id": "threat-compose-diagnosis",
+                "title": "写诊断摘要",
+                "objective": "把模型转成可质询的诊断主张",
+                "studentAction": "选择两条关键链，说明证据、评分和不确定性",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "两条诊断均含链条、来源编号、双轴评分和局限",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(诊断摘要)",
+                "next": "step:threat-answer-challenge",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "diagnosis",
+                          "label": "风险诊断摘要",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 160
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "threat-answer-challenge",
+                "title": "回应反方质询",
+                "objective": "测试诊断能否面对替代解释",
+                "studentAction": "邀请一名同伴提出反例，记录维持、修改或待核及理由",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "一条反例、一项处理结果和理由",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(质询)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "challenge",
+                      "prompt": "请质疑一条因果连接或评分；分析员记录处理结果与证据。",
+                      "minimumEntries": 2,
+                      "roles": [],
+                      "recordTypes": [
+                        "反例或质疑",
+                        "处理结果与理由"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "核心链、优先风险、证据强度和未知项完整",
+            "passCondition": "核心链、优先风险、证据强度和未知项完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_002/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_002/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "measure-auditor",
+        "order": 4,
+        "name": "保护措施审计员",
+        "question": "一项保护措施针对什么风险，做了什么，怎样知道它产生了成效？",
+        "selectionDescription": "追踪措施逻辑、成效证据与保护缺口，防止“做过”被写成“[待学生探索]”。",
+        "location": "相关展项与教育空间",
+        "geofence": "国家动物博物馆课程允许动线",
+        "type": "核心角色",
+        "collectionItem": "审计章",
+        "collectionItemImage": "lessons/lesson_zhizhi_002/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "auditor-frame-questions",
+            "roleStageId": "auditor-frame-questions",
+            "name": "定义审计问题",
+            "phase": "Phase 1 调查开题",
+            "modules": "",
+            "tools": [],
+            "requirement": "为措施建立“目标—活动—结果—证据”问题框架",
+            "guidanceSteps": [
+              "将简报中的措施描述放入逻辑链位置",
+              "为两项措施填写目标、对应威胁、基线、指标和资料计划"
+            ],
+            "steps": [
+              {
+                "id": "auditor-separate-claims",
+                "title": "拆解措施说法",
+                "objective": "区分投入、活动、产出、结果和长期目标",
+                "studentAction": "将简报中的措施描述放入逻辑链位置",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5条描述完成分类，含一条待核",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(逻辑链分类)",
+                "next": "step:auditor-plan-evidence",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "categorize",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "判断材料说的是投入、活动、直接产出、短期结果还是长期目标。",
+                      "minimumItems": 5,
+                      "categories": [
+                        "投入",
+                        "活动",
+                        "直接产出",
+                        "短期结果",
+                        "长期目标",
+                        "待核"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "auditor-plan-evidence",
+                "title": "制定审计清单",
+                "objective": "明确判断措施成效还缺什么材料",
+                "studentAction": "为两项措施填写目标、对应威胁、基线、指标和资料计划",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "两项措施各含5个字段，缺失可标待核",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(审计表)",
+                "next": "role-stage:auditor-audit-measures",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "audit-plan",
+                          "label": "两项措施审计清单",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少为两类候选措施提出完整审计问题",
+            "passCondition": "至少为两类候选措施提出完整审计问题",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "auditor-audit-measures",
+            "roleStageId": "auditor-audit-measures",
+            "name": "审计措施与缺口",
+            "phase": "Phase 4 保护措施审计",
+            "modules": "",
+            "tools": [],
+            "requirement": "建立措施—威胁矩阵，评估覆盖、成效证据和缺口",
+            "guidanceSteps": [
+              "把措施连到威胁链节点，填写责任主体和证据状态",
+              "写两条“缺少什么—影响哪段链—证据是什么”"
+            ],
+            "steps": [
+              {
+                "id": "auditor-map-measures",
+                "title": "连接措施与威胁",
+                "objective": "确认每项措施试图改变哪一段风险链",
+                "studentAction": "把措施连到威胁链节点，填写责任主体和证据状态",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少3项措施；每项有目标节点、责任主体和来源编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(审计矩阵)",
+                "next": "step:auditor-find-gaps",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "matrix",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "每项措施连接一个威胁节点，并记录责任主体、活动证据和成效证据。",
+                      "minimumItems": 3,
+                      "categories": [
+                        "措施",
+                        "对应威胁",
+                        "责任主体",
+                        "活动证据",
+                        "成效证据"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "auditor-find-gaps",
+                "title": "识别保护缺口",
+                "objective": "从威胁覆盖、执行和监测中找出具体缺口",
+                "studentAction": "写两条“缺少什么—影响哪段链—证据是什么”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2条缺口，均引用审计矩阵或威胁链",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(缺口清单)",
+                "next": "role-stage:auditor-report-findings",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "gaps",
+                          "label": "保护缺口清单",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 80
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少3项措施完成审计，产生2条有依据的保护缺口",
+            "passCondition": "至少3项措施完成审计，产生2条有依据的保护缺口",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1500,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "auditor-report-findings",
+            "roleStageId": "auditor-report-findings",
+            "name": "报告审计结果",
+            "phase": "Phase 5 方案听证",
+            "modules": "",
+            "tools": [],
+            "requirement": "向听证会报告措施覆盖、证据强弱和优先缺口",
+            "guidanceSteps": [
+              "填写保留、改进、缺口和所需指标四栏",
+              "逐项核对行动对应的威胁、缺口和指标，提交修改意见"
+            ],
+            "steps": [
+              {
+                "id": "auditor-compose-summary",
+                "title": "形成审计摘要",
+                "objective": "用审计依据支持方案保留、修改或新增行动",
+                "studentAction": "填写保留、改进、缺口和所需指标四栏",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "每栏至少1项并引用来源或矩阵编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(审计摘要)",
+                "next": "step:auditor-review-action",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "board",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "按保留、改进、保护缺口、所需指标整理，每条绑定证据。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "建议保留",
+                        "需要改进",
+                        "保护缺口",
+                        "所需指标"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "auditor-review-action",
+                "title": "复核行动书对应关系",
+                "objective": "确保新方案回应诊断与缺口",
+                "studentAction": "逐项核对行动对应的威胁、缺口和指标，提交修改意见",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少3项行动完成核对，含1条修改意见",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(团队核验)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "review",
+                      "prompt": "逐项核对行动—威胁—缺口—指标，记录通过或修改理由。",
+                      "minimumEntries": 3,
+                      "roles": [],
+                      "recordTypes": [
+                        "通过",
+                        "修改",
+                        "待核"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "报告至少包含1项可保留措施、1项待改进措施和2项缺口",
+            "passCondition": "报告至少包含1项可保留措施、1项待改进措施和2项缺口",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_002/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_002/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "stakeholder-observer",
+        "order": 5,
+        "name": "利益相关者观察员",
+        "question": "谁会影响保护、受到措施影响，谁的知识和声音还没有进入方案？",
+        "selectionDescription": "绘制利益相关者图，记录影响、资源、成本、缺席声音和公平性问题。",
+        "location": "教育空间与教师批准的观察点",
+        "geofence": "国家动物博物馆课程允许区域",
+        "type": "核心角色",
+        "collectionItem": "协商章",
+        "collectionItemImage": "lessons/lesson_zhizhi_002/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "stakeholder-frame-map",
+            "roleStageId": "stakeholder-frame-map",
+            "name": "建立相关者假设图",
+            "phase": "Phase 1 调查开题",
+            "modules": "",
+            "tools": [],
+            "requirement": "从威胁和措施出发识别相关者，不替任何群体编造态度",
+            "guidanceSteps": [
+              "列出至少5类相关者，说明与物种或措施的关系",
+              "为三类相关者分别写影响、资源、成本或参与问题"
+            ],
+            "steps": [
+              {
+                "id": "stakeholder-list-groups",
+                "title": "识别相关者",
+                "objective": "覆盖决策者、执行者、受影响者和知识提供者",
+                "studentAction": "列出至少5类相关者，说明与物种或措施的关系",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5类，每类有关系说明",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(利益相关者图)",
+                "next": "step:stakeholder-write-questions",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "stakeholder_map",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "按决策、执行、受影响、知识与监督识别相关者，可一类多职能。",
+                      "minimumItems": 5,
+                      "categories": [
+                        "决策",
+                        "执行",
+                        "受影响",
+                        "知识",
+                        "监督"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "stakeholder-write-questions",
+                "title": "标记待核假设",
+                "objective": "把对群体态度的猜测改成调查问题",
+                "studentAction": "为三类相关者分别写影响、资源、成本或参与问题",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3个开放问题，不预设立场",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(问题表)",
+                "next": "role-stage:stakeholder-evidence-map",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "questions",
+                          "label": "相关者开放问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 60
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少5类相关者及需要核验的问题",
+            "passCondition": "至少5类相关者及需要核验的问题",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "stakeholder-evidence-map",
+            "roleStageId": "stakeholder-evidence-map",
+            "name": "绘制影响与公平图",
+            "phase": "Phase 4 保护措施审计",
+            "modules": "",
+            "tools": [],
+            "requirement": "用已有材料或经同意的匿名记录更新相关者图",
+            "guidanceSteps": [
+              "为4类相关者填写已知证据、合理推断和仍需询问",
+              "选择两项措施，记录谁受益、谁承担成本、谁缺席和补救选项"
+            ],
+            "steps": [
+              {
+                "id": "stakeholder-register-evidence",
+                "title": "登记证据与未知",
+                "objective": "区分材料中真的出现的观点和小组推测",
+                "studentAction": "为4类相关者填写已知证据、合理推断和仍需询问",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "每类至少一项，推断与事实有清楚标签",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(多源证据墙)",
+                "next": "step:stakeholder-fairness-check",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "evidence_board",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "按相关者记录事实证据、推断和待询问；不得代替群体发言。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "资料事实",
+                        "合理推断",
+                        "待询问"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "stakeholder-fairness-check",
+                "title": "检查公平性",
+                "objective": "看见措施收益、成本与参与机会的分布",
+                "studentAction": "选择两项措施，记录谁受益、谁承担成本、谁缺席和补救选项",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "两项措施完成四问，至少提出一项补救或替代",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(公平性检查表)",
+                "next": "role-stage:stakeholder-hearing",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "fairness",
+                          "label": "两项措施公平性检查",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少4类相关者完成影响、资源、成本、参与方式记录",
+            "passCondition": "至少4类相关者完成影响、资源、成本、参与方式记录",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1320,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "stakeholder-hearing",
+            "roleStageId": "stakeholder-hearing",
+            "name": "主持相关者质询",
+            "phase": "Phase 5 方案听证",
+            "modules": "",
+            "tools": [],
+            "requirement": "帮助不同立场基于影响和证据提问，完整记录回应与修订",
+            "guidanceSteps": [
+              "组织三类相关者各提出一个具体问题",
+              "记录采纳、部分采纳、暂不采纳或待核及理由"
+            ],
+            "steps": [
+              {
+                "id": "stakeholder-run-questions",
+                "title": "组织三方质询",
+                "objective": "让方案接受执行、成本和公平性检查",
+                "studentAction": "组织三类相关者各提出一个具体问题",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少3条问题，分别触及影响、成本或参与",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(听证)",
+                "next": "step:stakeholder-log-decisions",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "hearing",
+                      "prompt": "问题须指向具体行动和相关者影响，避免扮演刻板立场。",
+                      "minimumEntries": 3,
+                      "roles": [],
+                      "recordTypes": [
+                        "影响质询",
+                        "成本质询",
+                        "参与或公平质询"
+                      ],
+                      "requiredRecordTypes": [
+                        "影响质询",
+                        "成本质询",
+                        "参与或公平质询"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "stakeholder-log-decisions",
+                "title": "登记意见处置",
+                "objective": "把听证意见转成可追踪的方案修订",
+                "studentAction": "记录采纳、部分采纳、暂不采纳或待核及理由",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3条意见均有处置、理由和影响的版本位置",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(听证记录)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "hearing-log",
+                          "label": "听证意见处置表",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 120
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少3类相关者发言，产生3条处置记录",
+            "passCondition": "至少3类相关者发言，产生3条处置记录",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 900,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_002/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_002/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "action-designer",
+        "order": 6,
+        "name": "行动方案设计员",
+        "question": "在证据、资源和相关者约束下，怎样形成能执行、监测和修订的守护行动？",
+        "selectionDescription": "整合六线证据，主持资源分配，完成行动书三轮修订与发布。",
+        "location": "教育空间",
+        "geofence": "国家动物博物馆课程允许区域",
+        "type": "核心角色",
+        "collectionItem": "行动章",
+        "collectionItemImage": "lessons/lesson_zhizhi_002/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "designer-define-success",
+            "roleStageId": "designer-define-success",
+            "name": "定义方案成功",
+            "phase": "Phase 1 调查开题",
+            "modules": "",
+            "tools": [],
+            "requirement": "先定义可观察的成功，再等待证据决定行动",
+            "guidanceSteps": [
+              "填写目标对象、希望变化、期限和判断成功的方法",
+              "为目标列出风险、措施、相关者和资源四类所需证据"
+            ],
+            "steps": [
+              {
+                "id": "designer-draft-goal",
+                "title": "写目标草案",
+                "objective": "把“保护它”改成有对象、变化和期限的目标",
+                "studentAction": "填写目标对象、希望变化、期限和判断成功的方法",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "目标包含对象、变化、期限和指标方向",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(目标表单)",
+                "next": "step:designer-list-evidence-needs",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "target",
+                          "label": "目标对象",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "change",
+                          "label": "希望出现的变化",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "time",
+                          "label": "期限",
+                          "type": "short_text",
+                          "required": true
+                        },
+                        {
+                          "id": "measure",
+                          "label": "怎样判断",
+                          "type": "long_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "designer-list-evidence-needs",
+                "title": "登记证据需求",
+                "objective": "让方案设计等待调查证据",
+                "studentAction": "为目标列出风险、措施、相关者和资源四类所需证据",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四类各至少1项，并指定负责角色",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(证据需求板)",
+                "next": "role-stage:designer-allocate-resources",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "board",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "列出目标成立前需要的四类证据，并分配给角色。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "风险证据",
+                        "措施证据",
+                        "相关者证据",
+                        "资源证据"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "形成一个目标草案、两个可监测指标和证据需求",
+            "passCondition": "形成一个目标草案、两个可监测指标和证据需求",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 720,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "designer-allocate-resources",
+            "roleStageId": "designer-allocate-resources",
+            "name": "模拟资源配置",
+            "phase": "Phase 4 保护措施审计",
+            "modules": "",
+            "tools": [],
+            "requirement": "在有限筹码下选择行动并公开取舍",
+            "guidanceSteps": [
+              "将100点资源分给候选行动，说明优先目标和暂缓项目",
+              "抽取一张约束卡，重新配置并记录变化理由"
+            ],
+            "steps": [
+              {
+                "id": "designer-first-allocation",
+                "title": "配置首轮资源",
+                "objective": "依据风险和缺口分配有限资源",
+                "studentAction": "将100点资源分给候选行动，说明优先目标和暂缓项目",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "总计100点；至少3项行动；每项引用风险或缺口",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A04(资源模拟)",
+                "next": "step:designer-shock-revision",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 1,
+                      "resources": {},
+                      "choices": [],
+                      "metrics": [],
+                      "mode": "budget",
+                      "prompt": "在100点预算内配置至少3项行动，每项绑定风险链或保护缺口。",
+                      "budget": 100,
+                      "minimumItems": 3
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "designer-shock-revision",
+                "title": "应对约束变化",
+                "objective": "检验方案在资源减少或新证据出现时能否调整",
+                "studentAction": "抽取一张约束卡，重新配置并记录变化理由",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "新旧配置差异、调整依据、被延后行动和触发恢复条件",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A04(情境推演), A01(文字)",
+                "next": "role-stage:designer-publish-plan",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 1,
+                      "resources": {},
+                      "choices": [],
+                      "metrics": [],
+                      "mode": "scenario",
+                      "prompt": "从预算减少、关键证据降级、相关者成本上升中抽取一项约束。",
+                      "scenarios": [
+                        "预算减少30%",
+                        "一条关键证据降为待核",
+                        "一类相关者成本显著上升"
+                      ]
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "revision",
+                          "label": "调整与理由",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 80
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "完成一轮配置、一轮冲击调整和取舍说明",
+            "passCondition": "完成一轮配置、一轮冲击调整和取舍说明",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1500,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "designer-publish-plan",
+            "roleStageId": "designer-publish-plan",
+            "name": "发布守护行动书",
+            "phase": "Phase 6 行动书发布",
+            "modules": "",
+            "tools": [],
+            "requirement": "整合调查、听证和资源模拟，形成可复盘的课程建议",
+            "guidanceSteps": [
+              "填写七要素，并标注证据编号、未知项和复盘日期",
+              "逐条处理听证意见，生成终稿并声明“课程建议稿”"
+            ],
+            "steps": [
+              {
+                "id": "designer-compose-action-book",
+                "title": "完成行动书二稿",
+                "objective": "让每项行动连接风险、缺口、主体、资源和指标",
+                "studentAction": "填写七要素，并标注证据编号、未知项和复盘日期",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "目标、行动、主体、资源、时间、指标、复盘完整；至少6个证据编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(结构化文档)",
+                "next": "step:designer-final-revision",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "action-book",
+                          "label": "物种守护行动书二稿",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 350
+                        },
+                        {
+                          "id": "ai-disclosure",
+                          "label": "AI使用与人工核验",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "designer-final-revision",
+                "title": "完成听证修订并发布",
+                "objective": "留下可解释的版本变化和发布边界",
+                "studentAction": "逐条处理听证意见，生成终稿并声明“课程建议稿”",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "至少3条意见处置、版本差异、待核清单和人工终审",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(版本对照), A08(教师确认)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "revision",
+                      "prompt": "登记意见、采纳状态、修改位置与理由。",
+                      "minimumEntries": 3,
+                      "roles": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "七要素完整，引用六线证据，含版本修订和AI披露",
+            "passCondition": "七要素完整，引用六线证据，含版本修订和AI披露",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_002/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 960,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_002/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_002/assets/placeholders/badge.svg"
+      }
+    ],
+    "timeBank": {
+      "enabled": true,
+      "initialBalance": 0,
+      "currencyUnit": "分钟",
+      "earnRules": {
+        "maxTotal": 15,
+        "maxPerTask": 3,
+        "tasksVisibleAtOnce": 3
+      },
+      "giftRules": {
+        "allowGiftToSelf": false,
+        "maxPerAction": 5,
+        "minAmount": 1,
+        "target": "same_group_only"
+      },
+      "tasks": [
+        {
+          "id": "tb-01",
+          "type": "quiz",
+          "question": "国家重点保护身份与IUCN受威胁等级之间是什么关系？",
+          "options": [
+            "来自不同体系需分别核验",
+            "两者永远完全相同",
+            "只记录更严重的一项"
+          ],
+          "answerType": "",
+          "hint": "先看发布机构、适用范围和更新时间",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-02",
+          "type": "quiz",
+          "question": "引用可能变化的保护信息时，哪组记录最完整？",
+          "options": [
+            "来源加发布日期加访问日期",
+            "只写网页标题",
+            "只截一张图"
+          ],
+          "answerType": "",
+          "hint": "",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-03",
+          "type": "quiz",
+          "question": "看到种群数量下降后，哪一步最适合作为下一步？",
+          "options": [
+            "继续核验时间范围和原因证据",
+            "立刻认定唯一威胁",
+            "删除不一致资料"
+          ],
+          "answerType": "",
+          "hint": "",
+          "reward": 2,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-04",
+          "type": "photo_checkpoint",
+          "question": "拍下一处含来源、日期或数据单位的公开展项局部，不拍其他参观者正脸",
+          "options": [],
+          "answerType": "",
+          "hint": "遵守展馆当日拍摄规定；无法拍摄时请教师人工确认观察记录",
+          "reward": 3,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-05",
+          "type": "quiz",
+          "question": "用“压力因素—直接影响—种群后果”的顺序写出一条待核验威胁链。",
+          "options": [],
+          "answerType": "open_ended",
+          "hint": "",
+          "reward": 3,
+          "unlockAfter": "phase3-start",
+          "minLength": 30,
+          "requiresText": false
+        },
+        {
+          "id": "tb-06",
+          "type": "quiz",
+          "question": "写出一项现有保护措施、一个成效证据和一个仍需核验的缺口。",
+          "options": [],
+          "answerType": "open_ended",
+          "hint": "",
+          "reward": 3,
+          "unlockAfter": "phase4-start",
+          "minLength": 35,
+          "requiresText": false
+        }
+      ]
+    },
+    "assets": {
+      "cover": "lessons/lesson_zhizhi_002/assets/placeholders/cover.svg",
+      "chat": "lessons/lesson_zhizhi_002/assets/placeholders/chat-bg.svg",
+      "transition": "lessons/lesson_zhizhi_002/assets/placeholders/phase-transition.svg",
+      "certificate": "lessons/lesson_zhizhi_002/assets/placeholders/certificate.svg",
+      "navigationMap": "lessons/lesson_zhizhi_002/assets/placeholders/navigation-map.svg",
+      "importPlaceholder": "lessons/lesson_zhizhi_002/assets/placeholders/opening.svg",
+      "simulationPlaceholder": "lessons/lesson_zhizhi_002/assets/placeholders/simulation.svg"
+    }
+  },
+  "lesson_zhizhi_003": {
+    "id": "lesson_zhizhi_003",
+    "title": "万兽城议事厅Ⅲ：一条防鸟撞规则的诞生",
+    "subtitle": "从科学调查、规范比较和社会协商出发，形成一份可讨论、可复核的青少年规则建议稿",
+    "series": "致知",
+    "seriesCode": "zhizhi",
+    "themeTemplate": "zhizhi",
+    "venue": "国家动物博物馆、校园或机构建筑、教育空间",
+    "mapCenter": null,
+    "duration": "8—12周",
+    "grades": "初中—高中",
+    "groupRule": "6人一组，围绕同一校园或机构开展研究",
+    "level": "研究性学习版",
+    "levelCode": "research",
+    "traversalMode": "sequential",
+    "coreQuestion": "怎样把鸟撞科学、建筑风险、中国规范、域外制度、社会调查和成本效果证据转化为一条程序完整、可执行且可复核的防鸟撞规则建议？",
+    "phases": [
+      {
+        "id": "phase-1",
+        "number": 1,
+        "name": "问题界定",
+        "duration": "第1周",
+        "mode": "博物馆导入 + 研究开题",
+        "location": "国家动物博物馆或教育空间",
+        "modules": "A06(案例媒体), A01(研究问题), A05(开题答辩)",
+        "trigger": "教师手动启动",
+        "endCondition": "研究对象、概念、范围、伦理与六线计划通过开题",
+        "flow": [
+          "从鸟类适应、迁徙与城市生境案例提出问题。",
+          "区分鸟撞事件、风险代理指标、规范要求和政策建议。",
+          "确定一处校园/机构研究范围与替代范围。",
+          "完成研究问题、角色分工、伦理与AI使用计划。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-2",
+        "number": 2,
+        "name": "科学取证与建筑风险调查",
+        "duration": "第2—4周",
+        "mode": "文献研究 + 教师批准的重复调查",
+        "location": "资料空间与校园/机构建筑外围",
+        "modules": "A01(照片/数据), A03(反射标注/风险图), A07(实物识别)",
+        "trigger": "开题、路线和安全方案获教师确认",
+        "endCondition": "形成可复核调查数据、风险图和科学证据综述",
+        "flow": [
+          "阅读国内公民科学与主管部门材料，建立变量表。",
+          "按固定路线和时段观察玻璃反射、通透、绿植与照明。",
+          "对照片去除个人信息，记录零发现和调查限制。",
+          "形成高、中、低风险点位图；教师完成安全与数据抽检。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-3",
+        "number": 3,
+        "name": "中国规范与域外比较",
+        "duration": "第3—5周",
+        "mode": "规范检索 + [待学生探索]",
+        "location": "资料空间",
+        "modules": "A03(规范层级图/比较矩阵), A01(原文摘录)",
+        "trigger": "研究对象与主要风险变量明确",
+        "endCondition": "中国规范地图和多伦多、纽约、旧金山比较报告完成",
+        "flow": [
+          "核对中国现行法律、已公布待施行法典和深圳实践。",
+          "区分法律、[待学生探索]、设计指引、[待学生探索]和倡议。",
+          "仅用三城官方原文比较适用范围、措施、程序与执行。",
+          "记录版本、效力、适用条件和不可直接移植之处。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-4",
+        "number": 4,
+        "name": "社会调查",
+        "duration": "第5—7周",
+        "mode": "匿名问卷/访谈 + 主题编码",
+        "location": "教师批准的线上或线下空间",
+        "modules": "A01(匿名调查), A05(访谈), A03(编码墙)",
+        "trigger": "知情同意文本与问题清单获教师批准",
+        "endCondition": "形成匿名数据集、编码记录、局限与社会调查报告",
+        "flow": [
+          "确定需要了解的知识、态度、成本与执行条件。",
+          "试访谈后修改诱导、隐私或无法回答的问题。",
+          "收集最少必要信息，去标识化并允许退出。",
+          "双人编码分歧，公开样本边界和未代表群体。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-5",
+        "number": 5,
+        "name": "起草听证与修订",
+        "duration": "第7—10周",
+        "mode": "成本效果模拟 + 模拟听证 + 三稿修订",
+        "location": "教育空间",
+        "modules": "A04(成本效果), A05(听证), A01(条款与版本)",
+        "trigger": "四线证据包通过完整性检查",
+        "endCondition": "建议稿三稿、听证记录和意见处置表完成",
+        "flow": [
+          "用规则“五问”形成初稿并逐条绑定证据。",
+          "模拟不同预算、建筑条件和例外情境。",
+          "由科学、管理、使用者和权益视角公开听证。",
+          "对每条意见记录采纳状态、理由和条款变化。"
+        ],
+        "tasks": []
+      },
+      {
+        "id": "phase-6",
+        "number": 6,
+        "name": "表决发布与真实转化",
+        "duration": "第10—12周",
+        "mode": "课程表决 + 研究发布 + 可选真实沟通",
+        "location": "教育空间或经批准的发布场所",
+        "modules": "A05(表决), A01(发布包), A08(教师终审)",
+        "trigger": "终稿通过科学、规范、伦理和程序审查",
+        "endCondition": "课程表决、少数意见、AI披露和后续路径完整",
+        "flow": [
+          "按条款或整案进行课程内部表决。",
+          "发布赞成理由、反对/保留意见和未解问题。",
+          "明示“青少年建议稿”，不宣称正式立法或机构采纳。",
+          "如获授权，可向校园/机构提交；记录接收状态，不把提交等同采纳。"
+        ],
+        "tasks": []
+      }
+    ],
+    "roleSystem": {
+      "collectionName": "规则研究员",
+      "itemName": "证据线",
+      "pickerEyebrow": "6种研究分工 · 共创1份建议稿",
+      "pickerTitle": "选择你的{collectionName}身份",
+      "pickerDescription": "每位成员负责一条研究线。完成3轮研究与复核，才能解锁{unlockTarget}。",
+      "collectionItemName": "研究章",
+      "collectionPanelName": "四线证据包",
+      "unlockTarget": "规则表决与发布",
+      "phaseId": "phase-1"
+    },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
+    },
+    "roles": [
+      {
+        "id": "science-researcher",
+        "order": 1,
+        "name": "科学证据研究员",
+        "question": "现场观察和科学材料能支持怎样的鸟撞风险判断，边界在哪里？",
+        "selectionDescription": "研究鸟撞机制，设计重复调查，形成风险图和科学证据综述。",
+        "location": "资料空间与教师批准的建筑外围路线",
+        "geofence": "教师批准路线、时段和替代点",
+        "type": "核心角色",
+        "collectionItem": "科学章",
+        "collectionItemImage": "lessons/lesson_zhizhi_003/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "science-design-study",
+            "roleStageId": "science-design-study",
+            "name": "设计可复现调查",
+            "phase": "Phase 1 问题界定",
+            "modules": "",
+            "tools": [],
+            "requirement": "区分事件与风险变量，提交路线、变量和安全计划",
+            "guidanceSteps": [
+              "提出两条机制假设，列出事件指标、风险变量、控制记录和可能反证",
+              "提交路线、点位、时段、成人陪同、替代点、天气与零发现记录方式"
+            ],
+            "steps": [
+              {
+                "id": "science-frame-variables",
+                "title": "建立机制与变量表",
+                "objective": "把“玻璃危险”拆成可观察变量与有限假设",
+                "studentAction": "提出两条机制假设，列出事件指标、风险变量、控制记录和可能反证",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2条假设、4个风险变量、2个控制记录和1个可能反证",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(变量表)",
+                "next": "step:science-approve-route",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "research_variables",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "区分事件指标、风险变量、控制记录和可能反证。",
+                      "minimumItems": 9,
+                      "categories": [
+                        "事件指标",
+                        "风险变量",
+                        "控制记录",
+                        "可能反证"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "science-approve-route",
+                "title": "送审路线与记录规则",
+                "objective": "确保调查可重复且人身安全",
+                "studentAction": "提交路线、点位、时段、成人陪同、替代点、天气与零发现记录方式",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "路线图和安全清单完整；排除屋顶、施工区、车行区和[待学生探索]",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(路线表), A08(教师确认)",
+                "next": "role-stage:science-run-survey",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "route",
+                          "label": "路线、点位、时段与替代点",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        },
+                        {
+                          "id": "safety",
+                          "label": "陪同、安全和事件报告流程",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 60
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "机制假设、变量表、记录规则和安全路线经教师确认",
+            "passCondition": "机制假设、变量表、记录规则和安全路线经教师确认",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "science-run-survey",
+            "roleStageId": "science-run-survey",
+            "name": "执行建筑风险调查",
+            "phase": "Phase 2 科学取证与建筑风险调查",
+            "modules": "",
+            "tools": [],
+            "requirement": "按相同规则重复观察，形成去标识数据和风险图",
+            "guidanceSteps": [
+              "按批准路线完成至少3轮，记录日期、时段、天气、点位、风险变量、事件或零发现",
+              "在示意图标注反射、通透、绿植、照明、事件/零发现和证据强度"
+            ],
+            "steps": [
+              {
+                "id": "science-collect-observations",
+                "title": "完成重复记录",
+                "objective": "获得可比较的现场数据",
+                "studentAction": "按批准路线完成至少3轮，记录日期、时段、天气、点位、风险变量、事件或零发现",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3轮完整记录与合规照片；路线变化有理由",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(拍照), A01(调查数据)",
+                "next": "step:science-map-risk",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 3,
+                      "maxCount": 18,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "拍玻璃与环境关系，避开人脸、门牌、工位和[待学生探索]。"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "survey-log",
+                          "label": "重复调查记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 180
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "science-map-risk",
+                "title": "形成风险图",
+                "objective": "把风险变量映射到点位并公开不确定性",
+                "studentAction": "在示意图标注反射、通透、绿植、照明、事件/零发现和证据强度",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5个点位；高、中、低或未知均有理由和照片/记录编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(风险图画板)",
+                "next": "role-stage:science-deliver-evidence",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 960,
+                      "height": 640,
+                      "brushColors": [
+                        "#b91c1c",
+                        "#d97706",
+                        "#15803d",
+                        "#475569"
+                      ],
+                      "backgroundImage": "lessons/lesson_zhizhi_003/assets/placeholders/navigation-map.svg",
+                      "prompt": "在批准路线示意图上标注风险变量、事件/零发现、等级理由和编号。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检",
+            "passCondition": "至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "route",
+              "legacyMode": "route",
+              "name": "教师批准的建筑外围路线",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "teacher",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 2,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "science-deliver-evidence",
+            "roleStageId": "science-deliver-evidence",
+            "name": "交付科学证据线",
+            "phase": "Phase 5 起草听证与修订",
+            "modules": "",
+            "tools": [],
+            "requirement": "将文献与现场数据转成条款可引用的证据摘要",
+            "guidanceSteps": [
+              "写机制证据、现场发现、零发现、局限和对措施选择的含义",
+              "回应一条替代解释或方法质疑，记录维持、修改或待核"
+            ],
+            "steps": [
+              {
+                "id": "science-compose-brief",
+                "title": "撰写科学证据摘要",
+                "objective": "说明能判断什么、不能判断什么",
+                "studentAction": "写机制证据、现场发现、零发现、局限和对措施选择的含义",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少6个来源/数据编号；明确事件与风险、相关与因果边界",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(研究摘要)",
+                "next": "step:science-defend-evidence",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "science-brief",
+                          "label": "科学证据摘要",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 300
+                        },
+                        {
+                          "id": "limits",
+                          "label": "局限与不可判断事项",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 80
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "science-defend-evidence",
+                "title": "接受反证质询",
+                "objective": "检验条款所依赖的科学假设",
+                "studentAction": "回应一条替代解释或方法质疑，记录维持、修改或待核",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "质疑、回应、处理状态和影响的条款位置齐全",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(同行评议)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "peer_review",
+                      "prompt": "质疑一个变量、推断或推广范围；记录证据化回应。",
+                      "minimumEntries": 2,
+                      "roles": [],
+                      "recordTypes": [
+                        "质疑",
+                        "回应与处置"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "机制、现场模式、局限和措施证据完整，接受一次反证质询",
+            "passCondition": "机制、现场模式、局限和措施证据完整，接受一次反证质询",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_003/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_003/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "china-norm-researcher",
+        "order": 2,
+        "name": "中国规范研究员",
+        "question": "中国现有材料分别处于什么规范层级，何时生效，能支持怎样的本地建议？",
+        "selectionDescription": "建立中国规范地图，核对法律效力日期，研究深圳标准与实践。",
+        "location": "资料空间",
+        "geofence": "课程资料与教师批准检索范围",
+        "type": "核心角色",
+        "collectionItem": "规范章",
+        "collectionItemImage": "lessons/lesson_zhizhi_003/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "china-frame-norms",
+            "roleStageId": "china-frame-norms",
+            "name": "建立规范检索框架",
+            "phase": "Phase 1 问题界定",
+            "modules": "",
+            "tools": [],
+            "requirement": "先区分层级、效力与研究问题，再开展检索",
+            "guidanceSteps": [
+              "将候选材料按制定主体、形式和效力初步分类，未知项保留待核",
+              "确定名称、机关、文号/版本、公布日、施行日、范围、强制性和访问日字段"
+            ],
+            "steps": [
+              {
+                "id": "china-sort-materials",
+                "title": "区分材料层级",
+                "objective": "避免把倡议、指引、标准和法律混写",
+                "studentAction": "将候选材料按制定主体、形式和效力初步分类，未知项保留待核",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少6条材料分类，含2条待核理由",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(规范层级图)",
+                "next": "step:china-set-record-fields",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "hierarchy",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "按法律、法规/规章、标准、指引、[待学生探索]、倡议分类；不确定时标待核。",
+                      "minimumItems": 6,
+                      "categories": [
+                        "法律",
+                        "法规或规章",
+                        "标准",
+                        "设计指引",
+                        "[待学生探索]",
+                        "倡议",
+                        "待核"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "china-set-record-fields",
+                "title": "制定效力登记表",
+                "objective": "让每份规范可追溯且可更新",
+                "studentAction": "确定名称、机关、文号/版本、公布日、施行日、范围、强制性和访问日字段",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "字段齐全并指定人工核验人",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(规范登记表)",
+                "next": "role-stage:china-build-map",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "protocol",
+                          "label": "规范登记字段与核验流程",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        },
+                        {
+                          "id": "reviewer",
+                          "label": "人工核验人/岗位",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "形成规范层级图和五字段来源登记规则",
+            "passCondition": "形成规范层级图和五字段来源登记规则",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "china-build-map",
+            "roleStageId": "china-build-map",
+            "name": "核验中国规范与深圳实践",
+            "phase": "Phase 3 中国规范与域外比较",
+            "modules": "",
+            "tools": [],
+            "requirement": "核验野生动物保护法、生态环境法典时间状态和深圳[待学生探索]",
+            "guidanceSteps": [
+              "定位原文，记录公布/修订日、施行日、相关条文、范围和当前状态",
+              "用官方材料建立时间线，提取DB4403/T 616—2025的范围、措施和用语"
+            ],
+            "steps": [
+              {
+                "id": "china-verify-laws",
+                "title": "核对法律时间状态",
+                "objective": "准确表达当前法与已公布待施行法典",
+                "studentAction": "定位原文，记录公布/修订日、施行日、相关条文、范围和当前状态",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "野生动物保护法与生态环境法典分别登记；截至调查日的状态清楚",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(原文摘录), A08(人工核验)",
+                "next": "step:china-study-shenzhen",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "wildlife-law",
+                          "label": "野生动物保护法原文与效力记录",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        },
+                        {
+                          "id": "code",
+                          "label": "生态环境法典原文与时间状态",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "china-study-shenzhen",
+                "title": "重建深圳实践链",
+                "objective": "区分调查、研讨、征求意见、标准与实践",
+                "studentAction": "用官方材料建立时间线，提取DB4403/T 616—2025的范围、措施和用语",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5个时间节点；标准含文号、发布日期、实施日、适用范围和3类措施",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(政策时间线), A01(原文摘录)",
+                "next": "role-stage:china-deliver-map",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "timeline",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "连接调查、研讨、征求意见、[待学生探索]和实践，分别标效力。",
+                      "minimumItems": 5
+                    }
+                  },
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "standard-extract",
+                          "label": "深圳标准原文摘录与范围",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 160
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "三类核心材料原文、效力、范围和人工签注完整",
+            "passCondition": "三类核心材料原文、效力、范围和人工签注完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "资料空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 2,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "china-deliver-map",
+            "roleStageId": "china-deliver-map",
+            "name": "交付规范地图",
+            "phase": "Phase 5 起草听证与修订",
+            "modules": "",
+            "tools": [],
+            "requirement": "说明哪些材料提供原则、技术参考或本地程序依据",
+            "guidanceSteps": [
+              "按层级呈现材料，并为每份写“可支持/不能直接推出/需更新”",
+              "抽查至少5条条款，标注现行依据、借鉴依据、课程选择或待核"
+            ],
+            "steps": [
+              {
+                "id": "china-compose-norm-map",
+                "title": "制作规范地图与边界",
+                "objective": "让起草组知道每份材料能支持到哪里",
+                "studentAction": "按层级呈现材料，并为每份写“可支持/不能直接推出/需更新”",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少5份材料有三类边界说明和来源编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(规范地图)",
+                "next": "step:china-review-clauses",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "norm_map",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "每份材料记录层级、效力、范围、可支持、不能直接推出和更新条件。",
+                      "minimumItems": 5
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "china-review-clauses",
+                "title": "审查条款效力表述",
+                "objective": "避免建议稿把参考依据写成强制本地要求",
+                "studentAction": "抽查至少5条条款，标注现行依据、借鉴依据、课程选择或待核",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "5条以上审查记录，法律与标准结论由人工签注",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(条款审查), A08(教师确认)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "clause_review",
+                      "prompt": "逐条标注现行依据、借鉴依据、课程选择或待核。",
+                      "minimumEntries": 5,
+                      "roles": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "规范地图、可引用结论、不可推出事项和更新提示完整",
+            "passCondition": "规范地图、可引用结论、不可推出事项和更新提示完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_003/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_003/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "comparative-researcher",
+        "order": 3,
+        "name": "域外制度研究员",
+        "question": "多伦多、纽约和旧金山怎样界定问题与规则，哪些经验具备本地借鉴条件？",
+        "selectionDescription": "核验三城官方原文，建立七项比较矩阵并评估可借鉴条件。",
+        "location": "资料空间",
+        "geofence": "指定三城官方来源",
+        "type": "核心角色",
+        "collectionItem": "比较章",
+        "collectionItemImage": "lessons/lesson_zhizhi_003/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "comparative-set-protocol",
+            "roleStageId": "comparative-set-protocol",
+            "name": "制定三城原文协议",
+            "phase": "Phase 1 问题界定",
+            "modules": "",
+            "tools": [],
+            "requirement": "限定官方来源，定义统一比较字段和翻译核验方式",
+            "guidanceSteps": [
+              "分别登记多伦多市、纽约市议会和旧金山规划部门官方页面",
+              "确认七项比较字段，规定原文摘录、学生译文、关键词保留和双人复核"
+            ],
+            "steps": [
+              {
+                "id": "comparative-register-sources",
+                "title": "锁定官方来源",
+                "objective": "避免使用二手摘要代替制度原文",
+                "studentAction": "分别登记多伦多市、纽约市议会和旧金山规划部门官方页面",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "三条来源含机构、标题、URL、访问日期和原文状态",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(来源登记)",
+                "next": "step:comparative-define-fields",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "toronto",
+                          "label": "多伦多官方来源",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "new-york",
+                          "label": "纽约官方来源",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "san-francisco",
+                          "label": "旧金山官方来源",
+                          "type": "long_text",
+                          "required": true
+                        },
+                        {
+                          "id": "access",
+                          "label": "访问日期",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "comparative-define-fields",
+                "title": "统一比较与翻译规则",
+                "objective": "让三城材料在同一问题框架下可比较",
+                "studentAction": "确认七项比较字段，规定原文摘录、学生译文、关键词保留和双人复核",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "七项字段和翻译复核流程齐全",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(比较框架)",
+                "next": "role-stage:comparative-build-matrix",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "comparison_schema",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "设置规范层级、适用对象、风险触发、玻璃措施、照明措施、例外替代、审查执行七列。",
+                      "minimumItems": 7
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "三城来源、七项字段、版本记录和翻译核验规则完整",
+            "passCondition": "三城来源、七项字段、版本记录和翻译核验规则完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "comparative-build-matrix",
+            "roleStageId": "comparative-build-matrix",
+            "name": "完成[待学生探索]",
+            "phase": "Phase 3 中国规范与域外比较",
+            "modules": "",
+            "tools": [],
+            "requirement": "从官方原文提取范围、措施、例外与程序，记录不可比项",
+            "guidanceSteps": [
+              "每城至少提取3段短原文，记录页面/条款位置、学生译文和字段",
+              "完成七项矩阵，为三项异同写原因假设和不可直接比较之处"
+            ],
+            "steps": [
+              {
+                "id": "comparative-extract-text",
+                "title": "提取原文证据",
+                "objective": "让比较结论回到具体官方文本",
+                "studentAction": "每城至少提取3段短原文，记录页面/条款位置、学生译文和字段",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少9条摘录；每条含原文位置、译文、字段和复核人",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(原文摘录卡)",
+                "next": "step:comparative-fill-matrix",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "extracts",
+                          "label": "三城原文摘录、位置与译文",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 450
+                        },
+                        {
+                          "id": "reviewer",
+                          "label": "第二复核人",
+                          "type": "short_text",
+                          "required": true
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "comparative-fill-matrix",
+                "title": "解释异同与不可比",
+                "objective": "比较制度选择，同时尊重情境差异",
+                "studentAction": "完成七项矩阵，为三项异同写原因假设和不可直接比较之处",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "七项×三城有记录或“不适用/未找到”；至少3条异同与2条不可比说明",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(比较法矩阵)",
+                "next": "role-stage:comparative-localize",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "comparison_matrix",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "三城按七项同列比较，空白须写未找到、不适用或待核。",
+                      "minimumItems": 21
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "三城七项矩阵、原文编号、双人译文复核和不可比说明完整",
+            "passCondition": "三城七项矩阵、原文编号、双人译文复核和不可比说明完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "资料空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 2,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "comparative-localize",
+            "roleStageId": "comparative-localize",
+            "name": "形成可借鉴性报告",
+            "phase": "Phase 5 起草听证与修订",
+            "modules": "",
+            "tools": [],
+            "requirement": "筛选可借鉴做法，并说明本地权限、条件、调整与试点需求",
+            "guidanceSteps": [
+              "为3项候选做法回答问题相似性、主体权限、技术成本条件和试点/例外",
+              "提交[待学生探索]、候选做法、不可直接移植项和待核清单"
+            ],
+            "steps": [
+              {
+                "id": "comparative-assess-transfer",
+                "title": "完成本地化四问",
+                "objective": "把“国外这样做”转成条件化建议",
+                "studentAction": "为3项候选做法回答问题相似性、主体权限、技术成本条件和试点/例外",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "3项×4问完整，每项引用原文与本地证据编号",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(可借鉴性矩阵)",
+                "next": "step:comparative-deliver-report",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "transfer_matrix",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "对3项做法回答本地问题、主体权限、实施条件、试点例外。",
+                      "minimumItems": 12
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "comparative-deliver-report",
+                "title": "发布比较报告",
+                "objective": "向起草组交付可追溯、不过度移植的结论",
+                "studentAction": "提交[待学生探索]、候选做法、不可直接移植项和待核清单",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少3项可借鉴建议、1项不建议直接移植、1项待核",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(比较报告), A05(团队复核)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "report",
+                          "label": "[待学生探索]与可借鉴性报告",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 350
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  },
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "review",
+                      "prompt": "中国规范研究员与影响评估员核对权限和实施条件。",
+                      "minimumEntries": 2,
+                      "roles": [
+                        "中国规范研究员",
+                        "影响评估员"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少3项候选做法通过四问，含1项不建议直接移植",
+            "passCondition": "至少3项候选做法通过四问，含1项不建议直接移植",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_003/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_003/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "social-researcher",
+        "order": 4,
+        "name": "社会调查员",
+        "question": "校园或机构使用者、管理者和相关群体怎样理解问题，会受到什么影响？",
+        "selectionDescription": "设计匿名调查，实施知情同意，完成双人编码和样本边界说明。",
+        "location": "教师批准的线上或线下调查空间",
+        "geofence": "经批准的对象、渠道与时段",
+        "type": "核心角色",
+        "collectionItem": "社会章",
+        "collectionItemImage": "lessons/lesson_zhizhi_003/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "social-design-study",
+            "roleStageId": "social-design-study",
+            "name": "完成伦理与工具送审",
+            "phase": "Phase 1 问题界定",
+            "modules": "",
+            "tools": [],
+            "requirement": "确定最少数据、知情同意、退出机制和不诱导问题",
+            "guidanceSteps": [
+              "说明需要听见哪些群体、为何需要、招募方式、最少字段和未代表群体",
+              "提交知情同意页和8—12个问题，用2名非样本同伴试测后修改"
+            ],
+            "steps": [
+              {
+                "id": "social-plan-sample",
+                "title": "定义样本与最少数据",
+                "objective": "只收集回答研究问题所必需的信息",
+                "studentAction": "说明需要听见哪些群体、为何需要、招募方式、最少字段和未代表群体",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少3类群体；每个数据字段有用途；不收集姓名和无关[待学生探索]",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(样本计划)",
+                "next": "step:social-approve-instrument",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "sample",
+                          "label": "样本与招募计划",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 120
+                        },
+                        {
+                          "id": "fields",
+                          "label": "最少数据字段及用途",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 80
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "social-approve-instrument",
+                "title": "试测并送审",
+                "objective": "消除诱导、双重问题和不清楚的同意流程",
+                "studentAction": "提交知情同意页和8—12个问题，用2名非样本同伴试测后修改",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "同意、用途、时长、记录、跳过、退出、联系渠道完整；保留试测修改",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(试访谈), A08(教师确认)",
+                "next": "role-stage:social-collect-code",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "pilot",
+                      "prompt": "标记诱导、双重、含糊、过度隐私或无法回答的问题。",
+                      "minimumEntries": 2,
+                      "roles": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "同意页、样本计划和调查工具经教师批准",
+            "passCondition": "同意页、样本计划和调查工具经教师批准",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "social-collect-code",
+            "roleStageId": "social-collect-code",
+            "name": "匿名收集与双人编码",
+            "phase": "Phase 4 社会调查",
+            "modules": "",
+            "tools": [],
+            "requirement": "按批准工具收集最少数据，去标识后由两人独立编码",
+            "guidanceSteps": [
+              "先完成同意确认，再收集回答；分别保存同意状态与匿名研究数据",
+              "两人独立编码同一小批材料，比较后修订编码本，再完成全体编码"
+            ],
+            "steps": [
+              {
+                "id": "social-collect-anonymous",
+                "title": "实施匿名调查",
+                "objective": "获得合规、可撤回且不超范围的材料",
+                "studentAction": "先完成同意确认，再收集回答；分别保存同意状态与匿名研究数据",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "每条记录有同意状态和匿名编号；无姓名、[待学生探索]或可识别原音频进入公开对象",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(匿名表单), A01(同意记录)",
+                "next": "step:social-double-code",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "consent-log",
+                          "label": "同意与退出状态汇总（不含身份）",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40
+                        },
+                        {
+                          "id": "anonymous-data",
+                          "label": "匿名研究数据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 160
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "social-double-code",
+                "title": "双人编码与分歧处理",
+                "objective": "让主题定义可检查并保留例外",
+                "studentAction": "两人独立编码同一小批材料，比较后修订编码本，再完成全体编码",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "初始双人编码、至少2处分歧、修订定义、例外和未代表群体",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(编码墙)",
+                "next": "role-stage:social-report-findings",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "qualitative_coding",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "两人独立编码后比较分歧，记录定义修订和反例。",
+                      "minimumItems": 6,
+                      "categories": [
+                        "知识与认知",
+                        "支持理由",
+                        "担忧与成本",
+                        "执行条件",
+                        "例外",
+                        "其他"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "匿名数据、退出记录、编码本和分歧处理完整",
+            "passCondition": "匿名数据、退出记录、编码本和分歧处理完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "approved_scope",
+              "name": "教师批准的调查空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "teacher",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 2,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "social-report-findings",
+            "roleStageId": "social-report-findings",
+            "name": "提交社会调查报告",
+            "phase": "Phase 5 起草听证与修订",
+            "modules": "",
+            "tools": [],
+            "requirement": "呈现主题、反例、样本边界和对条款的条件化含义",
+            "guidanceSteps": [
+              "写方法、样本范围、主题、反例、缺席群体、局限和条款含义",
+              "由未接触身份信息的同伴抽查编码与报告，记录修订和删除"
+            ],
+            "steps": [
+              {
+                "id": "social-compose-report",
+                "title": "撰写匿名报告",
+                "objective": "把社会材料转成有边界的规则输入",
+                "studentAction": "写方法、样本范围、主题、反例、缺席群体、局限和条款含义",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少4个匿名引文/记录编号、2个反例或分歧、1个未代表群体",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(社会调查报告)",
+                "next": "step:social-member-check",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "social-report",
+                          "label": "社会调查报告",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 350
+                        },
+                        {
+                          "id": "limitations",
+                          "label": "样本与伦理局限",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "social-member-check",
+                "title": "完成成员与伦理复核",
+                "objective": "检查解释是否忠于匿名材料并保持边界",
+                "studentAction": "由未接触身份信息的同伴抽查编码与报告，记录修订和删除",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "至少3条抽查记录、去标识确认和删除/修订日志",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(匿名复核), A08(教师确认)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "ethical_review",
+                      "prompt": "只使用匿名编号，核对主题、反例、代表性和重新识别风险。",
+                      "minimumEntries": 3,
+                      "roles": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "报告不暴露身份、不夸大代表性，并接受成员核验",
+            "passCondition": "报告不暴露身份、不夸大代表性，并接受成员核验",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_003/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_003/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "impact-assessor",
+        "order": 5,
+        "name": "影响评估员",
+        "question": "不同措施组合会带来怎样的风险变化、成本、执行负担与公平影响？",
+        "selectionDescription": "建立风险基线，公开成本效果假设，模拟措施组合与例外条件。",
+        "location": "调查点位与教育空间",
+        "geofence": "教师批准路线和资料范围",
+        "type": "核心角色",
+        "collectionItem": "评估章",
+        "collectionItemImage": "lessons/lesson_zhizhi_003/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "impact-define-framework",
+            "roleStageId": "impact-define-framework",
+            "name": "定义评估框架",
+            "phase": "Phase 1 问题界定",
+            "modules": "",
+            "tools": [],
+            "requirement": "明确基线、措施单位、成本、效果、公平和不确定性字段",
+            "guidanceSteps": [
+              "分别定义鸟类风险、建筑使用、成本和执行四类结果及基线需求",
+              "为候选参数标来源类型、数值/区间、适用范围和敏感性"
+            ],
+            "steps": [
+              {
+                "id": "impact-set-baseline",
+                "title": "定义结果与基线",
+                "objective": "说明措施希望改变什么，当前状态怎样记录",
+                "studentAction": "分别定义鸟类风险、建筑使用、成本和执行四类结果及基线需求",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四类结果均有指标、单位、时间范围和所需来源",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(评估框架)",
+                "next": "step:impact-record-assumptions",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "evaluation_framework",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "为风险、建筑使用、成本、执行定义指标、单位、时间和来源。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "鸟类风险",
+                        "建筑使用",
+                        "成本维护",
+                        "执行管理"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "impact-record-assumptions",
+                "title": "建立假设账本",
+                "objective": "区分实测参数、资料参数、专家判断和课程假设",
+                "studentAction": "为候选参数标来源类型、数值/区间、适用范围和敏感性",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少6个参数；每个有来源类型和不确定性",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(参数账本)",
+                "next": "role-stage:impact-model-options",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "assumptions",
+                          "label": "成本效果参数与假设账本",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 180
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "形成评估问题、参数表和不确定性记录规则",
+            "passCondition": "形成评估问题、参数表和不确定性记录规则",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "impact-model-options",
+            "roleStageId": "impact-model-options",
+            "name": "模拟措施组合",
+            "phase": "Phase 5 起草听证与修订",
+            "modules": "",
+            "tools": [],
+            "requirement": "比较玻璃、照明、监测与管理组合，并测试预算和建筑例外",
+            "guidanceSteps": [
+              "设计基础、重点和强化三种组合，填写覆盖、预期效果、成本、维护和执行主体",
+              "改变预算、效果或维护参数，记录推荐变化及受影响群体"
+            ],
+            "steps": [
+              {
+                "id": "impact-build-scenarios",
+                "title": "构建三种措施组合",
+                "objective": "让措施强度、覆盖与成本可以比较",
+                "studentAction": "设计基础、重点和强化三种组合，填写覆盖、预期效果、成本、维护和执行主体",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "3种组合字段完整；所有数值能回到假设账本",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A04(成本效果模拟)",
+                "next": "step:impact-test-sensitivity",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 1,
+                      "resources": {},
+                      "choices": [],
+                      "metrics": [],
+                      "mode": "cost_effectiveness",
+                      "prompt": "比较基础、重点、强化三种组合；所有参数标来源或课程假设。",
+                      "minimumItems": 3,
+                      "dimensions": [
+                        "覆盖",
+                        "风险变化",
+                        "初始成本",
+                        "维护成本",
+                        "执行负担"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "impact-test-sensitivity",
+                "title": "测试敏感性与公平性",
+                "objective": "识别哪些假设变化会改变推荐",
+                "studentAction": "改变预算、效果或维护参数，记录推荐变化及受影响群体",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少2种参数变化、1个推荐反转/不变理由、2类相关者影响和例外建议",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A04(敏感性模拟), A01(影响记录)",
+                "next": "role-stage:impact-deliver-assessment",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 1,
+                      "resources": {},
+                      "choices": [],
+                      "metrics": [],
+                      "mode": "sensitivity",
+                      "prompt": "分别改变预算、预期效果或维护负担，观察排序是否改变。",
+                      "variables": [
+                        "预算",
+                        "风险变化",
+                        "维护负担"
+                      ]
+                    }
+                  },
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "equity",
+                          "label": "相关者影响、例外与调整",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 100
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "至少3种组合、2种情境和敏感性分析完成",
+            "passCondition": "至少3种组合、2种情境和敏感性分析完成",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 2,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "impact-deliver-assessment",
+            "roleStageId": "impact-deliver-assessment",
+            "name": "交付影响评估",
+            "phase": "Phase 5 起草听证与修订",
+            "modules": "",
+            "tools": [],
+            "requirement": "向听证会公开推荐、假设、成本承担、例外与复核触发",
+            "guidanceSteps": [
+              "报告基线、组合、结果区间、敏感参数、公平影响、例外和复核建议",
+              "回应至少一条预算质询和一条公平性质询，记录条款影响"
+            ],
+            "steps": [
+              {
+                "id": "impact-compose-report",
+                "title": "撰写影响评估报告",
+                "objective": "用透明假设支持条款选择",
+                "studentAction": "报告基线、组合、结果区间、敏感参数、公平影响、例外和复核建议",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少6个参数编号、3种组合、2个局限和1个复核触发条件",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(影响评估报告)",
+                "next": "step:impact-answer-hearing",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "impact-report",
+                          "label": "影响评估报告",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 350
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "不确定性与复核触发",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 80
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "impact-answer-hearing",
+                "title": "回应预算与公平质询",
+                "objective": "让成本与分配选择接受公开挑战",
+                "studentAction": "回应至少一条预算质询和一条公平性质询，记录条款影响",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "两条质询均有参数化回应、处置状态和条款位置",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(听证)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "hearing",
+                      "prompt": "分别从预算可行性和成本公平性提出质询。",
+                      "minimumEntries": 2,
+                      "roles": [],
+                      "recordTypes": [
+                        "预算质询",
+                        "公平性质询"
+                      ],
+                      "requiredRecordTypes": [
+                        "预算质询",
+                        "公平性质询"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "报告能追溯到参数并回应一次预算/公平质询",
+            "passCondition": "报告能追溯到参数并回应一次预算/公平质询",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_003/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_003/assets/placeholders/badge.svg"
+      },
+      {
+        "id": "drafting-coordinator",
+        "order": 6,
+        "name": "规则起草与程序协调员",
+        "question": "怎样把四线证据转成权责清楚、程序完整、允许例外与复核的建议稿？",
+        "selectionDescription": "管理证据包、规则五问、三稿修订、听证表决和真实状态披露。",
+        "location": "教育空间与经批准的发布场所",
+        "geofence": "课程批准的协作与发布范围",
+        "type": "核心角色",
+        "collectionItem": "程序章",
+        "collectionItemImage": "lessons/lesson_zhizhi_003/assets/placeholders/token.svg",
+        "tasks": [
+          {
+            "id": "drafting-set-procedure",
+            "roleStageId": "drafting-set-procedure",
+            "name": "建立程序与证据协议",
+            "phase": "Phase 1 问题界定",
+            "modules": "",
+            "tools": [],
+            "requirement": "提前确定证据进入、利益冲突、听证、修订、表决与AI披露规则",
+            "guidanceSteps": [
+              "为科学、规范、社会、影响四线分别定义最低产物、复核人和待核处理",
+              "制定日历、意见处置、回避/利益披露、表决方式、少数意见和AI披露规则"
+            ],
+            "steps": [
+              {
+                "id": "drafting-define-evidence-gate",
+                "title": "定义四线证据闸门",
+                "objective": "防止条款在证据尚未形成时提前定案",
+                "studentAction": "为科学、规范、社会、影响四线分别定义最低产物、复核人和待核处理",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四线均有产物、来源、复核、局限和未通过处理",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(证据闸门)",
+                "next": "step:drafting-adopt-procedure",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "evidence_gate",
+                      "items": [],
+                      "zones": [],
+                      "connections": [],
+                      "prompt": "为四线设置最低产物、复核人、局限和待核处理。",
+                      "minimumItems": 4,
+                      "categories": [
+                        "科学与风险",
+                        "中国与域外规范",
+                        "社会调查",
+                        "成本与影响"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "drafting-adopt-procedure",
+                "title": "通过研究程序",
+                "objective": "让听证、修订、表决和发布有预先规则",
+                "studentAction": "制定日历、意见处置、回避/利益披露、表决方式、少数意见和AI披露规则",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "全组确认记录与教师审批；真实提交需另行授权",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(小组协商), A08(教师确认)",
+                "next": "role-stage:drafting-three-drafts",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "consensus",
+                      "prompt": "逐项确认程序日历、意见处置、回避、表决、少数意见和AI披露。",
+                      "minimumEntries": 6,
+                      "roles": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "程序日历、四线证据闸门和研究诚信协议经全组确认",
+            "passCondition": "程序日历、四线证据闸门和研究诚信协议经全组确认",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "drafting-three-drafts",
+            "roleStageId": "drafting-three-drafts",
+            "name": "主持三稿与听证",
+            "phase": "Phase 5 起草听证与修订",
+            "modules": "",
+            "tools": [],
+            "requirement": "用规则五问和九要素起草，每条绑定证据，完成公开听证与版本处置",
+            "guidanceSteps": [
+              "按九要素起草，每条标四线证据、课程价值选择、责任主体和待核",
+              "主持四视角听证，登记意见，形成听证稿和终稿三稿对照"
+            ],
+            "steps": [
+              {
+                "id": "drafting-compose-first",
+                "title": "生成证据绑定初稿",
+                "objective": "形成可被质询的完整规则结构",
+                "studentAction": "按九要素起草，每条标四线证据、课程价值选择、责任主体和待核",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "九要素齐全；每条至少1个证据编号；事实依据与价值选择分开",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(条款编辑器)",
+                "next": "step:drafting-run-hearing",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "draft-1",
+                          "label": "建议稿初稿",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 700
+                        },
+                        {
+                          "id": "evidence-index",
+                          "label": "逐条证据与价值选择索引",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 250
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "drafting-run-hearing",
+                "title": "听证并完成三稿对照",
+                "objective": "让反对意见真正影响版本或留下不采纳理由",
+                "studentAction": "主持四视角听证，登记意见，形成听证稿和终稿三稿对照",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少8条意见；每条有证据、回应、状态、理由和修改位置",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(模拟听证), A05(三稿对照)",
+                "next": "role-stage:drafting-vote-release",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "formal_hearing",
+                      "prompt": "从科学、管理、使用者、权益与公平视角质询具体条款。",
+                      "minimumEntries": 8,
+                      "roles": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "初稿、听证稿、终稿与逐条证据、意见处置完整",
+            "passCondition": "初稿、听证稿、终稿与逐条证据、意见处置完整",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 3,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "drafting-vote-release",
+            "roleStageId": "drafting-vote-release",
+            "name": "组织表决与真实转化",
+            "phase": "Phase 6 表决发布与真实转化",
+            "modules": "",
+            "tools": [],
+            "requirement": "完成终审、课程表决、少数意见、AI披露和真实状态记录",
+            "guidanceSteps": [
+              "逐项检查九要素、来源、人工签注、匿名、AI披露和效力声明，再组织课程表决",
+              "发布建议稿、证据包、三稿对照、少数意见和AI披露；获授权后可提交机构"
+            ],
+            "steps": [
+              {
+                "id": "drafting-final-audit-vote",
+                "title": "完成发布前终审与表决",
+                "objective": "确认建议稿科学、规范、伦理与程序边界",
+                "studentAction": "逐项检查九要素、来源、人工签注、匿名、AI披露和效力声明，再组织课程表决",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "终审清单、赞成/反对/弃权计数、理由和少数意见齐全",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(表决), A08(教师确认)",
+                "next": "step:drafting-publish-status",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "vote",
+                      "prompt": "记录票型与可选理由；表决只代表课程内部选择。",
+                      "minimumEntries": 1,
+                      "roles": [],
+                      "options": [
+                        "赞成",
+                        "反对",
+                        "弃权"
+                      ],
+                      "recordMinorityOpinion": true
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "drafting-publish-status",
+                "title": "发布并记录真实状态",
+                "objective": "让课程成果与外部沟通状态真实可核",
+                "studentAction": "发布建议稿、证据包、三稿对照、少数意见和AI披露；获授权后可提交机构",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "发布包完整；状态只选课程通过、已提交、已接收、反馈中、采纳/未采纳中真实发生项",
+                "location": {
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(发布包), A05(状态记录)",
+                "next": "role:complete",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 6,
+                      "accept": "image/*",
+                      "recognition": "course-evidence"
+                    }
+                  },
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 90,
+                      "language": "zh-CN",
+                      "transcribe": true
+                    }
+                  },
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "release-note",
+                          "label": "发布说明、AI披露与未解问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 180
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": ""
+                    }
+                  },
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "status_log",
+                      "prompt": "分别记录课程表决、提交、接收、反馈和采纳的真实状态与日期。",
+                      "minimumEntries": 1,
+                      "roles": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "evidenceRequirement": "发布包通过人工终审，表决与外部状态准确分开",
+            "passCondition": "发布包通过人工终审，表决与外部状态准确分开",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "lessons/lesson_zhizhi_003/assets/placeholders/task.svg",
+            "location": {
+              "mode": "point",
+              "legacyMode": "approved_scope",
+              "name": "教育空间或经批准的发布场所",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 1,
+              "idleNudgeSeconds": 180,
+              "nudgeCooldownSeconds": 120
+            },
+            "nudgePolicy": {
+              "maxNudges": 2
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_zhizhi_003/assets/placeholders/role-card.svg",
+        "badgeImage": "lessons/lesson_zhizhi_003/assets/placeholders/badge.svg"
+      }
+    ],
+    "timeBank": {
+      "enabled": true,
+      "initialBalance": 0,
+      "currencyUnit": "分钟",
+      "earnRules": {
+        "maxTotal": 18,
+        "maxPerTask": 3,
+        "tasksVisibleAtOnce": 3
+      },
+      "giftRules": {
+        "allowGiftToSelf": false,
+        "maxPerAction": 5,
+        "minAmount": 1,
+        "target": "same_group_only"
+      },
+      "tasks": [
+        {
+          "id": "tb-01",
+          "type": "quiz",
+          "question": "一次巡查没有发现鸟撞痕迹时，最合适的记录方式是什么？",
+          "options": [
+            "照实记录零发现及巡查条件",
+            "删除这次记录",
+            "宣布建筑绝对安全"
+          ],
+          "answerType": "",
+          "hint": "",
+          "reward": 3,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-02",
+          "type": "quiz",
+          "question": "发现玻璃反射树木后，可以直接得出什么结论？",
+          "options": [
+            "这是一个需要继续核验的风险变量",
+            "这里一定发生过鸟撞",
+            "必须立刻拆除整栋建筑"
+          ],
+          "answerType": "",
+          "hint": "",
+          "reward": 3,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-03",
+          "type": "quiz",
+          "question": "比较多伦多、纽约和旧金山材料时，哪种做法更合适？",
+          "options": [
+            "先比较适用对象和措施再讨论借鉴",
+            "直接复制最严格条文",
+            "只看文件标题"
+          ],
+          "answerType": "",
+          "hint": "",
+          "reward": 3,
+          "unlockAfter": "phase3-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-04",
+          "type": "photo_checkpoint",
+          "question": "拍下一处可能产生反射或透明通道的玻璃局部，并避开可识别的人脸、门牌和个人信息",
+          "options": [],
+          "answerType": "",
+          "hint": "仅在获准区域、确保人身安全的前提下拍摄；不可拍摄时改画风险草图并由教师确认",
+          "reward": 3,
+          "unlockAfter": "phase2-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-05",
+          "type": "quiz",
+          "question": "写出一个可能影响巡查结果的变量，并说明下一轮怎样控制或记录它。",
+          "options": [],
+          "answerType": "open_ended",
+          "hint": "",
+          "reward": 3,
+          "unlockAfter": "phase2-start",
+          "minLength": 35,
+          "requiresText": false
+        },
+        {
+          "id": "tb-06",
+          "type": "quiz",
+          "question": "选择建议稿中的一条措施，补写责任主体、执行成本和复核周期。",
+          "options": [],
+          "answerType": "open_ended",
+          "hint": "",
+          "reward": 3,
+          "unlockAfter": "phase5-start",
+          "minLength": 40,
+          "requiresText": false
+        }
+      ]
+    },
+    "assets": {
+      "cover": "lessons/lesson_zhizhi_003/assets/placeholders/cover.svg",
+      "chat": "lessons/lesson_zhizhi_003/assets/placeholders/chat-bg.svg",
+      "transition": "lessons/lesson_zhizhi_003/assets/placeholders/phase-transition.svg",
+      "certificate": "lessons/lesson_zhizhi_003/assets/placeholders/certificate.svg",
+      "navigationMap": "lessons/lesson_zhizhi_003/assets/placeholders/navigation-map.svg",
+      "importPlaceholder": "lessons/lesson_zhizhi_003/assets/placeholders/opening.svg",
+      "simulationPlaceholder": "lessons/lesson_zhizhi_003/assets/placeholders/simulation.svg"
+    }
+  },
+  "lesson_zhuhun_001": {
+    "id": "lesson_zhuhun_001",
     "title": "得意之笔·四渡赤水",
     "subtitle": "在中国共产党历史展览馆，用证据完成一场战略推演",
     "series": "铸魂",
@@ -2328,13 +13477,10 @@ export default {
     "duration": "5.5小时（含参观、午休与集合）",
     "grades": "小学中高年级 / 初中 / 高中",
     "groupRule": "5人一组，每人一个推演角色",
+    "level": "",
+    "levelCode": "",
+    "traversalMode": "sequential",
     "coreQuestion": "面对悬殊兵力与不断变化的局势，四渡赤水这支“得意之笔”究竟得意在哪里？",
-    "persona": {
-      "name": "絮絮",
-      "courseRole": "协助展开地图、整理电文的电子参谋员",
-      "character": "亲切、好奇、有少年感，尊重学生的观察和试错过程；本课侧重：冷静、尊重证据，愿意承认信息不足",
-      "tone": "清晰、自然、耐心，偶尔幽默；本课侧重：战略推演中节奏更沉着，不煽情、不催促"
-    },
     "phases": [
       {
         "id": "phase-1",
@@ -2353,7 +13499,8 @@ export default {
           "学生提交初始选择：继续北渡、原地作战、向东转移或暂不决策",
           "AI只追问判断依据，不公布后续四渡路线",
           "教师开启角色领取"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-2",
@@ -2371,7 +13518,8 @@ export default {
           "每条证据必须标记：展项/权威资料/课程材料/个人推测",
           "完成核心任务后获得对应战图图层",
           "时间银行分支任务可并行进行"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-3",
@@ -2390,7 +13538,8 @@ export default {
           "小组提交“目标—约束—方案—风险—预期敌方反应”",
           "系统再开放下一段史实，要求标记原判断保留或修正",
           "通讯兵记录：基层执行者实际能看到多少信息"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-4",
@@ -2408,7 +13557,8 @@ export default {
           "学生回答：看不到全局时，一个人凭什么判断、行动和坚持",
           "AI要求区分史实证据、情境推断与价值判断",
           "小组形成双栏结论：战略层的行动逻辑 / 个体层的行动依据"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-5",
@@ -2426,7 +13576,8 @@ export default {
           "教师补充四渡赤水与遵义会议后独立自主、实事求是的历史意义",
           "回看初始方案，记录至少一次判断变化及触发它的证据",
           "完成迁移题：现实中何时应该坚持，何时应该调整方案"
-        ]
+        ],
+        "tasks": []
       },
       {
         "id": "phase-6",
@@ -2443,7 +13594,8 @@ export default {
           "学生确认哪些内容是史实、推断或价值表达",
           "絮絮告别并提醒：历史判断需要持续回到证据",
           "课程结束标记"
-        ]
+        ],
+        "tasks": []
       }
     ],
     "roleSystem": {
@@ -2457,6 +13609,12 @@ export default {
       "unlockTarget": "璇玑时刻",
       "phaseId": "phase-2"
     },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true,
+      "allowFutureTaskBrowse": false
+    },
     "roles": [
       {
         "id": "map-strategist",
@@ -2468,7 +13626,7 @@ export default {
         "geofence": "中国共产党历史展览馆课程动线内",
         "type": "核心角色",
         "collectionItem": "地形层",
-        "collectionItemImage": "lessons/lesson_zhuhun_002/assets/tokens/layer-terrain.png",
+        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/layer-terrain.png",
         "tasks": [
           {
             "id": "task-1",
@@ -2608,7 +13766,7 @@ export default {
                         "#245c4f",
                         "#1f2937"
                       ],
-                      "backgroundImage": "lessons/lesson_zhuhun_002/assets/tasks/terrain-map.svg",
+                      "backgroundImage": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
                       "prompt": "红色圈水系名称，绿色画相对方向，黑色写照片编号；看不清的地方标“待核”。"
                     }
                   }
@@ -2619,8 +13777,9 @@ export default {
             "evidenceRequirement": "至少2张有效证据照片 + 1条展项来源 + 至少2个正确空间标注",
             "passCondition": "至少2张有效证据照片 + 1条展项来源 + 至少2个正确空间标注",
             "goals": "K1(时空坐标), S1(地图判读), S3(史料实证)",
+            "prerequisites": [],
             "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/terrain-map.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -2795,7 +13954,7 @@ export default {
                         "#245c4f",
                         "#1f2937"
                       ],
-                      "backgroundImage": "lessons/lesson_zhuhun_002/assets/tasks/terrain-map.svg",
+                      "backgroundImage": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
                       "prompt": "红色实线表示展陈可确认，绿色虚线表示推演，黑色叉号标地形阻断。"
                     }
                   }
@@ -2858,8 +14017,9 @@ export default {
             "evidenceRequirement": "完成四类标注 + 至少3条证据说明 + 明确区分展陈信息与个人推断",
             "passCondition": "完成四类标注 + 至少3条证据说明 + 明确区分展陈信息与个人推断",
             "goals": "K2(敌我态势), S1(地图判读), S6(因果表达), C3(证据边界)",
+            "prerequisites": [],
             "toolType": "sketch",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/terrain-map.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -2957,7 +14117,7 @@ export default {
                         "#245c4f",
                         "#1f2937"
                       ],
-                      "backgroundImage": "lessons/lesson_zhuhun_002/assets/tasks/terrain-map.svg",
+                      "backgroundImage": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
                       "prompt": "用红线画主路线、绿线画备用出口、黑圈标渡河点；这是候选方案，请勿写成史实路线。"
                     }
                   }
@@ -3063,8 +14223,9 @@ export default {
             "evidenceRequirement": "提交1条连续路线 + 4项理由完整 + 至少引用2条现场证据",
             "passCondition": "提交1条连续路线 + 4项理由完整 + 至少引用2条现场证据",
             "goals": "K3(四次渡河), S5(决策矩阵), C1(实事求是), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "sketch",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/terrain-map.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/terrain-map.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -3087,8 +14248,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_002/assets/roles/role-card-map-strategist.png",
-        "badgeImage": "lessons/lesson_zhuhun_002/assets/roles/badge-map-strategist.png"
+        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-map-strategist.png",
+        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-map-strategist.png"
       },
       {
         "id": "intelligence-strategist",
@@ -3100,7 +14261,7 @@ export default {
         "geofence": "中国共产党历史展览馆课程动线内",
         "type": "核心角色",
         "collectionItem": "情报层",
-        "collectionItemImage": "lessons/lesson_zhuhun_002/assets/tokens/layer-intelligence.png",
+        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/layer-intelligence.png",
         "tasks": [
           {
             "id": "task-1",
@@ -3283,8 +14444,9 @@ export default {
             "evidenceRequirement": "至少2张有效照片 + 1条展项来源 + 至少3项信息字段；无法确认的字段标记“未知”",
             "passCondition": "至少2张有效照片 + 1条展项来源 + 至少3项信息字段；无法确认的字段标记“未知”",
             "goals": "K4(情报与信息差), S3(史料实证), C3(证据边界)",
+            "prerequisites": [],
             "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/intelligence-matrix.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/intelligence-matrix.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -3568,8 +14730,9 @@ export default {
             "evidenceRequirement": "四个象限均有记录 + 至少5条信息卡 + 每条含来源和可靠度",
             "passCondition": "四个象限均有记录 + 至少5条信息卡 + 每条含来源和可靠度",
             "goals": "K4(情报与信息差), S4(信息不对称分析), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "form",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/intelligence-matrix.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/intelligence-matrix.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -3828,8 +14991,9 @@ export default {
             "evidenceRequirement": "提交2种敌方判断 + 每种至少1条依据 + 1项利用窗口 + 1项失败风险",
             "passCondition": "提交2种敌方判断 + 每种至少1条依据 + 1项利用窗口 + 1项失败风险",
             "goals": "K4(情报与信息差), K6(虚实行动链), S5(决策矩阵), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "form",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/intelligence-matrix.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/intelligence-matrix.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -3852,8 +15016,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_002/assets/roles/role-card-intelligence-strategist.png",
-        "badgeImage": "lessons/lesson_zhuhun_002/assets/roles/badge-intelligence-strategist.png"
+        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-intelligence-strategist.png",
+        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-intelligence-strategist.png"
       },
       {
         "id": "decision-strategist",
@@ -3865,7 +15029,7 @@ export default {
         "geofence": "中国共产党历史展览馆课程动线内",
         "type": "核心角色",
         "collectionItem": "决策层",
-        "collectionItemImage": "lessons/lesson_zhuhun_002/assets/tokens/layer-decision.png",
+        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/layer-decision.png",
         "tasks": [
           {
             "id": "task-1",
@@ -4051,8 +15215,9 @@ export default {
             "evidenceRequirement": "至少1张来源照片 + 2个方案条目 + 每个方案含支持与反对理由",
             "passCondition": "至少1张来源照片 + 2个方案条目 + 每个方案含支持与反对理由",
             "goals": "K5(遵义与苟坝), S3(史料实证), S5(决策矩阵)",
+            "prerequisites": [],
             "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/decision-matrix.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/decision-matrix.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -4353,8 +15518,9 @@ export default {
             "evidenceRequirement": "完成2个方案的五维比较 + 1条少数意见保护机制 + 小组提交阶段选择",
             "passCondition": "完成2个方案的五维比较 + 1条少数意见保护机制 + 小组提交阶段选择",
             "goals": "K5(遵义与苟坝), S5(决策矩阵), C1(实事求是), C4(民主与担当)",
+            "prerequisites": [],
             "toolType": "simulation",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/decision-matrix.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/decision-matrix.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -4446,7 +15612,7 @@ export default {
                     "output": "playback",
                     "config": {
                       "type": "image",
-                      "url": "lessons/lesson_zhuhun_002/assets/tasks/decision-review-card.svg",
+                      "url": "lessons/lesson_zhuhun_001/assets/tasks/decision-review-card.svg",
                       "poster": "",
                       "title": "本轮新增课程材料｜复核与决策机制",
                       "requireCompletion": true,
@@ -4597,8 +15763,9 @@ export default {
             "evidenceRequirement": "三段式复盘完整 + 引用至少2条证据 + 明确1项统一行动安排",
             "passCondition": "三段式复盘完整 + 引用至少2条证据 + 明确1项统一行动安排",
             "goals": "K5(遵义与苟坝), S6(因果表达), C1(实事求是), C4(民主与担当)",
+            "prerequisites": [],
             "toolType": "text",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/decision-matrix.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/decision-matrix.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -4621,8 +15788,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_002/assets/roles/role-card-decision-strategist.png",
-        "badgeImage": "lessons/lesson_zhuhun_002/assets/roles/badge-decision-strategist.png"
+        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-decision-strategist.png",
+        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-decision-strategist.png"
       },
       {
         "id": "feint-strategist",
@@ -4634,7 +15801,7 @@ export default {
         "geofence": "中国共产党历史展览馆课程动线内",
         "type": "核心角色",
         "collectionItem": "行动层",
-        "collectionItemImage": "lessons/lesson_zhuhun_002/assets/tokens/layer-action.png",
+        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/layer-action.png",
         "tasks": [
           {
             "id": "task-1",
@@ -4807,8 +15974,9 @@ export default {
             "evidenceRequirement": "至少1张展项来源照片 + 4张行动卡 + 顺序、地点和来源完整",
             "passCondition": "至少1张展项来源照片 + 4张行动卡 + 顺序、地点和来源完整",
             "goals": "K3(四次渡河), S3(史料实证), S6(因果表达)",
+            "prerequisites": [],
             "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/feint-route.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/feint-route.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -5048,8 +16216,9 @@ export default {
             "evidenceRequirement": "完成三栏虚实图 + 1种替代解释 + 至少2条证据引用",
             "passCondition": "完成三栏虚实图 + 1种替代解释 + 至少2条证据引用",
             "goals": "K4(情报与信息差), K6(虚实行动链), S4(信息不对称分析), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "sketch",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/feint-route.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/feint-route.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -5313,8 +16482,9 @@ export default {
             "evidenceRequirement": "1条四环行动链 + 2种敌方反应分支 + 1项失败风险 + 保留运行记录",
             "passCondition": "1条四环行动链 + 2种敌方反应分支 + 1项失败风险 + 保留运行记录",
             "goals": "K6(虚实行动链), S4(信息不对称分析), S5(决策矩阵), C2(战略思维)",
+            "prerequisites": [],
             "toolType": "simulation",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/feint-route.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/feint-route.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -5337,8 +16507,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_002/assets/roles/role-card-feint-strategist.png",
-        "badgeImage": "lessons/lesson_zhuhun_002/assets/roles/badge-feint-strategist.png"
+        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-feint-strategist.png",
+        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-feint-strategist.png"
       },
       {
         "id": "signaler",
@@ -5350,7 +16520,7 @@ export default {
         "geofence": "中国共产党历史展览馆课程动线内",
         "type": "核心角色",
         "collectionItem": "视角层",
-        "collectionItemImage": "lessons/lesson_zhuhun_002/assets/tokens/layer-perspective.png",
+        "collectionItemImage": "lessons/lesson_zhuhun_001/assets/tokens/layer-perspective.png",
         "tasks": [
           {
             "id": "task-1",
@@ -5552,8 +16722,9 @@ export default {
             "evidenceRequirement": "至少2张有效照片 + 1条展项来源 + “已知/未知”各至少2项",
             "passCondition": "至少2张有效照片 + 1条展项来源 + “已知/未知”各至少2项",
             "goals": "K4(情报与信息差), S3(史料实证), C5(多视角同理)",
+            "prerequisites": [],
             "toolType": "capture",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/limited-message.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/limited-message.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -5642,7 +16813,7 @@ export default {
                     "output": "playback",
                     "config": {
                       "type": "image",
-                      "url": "lessons/lesson_zhuhun_002/assets/tasks/limited-message.svg",
+                      "url": "lessons/lesson_zhuhun_001/assets/tasks/limited-message.svg",
                       "poster": "",
                       "title": "课程推演局部命令卡｜只使用卡片当前可见信息",
                       "requireCompletion": true,
@@ -5799,8 +16970,9 @@ export default {
             "evidenceRequirement": "五项信息完整 + 完成1次同伴复述核对 + 标记至少1项不能自行猜测的内容",
             "passCondition": "五项信息完整 + 完成1次同伴复述核对 + 标记至少1项不能自行猜测的内容",
             "goals": "S4(信息不对称分析), C4(民主与担当), C5(多视角同理)",
+            "prerequisites": [],
             "toolType": "form",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/limited-message.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/limited-message.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -6111,8 +17283,9 @@ export default {
             "evidenceRequirement": "达到字数 + 至少引用2条证据 + 三类边界标记完整 + 无虚构直接引语",
             "passCondition": "达到字数 + 至少引用2条证据 + 三类边界标记完整 + 无虚构直接引语",
             "goals": "S3(史料实证), S6(因果表达), C3(证据边界), C5(多视角同理)",
+            "prerequisites": [],
             "toolType": "audio",
-            "image": "lessons/lesson_zhuhun_002/assets/tasks/limited-message.svg",
+            "image": "lessons/lesson_zhuhun_001/assets/tasks/limited-message.svg",
             "location": {
               "mode": "point",
               "legacyMode": "inherit_role",
@@ -6135,8 +17308,8 @@ export default {
             "advanceMode": "auto_after_validation"
           }
         ],
-        "cardImage": "lessons/lesson_zhuhun_002/assets/roles/role-card-signaler.png",
-        "badgeImage": "lessons/lesson_zhuhun_002/assets/roles/badge-signaler.png"
+        "cardImage": "lessons/lesson_zhuhun_001/assets/roles/role-card-signaler.png",
+        "badgeImage": "lessons/lesson_zhuhun_001/assets/roles/badge-signaler.png"
       }
     ],
     "timeBank": {
@@ -6294,15 +17467,13 @@ export default {
       ]
     },
     "assets": {
-      "cover": "lessons/lesson_zhuhun_002/assets/backgrounds/cover.png",
-      "chat": "lessons/lesson_zhuhun_002/assets/backgrounds/chat-bg.png",
-      "transition": "lessons/lesson_zhuhun_002/assets/backgrounds/phase-transition.png",
-      "certificate": "lessons/lesson_zhuhun_002/assets/backgrounds/certificate-bg.png",
-      "navigationMap": "lessons/lesson_zhuhun_002/assets/maps/museum-navigation.png",
-      "importPlaceholder": "lessons/lesson_zhuhun_002/assets/videos/video-opening.jpg",
-      "simulationPlaceholder": "lessons/lesson_zhuhun_002/assets/videos/video-strategy-table.jpg",
-      "companionIdle": "/assets/video/xuxu-idle.webm",
-      "companionTalk": "/assets/video/xuxu-talk.webm"
+      "cover": "lessons/lesson_zhuhun_001/assets/backgrounds/cover.png",
+      "chat": "lessons/lesson_zhuhun_001/assets/backgrounds/chat-bg.png",
+      "transition": "lessons/lesson_zhuhun_001/assets/backgrounds/phase-transition.png",
+      "certificate": "lessons/lesson_zhuhun_001/assets/backgrounds/certificate-bg.png",
+      "navigationMap": "lessons/lesson_zhuhun_001/assets/maps/museum-navigation.png",
+      "importPlaceholder": "lessons/lesson_zhuhun_001/assets/videos/video-opening.jpg",
+      "simulationPlaceholder": "lessons/lesson_zhuhun_001/assets/videos/video-strategy-table.jpg"
     }
   }
 };

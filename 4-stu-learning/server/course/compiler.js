@@ -1,15 +1,45 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseLesson } from '../../src/engine/lesson-parser.js';
+import { compilePlatformRules } from './platform-rules.js';
+import {
+  loadPlatformDefaults,
+  resolveCompanion,
+  resolveLanguageLevels,
+  resolveLogistics,
+  resolveScaffolding,
+} from './platform-defaults.js';
+import { courseOverrideSection } from '../../src/engine/platform-defaults.js';
+import { assertVoiceHasNoSpoiler, resolveVoice } from './voice.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
+import { buildTaskGraph } from './task-graph.js';
 
 export {
   parseRestrictionDocument,
   resolveRestrictionReferences,
   resolveStepRestrictions,
 } from './restriction-sections.js';
+export { compilePlatformRules } from './platform-rules.js';
+export { toPublic } from './projections.js';
+export { buildTaskGraph, nodeKey, traversalOrder } from './task-graph.js';
 
 const CACHE = new Map();
+
+/**
+ * 课程 md 的内容指纹。按文件名排序后逐个喂 hash，保证与磁盘遍历顺序无关。
+ * 与 platform-defaults.js / platform-rules.js 的 versionFor 同一套写法。
+ */
+function courseVersionFor(files) {
+  const hash = createHash('sha256');
+  for (const filename of Object.keys(files).sort()) {
+    hash.update(filename);
+    hash.update('\0');
+    hash.update(files[filename] ?? '\u0000missing');
+    hash.update('\0');
+  }
+  return `sha256:${hash.digest('hex')}`;
+}
 
 function clean(value = '') {
   const result = String(value).trim();
@@ -179,16 +209,30 @@ function buildToolInstances(role) {
 }
 
 export async function compileCourse({ lessonsRoot, courseId }) {
-  if (CACHE.has(courseId)) return CACHE.get(courseId);
-  const directory = path.resolve(lessonsRoot, courseId);
+  const resolvedLessonsRoot = path.resolve(lessonsRoot);
+  const cacheKey = `${resolvedLessonsRoot}\0${courseId}`;
+  const platformRules = await compilePlatformRules({ lessonsRoot: resolvedLessonsRoot });
+  const platformDefaults = await loadPlatformDefaults({ lessonsRoot: resolvedLessonsRoot });
+  const directory = path.resolve(resolvedLessonsRoot, courseId);
   const files = await collectMarkdown(directory);
   if (!files['course.md']) throw new Error(`课程 ${courseId} 缺少 course.md`);
 
-  const publicLesson = parseLesson({
+  // 缓存按内容失效：课程 md ＋ 平台包三者任一变化就重编译，改 md 不必重启。
+  // 读文件本身很便宜（几十个 md），真正贵的是下面的解析与装配。
+  const courseVersion = courseVersionFor(files);
+  const cached = CACHE.get(cacheKey);
+  if (cached?.platformRules?.version === platformRules.version
+    && cached?.platformDefaults?.version === platformDefaults.version
+    && cached?.courseVersion === courseVersion) return cached;
+
+  const defaultWarnings = [];
+  // 全量解析产物。含 keyData／guide／就地验收标准／能力标签与时间银行答案——
+  // 服务端要用（时间银行判分读 task.answer/verify/radius），下发浏览器前必须过 toPublic。
+  const lesson = parseLesson({
     id: courseId,
     files,
     assetBase: `lessons/${courseId}/assets`,
-  });
+  }, { platformDefaults, onWarning: (warning) => defaultWarnings.push(warning) });
   const roleFiles = Object.fromEntries(
     Object.entries(files).filter(([filename]) => filename.startsWith('roles/')),
   );
@@ -199,7 +243,8 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     Object.entries(files).filter(([filename]) => filename.startsWith('scaffolds/')),
   );
 
-  const roles = publicLesson.roles.map((role) => {
+  const roles = lesson.roles.map((role) => {
+    // v2 就地内容优先；旧布局（guidance/、scaffolds/ 独立目录）作为兼容期回退。
     const guidance = guidanceFiles[`guidance/${role.id}.md`] || '';
     const scaffold = scaffoldFiles[`scaffolds/${role.id}.md`] || '';
     return {
@@ -207,12 +252,34 @@ export async function compileCourse({ lessonsRoot, courseId }) {
       tools: buildToolInstances(role),
       tasks: role.tasks.map((task, taskIndex) => ({
         ...task,
-        guidance: taskSection(guidance, taskIndex, '##') || task.guide,
-        scaffold: taskSection(scaffold, taskIndex, '##'),
+        guidance: task.inlineGuidance || taskSection(guidance, taskIndex, '##') || task.guide,
+        scaffold: task.inlineScaffold || taskSection(scaffold, taskIndex, '##'),
+        acceptance: task.inlineAcceptance || '',
       })),
       sourceMarkdown: roleFiles[`roles/${role.id}.md`] || '',
     };
   });
+
+  // 阶段任务也要经过与角色任务相同的工具实例装配，服务端才能把它们当成一条
+  // 真正可执行的任务轨道。它只留在私有 Course 对象里，公开课程包仍由 toPublic 裁剪。
+  const phaseTracks = Object.fromEntries((lesson.phases || []).map((phase) => {
+    const track = {
+      id: phase.id,
+      scope: 'phase',
+      phaseId: phase.id,
+      name: phase.name || '课程导入',
+      location: phase.location || lesson.venue || '',
+      geofence: '',
+      tasks: (phase.tasks || []).map((task) => ({
+        ...task,
+        guidance: task.inlineGuidance || task.guide || '',
+        scaffold: task.inlineScaffold || '',
+        acceptance: task.inlineAcceptance || '',
+      })),
+    };
+    track.tools = buildToolInstances(track);
+    return [phase.id, track];
+  }));
 
   const phasePrompts = Object.fromEntries(
     Object.entries(files)
@@ -223,20 +290,81 @@ export async function compileCourse({ lessonsRoot, courseId }) {
       ]),
   );
 
+  // 人设侧重是课程私有配置：只在服务端 Prompt 里生效，不经过 parseLesson，因此不会进公开包。
+  const { 侧重: sectionEmphasis = '', ...companionOverrides } = courseOverrideSection(files['course.md'], '人设侧重');
+  const companion = resolveCompanion(
+    platformDefaults.documents.companion,
+    companionOverrides,
+    sectionEmphasis || courseOverrideSection(files['course.md'], '基本信息')['人设侧重'] || '',
+  );
+  defaultWarnings.push(...companion.warnings);
+
+  const voice = resolveVoice(
+    platformDefaults.documents.voice,
+    courseOverrideSection(files['course.md'], '话术覆盖'),
+  );
+  defaultWarnings.push(...voice.warnings);
+
+  const scaffolding = resolveScaffolding(
+    platformDefaults.documents.scaffolding,
+    courseOverrideSection(files['course.md'], '脚手架'),
+  );
+  defaultWarnings.push(...scaffolding.warnings);
+
+  const logistics = resolveLogistics(
+    platformDefaults.documents.logistics,
+    courseOverrideSection(files['course.md'], '组织信息'),
+  );
+  defaultWarnings.push(...logistics.warnings);
+
+  // 任务图：本轮只装配，运行时推进仍走 currentTaskIndex（换成读图是 R3）。
+  // 阶段任务（非角色任务）一并进图，但不带 roleId，所以不进角色遍历。
+  const taskGraph = buildTaskGraph(roles, lesson.phases);
+  defaultWarnings.push(...taskGraph.warnings);
+
   const restrictionMarkdown = files['restrictions.md'] || '';
+  const restrictions = parseRestrictionRows(restrictionMarkdown);
+  assertVoiceHasNoSpoiler(voice.voice, restrictions.flatMap((rule) => rule.protectedTerms || []));
+
+  // 课程内容 ＋ 平台包的联合指纹。会话记录下它就能追溯"当时那一版内容"。
+  const contentVersion = `sha256:${createHash('sha256')
+    .update(courseVersion).update('\0')
+    .update(platformRules.version).update('\0')
+    .update(platformDefaults.version)
+    .digest('hex')}`;
+
   const course = {
     id: courseId,
-    publicLesson,
+    schemaVersion: 1,
+    courseVersion,
+    contentVersion,
+    platformRules,
+    lesson,
+    platformDefaults: {
+      version: platformDefaults.version,
+      missing: platformDefaults.missing,
+      warnings: defaultWarnings,
+      languageLevels: resolveLanguageLevels(
+        platformDefaults.documents.languageLevels,
+        courseOverrideSection(files['course.md'], '学段规范'),
+      ),
+      companion: companion.companion,
+      voice: voice.voice,
+      scaffolding: scaffolding.scaffolding,
+      logistics: logistics.logistics,
+    },
     roles,
+    phaseTracks,
+    taskGraph,
     knowledge: parseKnowledge(files),
-    restrictions: parseRestrictionRows(restrictionMarkdown),
+    restrictions,
     restrictionMarkdown,
     restrictionDocument: parseRestrictionDocument(restrictionMarkdown),
     phasePrompts,
     evaluation: files['evaluation.md'] || '',
     files,
   };
-  CACHE.set(courseId, course);
+  CACHE.set(cacheKey, course);
   return course;
 }
 

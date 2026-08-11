@@ -6,6 +6,16 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputDirectory = resolve(repositoryRoot, 'dist');
 const studentBuildDirectory = resolve(repositoryRoot, '4-stu-learning', 'dist');
 const teacherSourceDirectory = resolve(repositoryRoot, '4-tea-leading');
+const excludedTeacherEntries = new Set([
+  '.git',
+  '.idea',
+  '.vscode',
+  '_temp',
+  '_temp_ref',
+  'coverage',
+  'dist',
+  'node_modules',
+]);
 
 await rm(outputDirectory, { recursive: true, force: true });
 await mkdir(outputDirectory, { recursive: true });
@@ -17,7 +27,10 @@ await cp(studentBuildDirectory, resolve(outputDirectory, 'student'), {
 await cp(teacherSourceDirectory, resolve(outputDirectory, 'teacher'), {
   recursive: true,
   filter(source) {
-    return !source.endsWith('.DS_Store') && !source.endsWith('README.md');
+    const entryName = source.split(/[\\/]/).at(-1);
+    return entryName !== '.DS_Store'
+      && entryName !== 'README.md'
+      && !excludedTeacherEntries.has(entryName);
   },
 });
 

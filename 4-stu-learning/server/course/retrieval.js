@@ -41,6 +41,11 @@ function knowledgeVisible(entry, session, role, course) {
   }
   const phaseNumber = Number.parseInt(rule.match(/phase[_:-]?(\d+)/)?.[1], 10);
   if (phaseNumber) return session.phaseNumber >= phaseNumber;
+  const spacedPhaseNumber = Number.parseInt(rule.match(/phase\s+(\d+)/)?.[1], 10);
+  if (spacedPhaseNumber) return session.phaseNumber >= spacedPhaseNumber;
+  // 开题安全培训属于课程进入即生效的全局安全知识。课程作者仍应逐步改用结构化
+  // phase_N；这条兼容现有课程中的自然语言揭示条件，避免安全知识永久不可见。
+  if (/开题.*(?:安全)?培训时/.test(rule)) return session.phaseNumber >= 1;
   return false;
 }
 
@@ -60,14 +65,69 @@ function tokens(text = '') {
   return values;
 }
 
+function focusedQuery(query = '') {
+  let value = String(query);
+  if (/龙头/.test(value)) value += ' 螭首';
+  if (/嘴|张开/.test(value)) value += ' 排水 螭首';
+  if (/作用|用处/.test(value)) value += ' 功能';
+  return value
+    .toLowerCase()
+    .replace(/六百年/g, '600年')
+    .replace(/不能|不可以|不可/g, '不')
+    .replace(/自己/g, '')
+    .replace(/我想知道|请问|能不能|可不可以|怎么回事|为什么|怎么样|是什么|有什(?:么|麼)|有啥|如何|哪些|哪个|多少|是不是|真的/g, '')
+    .replace(/[这个那个它他们她们呢吗呀啊吧么的了请告诉给讲说一下\s，。！？、；：,.!?;:'"“”‘’~～—_-]/g, '');
+}
+
 function relevance(entry, query) {
-  const haystack = `${entry.topic}${entry.title}${entry.tags.join('')}`.toLowerCase();
-  let score = entry.tags.filter((tag) => query.includes(tag)).length * 8;
-  if (query.includes(entry.topic) || entry.topic.includes(query)) score += 12;
-  const queryTokens = tokens(query);
+  // 标题与标签负责“它谈什么”，正文负责“它能不能回答这一问”。旧实现只看标题标签，
+  // 因此任何含“排水”的问题都会落到列表第一张螭首卡。
+  const haystack = `${entry.topic}${entry.title}${entry.tags.join('')}${entry.content}`.toLowerCase();
+  const focus = focusedQuery(query) || String(query || '').toLowerCase();
+  const expandedQuery = `${String(query || '').toLowerCase()}${focus}`;
+  let score = 0;
+  let specificMatch = false;
+  let exactTagMatches = 0;
+  for (const tag of entry.tags) {
+    if (!expandedQuery.includes(String(tag).toLowerCase())) continue;
+    exactTagMatches += 1;
+    score += 10 + Math.min(String(tag).length, 6);
+    if (String(tag).length >= 3) specificMatch = true;
+  }
+  if (query.includes(entry.topic) || entry.topic.includes(focus)) {
+    score += 16;
+    specificMatch = true;
+  }
+  if (/为什么|怎么|如何|有什(?:么|麼)用|作用|原理|机制/.test(query)
+    && /功能|原理|机制|作用/.test(`${entry.topic}${entry.title}`)) {
+    score += 8;
+  }
+  const queryTokens = tokens(focus);
   const entryTokens = tokens(haystack);
-  for (const token of queryTokens) if (entryTokens.has(token)) score += 1;
-  return score;
+  let overlap = 0;
+  for (const token of queryTokens) {
+    if (!entryTokens.has(token)) continue;
+    overlap += 1;
+    score += 1;
+  }
+  const coverage = queryTokens.size ? overlap / queryTokens.size : 0;
+  const focusCompact = focus.replace(/[^\p{L}\p{N}]+/gu, '');
+  let sharedTrigram = false;
+  for (let index = 0; index <= focusCompact.length - 3; index += 1) {
+    if (haystack.includes(focusCompact.slice(index, index + 3))) {
+      sharedTrigram = true;
+      break;
+    }
+  }
+  return {
+    score,
+    relevant: specificMatch
+      || sharedTrigram
+      || coverage >= 0.34
+      || (exactTagMatches > 0 && overlap >= 2)
+      || (exactTagMatches > 0 && /^(?:那|它|这个|这些)/.test(String(query).trim()))
+      || (queryTokens.size <= 2 && overlap > 0),
+  };
 }
 
 function compactContent(content, query, maxLength = 700) {
@@ -101,13 +161,21 @@ export function retrieveKnowledge({ course, session, role, query, references = '
   );
   return course.knowledge
     .filter((entry) => knowledgeVisible(entry, session, role, course))
-    .map((entry) => ({ ...entry, score: relevance(entry, query) + (referencedIds.has(entry.id) ? 100 : 0) }))
-    .filter((entry) => entry.score > 0)
+    .map((entry) => {
+      const match = relevance(entry, query);
+      const referenced = referencedIds.has(entry.id);
+      return {
+        ...entry,
+        score: match.score + (referenced ? 100 : 0),
+        relevant: referenced || match.relevant,
+      };
+    })
+    .filter((entry) => entry.relevant && entry.score > 0)
     .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
     .slice(0, limit)
     .map((entry) => ({
       ...entry,
-      content: compactContent(redactLockedTerms(entry.content, course, session), query),
+      content: compactContent(redactLockedTerms(entry.content, course, session), focusedQuery(query) || query),
     }));
 }
 

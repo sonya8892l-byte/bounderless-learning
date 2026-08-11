@@ -8,6 +8,14 @@ export class LLMError extends Error {
   }
 }
 
+export class LLMTimeoutError extends LLMError {
+  constructor(cause) {
+    super('模型响应超时。', { cause });
+    this.name = 'LLMTimeoutError';
+    this.code = 'LLM_TIMEOUT';
+  }
+}
+
 function parseArguments(value) {
   if (typeof value === 'object' && value) return value;
   try { return JSON.parse(value || '{}'); } catch { return {}; }
@@ -52,14 +60,35 @@ async function consumeTextStream(response, responses, onTextDelta) {
   let buffer = '';
   let text = '';
   let finalPayload = null;
+  let sawTerminal = false;
+  let terminalError = '';
+  let finishReason = '';
 
   function consumeLine(line) {
     if (!line.startsWith('data:')) return;
     const data = line.slice(5).trim();
-    if (!data || data === '[DONE]') return;
+    if (!data) return;
+    if (data === '[DONE]') {
+      if (!responses) sawTerminal = true;
+      return;
+    }
     let payload;
     try { payload = JSON.parse(data); } catch { return; }
-    if (payload.type === 'response.completed') finalPayload = payload.response;
+    if (payload.type === 'response.completed') {
+      finalPayload = payload.response;
+      sawTerminal = true;
+    }
+    if (['response.incomplete', 'response.failed', 'error'].includes(payload.type)) {
+      finalPayload = payload.response || finalPayload;
+      terminalError = payload.response?.incomplete_details?.reason
+        || payload.error?.message
+        || payload.type;
+      sawTerminal = true;
+    }
+    if (!responses && payload?.choices?.[0]?.finish_reason) {
+      finishReason = payload.choices[0].finish_reason;
+      sawTerminal = true;
+    }
     const delta = responses
       ? (payload.type === 'response.output_text.delta' ? payload.delta : '')
       : payload?.choices?.[0]?.delta?.content;
@@ -78,6 +107,12 @@ async function consumeTextStream(response, responses, onTextDelta) {
     if (done) break;
   }
   if (buffer) consumeLine(buffer);
+  if (!sawTerminal) throw new LLMError('模型流在完整结束前中断。');
+  if (terminalError || finalPayload?.status === 'incomplete' || finishReason === 'length') {
+    throw new LLMError('模型回复未完整生成，请缩短后重试。', {
+      body: terminalError || finalPayload?.incomplete_details || finishReason,
+    });
+  }
   if (!text && finalPayload) text = responseText(finalPayload);
   return { text, toolCalls: [], raw: finalPayload };
 }
@@ -153,11 +188,30 @@ export function createLLM({
     return body;
   }
 
-  async function generate({ instructions, messages, tools = [], images = [], jsonMode = false, maxRetries = 0, onTextDelta }) {
+  async function generate({
+    instructions,
+    messages,
+    tools = [],
+    images = [],
+    jsonMode = false,
+    maxRetries = 0,
+    onTextDelta,
+    signal,
+  }) {
     let lastError;
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      if (signal?.aborted) throw signal.reason || new DOMException('请求已取消。', 'AbortError');
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const abortFromCaller = () => controller.abort(
+        signal.reason || new DOMException('请求已取消。', 'AbortError'),
+      );
+      signal?.addEventListener('abort', abortFromCaller, { once: true });
+      if (signal?.aborted) abortFromCaller();
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort(new DOMException('模型响应超时。', 'TimeoutError'));
+      }, timeoutMs);
       try {
         const streamText = Boolean(onTextDelta && !tools.length && !jsonMode);
         const body = requestBody({ instructions, messages, tools, jsonMode, images });
@@ -177,7 +231,9 @@ export function createLLM({
           ) {
             effectiveReasoningEffort = 'none';
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta });
+            return generate({
+              instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta, signal,
+            });
           }
           if (
             latencyOptionsSupported
@@ -186,21 +242,36 @@ export function createLLM({
           ) {
             latencyOptionsSupported = false;
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta });
+            return generate({
+              instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta, signal,
+            });
           }
           if (streamText && [400, 404, 422].includes(response.status)) {
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries, onTextDelta: undefined });
+            return generate({
+              instructions,
+              messages,
+              tools,
+              images,
+              jsonMode,
+              maxRetries,
+              onTextDelta: undefined,
+              signal,
+            });
           }
           if (tools.length && nativeToolsSupported && [400, 404, 422].includes(response.status) && toolMode === 'auto') {
             nativeToolsSupported = false;
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images, jsonMode, maxRetries: 1 });
+            return generate({
+              instructions, messages, tools, images, jsonMode, maxRetries: 1, signal,
+            });
           }
           if (images.length && visionSupported && [400, 404, 415, 422].includes(response.status) && visionMode === 'auto') {
             visionSupported = false;
             clearTimeout(timer);
-            return generate({ instructions, messages, tools, images: [], jsonMode, maxRetries: 1 });
+            return generate({
+              instructions, messages, tools, images: [], jsonMode, maxRetries: 1, signal,
+            });
           }
           throw new LLMError(`模型接口返回 ${response.status}`, { status: response.status, body: rawText });
         }
@@ -213,6 +284,14 @@ export function createLLM({
           throw new LLMError('模型返回了无法解析的内容。', { body: rawText, cause });
         }
         const message = responses ? null : payload?.choices?.[0]?.message;
+        const responseIncomplete = responses
+          && (payload?.status === 'incomplete' || Boolean(payload?.incomplete_details));
+        const chatFinishReason = responses ? '' : payload?.choices?.[0]?.finish_reason;
+        if (responseIncomplete || chatFinishReason === 'length') {
+          throw new LLMError('模型回复未完整生成，请缩短后重试。', {
+            body: responses ? payload?.incomplete_details : chatFinishReason,
+          });
+        }
         const result = {
           text: responses ? responseText(payload) : message?.content || '',
           toolCalls: responses ? responseTools(payload) : chatTools(message),
@@ -221,12 +300,17 @@ export function createLLM({
         if (streamText && result.text) onTextDelta(result.text);
         return result;
       } catch (error) {
-        lastError = error;
-        const retryable = error.name === 'AbortError' || error.status === 429 || error.status >= 500;
+        if (signal?.aborted) throw signal.reason || error;
+        lastError = timedOut ? new LLMTimeoutError(error) : error;
+        const retryable = lastError instanceof LLMTimeoutError
+          || lastError.name === 'AbortError'
+          || lastError.status === 429
+          || lastError.status >= 500;
         if (!retryable || attempt === maxRetries) break;
         await sleep(500 * (attempt + 1));
       } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', abortFromCaller);
       }
     }
     throw lastError;

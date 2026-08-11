@@ -5,16 +5,35 @@ import { fileURLToPath } from 'node:url';
 import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
 import { findSpoiler, retrieveKnowledge, restrictionUnlocked } from '../server/course/retrieval.js';
 import { parseLesson } from '../src/engine/lesson-parser.js';
+import { PLATFORM_COMPANION } from '../src/engine/platform-config.js';
+import publicLessons from '../src/generated/lesson-public.js';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
+test('公开课程包默认开启双学习视图，只有故宫验收课开放未来关卡浏览', () => {
+  for (const [courseId, course] of Object.entries(publicLessons)) {
+    assert.deepEqual(course.learningView, {
+      enabled: true,
+      default: 'dialogue',
+      allowStudentSwitch: true,
+      allowFutureTaskBrowse: courseId === 'lesson_gewu_001',
+    });
+  }
+});
+
 test('课程编译器生成六角色、知识、限制和工具实例', async () => {
   clearCourseCache();
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   assert.equal(course.roles.length, 6);
   assert.equal(course.knowledge.length, 19);
   assert.equal(course.roles.flatMap((role) => role.tools).length, 18);
   assert.ok(course.restrictions.length >= 9);
+  assert.deepEqual(course.lesson.learningView, {
+    enabled: true,
+    default: 'dialogue',
+    allowStudentSwitch: true,
+    allowFutureTaskBrowse: true,
+  });
   for (const role of course.roles) {
     for (const task of role.tasks) {
       assert.ok(task.location && typeof task.location.mode === 'string');
@@ -26,7 +45,7 @@ test('课程编译器生成六角色、知识、限制和工具实例', async ()
 });
 
 test('未解锁知识会脱敏，完成任务后才可出现精确值', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const role = course.roles.find((item) => item.id === 'dragon-counter');
   const session = { roleId: role.id, phaseNumber: 2, completedTaskIds: [], events: [] };
   const locked = retrieveKnowledge({ course, role, session, query: '螭首数量' });
@@ -39,7 +58,7 @@ test('未解锁知识会脱敏，完成任务后才可出现精确值', async ()
 });
 
 test('模拟结果必须在事件完成后解锁，真相反例不会对普通角色公开', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const simulation = course.restrictions.find((item) => item.name === '暴雨模拟结果');
   assert.equal(restrictionUnlocked(simulation, { phaseNumber: 4, completedTaskIds: [], events: [] }), false);
   assert.equal(restrictionUnlocked(simulation, { phaseNumber: 4, completedTaskIds: [], events: ['xuanji-simulation:completed'] }), true);
@@ -54,9 +73,15 @@ test('模拟结果必须在事件完成后解锁，真相反例不会对普通�
 });
 
 test('第二门课程可从课程配置解析新角色、工具和角色解锁条件', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_002' });
-  assert.deepEqual(course.publicLesson.mapCenter, [116.3953, 40.0071]);
-  assert.equal(course.publicLesson.venue, '中国共产党历史展览馆');
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  assert.deepEqual(course.lesson.mapCenter, [116.3953, 40.0071]);
+  assert.equal(course.lesson.venue, '中国共产党历史展览馆');
+  assert.deepEqual(course.lesson.learningView, {
+    enabled: true,
+    default: 'dialogue',
+    allowStudentSwitch: true,
+    allowFutureTaskBrowse: false,
+  });
   assert.equal(course.roles.length, 5);
   assert.equal(course.knowledge.length, 21);
   assert.equal(course.roles.flatMap((role) => role.tools).length, 15);
@@ -102,9 +127,12 @@ test('第二门课程可从课程配置解析新角色、工具和角色解锁�
     assert.equal(publicToolConfig.includes(privateKey), false, `公开工具配置包含 ${privateKey}`);
   }
   assert.equal(course.phasePrompts['phase-4'].includes('课程情境材料｜史料出处待核'), true);
-  assert.equal(course.publicLesson.persona.name, '絮絮');
-  assert.equal(course.publicLesson.assets.companionIdle, '/assets/video/xuxu-idle.webm');
-  assert.equal(course.publicLesson.assets.companionTalk, '/assets/video/xuxu-talk.webm');
+  assert.equal(Object.hasOwn(course.lesson, 'persona'), false);
+  assert.equal(PLATFORM_COMPANION.posterAsset, '/assets/images/xuxu-avatar.png');
+  assert.equal(PLATFORM_COMPANION.idleAsset, '/assets/video/xuxu-idle.webm');
+  assert.equal(PLATFORM_COMPANION.talkAsset, '/assets/video/xuxu-talk.webm');
+  assert.equal(Object.hasOwn(course.lesson.assets, 'companionIdle'), false);
+  assert.equal(Object.hasOwn(course.lesson.assets, 'companionTalk'), false);
   assert.equal(course.roles.every((role) => role.tasks.every((task) => task.location.legacyMode === 'inherit_role')), true);
   assert.equal(course.roles.every((role) => role.tasks.every((task) => ['point', 'geofence'].includes(task.location.mode))), true);
 
@@ -135,7 +163,7 @@ test('第二门课程可从课程配置解析新角色、工具和角色解锁�
 });
 
 test('普通问候不会误命中课程知识', async () => {
-  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const role = course.roles[0];
   const entries = retrieveKnowledge({
     course,
@@ -144,6 +172,52 @@ test('普通问候不会误命中课程知识', async () => {
     query: '你好',
   });
   assert.deepEqual(entries, []);
+});
+
+test('知识检索按问题相关性选卡，不用共同大词硬塞无关首条', async () => {
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const dragon = course.roles.find((item) => item.id === 'dragon-counter');
+  const dragonSession = {
+    roleId: dragon.id,
+    phaseNumber: 2,
+    completedTaskIds: ['dragon-counter:task-1'],
+    events: [],
+  };
+
+  const mechanism = retrieveKnowledge({
+    course,
+    role: dragon,
+    session: dragonSession,
+    query: '螭首有什么用？为什么它能排水？',
+  });
+  assert.equal(mechanism[0]?.id, 'K-03', '具体机制应优先命中工程功能，而非列表第一条基本信息');
+
+  const unavailableBoundary = retrieveKnowledge({
+    course,
+    role: dragon,
+    session: dragonSession,
+    query: '故宫排水有什么局限？',
+  });
+  assert.deepEqual(unavailableBoundary, [], '局限卡尚未解锁时不能拿普通排水卡冒充答案');
+});
+
+test('已解锁的追问能命中对应来源卡', async () => {
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const truth = course.roles.find((item) => item.id === 'truth-seeker');
+  const entries = retrieveKnowledge({
+    course,
+    role: truth,
+    session: {
+      roleId: truth.id,
+      phaseNumber: 2,
+      completedTaskIds: ['truth-seeker:task-2'],
+      events: [],
+    },
+    query: '六百年真的从来没有积水吗？',
+  });
+
+  assert.equal(entries[0]?.id, 'K-19');
+  assert.match(entries[0]?.source || '', /新闻报道|维修记录/);
 });
 
 test('浏览器课程包不包含课程答案和受保护值', async () => {
@@ -163,6 +237,8 @@ test('浏览器课程包不包含课程答案和受保护值', async () => {
     '1935年3月21日至22日',
     '放弃进攻打鼓新场以及成立新的三人军事指挥小组',
     '失散小战士追赶队伍',
+    '禁止建议学生攀爬、跳跃、靠近水域边缘',
+    '不主动询问学生的家庭信息、联系方式、健康状况',
   ]) {
     assert.equal(source.includes(forbidden), false, `公开课程包包含 ${forbidden}`);
   }
@@ -178,8 +254,6 @@ test('结构化角色阶段小步保留稳定ID、位置和完成方式', () => 
 > 测试
 ## 基本信息
 - 主题模板：zhuhun
-## 智能体人设
-- 本课身份：观察伙伴
 ## 学生端角色体系
 - collectionName：观察员
 - itemName：身份
@@ -234,4 +308,28 @@ test('结构化角色阶段小步保留稳定ID、位置和完成方式', () => 
   assert.equal(roleStage.steps[1].completionMode, 'tool_result');
   assert.equal(roleStage.steps[1].location.mode, 'inherit');
   assert.equal(roleStage.steps[1].evidenceRequirement, '照片包含起点和终点');
+});
+
+test('课程学习视图拒绝未知默认值', () => {
+  assert.throws(() => parseLesson({
+    id: 'lesson_bad_view',
+    assetBase: 'lessons/lesson_bad_view/assets',
+    files: {
+      'course.md': `# 测试课程
+## 基本信息
+- 主题模板：gewu
+## 学生端角色体系
+- collectionName：观察员
+- itemName：身份
+- collectionItemName：线索
+- collectionPanelName：线索板
+- unlockTarget：总结
+- 任务阶段：phase-2
+## 学习视图
+- enabled：true
+- default：unknown`,
+      'phases.md': '',
+      'time-bank.md': '',
+    },
+  }), /学习视图 default 无效/);
 });

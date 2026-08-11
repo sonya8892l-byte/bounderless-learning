@@ -2,13 +2,17 @@ import { fitTeacherMap, mountTeacherMap, resizeTeacherMap } from './amap-service
 
 const API = '/api';
 const TEACHER_ID = 'teacher-demo';
-const HIGH_IMPACT = new Set(['pause', 'advance_phase', 'end_run', 'approve_evidence', 'skip_step', 'emergency_rally']);
+const configuredRealtimeMode = String(globalThis.__TEACHER_APP_CONFIG__?.REALTIME_MODE || 'polling').trim().toLowerCase();
+const REALTIME_MODE = configuredRealtimeMode === 'websocket' ? 'websocket' : 'polling';
+// advance_task 真会推进学生进度（解开 `推进方式：teacher` 的任务），与 skip_step 同级需要二次确认。
+const HIGH_IMPACT = new Set(['pause', 'advance_phase', 'end_run', 'approve_evidence', 'skip_step', 'advance_task', 'emergency_rally']);
 const ACTION_LABELS = {
   send_notice: '发送教师提示', push_knowledge: '推送知识卡', add_time: '追加时间',
   remove_time: '减少时间', pause: '暂停课程', resume: '恢复课程', release_roles: '开启角色领取',
   lock_roles: '锁定角色', start_phase: '开始课程阶段', advance_phase: '推进至下一阶段',
   end_run: '结束场次', confirm_arrival: '确认到达', reject_evidence: '退回证据',
-  approve_evidence: '人工通过', skip_step: '跳过可选小步', set_scaffold: '调整提示等级',
+  approve_evidence: '人工通过', skip_step: '跳过可选小步', advance_task: '确认进入下一任务',
+  set_scaffold: '调整提示等级',
   switch_alternative: '切换替代任务', emergency_rally: '紧急集合',
 };
 
@@ -16,6 +20,8 @@ const state = {
   runs: [], runId: null, snapshot: null, review: null, activeView: 'live',
   pendingCommand: null, socket: null, pollTimer: null, refreshTimer: null, toastTimer: null,
   mapUnavailable: false, locationListVisible: false,
+  connected: true, eventSequence: 0, commandLedger: {},
+  lastReceiptAnnouncement: '',
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -36,6 +42,230 @@ function relativeTime(value) {
   if (seconds < 60) return `${seconds}秒前`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟前`;
   return `${Math.floor(seconds / 3600)}小时前`;
+}
+
+function commandLedgerStorageKey(runId = state.runId) {
+  return `teacher-command-ledger:${runId}`;
+}
+
+function loadCommandLedger(runId = state.runId) {
+  if (!runId) return {};
+  try {
+    const raw = localStorage.getItem(commandLedgerStorageKey(runId));
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCommandLedger() {
+  if (!state.runId) return;
+  localStorage.setItem(commandLedgerStorageKey(), JSON.stringify(state.commandLedger));
+}
+
+function targetScopeLabel(target = {}) {
+  if (target.scope === 'all') return '全班';
+  if (target.scope === 'group') return '所选小组';
+  if (target.scope === 'role') return '所选角色';
+  if (target.scope === 'participant') return '所选学生';
+  return '目标对象';
+}
+
+function upsertCommandRecord(record = {}) {
+  if (!record.id) return;
+  const existing = state.commandLedger[record.id] || { receipts: {} };
+  state.commandLedger[record.id] = {
+    ...existing,
+    ...record,
+    receipts: { ...existing.receipts, ...(record.receipts || {}) },
+    total: Math.max(Number(existing.total || 0), Number(record.total || 0), Object.keys({ ...existing.receipts, ...(record.receipts || {}) }).length),
+  };
+  saveCommandLedger();
+}
+
+function upsertCommandFromSendResult(result = {}) {
+  const receipts = {};
+  for (const receipt of result.receipts || []) receipts[receipt.participantId] = receipt.status;
+  upsertCommandRecord({
+    id: result.id,
+    action: result.action,
+    target: result.target,
+    reason: result.reason,
+    createdAt: result.createdAt,
+    total: (result.receipts || []).length,
+    receipts,
+  });
+}
+
+function applyCommandEvent(event = {}) {
+  if (event.type === 'teacher.command.accepted') {
+    upsertCommandRecord({
+      id: event.data?.commandId,
+      action: event.data?.action,
+      createdAt: event.createdAt,
+      receipts: {},
+    });
+    return;
+  }
+  if (event.type !== 'teacher.command.receipt') return;
+  const { commandId, participantId, status } = event.data || {};
+  if (!commandId || !participantId) return;
+  const existing = state.commandLedger[commandId] || { id: commandId, receipts: {}, createdAt: event.createdAt };
+  existing.receipts[participantId] = status;
+  existing.total = Math.max(Number(existing.total || 0), Object.keys(existing.receipts).length);
+  upsertCommandRecord(existing);
+}
+
+function summarizeReceipts(command = {}, connected = state.connected && navigator.onLine) {
+  if (!connected) {
+    return { text: '状态未知', tone: 'unknown', parts: [{ key: 'unknown', text: '状态未知' }] };
+  }
+  const statuses = Object.values(command.receipts || {});
+  const total = Math.max(Number(command.total || 0), statuses.length);
+  const delivered = statuses.filter((status) => status === 'delivered' || status === 'confirmed').length;
+  const confirmed = statuses.filter((status) => status === 'confirmed').length;
+  const failed = statuses.filter((status) => status === 'failed').length;
+  const acceptedOnly = total > 0 && statuses.length === total && statuses.every((status) => status === 'accepted');
+  const parts = [];
+  if (acceptedOnly) parts.push({ key: 'accepted', text: `已下发 ${total}/${total}` });
+  else {
+    if (delivered > 0 || total > 0) parts.push({ key: 'delivered', text: `已送达 ${delivered}/${total || '?'}` });
+    if (confirmed > 0) parts.push({ key: 'confirmed', text: `已确认 ${confirmed}/${total || '?'}` });
+    if (failed > 0) parts.push({ key: 'failed', text: `失败 ${failed}` });
+    if (!parts.length && total > 0) parts.push({ key: 'accepted', text: `已下发 ${total}/${total}` });
+  }
+  return {
+    text: parts.map((part) => part.text).join(' · ') || '等待回执',
+    tone: failed > 0 ? 'failed' : (confirmed > 0 ? 'confirmed' : (delivered > 0 ? 'delivered' : 'accepted')),
+    parts,
+    total,
+    delivered,
+    confirmed,
+    failed,
+  };
+}
+
+async function syncCommandEvents() {
+  if (!state.runId) return;
+  try {
+    const events = await request(`/teacher/runs/${encodeURIComponent(state.runId)}/events?after=${state.eventSequence}`);
+    for (const event of events) {
+      applyCommandEvent(event);
+      state.eventSequence = Math.max(state.eventSequence, Number(event.sequence || 0));
+    }
+    if (state.snapshot?.sequence) {
+      state.eventSequence = Math.max(state.eventSequence, Number(state.snapshot.sequence));
+    }
+  } catch {
+    // 快照缓存仍可显示；回执状态在离线时不误报失败。
+  }
+}
+
+async function hydrateCommandLedgerFromReview() {
+  if (!state.runId) return;
+  try {
+    const review = await request(`/teacher/runs/${encodeURIComponent(state.runId)}/review`);
+    for (const item of review.interventions || []) {
+      upsertCommandRecord({
+        id: item.commandId,
+        action: item.action,
+        target: item.target,
+        reason: item.reason,
+        createdAt: item.createdAt,
+      });
+    }
+  } catch {
+    // 干预时间线不可用时不阻塞主界面。
+  }
+}
+
+function ensureCommandFeedMount() {
+  if ($('#commandFeed')) return;
+  const mount = document.createElement('section');
+  mount.id = 'commandFeed';
+  mount.className = 'command-feed';
+  mount.setAttribute('aria-labelledby', 'commandFeedTitle');
+  mount.innerHTML = `
+    <div class="section-heading command-feed__heading">
+      <div>
+        <p class="eyebrow">指令回执</p>
+        <h2 id="commandFeedTitle">教师指令送达</h2>
+      </div>
+      <button class="outline-button command-feed__controls" type="button" data-action="open-controls">打开遥控器</button>
+    </div>
+    <div class="command-feed__list" id="commandFeedList" role="list"></div>
+    <p class="command-feed__announcer visually-hidden" id="commandReceiptAnnouncer" aria-live="polite" aria-atomic="true"></p>`;
+  $('#statusStrip')?.insertAdjacentElement('afterend', mount);
+}
+
+function renderCommandFeed() {
+  ensureCommandFeedMount();
+  const list = $('#commandFeedList');
+  if (!list) return;
+  const commands = Object.values(state.commandLedger)
+    .sort((a, b) => Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0))
+    .slice(0, 8);
+  if (!commands.length) {
+    list.innerHTML = '<div class="command-feed__empty">还没有发出指令。发送后这里会显示已下发、已送达与已确认状态。</div>';
+    return;
+  }
+  list.innerHTML = commands.map((command) => {
+    const summary = summarizeReceipts(command);
+    const highImpact = HIGH_IMPACT.has(command.action);
+    const label = ACTION_LABELS[command.action] || command.action;
+    return `<button class="command-card ${highImpact ? 'is-high-impact' : ''}" type="button" role="listitem" data-action="open-command" data-command-id="${escapeHtml(command.id)}" data-receipt-tone="${summary.tone}">
+      <div class="command-card__top">
+        <div>
+          ${highImpact ? '<span class="command-impact-tag">高影响</span>' : ''}
+          <strong>${escapeHtml(label)}</strong>
+          <span class="command-card__meta">${escapeHtml(targetScopeLabel(command.target))} · ${relativeTime(command.createdAt)}</span>
+        </div>
+        <span class="receipt-badge receipt-badge--${summary.tone}" aria-hidden="true">${summary.parts.map((part) => part.text).join(' · ') || '状态未知'}</span>
+      </div>
+      <p class="command-card__summary">${escapeHtml(summary.text)}</p>
+    </button>`;
+  }).join('');
+  const latest = commands[0];
+  const latestSummary = summarizeReceipts(latest);
+  const announcement = `${ACTION_LABELS[latest.action] || latest.action} ${latestSummary.text}`;
+  if (announcement !== state.lastReceiptAnnouncement) {
+    state.lastReceiptAnnouncement = announcement;
+    const announcer = $('#commandReceiptAnnouncer');
+    if (announcer) announcer.textContent = announcement;
+  }
+}
+
+function renderCommandDrawer(commandId) {
+  const command = state.commandLedger[commandId];
+  if (!command) return;
+  const summary = summarizeReceipts(command);
+  const label = ACTION_LABELS[command.action] || command.action;
+  const highImpact = HIGH_IMPACT.has(command.action);
+  const participants = state.snapshot?.participants || [];
+  const rows = Object.entries(command.receipts || {}).map(([participantId, status]) => {
+    const participant = participants.find((item) => item.id === participantId);
+    const statusLabel = {
+      accepted: '已下发',
+      delivered: '已送达',
+      confirmed: '已确认',
+      failed: '失败',
+    }[status] || status;
+    return `<div class="receipt-row"><strong>${escapeHtml(participant?.name || participantId)}</strong><span class="receipt-badge receipt-badge--${status}">${statusLabel}</span></div>`;
+  }).join('');
+  openDrawer({
+    eyebrow: highImpact ? '高影响指令' : '指令详情',
+    title: label,
+    html: `
+      <div class="detail-block">
+        <p>${escapeHtml(command.reason || '未记录操作原因')}</p>
+        <div class="metric-grid">
+          <div class="metric"><span>作用范围</span><strong>${escapeHtml(targetScopeLabel(command.target))}</strong></div>
+          <div class="metric"><span>发送时间</span><strong>${relativeTime(command.createdAt)}</strong></div>
+        </div>
+        <p class="command-detail-summary receipt-badge receipt-badge--${summary.tone}">${escapeHtml(summary.text)}</p>
+      </div>
+      <div class="detail-block"><h3>回执明细</h3><div class="receipt-list">${rows || '<p class="command-feed__empty">还没有学生端回执；服务端已接单时会显示为已下发。</p>'}</div></div>`,
+  });
 }
 
 async function request(path, options = {}) {
@@ -95,6 +325,9 @@ async function bootstrap() {
       state.runs = [demo];
     }
     state.runId = state.runs.find((run) => run.status === 'active')?.id || state.runs[0].id;
+    state.commandLedger = loadCommandLedger(state.runId);
+    state.eventSequence = 0;
+    await hydrateCommandLedgerFromReview();
     await refreshSnapshot();
     connectRealtime();
     state.pollTimer = window.setInterval(refreshSnapshot, 5000);
@@ -109,8 +342,9 @@ async function refreshSnapshot() {
   try {
     state.snapshot = await request(`/teacher/runs/${encodeURIComponent(state.runId)}/snapshot`);
     state.runs = await request('/teacher/runs');
+    await syncCommandEvents();
     renderAll();
-    setConnection(true);
+    if (REALTIME_MODE === 'polling') setConnection(true);
     localStorage.setItem(`teacher-snapshot:${state.runId}`, JSON.stringify(state.snapshot));
   } catch (error) {
     const cached = localStorage.getItem(`teacher-snapshot:${state.runId}`);
@@ -127,20 +361,29 @@ function scheduleRefresh() {
 
 function connectRealtime() {
   state.socket?.close();
-  if (!state.runId) return;
+  state.socket = null;
+  if (REALTIME_MODE !== 'websocket' || !state.runId) return;
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(`${protocol}//${location.host}${API}/teacher/runs/${encodeURIComponent(state.runId)}/live`);
   state.socket = socket;
-  socket.addEventListener('open', () => setConnection(true));
+  socket.addEventListener('open', () => {
+    if (state.socket === socket) setConnection(true);
+  });
   socket.addEventListener('message', scheduleRefresh);
-  socket.addEventListener('close', () => setConnection(false));
-  socket.addEventListener('error', () => setConnection(false));
+  socket.addEventListener('close', () => {
+    if (state.socket === socket) setConnection(false);
+  });
+  socket.addEventListener('error', () => {
+    if (state.socket === socket) setConnection(false);
+  });
 }
 
 function setConnection(connected) {
-  $('#offlineBanner').hidden = connected && navigator.onLine;
-  $('#syncButton').classList.toggle('is-stale', !connected);
-  $('#syncLabel').textContent = connected ? '刚刚同步' : '数据可能过期';
+  state.connected = connected && navigator.onLine;
+  $('#offlineBanner').hidden = state.connected;
+  $('#syncButton').classList.toggle('is-stale', !state.connected);
+  $('#syncLabel').textContent = state.connected ? '刚刚同步' : '数据可能过期';
+  renderCommandFeed();
 }
 
 function renderAll() {
@@ -148,6 +391,7 @@ function renderAll() {
   renderRuns();
   renderLive();
   renderAlerts();
+  renderCommandFeed();
 }
 
 function renderRuns() {
@@ -273,6 +517,7 @@ function renderStudentDrawer(participantId) {
       ${actionButton('confirm_arrival', '确认到达', '教师人工确认位置', { scope: 'participant', id: participant.id })}
       ${actionButton('approve_evidence', '人工通过', '保留AI原判断记录', { scope: 'participant', id: participant.id }, {}, true)}
       ${actionButton('reject_evidence', '退回补做', '要求补充证据', { scope: 'participant', id: participant.id })}
+      ${actionButton('advance_task', '进入下一任务', '解开需教师确认的任务', { scope: 'participant', id: participant.id }, {}, true)}
     </div></div>` });
 }
 
@@ -347,9 +592,11 @@ async function confirmCommand() {
         idempotencyKey: crypto.randomUUID(),
       }),
     });
-    const delivered = result.receipts.filter((receipt) => receipt.status === 'delivered').length;
-    showToast(`服务端已接受 · ${delivered}/${result.receipts.length}人已送达`);
+    upsertCommandFromSendResult(result);
+    const summary = summarizeReceipts(state.commandLedger[result.id]);
+    showToast(`服务端已接单 · ${summary.text}`);
     closeLayer();
+    renderCommandFeed();
     await refreshSnapshot();
   } catch (error) {
     showToast(error.status === 409 ? '场次已更新，请确认最新状态后重试。' : error.message);
@@ -379,18 +626,69 @@ async function loadReview() {
     $('#reviewContent').innerHTML = `
       <section class="review-hero"><p class="eyebrow">${escapeHtml(run.className)}</p><h2>${escapeHtml(run.courseTitle)}</h2><p>位置与用时只用于运行复盘，不自动转换为学习评价。</p><div class="review-stats"><div class="review-stat"><span>平均进度</span><strong>${summary.averageProgress}%</strong></div><div class="review-stat"><span>教师干预</span><strong>${state.review.interventions.length}</strong></div><div class="review-stat"><span>学习小组</span><strong>${groups.length}</strong></div></div></section>
       <section class="review-section"><h2>小组完成情况</h2><div class="group-list">${groups.map((group, index) => `<button class="group-card" type="button" data-action="open-group" data-group-id="${group.id}"><span class="group-index">${index + 1}</span><span class="group-copy"><strong>${escapeHtml(group.name)}</strong><p>${group.members.reduce((sum, item) => sum + item.learning.evidenceCount, 0)}项证据</p></span><span class="group-meta"><strong>${group.progress}%</strong><span>已完成</span></span></button>`).join('')}</div></section>
-      <section class="review-section"><h2>干预时间线</h2><div class="timeline">${state.review.interventions.slice().reverse().map((item) => `<div class="timeline-item"><strong>${escapeHtml(ACTION_LABELS[item.action] || item.action)}</strong><p>${escapeHtml(item.reason)} · ${relativeTime(item.createdAt)}</p></div>`).join('') || '<p>本场次还没有教师干预记录。</p>'}</div></section>`;
+      <section class="review-section"><h2>干预时间线</h2><div class="timeline">${state.review.interventions.slice().reverse().map((item) => {
+        const command = state.commandLedger[item.commandId];
+        const summary = command ? summarizeReceipts(command) : null;
+        return `<div class="timeline-item"><strong>${escapeHtml(ACTION_LABELS[item.action] || item.action)}</strong><p>${escapeHtml(item.reason)} · ${relativeTime(item.createdAt)}${summary ? ` · ${escapeHtml(summary.text)}` : ''}</p></div>`;
+      }).join('') || '<p>本场次还没有教师干预记录。</p>'}</div></section>`;
   } catch (error) { showToast(error.message); }
+}
+
+// 课程列表接口挂掉时的兜底课单（与原硬编码两门一致），
+// 保证"新建开课"永远可用——开课是主流程，不能跟着列表接口一起死。
+const FALLBACK_COURSES = [
+  { id: 'lesson_gewu_001', title: '故宫600年不积水的秘密', series: '格物' },
+  { id: 'lesson_zhuhun_001', title: '四渡赤水研学课程', series: '铸魂' },
+];
+
+// 下拉显示格式：{series}系列 · {title}（courseId）。
+// Sonya 要求直接看到 courseId，方便复制到学生端 ?lesson= 参数换课。
+// series 本身已带"系列"二字时不再重复拼接；没有 series 就省略前缀。
+function courseOptionLabel(course) {
+  const seriesPrefix = course.series
+    ? `${course.series}${course.series.includes('系列') ? '' : '系列'} · `
+    : '';
+  return `${seriesPrefix}${course.title}（${course.id}）`;
+}
+
+function renderCourseOptions(courses) {
+  return courses
+    .map((course) => `<option value="${escapeHtml(course.id)}">${escapeHtml(courseOptionLabel(course))}</option>`)
+    .join('');
+}
+
+async function loadCourseOptions() {
+  const select = $('#newCourseId');
+  if (!select) return;
+  try {
+    const { courses } = await request('/api/courses');
+    if (!Array.isArray(courses) || !courses.length) throw new Error('empty course list');
+    if ($('#newCourseId') !== select) return;
+    select.innerHTML = renderCourseOptions(courses);
+  } catch {
+    // 接口失败就留在兜底两门课上，并在抽屉里给一行可见提示。
+    const notice = $('#newCourseNotice');
+    if (notice) {
+      notice.textContent = '课程列表服务暂不可用，当前显示内置课程。';
+      notice.hidden = false;
+    }
+  }
 }
 
 function newRunDrawer() {
   openDrawer({ eyebrow: '课前准备', title: '创建课程场次', html: `
     <form id="newRunForm">
       <div class="detail-block"><label class="field-label" for="newClassName">班级名称</label><input id="newClassName" name="className" required value="五年级研学班" /></div>
-      <div class="detail-block"><label class="field-label" for="newCourseId">已发布课程</label><select id="newCourseId" name="courseId"><option value="lesson_zhuhun_001">故宫600年不积水的秘密</option><option value="lesson_zhuhun_002">四渡赤水研学课程</option></select></div>
+      <div class="detail-block">
+        <label class="field-label" for="newCourseId">已发布课程</label>
+        <select id="newCourseId" name="courseId">${renderCourseOptions(FALLBACK_COURSES)}</select>
+        <p id="newCourseNotice" class="field-hint" hidden></p>
+      </div>
       <div class="detail-block"><label class="field-label" for="newGroupCount">学习小组</label><select id="newGroupCount" name="groupCount"><option value="5">5组 · 30人</option><option value="4">4组 · 24人</option><option value="3">3组 · 18人</option></select></div>
       <button class="primary-button" type="submit">创建并进入课前检查</button>
     </form>` });
+  // 抽屉先用兜底课单秒开，随后异步换成服务端枚举的完整课程列表。
+  loadCourseOptions();
 }
 
 async function createRun(form) {
@@ -428,8 +726,16 @@ document.addEventListener('click', async (event) => {
     showToast('设备状态已重新检测。'); await refreshSnapshot(); return renderPreflight(target.dataset.runId);
   }
   if (action === 'switch-run') {
-    state.runId = target.dataset.runId; closeLayer(); await refreshSnapshot(); connectRealtime(); return showView('live');
+    state.runId = target.dataset.runId;
+    state.commandLedger = loadCommandLedger(state.runId);
+    state.eventSequence = 0;
+    closeLayer();
+    await hydrateCommandLedgerFromReview();
+    await refreshSnapshot();
+    connectRealtime();
+    return showView('live');
   }
+  if (action === 'open-command') return renderCommandDrawer(target.dataset.commandId);
   if (action === 'prepare-rally') return prepareCommand({ action: 'emergency_rally', target: { scope: 'all' }, payload: { rallyPoint: '太和门广场', message: '请立即停止任务，前往太和门广场集合。' } });
   if (action === 'prepare-command') return prepareCommand({ action: target.dataset.command, target: JSON.parse(target.dataset.target), payload: JSON.parse(target.dataset.payload || '{}') });
   if (action === 'confirm-command') return confirmCommand();
@@ -465,7 +771,10 @@ document.addEventListener('change', async (event) => {
   } catch (error) { showToast(error.message); }
 });
 
-window.addEventListener('online', () => { setConnection(true); refreshSnapshot(); });
+window.addEventListener('online', () => {
+  refreshSnapshot();
+  if (REALTIME_MODE === 'websocket') connectRealtime();
+});
 window.addEventListener('offline', () => setConnection(false));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSnapshot(); });
 

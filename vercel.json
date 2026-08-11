@@ -2,7 +2,21 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "trailingSlash": true,
+  "fluid": true,
+  "functions": {
+    "api/serverless.mjs": {
+      "maxDuration": 90,
+      "supportsCancellation": true,
+      "includeFiles": "6-lessons/**/*.md",
+      "excludeFiles": "{dist,4-tea-leading,0-temp-asset,.vercel,supabase,6-lessons/{_backups,**/assets},4-stu-learning/{dist,public,uploads,test*,screen*,doc*,script*,.runtime,.env*,*.html,vite.config.js,.gitignore,src/{c*,g*,p*,s*,t*,*.*}},**/.DS_Store}/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/serverless?path=:path*"
+    }
+  ],
   "redirects": [
     {
       "source": "/",

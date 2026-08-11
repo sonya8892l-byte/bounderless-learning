@@ -3,8 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "description": "故宫研学学生端与教师端统一部署入口",
+  "workspaces": [
+    "4-stu-learning"
+  ],
   "scripts": {
-    "build": "npm --prefix 4-stu-learning ci --include=dev && npm --prefix 4-stu-learning run build && node scripts/build-vercel-site.mjs"
+    "test": "npm test --workspace 4-stu-learning && node --test tests/*.test.mjs",
+    "build:student": "VITE_API_BASE_URL=/api npm run build --workspace 4-stu-learning",
+    "build": "npm run build:student && node scripts/build-vercel-site.mjs",
+    "vercel:build": "npx --yes vercel@58.4.4 build --yes --standalone --no-color",
+    "verify:vercel-output": "node scripts/verify-vercel-output.mjs",
+    "verify": "npm test && npm run build"
   },
   "engines": {
     "node": ">=20.19.0"

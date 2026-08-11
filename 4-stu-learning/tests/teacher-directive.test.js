@@ -1,0 +1,139 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
+import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
+import { createAgentService } from '../server/agent/service.js';
+
+const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
+
+// 教师指令落到会话状态：教师运行时（server/runtime/）只持有场次记录，碰不到 agent 会话，
+// 所以 advance_phase / set_scaffold 要靠学生端回发 teacher_directive 才能真正生效。
+// 这一组锁的就是"指令发出去之后会话真的变了"，防止回到"教师以为生效、实际没生效"。
+
+function silentLlm() {
+  let calls = 0;
+  return {
+    capabilities: () => ({ nativeTools: true, vision: true }),
+    get calls() { return calls; },
+    generate: async () => {
+      calls += 1;
+      return { text: '不该被调用。', toolCalls: [] };
+    },
+  };
+}
+
+function memoryStore() {
+  const sessions = new Map();
+  return {
+    async create(values) {
+      const session = {
+        id: 'ses_directive', courseId: values.courseId, roleId: values.roleId,
+        studentId: values.studentId, groupId: values.groupId, phaseId: values.phaseId,
+        phaseNumber: 2, currentTaskIndex: 0, scaffoldLevel: 0, completedTaskIds: [],
+        events: [], messages: [], pendingTools: {}, handledRequestIds: [],
+        timeBalance: 0, timeEarned: 0, completedBankTaskIds: [], gifts: [], taskState: {},
+        learningState: { evidenceIds: [], completedStepIds: [] },
+        locationState: null,
+        onboardingState: { arrivedConfirmed: false, readyConfirmed: false, completed: false },
+        conversationState: {},
+        dialogueState: { pendingQuestion: null, confirmedSlots: {}, recentAssistantFingerprints: [] },
+        learnerState: { grade: '初中', scaffoldLevel: 0 },
+        environmentState: {},
+      };
+      sessions.set(session.id, session);
+      return session;
+    },
+    async get(id) { return sessions.get(id) || null; },
+    async save(session) { sessions.set(session.id, session); return session; },
+  };
+}
+
+async function directiveAgent() {
+  clearCourseCache();
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const llm = silentLlm();
+  const store = memoryStore();
+  const agent = createAgentService({ llm, store, getCourse: async () => course });
+  const { session } = await agent.createSession({
+    courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1',
+  });
+  return { agent, course, llm, session, store };
+}
+
+function sendDirective(agent, session, data, requestId) {
+  return agent.runTurn({
+    sessionId: session.id,
+    requestId,
+    input: { type: 'lifecycle_event', event: 'teacher_directive', data },
+  });
+}
+
+test('教师推进阶段写回 session.phaseId，阶段提示词随之换成新阶段那一份', async () => {
+  const { agent, course, session, store } = await directiveAgent();
+
+  // 建会话时的阶段来自 course.md 的「任务阶段」，gewu_001 写的是 phase-2。
+  assert.equal(session.phaseId, 'phase-2');
+  const before = course.phasePrompts['phase-2'];
+  const after = course.phasePrompts['phase-3'];
+  assert.ok(before && after && before !== after, '前置条件：两个阶段各有一份不同的提示词');
+
+  await sendDirective(agent, session, { phaseId: 'phase-3', teacherCommandId: 'cmd-1' }, 'd-1');
+
+  const saved = await store.get(session.id);
+  assert.equal(saved.phaseId, 'phase-3', '会话阶段必须真的变了，否则六份提示词只有一份能生效');
+  assert.equal(saved.phaseNumber, 3, 'phaseNumber 要跟着走，位置门禁与阶段判断都读它');
+});
+
+test('教师调档写回 session.scaffoldLevel，且可升可降', async () => {
+  const { agent, session, store } = await directiveAgent();
+  assert.equal(session.scaffoldLevel, 0);
+
+  await sendDirective(agent, session, { scaffoldLevel: 3, teacherCommandId: 'cmd-2' }, 'd-2');
+  assert.equal((await store.get(session.id)).scaffoldLevel, 3);
+
+  // tutorPolicy 的自动升档只升不降；老师看得到学生真实状态，必须能调回去。
+  await sendDirective(agent, session, { scaffoldLevel: 1, teacherCommandId: 'cmd-3' }, 'd-3');
+  assert.equal((await store.get(session.id)).scaffoldLevel, 1, '教师调档必须可降');
+});
+
+test('档位越界被夹到平台上限与 0，不写进非法值', async () => {
+  const { agent, course, session, store } = await directiveAgent();
+  const maxLevel = Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4);
+
+  await sendDirective(agent, session, { scaffoldLevel: 99 }, 'd-4');
+  assert.equal((await store.get(session.id)).scaffoldLevel, maxLevel);
+
+  await sendDirective(agent, session, { scaffoldLevel: -5 }, 'd-5');
+  assert.equal((await store.get(session.id)).scaffoldLevel, 0);
+});
+
+test('课程里不存在的阶段被忽略，不让「阶段规则」段凭空变空', async () => {
+  const { agent, session, store } = await directiveAgent();
+
+  await sendDirective(agent, session, { phaseId: 'phase-99' }, 'd-6');
+
+  const saved = await store.get(session.id);
+  assert.equal(saved.phaseId, 'phase-2', '写错阶段号时保持原样：宁可不改，也不要让课程作者写的阶段约束消失');
+  assert.equal(saved.phaseNumber, 2);
+});
+
+test('教师指令不让絮絮开口，也不调模型', async () => {
+  const { agent, llm, session } = await directiveAgent();
+
+  const result = await sendDirective(agent, session, { phaseId: 'phase-3' }, 'd-7');
+
+  assert.equal(llm.calls, 0, '状态变更不需要模型参与');
+  const spoke = result.events.find((event) => event.type === 'assistant.completed');
+  assert.equal(spoke, undefined, '学生端已经自己弹了提示，模型再说一句就是重复');
+});
+
+test('一条指令可以同时改阶段与档位', async () => {
+  const { agent, session, store } = await directiveAgent();
+
+  await sendDirective(agent, session, { phaseId: 'phase-4', scaffoldLevel: 2 }, 'd-8');
+
+  const saved = await store.get(session.id);
+  assert.equal(saved.phaseId, 'phase-4');
+  assert.equal(saved.phaseNumber, 4);
+  assert.equal(saved.scaffoldLevel, 2);
+});

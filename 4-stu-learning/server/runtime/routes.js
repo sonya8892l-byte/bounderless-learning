@@ -15,21 +15,29 @@ const commandSchema = z.object({
     'release_roles', 'lock_roles', 'start_phase', 'advance_phase', 'end_run',
     'confirm_arrival', 'reject_evidence', 'approve_evidence', 'skip_step',
     'set_scaffold', 'switch_alternative', 'emergency_rally',
+    // 解开 `推进方式：teacher` 的任务。真会推进学生进度，因此在教师端标高影响。
+    'advance_task',
   ]),
   target: targetSchema,
   payload: z.record(z.unknown()).default({}),
   reason: z.string().min(2).max(500),
 });
 
-export async function registerRuntimeRoutes(app, { runtime }) {
+export async function registerRuntimeRoutes(app, {
+  runtime,
+  enableWebsocket = true,
+  enableDemo = true,
+}) {
   const authorize = (request) => runtime.assertTeacherAccess(request.params.runId, actor(request));
-  app.post('/api/teacher/demo', async () => runtime.ensureDemoRun());
+  if (enableDemo) {
+    app.post('/api/teacher/demo', async () => runtime.ensureDemoRun());
+  }
 
   app.get('/api/teacher/runs', async (request) => runtime.listRuns(actor(request)));
 
   app.post('/api/teacher/runs', async (request, reply) => {
     const body = z.object({
-      courseId: z.string().default('lesson_zhuhun_001'),
+      courseId: z.string().default('lesson_gewu_001'),
       className: z.string().min(1).max(100),
       courseVersion: z.string().default('1.0.0'),
       groupCount: z.coerce.number().int().min(1).max(10).default(5),
@@ -88,13 +96,15 @@ export async function registerRuntimeRoutes(app, { runtime }) {
     return result;
   });
 
-  app.get('/api/teacher/runs/:runId/live', { websocket: true, preValidation: authorize }, (socket, request) => {
-    const runId = request.params.runId;
-    const unsubscribe = runtime.realtime.subscribe(runId, socket);
-    socket.send(JSON.stringify({ type: 'realtime.ready', runId, createdAt: new Date().toISOString() }));
-    socket.on('close', unsubscribe);
-    socket.on('error', unsubscribe);
-  });
+  if (enableWebsocket) {
+    app.get('/api/teacher/runs/:runId/live', { websocket: true, preValidation: authorize }, (socket, request) => {
+      const runId = request.params.runId;
+      const unsubscribe = runtime.realtime.subscribe(runId, socket);
+      socket.send(JSON.stringify({ type: 'realtime.ready', runId, createdAt: new Date().toISOString() }));
+      socket.on('close', unsubscribe);
+      socket.on('error', unsubscribe);
+    });
+  }
 
   app.post('/api/student/help', async (request, reply) => {
     const body = z.object({
@@ -112,6 +122,8 @@ export async function registerRuntimeRoutes(app, { runtime }) {
       online: z.boolean().optional(), network: z.enum(['ready', 'weak', 'offline']).optional(),
       progress: z.coerce.number().min(0).max(100).optional(), currentTask: z.string().max(200).optional(),
       idleSeconds: z.coerce.number().min(0).optional(),
+      // 学生累计提交的证据条数。教师端的「已提交 N 项证据」读它，此前是演示种子。
+      evidenceCount: z.coerce.number().int().min(0).optional(),
       location: z.object({
         lng: z.coerce.number().optional(), lat: z.coerce.number().optional(), accuracyMeters: z.coerce.number().min(0).optional(),
         insideFence: z.boolean().nullable().optional(), permission: z.enum(['unknown', 'granted', 'denied', 'unavailable']).optional(),

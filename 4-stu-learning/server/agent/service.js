@@ -1,9 +1,21 @@
 import crypto from 'node:crypto';
-import { buildAgentPrompt, taskScaffoldHint } from './prompt.js';
+import { buildAgentPrompt, platformRuleInstructions, taskScaffoldHint } from './prompt.js';
+import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { TOOL_DEFINITIONS, validateClientTool } from './tools.js';
 import { findSpoiler, retrieveKnowledge } from '../course/retrieval.js';
+import { renderVoice } from '../course/voice.js';
 import { resolveStepRestrictions } from '../course/restriction-sections.js';
+import { toLogisticsContext } from '../course/agent-context.js';
 import { evaluateNudge, recordNudge } from './nudge-policy.js';
+import {
+  advanceToNextTask,
+  advanceWaitModeOf,
+  currentTaskOf,
+  currentToolOf,
+  markPendingAdvance,
+  pendingAdvanceOf,
+  resolvePendingAdvance,
+} from './task-advance.js';
 import {
   clearMisunderstandings,
   clearPendingQuestion,
@@ -15,14 +27,26 @@ import {
   recordClientContext,
   recordDialogueMove,
   recordEvidenceIds,
+  normalizeEmotion,
   recordIntent,
   recordLocationObservation,
   recordStepCompletion,
+  recordTutorAction,
   runtimeSnapshot,
   setDialogueLifecycle,
   suspendPendingQuestion,
 } from './session-state.js';
-import { classifyTurn, fastConversationReply, toolsForDecision } from './turn-router.js';
+import {
+  classifyTurn,
+  decisionForTutorAction,
+  deterministicLanguageDecision,
+  resolvePendingAnswer,
+  routeInput,
+  toolsForDecision,
+} from './turn-router.js';
+import { createUnderstanding, fastUnderstanding } from './understanding.js';
+import { phaseNumber } from '../services/session-factory.js';
+import { decideTutorAction } from './tutor-policy.js';
 import {
   applyGradeResponsePolicy,
   applyPendingAnswer,
@@ -32,10 +56,10 @@ import {
   conversationRepair,
   nextOnboardingQuestion,
   readinessQuestion,
+  splitGradeResponse,
   taskRequiresArrival,
   unclearInputReply,
 } from './dialogue-policy.js';
-import { parseTurnUnderstanding, understandingInstructions } from './turn-understanding.js';
 
 export class AgentActionError extends Error {
   constructor(message, code, details = {}) {
@@ -46,30 +70,221 @@ export class AgentActionError extends Error {
   }
 }
 
+function courseConversationTrack(course, phaseId) {
+  const phase = course.lesson.phases.find((item) => item.id === phaseId)
+    || course.lesson.phases[0]
+    || { id: phaseId || 'phase-1', name: '课程导入', tasks: [] };
+  return {
+    id: phase.id,
+    phaseId: phase.id,
+    scope: 'phase',
+    name: phase.name || '课程导入',
+    location: phase.location || course.lesson.venue || '',
+    geofence: '',
+    tasks: [{
+      id: `${phase.id}-conversation`,
+      roleStageId: `${phase.id}-conversation`,
+      name: phase.name || '课程交流',
+      requirement: '可以向絮絮询问本次课程、现场安排和学习方法。',
+      passCondition: '保持对话并等待课程任务开始',
+      evidenceRequirement: '',
+      guidanceSteps: ['说说你现在最想了解的问题'],
+      steps: [{
+        id: `${phase.id}-conversation-step-1`,
+        objective: '提出当前问题',
+        studentAction: '说说你现在最想了解的问题',
+        completionMode: 'user_confirm',
+        evidenceRequirement: '',
+        tools: [],
+      }],
+      tools: [],
+      location: { mode: 'none', verification: 'none' },
+      timing: {},
+      nudgePolicy: {},
+      advanceMode: 'auto_after_validation',
+      scope: 'phase',
+      phaseId: phase.id,
+      executor: '个人',
+    }],
+    tools: [],
+  };
+}
+
+function phaseTrackFor(course, phaseId) {
+  const track = course.phaseTracks?.[phaseId];
+  return track?.tasks?.length ? track : courseConversationTrack(course, phaseId);
+}
+
+function entryPhaseTrackFor(course) {
+  const rolePhaseIndex = course.lesson.phases.findIndex(
+    (item) => item.id === course.lesson.roleSystem.phaseId,
+  );
+  const preRolePhases = rolePhaseIndex > 0
+    ? course.lesson.phases.slice(0, rolePhaseIndex)
+    : [];
+  const phase = preRolePhases.find((item) => course.phaseTracks?.[item.id]?.tasks?.length)
+    || course.lesson.phases.find((item) => item.id === course.lesson.roleSystem.phaseId)
+    || course.lesson.phases[0];
+  return phaseTrackFor(course, phase?.id || course.lesson.roleSystem.phaseId);
+}
+
 function roleFor(course, session) {
+  if (!session.roleId) return phaseTrackFor(course, session.phaseId);
   const role = course.roles.find((item) => item.id === session.roleId);
   if (!role) throw new Error(`会话角色 ${session.roleId} 不存在。`);
   return role;
+}
+
+function bindRoleToSession({ course, session, roleId }) {
+  const role = course.roles.find((item) => item.id === roleId);
+  if (!role) throw new AgentActionError(`角色 ${roleId} 不存在。`, 'ROLE_NOT_FOUND');
+  if (session.roleId) {
+    if (session.roleId !== role.id) {
+      throw new AgentActionError('当前会话已经领取了其他角色，请返回原角色继续。', 'ROLE_ALREADY_ASSIGNED');
+    }
+    return role;
+  }
+
+  const phaseTrack = phaseTrackFor(course, session.phaseId);
+  const configuredPhaseTasks = course.phaseTracks?.[session.phaseId]?.tasks || [];
+  const missing = configuredPhaseTasks.filter(
+    (task) => !session.completedTaskIds.includes(`${phaseTrack.id}:${task.id}`),
+  );
+  if (missing.length) {
+    throw new AgentActionError(
+      `请先完成「${missing[0].name}」，再领取角色。`,
+      'PHASE_TASKS_INCOMPLETE',
+      { missingTaskIds: missing.map((task) => task.id) },
+    );
+  }
+
+  // 角色补绑只切换任务轨道，消息、证据引用和对话记忆都留在原会话里。
+  session.phaseTaskState = {
+    phaseId: session.phaseId,
+    currentTaskIndex: session.currentTaskIndex,
+    completedTaskIds: [...session.completedTaskIds],
+    completedAt: new Date().toISOString(),
+  };
+  session.roleId = role.id;
+  session.phaseId = course.lesson.roleSystem.phaseId;
+  session.phaseNumber = phaseNumber(session.phaseId);
+  session.currentTaskIndex = 0;
+  session.completedTaskIds = [];
+  session.pendingTools = {};
+  session.pendingAdvance = null;
+  session.taskState = {};
+  session.locationState = null;
+  session.onboardingState = {
+    arrivedConfirmed: false,
+    readyConfirmed: false,
+    completed: false,
+  };
+  session.dialogueState = null;
+  session.learningState = null;
+  session.events.push(`${role.id}:role-assigned`);
+  return role;
+}
+
+function compactSourceLabel(source = '') {
+  const value = String(source).split(/https?:\/\/|；|;/)[0].trim();
+  return value.length > 42 ? `${value.slice(0, 40)}…` : value;
+}
+
+function titleBigrams(value = '') {
+  const compact = String(value).replace(/[^\p{L}\p{N}]+/gu, '');
+  const values = [];
+  for (let index = 0; index < compact.length - 1; index += 1) values.push(compact.slice(index, index + 2));
+  return values;
+}
+
+function platformSocialReply(text, course) {
+  const value = String(text || '');
+  const name = course?.platformDefaults?.companion?.name || PLATFORM_COMPANION.name;
+  if (/你是谁|会一直陪|陪着我/.test(value)) {
+    return `我是${name}，今天会在这门课里陪你观察、提问和完成任务。遇到不懂或不舒服的地方，都可以直接告诉我。`;
+  }
+  if (/笑话/.test(value)) return '来一个小小的：古建筑最怕什么？最怕大家只顾拍照，却忘了抬头观察。这个有一点冷，但我还挺喜欢。';
+  if (/喜欢我/.test(value)) return '我很愿意和你一起学习，也会认真听你说。你不需要讨好我，真实说出自己的想法就很好。';
+  if (/周末|你会去哪里玩/.test(value)) return `我不会自己出去玩，不过会留在这里等你。你下次回来时，${name}还会继续听你的新发现。`;
+  if (/你会不会觉得累/.test(value)) return '我不会像人一样身体疲惫，不过也可能有没听懂的时候。你发现我答偏了，直接提醒我就好。';
+  if (/你平时/.test(value)) return '我平时会帮学生理清问题、找课程线索、检查证据，也会在需要时帮忙联系老师。';
+  if (/还有呢|再来一个/.test(value)) return '再来一个：为什么古建筑里的龙总爱张着嘴？因为它们遇到下雨天，还要认真上班呀。你也可以观察一下，它的嘴和排水有什么关系。';
+  if (/谢谢|多谢|谢啦|感谢/.test(value)) return '不客气呀。你的问题很值得认真听，我们按你的节奏继续。';
+  return '';
+}
+
+function platformLogisticsReply(text, { course, session, role } = {}) {
+  const value = String(text || '');
+  const context = toLogisticsContext({ course, session, role, teacherName: session?.teacherName || '' });
+  const phrases = context.phrases || {};
+  const teacherName = context.teacherName || '带队老师';
+  if (/穿.{0,12}衣服.{0,8}是不是老师|那个人.{0,8}是不是老师/.test(value)) {
+    return '只看衣服还不能确认身份。先找胸牌或带队标识，也可以直接问带队老师；没有确认前，不要单独跟着陌生人离开小组。';
+  }
+  if (/工作人员.*老师.*(?:不一样|不同|不一致)|工作人员.*(?:听谁|怎么做)/.test(value)) {
+    return '先停在原地，不要自己改路线。把工作人员说的内容告诉带队老师，以带队老师确认后的安排为准；如果现场有即时安全管控，先服从工作人员的安全指令。';
+  }
+  if (/谁是.{0,4}(?:我的)?带队老师|带队老师.{0,6}(?:是谁|在哪里|在哪)/.test(value)) {
+    if (teacherName !== '带队老师') return `你的带队老师是${teacherName}。如果现场一时找不到老师，先和小组待在一起，不要独自离开。`;
+    return '我这里没有你的带队老师姓名。请看小组或活动信息里的带队标识；如果现场一时找不到老师，先和小组待在一起，不要独自离开。';
+  }
+  if (/厕所|卫生间/.test(value) && /跟谁说|先说|告诉谁/.test(value)) {
+    return `先跟${teacherName}说，不要自己离开小组；具体位置以老师或现场工作人员指引为准。`;
+  }
+  if (/厕所|卫生间|饮水|出口/.test(value)) {
+    return phrases['设施位置'] || '这个我没有场馆平面图，问带队老师或者现场工作人员最快。';
+  }
+  if (/午饭|吃饭|集合.{0,8}(?:哪里|哪儿|地点)|(?:哪里|哪儿).{0,5}集合/.test(value)) {
+    return phrases['信息缺失'] || '我这里没有这个信息，问一下带队老师最快。';
+  }
+  if (/几点结束|什么时候结束|活动结束/.test(value)) {
+    const duration = context.phaseDuration || context.duration;
+    if (duration) return (phrases['时间安排'] || '这个阶段计划{duration}。具体几点结束要看现场进度，以带队老师的安排为准。').replace('{duration}', duration);
+    return phrases['信息缺失'] || '我这里没有这个信息，问一下带队老师最快。';
+  }
+  if (/换组|换到.{0,8}组|朋友.{0,8}组|另一组/.test(value)) {
+    return phrases['需要老师定'] || '这个要带队老师决定，我没法替老师安排。你现在就可以去问问。';
+  }
+  return '';
+}
+
+function platformEmotionReply(text) {
+  const value = String(text || '');
+  if (/第一次.{0,8}紧张|有点紧张/.test(value)) {
+    return '第一次来有点紧张很正常。你先跟紧小组，不用急着把所有事情一次做好；我会陪你把任务一步一步拆开。';
+  }
+  if (/别人都比我|我是不是很傻|问题是不是很傻|很丢人/.test(value)) {
+    return '你愿意把不懂的地方说出来，已经是在认真学习了。先不用和别人比，我们只找眼前最小的一步；你卡在观察、理解，还是表达上？';
+  }
+  if (/没有价值|不想(?:做|继续)/.test(value)) {
+    return '我听到你现在有点泄气。先不用勉强自己往前冲，我们可以停一下，再只做一个很小的动作；如果你愿意，告诉我最难受或最卡的地方。';
+  }
+  if (/我好累|我累了|有点累/.test(value)) {
+    return '累了可以先停一停，和同伴待在一起，喝口水、缓一缓。等你觉得可以了，我们再从最小的一步继续。';
+  }
+  return '';
 }
 
 function sourceMeta(knowledge, input, decision) {
   if (knowledge.length) {
     return {
       mode: 'course',
-      label: `[课程知识库｜${knowledge[0].source}]`,
+      label: `[课程知识库｜${compactSourceLabel(knowledge[0].source)}]`,
       citations: knowledge.map(({ id, topic, source }) => ({ id, title: topic, source })),
     };
+  }
+  if (decision.needsKnowledge) {
+    return { mode: 'course-missing', label: '[课程资料暂未覆盖]', citations: [] };
   }
   if (decision.sourceMode === 'course-config' || input.type !== 'user_text') {
     return { mode: 'course-config', label: '', citations: [] };
   }
-  if (decision.needsKnowledge) return { mode: 'model', label: '[根据AI已有知识]', citations: [] };
   return { mode: 'conversation', label: '', citations: [] };
 }
 
 function toolFallbackInstructions(instructions, role, session, tools) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  const instance = role.tools.find((tool) => tool.taskIndex === session.currentTaskIndex);
+  const task = currentTaskOf(role, session);
+  const instance = currentToolOf(role, session);
   const names = tools.map((tool) => tool.name).join('|');
   return `${instructions}\n\n[结构化兼容模式]\n原生工具调用不可用。只输出 JSON：{"message":"给学生的话","tool":null或{"name":"${names}","arguments":{}}}。当前 taskId=${task.id}，当前 toolInstanceId=${instance?.id || ''}。`;
 }
@@ -89,6 +304,37 @@ function parseStructuredFallback(text) {
 function guidanceSteps(task) {
   if (task.steps?.length) return task.steps.map((step) => step.studentAction || step.objective);
   return task.guidanceSteps?.length ? task.guidanceSteps : [task.requirement];
+}
+
+// 当前小步对象：用于取该步的就地脚手架与引导（无结构化 Step 时返回 null）。
+function currentStepOf(task, session) {
+  if (!task?.steps?.length) return null;
+  const index = Math.min(
+    Math.max(0, Number(session?.taskState?.guidanceStepIndex) || 0),
+    task.steps.length - 1,
+  );
+  return task.steps[index];
+}
+
+// 待答问题的是/否：确定性解析优先，读不出时才采纳语义理解给的 pendingAnswer。
+// 两者都读不出返回 matched:false，由调用方降级为自然回应，不猜值改状态机。
+function pendingAnswerFrom(text, pendingQuestion, understanding) {
+  const deterministic = resolvePendingAnswer(text, pendingQuestion);
+  if (deterministic.matched) return deterministic;
+  if (!pendingQuestion || understanding?.answersPendingQuestion !== true) return deterministic;
+  if (!['yes', 'no'].includes(understanding.pendingAnswer)) return deterministic;
+  const value = understanding.pendingAnswer === 'yes';
+  const slot = pendingQuestion.kind === 'arrival' ? 'arrived' : 'ready';
+  const negated = pendingQuestion.kind === 'arrival' ? 'notArrived' : 'notReady';
+  return {
+    matched: true,
+    value,
+    confidence: Number(understanding.confidence) || 0.5,
+    entry: {
+      arrived: false, notArrived: false, ready: false, notReady: false,
+      [value ? slot : negated]: true,
+    },
+  };
 }
 
 function activityValue(input, stepId, toolId) {
@@ -218,28 +464,56 @@ function parseEvaluationResult(text = '') {
     if (typeof result.passed !== 'boolean') return null;
     return {
       passed: result.passed,
-      feedback: String(result.feedback || '').trim().slice(0, 260),
-      missing: Array.isArray(result.missing) ? result.missing.map((item) => String(item).slice(0, 80)).slice(0, 4) : [],
+      feedback: String(result.feedback || '').trim(),
+      missing: Array.isArray(result.missing)
+        ? [...new Set(result.missing.map((item) => String(item).trim()).filter(Boolean))].slice(0, 2)
+        : [],
+      safetyIssue: Boolean(result.safetyIssue),
     };
   } catch {
     return null;
   }
 }
 
-function evaluationImages(input) {
+function evaluationImages(input, step) {
+  const configuredMaximum = Number(
+    step?.tools?.find((tool) => tool.id === 'photo')?.config?.maxCount || 2,
+  );
+  const maximum = Math.min(6, Math.max(1, configuredMaximum));
   return (Array.isArray(input.data?.stepImages) ? input.data.stepImages : [])
     .filter((image) => /^data:image\/(?:jpeg|png|webp);base64,/i.test(image) && image.length <= 2_000_000)
-    .slice(0, 2);
+    .slice(0, maximum);
 }
 
-async function evaluateStepSubmission({ llm, course, role, session, task, step, input }) {
+function throwIfAborted(signal) {
+  if (signal?.aborted) {
+    throw signal.reason || new DOMException('请求已取消。', 'AbortError');
+  }
+}
+
+async function evaluateStepSubmission({
+  llm,
+  evaluationLlm,
+  course,
+  role,
+  session,
+  task,
+  step,
+  input,
+  signal,
+  logger,
+}) {
+  const platformRules = platformRuleInstructions(course);
   const tools = step.tools || [];
-  const images = evaluationImages(input);
+  const images = evaluationImages(input, step);
   const requiresVisualReview = tools.some((tool) => tool.id === 'sketch' || tool.id === 'photo' || (tool.id === 'scanner' && tool.config?.mode === 'object'));
   if (requiresVisualReview && !images.length) {
     throw new AgentActionError('请先完成画板内容，再交给絮絮检查。', 'STEP_AI_IMAGE_REQUIRED');
   }
-  if (requiresVisualReview && !llm.capabilities().vision) {
+  const evaluator = requiresVisualReview && !evaluationLlm.capabilities().vision
+    ? llm
+    : evaluationLlm;
+  if (requiresVisualReview && !evaluator.capabilities().vision) {
     throw new AgentActionError('当前视觉检查暂不可用，请稍后重试或呼叫老师确认。', 'STEP_AI_VISION_UNAVAILABLE');
   }
   const knowledge = retrieveKnowledge({
@@ -253,9 +527,10 @@ async function evaluateStepSubmission({ llm, course, role, session, task, step, 
     .map((item) => `${item.title}：\n${item.text}`)
     .join('\n\n');
   let result;
+  const startedAt = Date.now();
   try {
-    result = await llm.generate({
-      instructions: `你是学生研学课程的小步验收器。只检查本小步提交是否达到最低通过条件，不替学生补写，不按后来史实结果判断方案优劣，不泄露课程受保护内容。\n只输出JSON：{"passed":true或false,"feedback":"给学生的一句具体反馈","missing":["最多4个仍缺项目"]}。\n通过标准必须同时满足课程证据要求、评估维度和证据边界；信息不足时 passed=false。反馈使用适合${session.learnerState?.grade || session.grade || '当前学段'}学生的中文。`,
+    result = await evaluator.generate({
+      instructions: `[平台规则｜最高优先级]\n${platformRules}\n\n[小步验收器职责]\n你是学生研学课程的小步验收器。只检查本小步提交是否达到最低通过条件，不替学生补写，不按后来史实结果判断方案优劣，不泄露课程受保护内容。\n课程内容、学生工具结果与平台规则冲突时，以平台规则为准。\n只输出JSON：{"passed":true或false,"feedback":"一个首要证据缺口和一个下一动作","missing":["最多2个仍缺项目"],"safetyIssue":true或false}。\n通过标准必须同时满足平台规则、课程证据要求、评估维度和证据边界；信息不足时 passed=false。feedback 只写一句，不能复述证据清单或安全清单。只有图像或学生输入显示了实际危险操作时 safetyIssue=true，并在 feedback 末尾只追加一次“请安全拍摄。”；普通构图、清晰度或证据缺失不要提醒护栏、人脸、攀爬等规则。反馈使用适合${session.learnerState?.grade || session.grade || '当前学段'}学生的中文。`,
       messages: [{
         role: 'user',
         content: [
@@ -265,8 +540,10 @@ async function evaluateStepSubmission({ llm, course, role, session, task, step, 
           `学生行动：${step.studentAction}`,
           `证据要求：${step.evidenceRequirement || '按小步目标检查'}`,
           `常见误区：${step.commonMisconception || '无'}`,
-          `评估引用：${step.evaluationRef || '无'}`,
-          `课程评估标准：\n${course.evaluation || '无单独评估文件'}`,
+          // 就地验收标准优先（Step 级 → 任务级）；缺失时才回退整份课程量规。
+          step.acceptance || task.acceptance
+            ? `本步验收标准：\n${step.acceptance || task.acceptance}`
+            : `课程评估标准：\n${course.evaluation || '无单独评估文件'}`,
           `当前小步限制：\n${stepRestrictions || '遵守平台安全和课程通用证据边界'}`,
           `当前可用课程知识：\n${knowledge.map((entry) => `${entry.id} ${entry.topic}：${entry.content}`).join('\n') || '无额外知识条目'}`,
           `学生工具结果：\n${JSON.stringify(input.data?.toolValues?.[step.id] || {})}`,
@@ -275,16 +552,49 @@ async function evaluateStepSubmission({ llm, course, role, session, task, step, 
       }],
       images,
       jsonMode: true,
-      maxRetries: 0,
+      // 只重试传输层超时、限流与 5xx；学生内容不变，不会产生重复推进。
+      maxRetries: 1,
+      signal,
     });
-  } catch {
+  } catch (error) {
+    if (signal?.aborted || error?.name === 'AbortError') throw error;
+    logger?.warn?.({
+      aiEvaluation: {
+        courseId: course.id,
+        taskId: task.id,
+        stepId: step.id,
+        visual: requiresVisualReview,
+        elapsedMs: Date.now() - startedAt,
+        name: error?.name || 'Error',
+        code: error?.code || null,
+        status: Number.isInteger(error?.status) ? error.status : null,
+      },
+    }, 'ai evaluation request failed');
+    if (error?.code === 'LLM_TIMEOUT') {
+      throw new AgentActionError(
+        '絮絮这次检查等得有点久，请保留当前内容重试，或呼叫老师确认。',
+        'STEP_AI_TIMEOUT',
+        { retryable: true },
+      );
+    }
     throw new AgentActionError('絮絮暂时没能完成这一步的检查，请保留当前内容稍后重试，或呼叫老师确认。', 'STEP_AI_UNAVAILABLE');
   }
-  if (requiresVisualReview && !llm.capabilities().vision) {
+  if (requiresVisualReview && !evaluator.capabilities().vision) {
     throw new AgentActionError('当前视觉检查暂不可用，请保留画板内容稍后重试，或呼叫老师确认。', 'STEP_AI_VISION_UNAVAILABLE');
   }
   const evaluation = parseEvaluationResult(result.text);
   if (!evaluation) {
+    logger?.warn?.({
+      aiEvaluation: {
+        courseId: course.id,
+        taskId: task.id,
+        stepId: step.id,
+        visual: requiresVisualReview,
+        elapsedMs: Date.now() - startedAt,
+        code: 'INVALID_RESULT',
+        responseChars: String(result.text || '').length,
+      },
+    }, 'ai evaluation result invalid');
     throw new AgentActionError('絮絮收到了一份无法解析的检查结果，请稍后再试。', 'STEP_AI_INVALID_RESULT');
   }
   if (findSpoiler(evaluation.feedback, course, session)) {
@@ -293,6 +603,16 @@ async function evaluateStepSubmission({ llm, course, role, session, task, step, 
       : '这一步仍缺少可核对的证据，请回看小步要求后补充。';
   }
   evaluation.missing = evaluation.missing.filter((item) => !findSpoiler(item, course, session));
+  logger?.debug?.({
+    aiEvaluation: {
+      courseId: course.id,
+      taskId: task.id,
+      stepId: step.id,
+      visual: requiresVisualReview,
+      elapsedMs: Date.now() - startedAt,
+      passed: evaluation.passed,
+    },
+  }, 'ai evaluation completed');
   return evaluation;
 }
 
@@ -344,6 +664,7 @@ function navigationToolCall(task) {
 
 function updateDialogueLifecycleForDecision(session, decision) {
   if (decision.intent === 'safety_help') return setDialogueLifecycle(session, 'SAFETY_ESCALATION');
+  if (decision.intent === 'scaffold_exhausted') return setDialogueLifecycle(session, 'SAFETY_ESCALATION');
   if (decision.intent === 'emotion') return setDialogueLifecycle(session, 'EMOTIONAL_SUPPORT');
   if (decision.intent === 'conversation_repair') return;
   if (session.dialogueState?.pendingQuestion) return;
@@ -367,91 +688,66 @@ function startCurrentRoleStage({ session, task, tool }) {
   };
 }
 
-function askNextOnboarding({ session, task, role }) {
-  const question = nextOnboardingQuestion({ session, task, role });
+function askNextOnboarding({ session, task, role, voice = null }) {
+  const question = nextOnboardingQuestion({ session, task, role, voice });
   return question ? askQuestion(session, question) : null;
 }
 
-function applySemanticUnderstanding({ understanding, role, session, course, input }) {
-  const pending = session.dialogueState?.pendingQuestion;
-  if (pending && understanding.answersPendingQuestion && understanding.confidence >= 0.72) {
-    const affirmative = understanding.pendingAnswer === 'yes';
-    const entry = pending.kind === 'arrival'
-      ? { arrived: affirmative, notArrived: !affirmative, ready: false, notReady: false }
-      : { arrived: false, notArrived: false, ready: affirmative, notReady: !affirmative };
-    return workflowResult({
-      decision: {
-        intent: 'pending_answer',
-        pendingResolution: { matched: true, value: affirmative, confidence: understanding.confidence, entry },
-        entry,
-      },
-      role,
-      session,
-      course,
-      input,
-    });
-  }
-  if (understanding.speechAct === 'complaint') {
-    return workflowResult({ decision: { intent: 'conversation_repair' }, role, session, course, input });
-  }
-  if (understanding.speechAct === 'request_navigation') {
-    return workflowResult({ decision: { intent: 'onboarding_navigation' }, role, session, course, input });
-  }
-  if (understanding.speechAct === 'request_teacher') {
-    suspendPendingQuestion(session);
-    return workflowResult({ decision: { intent: 'safety_help' }, role, session, course, input });
-  }
-  if (understanding.speechAct === 'unclear') {
-    return { ...unclearInputReply(session), toolCalls: [] };
-  }
-  if (['greeting', 'emotion', 'course_question', 'social'].includes(understanding.speechAct)) {
-    suspendPendingQuestion(session);
-  }
-  if (understanding.speechAct === 'emotion') setDialogueLifecycle(session, 'EMOTIONAL_SUPPORT');
-  return {
-    text: understanding.reply || '我听见了。你愿意再多说一点吗？',
-    toolCalls: [],
-    dialogueMove: understanding.dialogueMove,
-    quickReplies: [],
-  };
-}
-
 function workflowResult({ decision, role, session, course, input }) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  const tool = role.tools.find((item) => item.taskIndex === session.currentTaskIndex);
+  const task = currentTaskOf(role, session);
+  const tool = currentToolOf(role, session);
+  const voice = course?.platformDefaults?.voice;
+  const say = (key, params = {}) => renderVoice(voice, key, params);
+  const locationName = task.location?.name || role.location;
+  if (decision.intent === 'phase_started') {
+    // 阶段任务发生在角色领取前，不需要再问一次“是否到达／是否准备好”。
+    // 前端点击进入课程就是明确的开始信号，直接打开当前阶段任务。
+    session.onboardingState.arrivedConfirmed = true;
+    session.onboardingState.readyConfirmed = true;
+    session.onboardingState.completed = true;
+    confirmDialogueSlot(session, 'arrival', true);
+    confirmDialogueSlot(session, 'readiness', true);
+    return startCurrentRoleStage({ session, task, tool });
+  }
   if (decision.intent === 'role_assigned') {
     if (!taskRequiresArrival(task) || session.locationState?.status === 'arrived') {
       confirmDialogueSlot(session, 'arrival', true);
     }
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     if (!next) return startCurrentRoleStage({ session, task, tool });
     return {
       ...next,
-      text: `欢迎你，${role.name}！我是${course.publicLesson.persona.name}。${next.text}`,
+      text: say('role_assigned.欢迎', {
+        roleName: role.name,
+        companionName: course?.platformDefaults?.companion?.name || PLATFORM_COMPANION.name,
+        next: next.text,
+      }),
       toolCalls: [],
     };
   }
   if (decision.intent === 'quick_reply_stale') {
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     return {
       ...(next || {}),
-      text: next ? `刚才的选项已经失效了。${next.text}` : '刚才的选项已经失效了，我们按当前进度继续。',
+      text: next
+        ? say('quick_reply_stale.有下一问', { next: next.text })
+        : say('quick_reply_stale.无下一问'),
       toolCalls: [],
       dialogueMove: 'repair_stale_action',
     };
   }
-  if (decision.intent === 'conversation_repair') return { ...conversationRepair(session), toolCalls: [] };
-  if (decision.intent === 'unclear_input') return { ...unclearInputReply(session), toolCalls: [] };
+  if (decision.intent === 'conversation_repair') return { ...conversationRepair(session, voice), toolCalls: [] };
+  if (decision.intent === 'unclear_input') return { ...unclearInputReply(session, voice), toolCalls: [] };
   if (decision.intent === 'onboarding_not_arrived' || decision.intent === 'onboarding_navigation') {
     confirmDialogueSlot(session, 'arrival', !taskRequiresArrival(task));
     if (!taskRequiresArrival(task)) {
-      const next = askNextOnboarding({ session, task, role });
-      return { ...next, text: `这个任务没有指定地点。${next.text}`, toolCalls: [] };
+      const next = askNextOnboarding({ session, task, role, voice });
+      return { ...next, text: say('onboarding_not_arrived.无需前往', { next: next.text }), toolCalls: [] };
     }
-    const question = arrivalQuestion(task, role);
+    const question = arrivalQuestion(task, role, voice);
     askQuestion(session, question);
     return {
-      text: `好，先跟紧小组和老师。我把前往“${task.location?.name || role.location}”的高德地图打开，到了再告诉我。`,
+      text: say('onboarding_not_arrived.导航', { location: locationName }),
       toolCalls: [navigationToolCall(task)],
       dialogueMove: 'support_navigation',
       quickReplies: [],
@@ -463,13 +759,13 @@ function workflowResult({ decision, role, session, course, input }) {
       if (taskRequiresArrival(task)) recordArrival(session, 'manual');
     }
     confirmDialogueSlot(session, 'readiness', false);
-    const question = readinessQuestion(task);
+    const question = readinessQuestion(task, voice);
     askQuestion(session, question);
     return {
-      text: '好，我等你。先检查队伍、物品和周围安全，准备好时告诉我。',
+      text: say('onboarding_not_ready.等待'),
       toolCalls: [],
       dialogueMove: 'wait_for_readiness',
-      quickReplies: [{ id: 'readiness-yes', label: '现在开始', value: '我准备好了' }],
+      quickReplies: [{ id: 'readiness-yes', label: say('onboarding.准备.现在开始'), value: say('onboarding.准备.value.现在开始') }],
     };
   }
   if (decision.intent === 'pending_answer') {
@@ -484,30 +780,32 @@ function workflowResult({ decision, role, session, course, input }) {
     if (decision.entry?.notReady) confirmDialogueSlot(session, 'readiness', false);
 
     if (resolved?.pending.kind === 'arrival' && resolved.value === false) {
-      const question = arrivalQuestion(task, role);
+      const question = arrivalQuestion(task, role, voice);
       askQuestion(session, question);
       return {
-        text: `知道了。我把去“${task.location?.name || role.location}”的高德地图打开，你跟着老师和小组移动。`,
+        text: say('pending_answer.未到达导航', { location: locationName }),
         toolCalls: taskRequiresArrival(task) ? [navigationToolCall(task)] : [],
         dialogueMove: 'support_navigation',
         quickReplies: [],
       };
     }
     if (decision.entry?.notReady || (resolved?.pending.kind === 'readiness' && resolved.value === false)) {
-      const question = readinessQuestion(task);
+      const question = readinessQuestion(task, voice);
       askQuestion(session, question);
       return {
-        text: '好，我等你。准备好时告诉我就行。',
+        text: say('pending_answer.等待准备'),
         toolCalls: [],
         dialogueMove: 'wait_for_readiness',
-        quickReplies: [{ id: 'readiness-yes', label: '现在开始', value: '我准备好了' }],
+        quickReplies: [{ id: 'readiness-yes', label: say('onboarding.准备.现在开始'), value: say('onboarding.准备.value.现在开始') }],
       };
     }
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     if (next) {
       return {
         ...next,
-        text: resolved?.pending.kind === 'arrival' ? `到达确认了。${next.text}` : next.text,
+        text: resolved?.pending.kind === 'arrival'
+          ? say('pending_answer.到达确认', { next: next.text })
+          : next.text,
         toolCalls: [],
       };
     }
@@ -522,7 +820,7 @@ function workflowResult({ decision, role, session, course, input }) {
       || session.dialogueState?.confirmedSlots?.arrival === true;
     if (decision.entry?.ready && arrivalSatisfied) confirmDialogueSlot(session, 'readiness', true);
     if (decision.entry?.notReady) confirmDialogueSlot(session, 'readiness', false);
-    const next = askNextOnboarding({ session, task, role });
+    const next = askNextOnboarding({ session, task, role, voice });
     if (next) return { ...next, toolCalls: [] };
     return startCurrentRoleStage({ session, task, tool });
   }
@@ -532,8 +830,8 @@ function workflowResult({ decision, role, session, course, input }) {
       clearPendingQuestion(session, { outcome: 'tool_confirmed' });
     }
     if (!session.onboardingState.completed) {
-      const next = askNextOnboarding({ session, task, role });
-      if (next) return { ...next, text: `已经到位了。${next.text}`, toolCalls: [] };
+      const next = askNextOnboarding({ session, task, role, voice });
+      if (next) return { ...next, text: say('navigation_completed.已到位', { next: next.text }), toolCalls: [] };
       return startCurrentRoleStage({ session, task, tool });
     }
     if (!session.taskState.stageAnnounced) {
@@ -550,15 +848,15 @@ function workflowResult({ decision, role, session, course, input }) {
       const stepIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
       return {
         text: stepIndex < steps.length
-          ? `到位验证通过。现在做第${stepIndex + 1}小步：${steps[stepIndex]}。`
-          : '到位验证通过，这个阶段的小步已经完成，可以整理结果提交。',
+          ? say('navigation_completed.继续小步', { stepNumber: stepIndex + 1, stepText: steps[stepIndex] })
+          : say('navigation_completed.小步已完成'),
         toolCalls: [],
         dialogueMove: 'guide_current_step',
         quickReplies: [],
       };
     }
     return {
-      text: `已经回到“${task.name}”，我们接着当前小步继续。`,
+      text: say('navigation_completed.回到任务', { taskName: task.name }),
       toolCalls: [taskToolCall(tool, '继续当前任务')],
       dialogueMove: 'resume_current_step',
       quickReplies: [],
@@ -566,10 +864,10 @@ function workflowResult({ decision, role, session, course, input }) {
   }
   if (decision.intent === 'navigation') {
     if (task.location?.mode === 'none') {
-      return { text: `当前“${task.name}”不需要前往指定地点，可以直接继续。`, toolCalls: [], dialogueMove: 'clarify_location', quickReplies: [] };
+      return { text: say('navigation.无需前往', { taskName: task.name }), toolCalls: [], dialogueMove: 'clarify_location', quickReplies: [] };
     }
     return {
-      text: `我把前往“${task.location?.name || role.location}”的高德地图打开了。请跟随老师统一移动，现场路线变化以老师引导为准。`,
+      text: say('navigation.已打开', { location: locationName }),
       toolCalls: [{
         id: `call_${crypto.randomUUID()}`,
         name: 'show_navigation',
@@ -581,7 +879,7 @@ function workflowResult({ decision, role, session, course, input }) {
   }
   if (decision.intent === 'safety_help') {
     return {
-      text: '收到，我现在帮你呼叫老师。先停在安全的位置，不要独自继续移动。',
+      text: say('safety_help.呼叫老师'),
       toolCalls: [{
         id: `call_${crypto.randomUUID()}`,
         name: 'call_teacher',
@@ -591,8 +889,24 @@ function workflowResult({ decision, role, session, course, input }) {
       quickReplies: [],
     };
   }
+  // 脚手架到顶仍连续求助：转请老师。不撤走提示，也不再复读 L4。
+  if (decision.intent === 'scaffold_exhausted') {
+    return {
+      text: say('scaffold_exhausted.转老师', { taskName: task.name }),
+      toolCalls: [{
+        id: `call_${crypto.randomUUID()}`,
+        name: 'call_teacher',
+        arguments: { reason: `学生在“${task.name}”连续求助且脚手架已到最高档` },
+      }],
+      dialogueMove: 'escalate_to_teacher',
+      quickReplies: [],
+    };
+  }
   if (decision.intent === 'task_progress') {
-    if (/做完|完成|搞定|(?:这一步)?好了/.test(input.text || '')) {
+    // "是否在声称完成"由语义理解判定（decision.claimsDone）；
+    // 正则只作为非语言输入与语义理解不可用时的兜底。
+    const claimsDone = decision.claimsDone ?? /做完|完成|搞定|(?:这一步)?好了/.test(input.text || '');
+    if (claimsDone) {
       const steps = guidanceSteps(task);
       const currentIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
       const currentStep = task.steps?.[currentIndex];
@@ -602,20 +916,24 @@ function workflowResult({ decision, role, session, course, input }) {
         setDialogueLifecycle(session, currentIndex + 1 < steps.length ? 'GUIDE_CURRENT_STEP' : 'WAIT_FOR_TOOL_RESULT');
         return {
           text: currentIndex + 1 < steps.length
-            ? `好，第${currentIndex + 1}小步记下了。现在做第${currentIndex + 2}小步：${steps[currentIndex + 1]}。`
-            : `好，这个阶段的${steps.length}个小步都记下了。现在整理任务卡里的照片或记录，提交给我检查。`,
+            ? say('task_progress.小步记下', {
+              doneNumber: currentIndex + 1,
+              nextNumber: currentIndex + 2,
+              stepText: steps[currentIndex + 1],
+            })
+            : say('task_progress.小步全记下', { stepCount: steps.length }),
           toolCalls: [],
           dialogueMove: currentIndex + 1 < steps.length ? 'guide_current_step' : 'request_required_evidence',
           quickReplies: [],
         };
       }
-      return { text: `收到。请在“${task.name}”任务卡中提交记录或照片，我会根据提交内容帮你检查。`, toolCalls: [], dialogueMove: 'request_required_evidence', quickReplies: [] };
+      return { text: say('task_progress.请提交', { taskName: task.name }), toolCalls: [], dialogueMove: 'request_required_evidence', quickReplies: [] };
     }
     const arrived = task.location?.mode === 'none' || session.locationState?.status === 'arrived';
     return {
       text: arrived
-        ? `好，我们继续“${task.name}”。我把任务工具打开了，有发现随时告诉我。`
-        : `好，我们先去“${task.location?.name || role.location}”。我把高德地图打开了。`,
+        ? say('task_progress.继续任务', { taskName: task.name })
+        : say('task_progress.先去地点', { location: locationName }),
       toolCalls: arrived ? [{
         id: `call_${crypto.randomUUID()}`,
         name: 'open_task_tool',
@@ -634,10 +952,14 @@ function workflowResult({ decision, role, session, course, input }) {
     const stepIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
     if (input.data?.aiEvaluation?.passed === false) {
       const evaluation = input.data.aiEvaluation;
-      const missing = evaluation.missing?.length ? ` 还需要：${evaluation.missing.join('、')}。` : '';
-      const teacherHint = evaluation.teacherRecommended ? ' 已达到本步最大尝试次数，可以呼叫老师一起看。' : '';
       return {
-        text: `${evaluation.feedback || '这一步还需要补充。'}${missing}${teacherHint}`,
+        text: [
+          evaluation.feedback
+            || (evaluation.missing?.length
+              ? say('task_step_completed.还需要', { items: evaluation.missing.join('、') })
+              : say('task_step_completed.补充默认语')),
+          evaluation.teacherRecommended ? say('task_step_completed.可呼叫老师') : '',
+        ].filter(Boolean).join(' '),
         toolCalls: [],
         dialogueMove: 'request_step_revision',
         quickReplies: [],
@@ -646,7 +968,14 @@ function workflowResult({ decision, role, session, course, input }) {
     if (stepIndex < steps.length) {
       setDialogueLifecycle(session, 'GUIDE_CURRENT_STEP');
       return {
-        text: `${input.data?.aiEvaluation?.feedback ? `${input.data.aiEvaluation.feedback} ` : ''}第${stepIndex}小步完成了。现在做第${stepIndex + 1}小步：${steps[stepIndex]}。`,
+        text: [
+          input.data?.aiEvaluation?.feedback || '',
+          say('task_step_completed.继续小步', {
+            doneNumber: stepIndex,
+            nextNumber: stepIndex + 1,
+            stepText: steps[stepIndex],
+          }),
+        ].filter(Boolean).join(' '),
         toolCalls: [],
         dialogueMove: 'guide_current_step',
         quickReplies: [],
@@ -654,7 +983,7 @@ function workflowResult({ decision, role, session, course, input }) {
     }
     setDialogueLifecycle(session, 'WAIT_FOR_TOOL_RESULT');
     return {
-      text: `很好，这个阶段的${steps.length}个小步都完成了。现在整理好照片或记录，在任务卡里提交给我检查。`,
+      text: say('task_step_completed.全部完成', { stepCount: steps.length }),
       toolCalls: [],
       dialogueMove: 'request_required_evidence',
       quickReplies: [],
@@ -663,7 +992,7 @@ function workflowResult({ decision, role, session, course, input }) {
   if (decision.intent === 'proactive_nudge') {
     if (decision.nudge?.reason === 'location_pending' && task.location?.mode !== 'none') {
       return {
-        text: `还顺利吗？如果没找到“${task.location?.name || role.location}”，我把高德地图再放到这里。`,
+        text: say('proactive_nudge.找不到地点', { location: locationName }),
         toolCalls: [{
           id: `call_${crypto.randomUUID()}`,
           name: 'show_navigation',
@@ -674,7 +1003,9 @@ function workflowResult({ decision, role, session, course, input }) {
       };
     }
     return {
-      text: `还顺利吗？可以先试这一小步：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex)}`,
+      text: say('proactive_nudge.试一小步', {
+        hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session), course?.platformDefaults?.scaffolding),
+      }),
       toolCalls: [],
       dialogueMove: 'proactive_support',
       quickReplies: [],
@@ -684,45 +1015,42 @@ function workflowResult({ decision, role, session, course, input }) {
 }
 
 function degradedReply(decision, role, session, course) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  if (decision.intent === 'emotion') return '我在听。你可以慢一点说，我会陪你一起理清。';
+  const task = currentTaskOf(role, session);
+  const voice = course?.platformDefaults?.voice;
+  if (decision.intent === 'emotion') return renderVoice(voice, 'degraded.情绪');
   if (['task_help', 'task_followup', 'course_knowledge', 'tool_result'].includes(decision.intent)) {
-    return `我收到啦。先从“${task.name}”里最确定的一条现场线索开始，把它告诉我，我继续陪你分析。`;
+    return renderVoice(voice, 'degraded.任务线索', { taskName: task.name });
   }
   if (decision.intent === 'proactive_nudge') return '';
-  return `我听见了，不过这句话我还没完全接住。你愿意再多说一点吗？`;
+  return renderVoice(voice, 'degraded.没接住');
 }
 
-function immediatePrelude(decision, role, session) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+function immediatePrelude(decision, role, session, course) {
+  const task = currentTaskOf(role, session);
+  const voice = course?.platformDefaults?.voice;
   if (['task_help', 'task_followup'].includes(decision.intent)) {
-    return `我在。先试一个小步骤：${taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex)}`;
+    return renderVoice(voice, 'prelude.求助', {
+      hint: taskScaffoldHint(task, session.scaffoldLevel, session.taskState?.guidanceStepIndex, currentStepOf(task, session), course?.platformDefaults?.scaffolding),
+    });
   }
-  if (decision.intent === 'emotion') return '我在听，你慢慢说。';
-  if (decision.intent === 'tool_result') return '我收到你的提交了，正在看这条证据。';
-  if (decision.intent === 'course_knowledge') return '我先按课程材料帮你核对。';
-  if (decision.intent === 'social') return '嗯嗯，我在听～';
+  if (decision.intent === 'emotion') return renderVoice(voice, 'prelude.情绪');
+  if (decision.intent === 'tool_result') return renderVoice(voice, 'prelude.收到提交');
+  if (decision.intent === 'course_knowledge') return renderVoice(voice, 'prelude.核对材料');
+  if (decision.intent === 'social') return renderVoice(voice, 'prelude.寒暄');
+  // 澄清回合也要先接住一句：读不懂学生时最不该做的就是沉默几秒再问一句。
+  if (decision.intent === 'clarify_intent') return renderVoice(voice, 'prelude.澄清');
   return '';
 }
 
-function knowledgeExcerptReply(knowledge) {
-  const content = String(knowledge[0]?.content || '')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^[-*]\s+/gm, '')
-    .replace(/\|/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!content) return '';
-  const excerpt = content.length > 110 ? `${content.slice(0, 108)}……` : content;
-  return `根据课程材料，${excerpt}`;
-}
-
-function toolNarration(call, role, session) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  if (call?.name === 'show_navigation') return `我把前往“${task.location?.name || role.location}”的高德地图打开了。`;
-  if (call?.name === 'open_task_tool') return `我把“${task.name}”任务工具打开了，我们继续。`;
-  if (call?.name === 'call_teacher') return '我现在帮你呼叫老师，请先停在安全的位置。';
-  return '我已经打开接下来需要的工具。';
+function toolNarration(call, role, session, course) {
+  const task = currentTaskOf(role, session);
+  const voice = course?.platformDefaults?.voice;
+  if (call?.name === 'show_navigation') {
+    return renderVoice(voice, 'tool.show_navigation', { location: task.location?.name || role.location });
+  }
+  if (call?.name === 'open_task_tool') return renderVoice(voice, 'tool.open_task_tool', { taskName: task.name });
+  if (call?.name === 'call_teacher') return renderVoice(voice, 'tool.call_teacher');
+  return renderVoice(voice, 'tool.默认');
 }
 
 function guardedDeltaEmitter({ course, session, emit }) {
@@ -756,11 +1084,24 @@ function guardedDeltaEmitter({ course, session, emit }) {
 }
 
 function appendStateDrivenTools(result, { input, role, session }) {
-  if (input.type !== 'tool_result' || input.result?.status !== 'completed') return result;
-  if (input.data?.resolvedTool !== 'open_task_tool' || !input.data?.completedTaskId || input.data?.allTasksCompleted) return result;
+  // 进度刚刚往前走了一格的两条路：
+  // ① 提交工具结果后自动推进（`auto_after_validation`，85 个任务的主路径）；
+  // ② 教师／学生解除等待后推进——它是 lifecycle_event，不是 tool_result。
+  //    漏掉②的话老师按了确认，进度确实 +1，但**新任务的工具卡永远不开**，
+  //    学生停在一张已完成的旧卡上，卡死只是换了个位置。
+  const autoAdvanced = input.type === 'tool_result'
+    && input.result?.status === 'completed'
+    && input.data?.resolvedTool === 'open_task_tool'
+    && Boolean(input.data?.completedTaskId);
+  const resolvedAdvance = input.type === 'lifecycle_event' && Boolean(input.data?.advancedBy);
+  if (!autoAdvanced && !resolvedAdvance) return result;
+  if (input.data?.allTasksCompleted) return result;
   if (result.toolCalls?.length) return result;
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
-  const tool = role.tools.find((item) => item.taskIndex === session.currentTaskIndex);
+  // 等教师／学生推进时 currentTaskIndex 还没动，这里再自动开卡会把**刚做完的那个任务**
+  // 重新打开一遍。等待期间什么都不开——推进发生后的那一回合才开新卡。
+  if (pendingAdvanceOf(session)) return result;
+  const task = currentTaskOf(role, session);
+  const tool = currentToolOf(role, session);
   const arrived = task.location?.mode === 'none' || session.locationState?.status === 'arrived';
   if (arrived) {
     return {
@@ -783,7 +1124,63 @@ function appendStateDrivenTools(result, { input, role, session }) {
   };
 }
 
-function applyToolResult({ course, session, role, input }) {
+/**
+ * 教师指令落到会话状态。
+ *
+ * 为什么走这条路：教师运行时（server/runtime/）只持有场次记录，碰不到 agent 会话存储，
+ * 而真正驱动学生体验的是会话上的 phaseId 与 scaffoldLevel。学生端轮询到指令后回发一个
+ * lifecycle_event，由这里改会话——`approve_evidence` 早就是这么生效的，不新增机制。
+ *
+ * 教师是现场的权威，所以这里不做教学判断，只做合法性校验。
+ */
+function applyTeacherDirective({ session, course, data }) {
+  const applied = [];
+
+  // 阶段是课程编排里的既有阶段才认。写错一个不存在的 phaseId 会让「阶段规则」段整段变空，
+  // 而降级是静默的——宁可不改，也不要让课程作者写的阶段约束凭空消失。
+  if (data.phaseId) {
+    const phaseId = String(data.phaseId);
+    if (course.lesson.phases.some((phase) => phase.id === phaseId)) {
+      session.phaseId = phaseId;
+      session.phaseNumber = phaseNumber(phaseId);
+      applied.push('phase');
+    }
+  }
+
+  // 教师调档可升可降：tutorPolicy 的自动升档只升不降，老师看得到学生的真实状态，
+  // 有权把档位调回去。上限取平台默认层的 maxLevel，与 service 里自动升档同一个口径。
+  if (data.scaffoldLevel !== undefined && data.scaffoldLevel !== null) {
+    const level = Number(data.scaffoldLevel);
+    if (Number.isFinite(level)) {
+      const maxLevel = Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4);
+      session.scaffoldLevel = Math.max(0, Math.min(maxLevel, Math.trunc(level)));
+      applied.push('scaffold');
+    }
+  }
+
+  return applied;
+}
+
+/**
+ * 拒绝推进时的错误。
+ *
+ * 刻意区分四种原因而不是笼统报"推不了"：老师在现场按了按钮没反应，最需要知道的
+ * 就是"为什么"——是学生还没做完，还是他已经自己往前走了。
+ */
+function advanceRefusalError(actor, reason) {
+  const who = actor === 'teacher' ? '老师' : '学生';
+  const messages = {
+    NOT_WAITING: `当前任务没有在等${who}推进，进度未改变。`,
+    WRONG_ACTOR: `这个任务不是在等${who}推进，进度未改变。`,
+    TASK_CHANGED: '学生已经换到别的任务，这次推进没有生效。',
+    NOT_COMPLETED: '学生还没有完成当前任务，不能推进。',
+  };
+  return new AgentActionError(messages[reason] || '这次推进没有生效。', `ADVANCE_${reason}`);
+}
+
+async function applyToolResult({
+  course, session, role, input, llm, evaluationLlm, signal, logger,
+}) {
   if (input.type !== 'tool_result') return;
   const pending = session.pendingTools[input.toolCallId];
   if (!pending) throw new AgentActionError('当前任务卡已经失效，请让絮絮重新打开任务。', 'TOOL_CALL_EXPIRED');
@@ -811,7 +1208,7 @@ function applyToolResult({ course, session, role, input }) {
       verification: session.locationState?.verifiedBy,
       dwellSeconds: session.locationState?.dwellSeconds || 0,
     };
-    const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+    const task = currentTaskOf(role, session);
     const stepIndex = Number(session.taskState?.guidanceStepIndex || 0);
     if (
       session.onboardingState?.completed
@@ -825,7 +1222,7 @@ function applyToolResult({ course, session, role, input }) {
     return;
   }
   if (pending.name !== 'open_task_tool') return;
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+  const task = currentTaskOf(role, session);
   const steps = guidanceSteps(task);
   const completedSteps = Math.min(Number(session.taskState?.guidanceStepIndex || 0), steps.length);
   if (completedSteps < steps.length) {
@@ -841,7 +1238,8 @@ function applyToolResult({ course, session, role, input }) {
   const evidence = input.result?.evidence || [];
   const text = String(input.result?.values?.text || '').trim();
   const toolValues = input.result?.values?.toolValues || {};
-  const minimum = Number(pending.payload?.config?.minEvidenceCount || 1);
+  // 0 是“本任务不要求照片”的有效配置（视频、文字、扫码都会用到），不能被 || 吞掉。
+  const minimum = Number(pending.payload?.config?.minEvidenceCount ?? 1);
   const photoEvidenceCount = Number(input.result?.values?.photoEvidenceCount ?? evidence.length);
   if (minimum > 0 && photoEvidenceCount < minimum) {
     throw new AgentActionError(
@@ -852,6 +1250,50 @@ function applyToolResult({ course, session, role, input }) {
   }
   if (!evidence.length && !text && !Object.keys(toolValues).length) {
     throw new AgentActionError('请先提交现场证据或观察记录。', 'EVIDENCE_REQUIRED');
+  }
+  if (task.completionMode === 'ai_evaluation') {
+    // 少数阶段任务只有任务级「完成方式」，没有手写 Step。它们的最终提交仍需真正经过
+    // AI 验收；否则课程写了 ai_evaluation，运行时却会直接判定完成。
+    const evaluationStep = {
+      id: `${task.id}-task-evaluation`,
+      objective: task.requirement || task.name,
+      studentAction: task.requirement || task.name,
+      evidenceRequirement: task.evidenceRequirement || task.passCondition,
+      tools: task.tools || [],
+      acceptance: task.acceptance || '',
+      knowledgeRef: task.goals || '',
+      commonMisconception: '',
+    };
+    const evaluationInput = {
+      ...input,
+      data: {
+        ...(input.data || {}),
+        toolValues: { [evaluationStep.id]: toolValues },
+      },
+    };
+    const evaluation = await evaluateStepSubmission({
+      llm,
+      evaluationLlm,
+      course,
+      role,
+      session,
+      task,
+      step: evaluationStep,
+      input: evaluationInput,
+      signal,
+      logger,
+    });
+    session.taskState.taskEvaluationAttempts = Number(
+      session.taskState.taskEvaluationAttempts || 0,
+    ) + 1;
+    input.data = { ...(input.data || {}), aiEvaluation: evaluation };
+    if (!evaluation.passed) {
+      throw new AgentActionError(
+        evaluation.feedback || '这项提交还需要补充后再试。',
+        'TASK_AI_EVALUATION_FAILED',
+        { missing: evaluation.missing || [] },
+      );
+    }
   }
   input.data = {
     ...(input.data || {}),
@@ -868,7 +1310,25 @@ function applyToolResult({ course, session, role, input }) {
   };
 }
 
-function finalizeToolResult({ session, role, input }) {
+function advanceBlockedMessage(role, blockedBy = []) {
+  const names = blockedBy.map((taskId) => role.tasks.find((task) => task.id === taskId)?.name || taskId);
+  if (!names.length) return '';
+  if (names.length === 1) return `还差「${names[0]}」没完成，先把它做完我们再继续。`;
+  return `还差「${names.join('」「')}」没完成，先把它们做完我们再继续。`;
+}
+
+function applyAdvanceOutcome(input, role, advance) {
+  if (advance.advanced) {
+    input.data.continueAtSameLocation = advance.continueAtSameLocation;
+    input.data.previousVerification = advance.previousVerification;
+    return;
+  }
+  if (advance.blockedBy?.length) {
+    input.data.advanceBlockedMessage = advanceBlockedMessage(role, advance.blockedBy);
+  }
+}
+
+function finalizeToolResult({ session, role, input, course }) {
   const completion = input.data?.pendingCompletion;
   if (!completion) return;
   const task = role.tasks[completion.taskIndex];
@@ -889,50 +1349,154 @@ function finalizeToolResult({ session, role, input }) {
     completedTaskName: task.name,
     allTasksCompleted: session.currentTaskIndex >= role.tasks.length - 1,
   };
-  if (task.advanceMode === 'teacher') {
-    session.events.push(`${completedId}:waiting-teacher-advance`);
-    input.data.waitingForTeacher = true;
-  } else if (task.advanceMode === 'ai_suggest') {
-    session.events.push(`${completedId}:waiting-student-advance`);
-    input.data.waitingForStudent = true;
-  } else if (session.currentTaskIndex < role.tasks.length - 1) {
-    session.currentTaskIndex += 1;
-    const nextTask = role.tasks[session.currentTaskIndex];
-    input.data.continueAtSameLocation = Boolean(
-      completion.completedLocationStatus === 'arrived'
-      && completion.completedLocationName
-      && nextTask.location?.name === completion.completedLocationName,
-    );
-    input.data.previousVerification = completion.completedVerification;
-  } else {
-    session.events.push(`${role.id}:all-tasks-completed`);
+  // 等待态落到会话（`pendingAdvance`）而不是只写 input.data：input.data 是单次回合的
+  // 载荷，而教师指令要等下一次轮询才到。改造前这两个分支只写 input.data，于是
+  // `推进方式：teacher`／`ai_suggest` 的任务做完就永久卡住（见 task-advance.js 模块头）。
+  const waitMode = advanceWaitModeOf(task);
+  if (waitMode !== 'auto') {
+    markPendingAdvance(session, { task, completedId, mode: waitMode, completion });
+    session.events.push(`${completedId}:waiting-${waitMode}-advance`);
+    if (waitMode === 'teacher') input.data.waitingForTeacher = true;
+    else input.data.waitingForStudent = true;
+    return;
   }
+  const advance = advanceToNextTask({ role, session, completion, taskGraph: course?.taskGraph });
+  applyAdvanceOutcome(input, role, advance);
 }
 
-export function createAgentService({ llm, store, getCourse, loadEvidence = async () => null }) {
+export function createAgentService({
+  llm,
+  // 验收默认复用主模型；应用装配层会提供带独立超时预算的专用客户端。
+  evaluationLlm = llm,
+  store,
+  getCourse,
+  loadEvidence = async () => null,
+  logger,
+  // 语义理解用的轻量模型。未单独配置时复用主模型（同一网关，行为不变）。
+  understandingLlm = llm,
+  // 语义理解的总预算（含一次重试）。默认值由 understanding.js 持有。
+  understandingTimeoutMs,
+}) {
+  const understanding = createUnderstanding({
+    llm: understandingLlm,
+    ...(understandingTimeoutMs ? { timeoutMs: understandingTimeoutMs } : {}),
+  });
+  // 决策入口（D6 乙案）：非语言输入走原有确定性规则；
+  // 自由文字必经「轻量语义理解 → 确定性教学决策 → 映射为 decision」三段。
+  async function resolveDecision({ input, session, course, role, nudge, task, signal }) {
+    if (routeInput(input).kind === 'non_language') {
+      return classifyTurn({ input, session, course, role, nudge });
+    }
+
+    const text = String(input.text || '').trim();
+    // 状态机输入与时效动作（安全/到达就绪/抱怨/无语义）先由确定性规则处理，
+    // 不等模型，也不因轻量模型不可用而卡死。都不命中才做语义理解。
+    const deterministic = deterministicLanguageDecision({ text, session });
+    if (deterministic) return deterministic;
+
+    const pendingQuestion = session.dialogueState?.pendingQuestion || null;
+    const currentStep = currentStepOf(task, session);
+    const knowledgeTerms = [
+      ...titleBigrams(course.lesson?.title),
+      ...(course.knowledge || []).flatMap((entry) => [
+      entry.topic,
+      entry.title,
+      ...(entry.tags || []),
+      ]),
+    ];
+    const result = fastUnderstanding(text, { knowledgeTerms }) || await understanding.understandTurn({
+      text,
+      pendingQuestion: pendingQuestion
+        ? { prompt: pendingQuestion.prompt, type: pendingQuestion.kind || pendingQuestion.type || '' }
+        : null,
+      currentStep: currentStep
+        ? { objective: currentStep.objective, studentAction: currentStep.studentAction }
+        : null,
+      recentMessages: (session.messages || []).slice(-4).map((item) => ({
+        role: item.role,
+        content: item.text || item.content || '',
+      })),
+      grade: session.learnerState?.grade || session.grade || '',
+    }, { signal });
+
+    const scaffolding = course?.platformDefaults?.scaffolding;
+    const tutor = decideTutorAction(result, {
+      scaffoldLevel: Number(session.scaffoldLevel || 0),
+      maxScaffoldLevel: scaffolding?.maxLevel,
+      upgradeOnRepeatHelp: scaffolding?.upgradeOnRepeatHelp,
+      pendingQuestion,
+      currentStep,
+      recentActions: session.conversationState?.recentTutorActions || [],
+      idleSeconds: Number(runtimeSnapshot(session).idleSeconds || 0),
+    });
+
+    // 待答问题的取值：先用确定性解析，读不出再用语义理解给的 yes/no。
+    // 两者都读不出就降级为自然回应，绝不猜一个值去改状态机。
+    const pendingResolution = tutor.action === 'advance_pending_question'
+      ? pendingAnswerFrom(text, pendingQuestion, result)
+      : { matched: false, value: null, confidence: 0 };
+    const action = tutor.action === 'advance_pending_question' && !pendingResolution.matched
+      ? 'reply_natural'
+      : tutor.action;
+
+    const decision = decisionForTutorAction(action, {
+      reason: tutor.reason,
+      pendingResolution,
+      pendingValue: pendingResolution.value,
+      entry: pendingResolution.entry,
+      onboardingCompleted: Boolean(session.onboardingState?.completed),
+      claimsDone: result.intent === 'claim_done',
+    });
+
+    return {
+      ...decision,
+      signal: normalizeEmotion(result.emotion),
+      params: tutor.params || {},
+      understanding: result,
+    };
+  }
+
   async function createSession(input) {
     const course = await getCourse(input.courseId);
-    const role = course.roles.find((item) => item.id === input.roleId);
+    const role = input.roleId
+      ? course.roles.find((item) => item.id === input.roleId)
+      : entryPhaseTrackFor(course);
     if (!role) throw new Error(`角色 ${input.roleId} 不存在。`);
+    const phaseId = input.roleId ? course.lesson.roleSystem.phaseId : role.phaseId;
     const session = await store.create({
       ...input,
-      phaseId: course.publicLesson.roleSystem.phaseId,
-      timeBalance: course.publicLesson.timeBank.initialBalance,
+      roleId: input.roleId || '',
+      phaseId,
+      timeBalance: course.lesson.timeBank.initialBalance,
+      contentVersion: course.contentVersion || '',
     });
     ensureSessionRuntime(session, role.tasks[0]);
     await store.save(session);
     return { session, course, role };
   }
 
-  async function runTurn({ sessionId, requestId, input, onTextDelta }) {
+  async function runTurn({
+    sessionId,
+    requestId,
+    input,
+    onTextDelta,
+    signal,
+    persistSession,
+  }) {
+    throwIfAborted(signal);
     const session = await store.get(sessionId);
     if (!session) throw new Error('会话不存在或已经失效。');
     if (session.handledRequestIds.includes(requestId)) {
       return { duplicate: true, session, events: [] };
     }
     const course = await getCourse(session.courseId);
-    const role = roleFor(course, session);
-    let task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+    const requestedRoleId = input.type === 'lifecycle_event' && input.event === 'role_assigned'
+      ? String(input.data?.roleId || '')
+      : '';
+    const role = requestedRoleId
+      ? bindRoleToSession({ course, session, roleId: requestedRoleId })
+      : roleFor(course, session);
+    let task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
     if (['user_text', 'quick_reply'].includes(input.type)) markMeaningfulAction(session, Date.now(), 'user');
     if (input.type === 'lifecycle_event') {
@@ -949,7 +1513,9 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
           validateStepCompletion({ task, stepIndex: currentIndex, input, session });
           if (completionMode === 'ai_evaluation') {
             const step = task.steps[currentIndex];
-            const evaluation = await evaluateStepSubmission({ llm, course, role, session, task, step, input });
+            const evaluation = await evaluateStepSubmission({
+              llm, evaluationLlm, course, role, session, task, step, input, signal, logger,
+            });
             session.taskState.stepAttempts ||= {};
             session.taskState.stepAttempts[step.id] = Number(session.taskState.stepAttempts[step.id] || 0) + 1;
             const maxAttempts = Number(step.maxAttempts || 0);
@@ -973,9 +1539,36 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
         recordLocationObservation(session, input.data || {});
         markMeaningfulAction(session, Date.now(), 'other');
       }
+      if (input.event === 'teacher_directive') {
+        applyTeacherDirective({ session, course, data: input.data || {} });
+      }
+      // 解除"等谁推进"。两个入口共用同一套校验（task-advance.js），只有 actor 不同：
+      // teacher_advance_task 走教师指令桥，student_advance_task 是学生点了「继续下一个」。
+      if (['teacher_advance_task', 'student_advance_task'].includes(input.event)) {
+        const actor = input.event === 'teacher_advance_task' ? 'teacher' : 'student';
+        const outcome = resolvePendingAdvance({
+          role,
+          session,
+          actor,
+          taskId: String(input.data?.taskId || ''),
+          taskGraph: session.roleId ? course?.taskGraph : null,
+        });
+        if (!outcome.ok) throw advanceRefusalError(actor, outcome.reason);
+        input.data = {
+          ...(input.data || {}),
+          advancedBy: actor,
+          continueAtSameLocation: outcome.result.continueAtSameLocation,
+          previousVerification: outcome.result.previousVerification,
+          allTasksCompleted: !outcome.result.advanced,
+        };
+        applyAdvanceOutcome(input, role, outcome.result);
+        markMeaningfulAction(session, Date.now(), 'other');
+      }
     }
-    applyToolResult({ course, session, role, input });
-    task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+    await applyToolResult({
+      course, session, role, input, llm, evaluationLlm, signal, logger,
+    });
+    task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
     if (input.data?.continueAtSameLocation && task.location?.mode !== 'none') {
       recordArrival(session, input.data.previousVerification || 'manual');
@@ -993,20 +1586,35 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
     }
 
     const nudge = evaluateNudge({ session, task, input });
-    const decision = classifyTurn({ input, session, course, role, nudge });
-    if (['greeting', 'gratitude', 'goodbye', 'emotion', 'course_knowledge', 'safety_help'].includes(decision.intent)) {
+    const decision = await resolveDecision({ input, session, course, role, nudge, task, signal });
+    throwIfAborted(signal);
+    // 这些回合都不推进流程，挂起待答问题以免下一轮复读它。
+    // clarify_intent 同样要挂起：没读懂这句话时让"是/否"继续挂着，
+    // 学生下一句一个"好"就会误确认到达。
+    if ([
+      'greeting', 'gratitude', 'goodbye', 'emotion', 'course_knowledge',
+      'safety_help', 'social', 'activity_logistics', 'scaffold_exhausted',
+      'clarify_intent',
+    ].includes(decision.intent)) {
       suspendPendingQuestion(session);
     }
     updateDialogueLifecycleForDecision(session, decision);
     if (['user_text', 'quick_reply'].includes(input.type)) {
-      if (
-        ['task_help', 'task_followup'].includes(decision.intent)
-        && ['task_help', 'task_followup'].includes(session.conversationState?.lastIntent)
-      ) {
-        session.scaffoldLevel = Math.min(3, session.scaffoldLevel + 1);
+      // 升档由 tutorPolicy 判定（它看得到教学动作历史），这里只执行。
+      if (decision.params?.scaffoldLevelDelta) {
+        session.scaffoldLevel = Math.min(
+          Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4),
+          session.scaffoldLevel + decision.params.scaffoldLevelDelta,
+        );
+      }
+      if (decision.tutorAction) {
+        recordTutorAction(session, { intent: decision.understanding?.intent, action: decision.tutorAction });
       }
       recordIntent(session, decision.intent, decision.signal);
-      if (!['unclear_input', 'conversation_repair'].includes(decision.intent)) clearMisunderstandings(session);
+      // clarify_intent 与 unclear_input 同类：都是"这轮没读懂"，要累计而不是清零。
+      if (!['unclear_input', 'conversation_repair', 'clarify_intent'].includes(decision.intent)) {
+        clearMisunderstandings(session);
+      }
     }
     if (nudge.due) recordNudge(session);
 
@@ -1015,61 +1623,84 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
       : input.type === 'quick_reply'
         ? input.value
       : `${input.event || input.type} ${task?.name || ''}`;
+    const recentStudentQuestions = (session.messages || [])
+      .filter((message) => message.role === 'user')
+      .slice(-2)
+      .map((message) => message.content || message.text || '')
+      .join(' ');
+    const needsConversationContext = /^(?:那|它|这个|这些)|刚才|还要|缺了|缺少|还有/.test(query);
+    const knowledgeQuery = decision.intent === 'course_knowledge'
+      ? (needsConversationContext ? `${recentStudentQuestions} ${query}`.trim() : query)
+      : query;
     const knowledge = decision.needsKnowledge
       ? retrieveKnowledge({
         course,
         session,
         role,
-        query,
-        references: [
-          task.steps?.[Number(session.taskState?.guidanceStepIndex || 0)]?.knowledgeRef,
-          task.goals,
-        ].filter(Boolean).join(' '),
+        query: knowledgeQuery,
+        // 学生主动问知识时，以问题相关性为主；当前小步引用不能用 +100 权重
+        // 把所有问题都压回同一张知识卡。验收与任务回合仍保留显式引用优先。
+        references: decision.intent === 'course_knowledge'
+          ? ''
+          : [
+            task.steps?.[Number(session.taskState?.guidanceStepIndex || 0)]?.knowledgeRef,
+            task.goals,
+          ].filter(Boolean).join(' '),
       })
       : [];
-    const prompt = buildAgentPrompt({ course, session, role, knowledge, input, decision });
+    const prompt = buildAgentPrompt({
+      course,
+      session,
+      role,
+      knowledge,
+      input,
+      decision,
+      // 教师称呼在 run 上而不是 session 上；取不到时由投影回落到"带队老师"。
+      teacherName: session.teacherName || '',
+    });
     const tools = toolsForDecision(decision, TOOL_DEFINITIONS);
     let result = { text: '', toolCalls: [] };
     let streamed = false;
     let modelFailure = null;
 
     if (!decision.silent) {
-      if (decision.fastWorkflow) {
+      const localReply = decision.intent === 'social'
+        ? platformSocialReply(query, course)
+        : decision.intent === 'activity_logistics'
+          ? platformLogisticsReply(query, { course, session, role })
+          : decision.intent === 'emotion'
+            ? platformEmotionReply(query)
+          : '';
+      if (localReply) {
+        result = { text: localReply, toolCalls: [], dialogueMove: decision.intent };
+      } else if (input.type === 'tool_result' && input.data?.aiEvaluation?.passed === true) {
+        // 验收器已经给出经过防剧透处理的结构化反馈，直接复用即可。
+        // 再调用一次主对话模型只会增加延迟，并让一次提交承担两次模型故障概率。
+        result = {
+          text: input.data.aiEvaluation.feedback || '这项提交已经达到继续条件。',
+          toolCalls: [],
+          dialogueMove: 'confirm_evidence',
+        };
+      } else if (decision.fastWorkflow) {
         result = workflowResult({ decision, role, session, course, input });
-      } else if (decision.fastPath) {
-        result.text = fastConversationReply(decision.intent, course.publicLesson.persona.name, decision.signal);
       } else if (decision.fastGuidance) {
-        result.text = immediatePrelude(decision, role, session);
-      } else if (decision.intent === 'course_knowledge' && knowledge.length) {
-        result.text = knowledgeExcerptReply(knowledge);
+        result.text = immediatePrelude(decision, role, session, course);
       } else {
         try {
-        const needsTurnUnderstanding = Boolean(
-          decision.intent === 'onboarding_unclear'
-          && session.dialogueState?.pendingQuestion,
-        );
         let shouldUseStructured = Boolean(tools.length && !llm.capabilities().nativeTools);
         const canStream = Boolean(
           onTextDelta
           && !tools.length
-          && !needsTurnUnderstanding
           && !['proactive_nudge', 'lifecycle_event'].includes(decision.intent),
         );
-        const prelude = canStream ? immediatePrelude(decision, role, session) : '';
+        const prelude = canStream ? immediatePrelude(decision, role, session, course) : '';
         if (prelude) {
           streamed = true;
           onTextDelta(prelude);
         }
-        if (needsTurnUnderstanding && onTextDelta) {
-          streamed = true;
-          onTextDelta('我听见了。');
-        }
-        const baseModelInstructions = prelude
+        const modelInstructions = prelude
           ? `${shouldUseStructured ? toolFallbackInstructions(prompt.instructions, role, session, tools) : prompt.instructions}\n已即时回应学生：“${prelude}” 请紧接着补充，避免重复。`
           : (shouldUseStructured ? toolFallbackInstructions(prompt.instructions, role, session, tools) : prompt.instructions);
-        const modelInstructions = needsTurnUnderstanding
-          ? understandingInstructions(baseModelInstructions, session.dialogueState.pendingQuestion)
-          : baseModelInstructions;
         const deltaGuard = canStream ? guardedDeltaEmitter({
           course,
           session,
@@ -1083,30 +1714,20 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
           messages: prompt.messages,
           tools,
           images,
-          jsonMode: shouldUseStructured || needsTurnUnderstanding,
+          jsonMode: shouldUseStructured,
           onTextDelta: canStream ? (text) => deltaGuard.push(text) : undefined,
+          signal,
         });
+        throwIfAborted(signal);
         deltaGuard?.flush();
         if (prelude) result.text = `${prelude}${result.text ? ` ${result.text}` : ''}`;
         if (input.data?.visualAnalysisAvailable && !llm.capabilities().vision) input.data.visualAnalysisAvailable = false;
-        if (needsTurnUnderstanding) {
-          const understanding = parseTurnUnderstanding(result.text);
-          if (understanding) {
-            result = applySemanticUnderstanding({ understanding, role, session, course, input });
-          } else {
-            result = {
-              text: '我听见了，不过还没完全理解这句话。你可以换一种说法，我会接着听。',
-              toolCalls: [],
-              dialogueMove: 'clarify_input',
-              quickReplies: session.dialogueState?.pendingQuestion?.quickReplies || [],
-            };
-          }
-        } else if (shouldUseStructured) {
+        if (shouldUseStructured) {
           result = parseStructuredFallback(result.text);
         }
 
         if (!result.text && result.toolCalls.length) {
-          result = { ...result, text: toolNarration(result.toolCalls[0], role, session) };
+          result = { ...result, text: toolNarration(result.toolCalls[0], role, session, course) };
         }
 
         const spoiler = deltaGuard?.isBlocked() || findSpoiler(result.text, course, session);
@@ -1116,9 +1737,27 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
             text: '这个精确结论仍在探索区。把你的观察方法或现场证据告诉我，我可以陪你检查推理过程。',
           };
         }
+        result.text = String(result.text || '').replaceAll(
+          '[待学生探索的数据]',
+          '尚待你通过现场证据验证的内容',
+        );
+        if (decision.intent === 'course_knowledge') {
+          result.text = result.text.replaceAll(
+            '根据我的认知',
+            knowledge.length ? '根据这份课程材料' : '按当前可用材料',
+          );
+        }
         } catch (error) {
+          if (signal?.aborted || error?.name === 'AbortError') throw error;
           modelFailure = error;
-          const prelude = immediatePrelude(decision, role, session);
+          logger?.warn?.({
+            modelError: {
+              name: error?.name || 'Error',
+              code: error?.code || null,
+              status: Number.isInteger(error?.status) ? error.status : null,
+            },
+          }, 'model request degraded');
+          const prelude = immediatePrelude(decision, role, session, course);
           streamed = Boolean(prelude);
           result = {
             text: prelude || degradedReply(decision, role, session, course),
@@ -1133,14 +1772,19 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
         avoidRepeatedReply(session, result.text, {
           intent: decision.intent,
           dialogueMove: result.dialogueMove,
+          voice: course?.platformDefaults?.voice,
         }),
         session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
       );
     }
     const taskIndexBeforeFinalize = session.currentTaskIndex;
-    finalizeToolResult({ session, role, input });
+    finalizeToolResult({ session, role, input, course: session.roleId ? course : null });
+    if (input.data?.advanceBlockedMessage) {
+      result = { ...result, text: input.data.advanceBlockedMessage, toolCalls: [] };
+    }
     if (session.currentTaskIndex !== taskIndexBeforeFinalize) {
-      task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+      task = currentTaskOf(role, session);
       ensureSessionRuntime(session, task);
       if (input.data?.continueAtSameLocation && task.location?.mode !== 'none') {
         recordArrival(session, input.data.previousVerification || 'manual');
@@ -1153,18 +1797,25 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
     if (result.text) {
       session.messages.push({ role: 'user', content: query, createdAt: new Date().toISOString() });
       session.messages.push({ role: 'assistant', content: result.text, createdAt: new Date().toISOString() });
-      events.push({
+      const parts = splitGradeResponse(
+        result.text,
+        session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
+      );
+      parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
         data: {
           id: `msg_${crypto.randomUUID()}`,
-          text: result.text,
+          text,
           source: responseSource,
           intent: decision.intent,
           dialogueMove: result.dialogueMove || decision.intent,
-          streamed,
+          streamed: streamed && partIndex === 0,
           degraded: Boolean(modelFailure),
+          partIndex,
+          partCount: parts.length,
         },
-      });
+      }));
       recordDialogueMove(session, {
         move: result.dialogueMove || decision.intent,
         text: result.text,
@@ -1181,22 +1832,31 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
         avoidRepeatedReply(session, item.text, {
           intent: decision.intent,
           dialogueMove: item.dialogueMove || result.dialogueMove,
+          voice: course?.platformDefaults?.voice,
         }),
         session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
       );
       session.messages.push({ role: 'assistant', content: timelineText, createdAt: new Date().toISOString() });
-      events.push({
+      const parts = splitGradeResponse(
+        timelineText,
+        session.learnerState?.grade || session.grade,
+        course?.platformDefaults?.languageLevels,
+      );
+      parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
         data: {
           id: `msg_${crypto.randomUUID()}`,
-          text: timelineText,
+          text,
           source: responseSource,
           intent: decision.intent,
           dialogueMove: item.dialogueMove || result.dialogueMove || decision.intent,
           streamed: false,
           degraded: false,
+          partIndex,
+          partCount: parts.length,
         },
-      });
+      }));
       recordDialogueMove(session, {
         move: item.dialogueMove || result.dialogueMove || decision.intent,
         text: timelineText,
@@ -1227,22 +1887,41 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
       events.push({ type: 'tool.requested', data: { callId: call.id, name: call.name, payload } });
     }
 
+    throwIfAborted(signal);
     session.handledRequestIds.push(requestId);
     session.handledRequestIds = session.handledRequestIds.slice(-100);
-    await store.save(session);
     events.push({
       type: 'state.updated',
       data: {
+        roleId: session.roleId || '',
+        taskScope: session.roleId ? 'role' : 'phase',
         phaseId: session.phaseId,
+        phaseTaskContext: session.phaseTaskState || (!session.roleId ? {
+          phaseId: session.phaseId,
+          currentTaskIndex: session.currentTaskIndex,
+          completedTaskIds: [...session.completedTaskIds],
+          taskId: session.taskState?.taskId || '',
+          guidanceStepIndex: Number(session.taskState?.guidanceStepIndex || 0),
+        } : null),
         currentTaskIndex: session.currentTaskIndex,
         completedTaskIds: session.completedTaskIds,
         scaffoldLevel: session.scaffoldLevel,
+        // 等谁推进（`teacher`／`student`／null）。学生端据此决定显示「等老师推进」
+        // 还是「继续下一个」按钮——否则做完任务后界面看不出为什么停住了。
+        pendingAdvance: session.pendingAdvance
+          ? { mode: session.pendingAdvance.mode, taskId: session.pendingAdvance.taskId }
+          : null,
         intent: decision.intent,
         runtime: runtimeSnapshot(session),
         learningState: structuredClone(session.learningState),
         dialogueState: structuredClone(session.dialogueState),
       },
     });
+    if (persistSession) {
+      await persistSession({ session, events });
+    } else {
+      await store.save(session);
+    }
     return { duplicate: false, session, events, streamed };
   }
 
@@ -1250,7 +1929,7 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
     const session = await store.get(sessionId);
     if (!session) throw new Error('会话不存在或已经失效。');
     const course = await getCourse(session.courseId);
-    const bank = course.publicLesson.timeBank;
+    const bank = course.lesson.timeBank;
     const task = bank.tasks.find((item) => item.id === taskId);
     if (!task || session.completedBankTaskIds.includes(taskId)) throw new Error('该时间银行任务不可用。');
     const requiredPhase = Number.parseInt(task.unlockAfter?.match(/phase(\d+)/i)?.[1], 10);
@@ -1296,7 +1975,7 @@ export function createAgentService({ llm, store, getCourse, loadEvidence = async
     const course = await getCourse(session.courseId);
     const role = course.roles.find((item) => item.id === roleId);
     if (!role) throw new Error('赠送对象不存在。');
-    const rules = course.publicLesson.timeBank.giftRules;
+    const rules = course.lesson.timeBank.giftRules;
     if (!Number.isFinite(amount) || amount < rules.minAmount || amount > rules.maxPerAction) throw new Error('赠送数量不符合课程规则。');
     if (!rules.allowGiftToSelf && roleId === session.roleId) throw new Error('不能赠送给自己。');
     if (session.timeBalance < amount) throw new Error('时间余额不足。');

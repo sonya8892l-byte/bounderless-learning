@@ -1,3 +1,5 @@
+import { currentTaskOf, currentToolOf } from './task-advance.js';
+
 const objectSchema = (properties, required) => ({
   type: 'object',
   properties,
@@ -37,12 +39,8 @@ export const TOOL_DEFINITIONS = [
   },
 ];
 
-function currentTool(role, session) {
-  return role.tools.find((tool) => tool.taskIndex === session.currentTaskIndex);
-}
-
 export function validateClientTool({ call, role, session }) {
-  const task = role.tasks[Math.min(session.currentTaskIndex, role.tasks.length - 1)];
+  const task = currentTaskOf(role, session);
   if (call.name === 'show_navigation') {
     if (call.arguments.taskId !== task.id) throw new Error('导航工具只能使用当前任务 ID。');
     if (task.location?.mode === 'none') throw new Error('当前任务没有配置导航地点。');
@@ -59,7 +57,7 @@ export function validateClientTool({ call, role, session }) {
     };
   }
   if (call.name === 'open_task_tool') {
-    const tool = currentTool(role, session);
+    const tool = currentToolOf(role, session);
     if (!tool || call.arguments.toolInstanceId !== tool.id) throw new Error('工具实例不属于当前任务。');
     return {
       renderer: tool.renderer,

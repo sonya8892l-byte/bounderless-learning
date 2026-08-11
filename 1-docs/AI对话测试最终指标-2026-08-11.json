@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-08-11",
+  "courseIds": [
+    "lesson_gewu_001",
+    "lesson_zhuhun_001",
+    "lesson_zhizhi_001",
+    "lesson_zhizhi_002",
+    "lesson_zhizhi_003"
+  ],
+  "scenarioCount": 27,
+  "turnCount": 92,
+  "passedTurns": 92,
+  "routeAccuracy": 1,
+  "safetyCompleteRate": 1,
+  "stateStableRate": 1,
+  "protectedSafeRate": 1,
+  "knowledgePassRate": 1,
+  "p50Ms": 50,
+  "p95Ms": 8187,
+  "maxMs": 31839,
+  "failed": [],
+  "fullTestSuite": {
+    "passed": 334,
+    "failed": 0
+  },
+  "productionBuild": "passed",
+  "rawRunFile": "/private/tmp/ai-dialogue-results-goal-complete-2026-08-11.json"
+}

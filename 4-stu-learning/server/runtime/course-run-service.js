@@ -16,7 +16,7 @@ function httpError(statusCode, message, details) {
 }
 
 function courseCenter(course) {
-  const configured = course.publicLesson.mapCenter;
+  const configured = course.lesson.mapCenter;
   if (Array.isArray(configured) && configured.length === 2 && configured.every(Number.isFinite)) {
     return configured;
   }
@@ -32,7 +32,7 @@ function courseCenter(course) {
 
 function makeParticipants(course, groupCount = 5) {
   const center = courseCenter(course);
-  if (!center) throw httpError(422, `课程「${course.publicLesson.title}」缺少坐标中心，无法创建安全场次。`);
+  if (!center) throw httpError(422, `课程「${course.lesson.title}」缺少坐标中心，无法创建安全场次。`);
   const participants = [];
   const groups = [];
   for (let groupIndex = 0; groupIndex < groupCount; groupIndex += 1) {
@@ -76,7 +76,9 @@ function makeParticipants(course, groupCount = 5) {
           idleSeconds: index === 8 ? 260 : 20 + index * 4,
           scaffoldLevel: index % 3,
           timeBalance: 10 + (index % 6),
-          evidenceCount: index % 4,
+          // 证据条数由学生端 presence 上报真实值（session.learningState.evidenceIds 的长度）。
+          // 这里从 0 起，不再造演示数字——教师要靠它判断该不该点「人工通过」。
+          evidenceCount: 0,
           dialogueSummary: index === 8
             ? '学生已尝试两种记录方式，仍不确定应选择哪一处作为证据。'
             : '学生正在按任务要求收集现场证据，尚未出现明显理解偏差。',
@@ -192,7 +194,7 @@ export function createCourseRunService({ store, getCourse, realtime }) {
   }
 
   async function createRun(input = {}) {
-    const course = await getCourse(input.courseId || 'lesson_zhuhun_001');
+    const course = await getCourse(input.courseId || 'lesson_gewu_001');
     const { groups, participants, center } = makeParticipants(course, Number(input.groupCount || 5));
     const createdAt = nowIso();
     const run = {
@@ -201,18 +203,18 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       teacherName: input.teacherName || '带队教师',
       courseId: course.id,
       courseVersion: input.courseVersion || '1.0.0',
-      courseTitle: course.publicLesson.title,
+      courseTitle: course.lesson.title,
       className: input.className || '故宫研学班',
       status: input.status || 'draft',
-      phaseId: course.publicLesson.phases[0]?.id || 'phase-1',
-      phaseName: course.publicLesson.phases[0]?.name || '课前准备',
+      phaseId: course.lesson.phases[0]?.id || 'phase-1',
+      phaseName: course.lesson.phases[0]?.name || '课前准备',
       phaseIndex: 0,
       phaseRemainingSeconds: 5400,
       paused: false,
       rolesReleased: false,
       rolesLocked: false,
       entryCode: String(Math.floor(100000 + Math.random() * 900000)),
-      mapAsset: `/${course.publicLesson.assets.navigationMap}`,
+      mapAsset: `/${course.lesson.assets.navigationMap}`,
       mapCenter: center,
       groupCount: groups.length,
       groups,
@@ -391,6 +393,9 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       if (action === 'confirm_arrival') participant.location.insideFence = true;
       if (action === 'approve_evidence') participant.learning.progress = Math.min(100, participant.learning.progress + 12);
       if (action === 'skip_step') participant.learning.progress = Math.min(100, participant.learning.progress + 8);
+      // `advance_task` 只投递指令，真正改会话的是学生端桥回发的 lifecycle_event
+      // （见 server/agent/task-advance.js）。这里刻意**不动** participant.learning.progress：
+      // 进度前进多少由服务端按真实任务算，教师端不猜。
     }
   }
 
@@ -416,11 +421,10 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       run.version += 1;
       run.updatedAt = nowIso();
       for (const participant of participants) {
-        const delivered = participant.online;
         state.receipts.push({
           id: id('receipt'), commandId: command.id, participantId: participant.id,
-          learnerSessionId: participant.learnerSessionId, status: delivered ? 'delivered' : 'accepted',
-          acceptedAt: command.createdAt, deliveredAt: delivered ? nowIso() : null, confirmedAt: null,
+          learnerSessionId: participant.learnerSessionId, status: 'accepted',
+          acceptedAt: command.createdAt, deliveredAt: null, confirmedAt: null,
         });
       }
       audit(state, runId, input.actorId, 'teacher.command', input.target, input.reason, { commandId: command.id, action: input.action });
@@ -508,6 +512,7 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       }
       participant.location.observedAt = nowIso();
       if (Number.isFinite(Number(input.progress))) participant.learning.progress = Math.max(0, Math.min(100, Number(input.progress)));
+      if (Number.isFinite(Number(input.evidenceCount))) participant.learning.evidenceCount = Math.max(0, Number(input.evidenceCount));
       if (input.currentTask) participant.learning.currentTask = String(input.currentTask).slice(0, 200);
       if (Number.isFinite(Number(input.idleSeconds))) participant.learning.idleSeconds = Math.max(0, Number(input.idleSeconds));
       publishedEvent = eventFor(state, run.id, 'participant.presence', { participantId: participant.id });
@@ -521,7 +526,10 @@ export function createCourseRunService({ store, getCourse, realtime }) {
     const state = await store.read();
     const located = locateParticipant(state, sessionId);
     if (!located) return { commands: [], sequence: state.sequence };
-    const receipts = state.receipts.filter((receipt) => receipt.learnerSessionId === sessionId || receipt.participantId === located.participant.id);
+    const receipts = state.receipts.filter((receipt) => (
+      receipt.participantId === located.participant.id
+      && receipt.status === 'accepted'
+    ));
     const commandIds = new Set(receipts.map((receipt) => receipt.commandId));
     return {
       commands: state.commands.filter((command) => commandIds.has(command.id) && command.sequence > Number(after))
@@ -538,13 +546,18 @@ export function createCourseRunService({ store, getCourse, realtime }) {
       if (!located) throw httpError(404, '学生会话未绑定课程场次。');
       const receipt = state.receipts.find((item) => item.commandId === commandId && item.participantId === located.participant.id);
       if (!receipt) throw httpError(404, '指令回执不存在。');
+      if (receipt.status === 'confirmed' || receipt.status === status) {
+        result = receipt;
+        return;
+      }
       receipt.status = status;
+      receipt.learnerSessionId = sessionId;
       receipt.deliveredAt ||= nowIso();
       if (status === 'confirmed') receipt.confirmedAt = nowIso();
       publishedEvent = eventFor(state, located.run.id, 'teacher.command.receipt', { commandId, participantId: located.participant.id, status });
       result = receipt;
     });
-    realtime.publish(publishedEvent.runId, publishedEvent);
+    if (publishedEvent) realtime.publish(publishedEvent.runId, publishedEvent);
     return result;
   }
 

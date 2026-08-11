@@ -422,64 +422,151 @@ tr:hover td { background:rgba(184,135,56,.04); }
   <div class="section-num">1</div>
   <h2>产品愿景与架构总览</h2>
   <p class="lead">
-    一句话定义：<strong>通过课程配置驱动AI智能体生成</strong>——课程设计者填入知识库、编排任务流程、选择功能模块，平台自动生成一个「看起来独立」的学习智能体小程序，陪伴学生完成从导入到反思的全流程学习。
+    一句话定义：<strong>平台提供通用底座 + 课程设计者填入配置 = 自动生成一个课程专属的 AI 学习智能体。</strong><br>
+    学生看到的是一个叫「絮絮」的 AI 同伴在陪他探索故宫——但背后是平台引擎在运行课程设计者写的配置文件。换一套配置，就是另一门课程、另一个智能体。
   </p>
 
-  <h3>1.1 核心理念：三层架构</h3>
-  <div class="arch-diagram">
-    <div class="arch-layer layer-config">
-      <div class="arch-layer-label">配置层</div>
-      <div class="arch-layer-content">
-        <div class="arch-box box-config">课程元数据</div>
-        <div class="arch-box box-config">阶段编排</div>
-        <div class="arch-box box-config">角色定义</div>
-        <div class="arch-box box-config">任务流程</div>
-        <div class="arch-box box-config">知识库 (B类)</div>
-        <div class="arch-box box-config">功能选配 (A类)</div>
-        <div class="arch-box box-config">采集项 (C类)</div>
+  <!-- ===== 1.1 职责分离图 ===== -->
+  <h3>1.1 谁提供了什么：平台 vs 课程设计者</h3>
+
+  <div style="display:flex;gap:20px;margin:20px 0;flex-wrap:wrap;">
+    <!-- 左栏：平台 -->
+    <div style="flex:1;min-width:300px;background:linear-gradient(135deg,#1a2a42,#243b5a);border-radius:var(--radius);padding:24px;color:#e8f0f8;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <span style="display:inline-block;background:rgba(255,255,255,.15);border-radius:20px;padding:6px 16px;font-size:.8rem;letter-spacing:.08em;color:#95d0c8;">PLATFORM · 平台底层提供</span>
+        <p style="font-size:1.1rem;font-weight:700;margin:8px 0 0;color:#fff;">所有课程共享，无需配置</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">🤖</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">AI 对话引擎</strong>
+          <small style="opacity:.7;font-size:.72rem;">SSE 流式 · RAG 检索 · 苏格拉底追问</small>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">🎙️</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">语音通道</strong>
+          <small style="opacity:.7;font-size:.72rem;">语音输入 STT · 语音输出 TTS</small>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">📍</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">位置感知</strong>
+          <small style="opacity:.7;font-size:.72rem;">GPS · 围栏 · 导航 · 到达检测</small>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">⏱️</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">时间管理</strong>
+          <small style="opacity:.7;font-size:.72rem;">倒计时 · 时间银行 · 阶段切换</small>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">📡</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">师生通信</strong>
+          <small style="opacity:.7;font-size:.72rem;">教师指令 · 学生求助 · 广播</small>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">🧩</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">模块渲染器</strong>
+          <small style="opacity:.7;font-size:.72rem;">按 tool_call 动态渲染工具卡片</small>
+        </div>
       </div>
     </div>
-    <div class="arch-arrow">▼ ▼ ▼ ▼ ▼</div>
-    <div class="arch-layer layer-engine">
-      <div class="arch-layer-label">引擎层</div>
-      <div class="arch-layer-content">
-        <div class="arch-box box-engine">LLM 对话引擎</div>
-        <div class="arch-box box-engine">Prompt 编译器</div>
-        <div class="arch-box box-engine">知识检索 (RAG)</div>
-        <div class="arch-box box-engine">功能调度器</div>
-        <div class="arch-box box-engine">状态机引擎</div>
-        <div class="arch-box box-engine">数据管线</div>
-        <div class="arch-box box-engine">实时同步</div>
+    <!-- 右栏：课程 -->
+    <div style="flex:1;min-width:300px;background:linear-gradient(135deg,#f9f3e8,#fff8ef);border:2px solid var(--gold);border-radius:var(--radius);padding:24px;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <span style="display:inline-block;background:var(--tag-bg);border-radius:20px;padding:6px 16px;font-size:.8rem;letter-spacing:.08em;color:var(--gold);">COURSE CONFIG · 课程设计者配置</span>
+        <p style="font-size:1.1rem;font-weight:700;margin:8px 0 0;color:var(--ink);">每门课程独有，由 .md 文件定义</p>
       </div>
-    </div>
-    <div class="arch-arrow">▼ ▼ ▼ ▼ ▼</div>
-    <div class="arch-layer layer-client">
-      <div class="arch-layer-label">端侧层</div>
-      <div class="arch-layer-content">
-        <div class="arch-box box-client">学生端小程序</div>
-        <div class="arch-box box-client">教师端小程序</div>
-        <div class="arch-box box-data">学习报告</div>
-        <div class="arch-box box-data">数据看板</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">🏗️</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">课程结构</strong>
+          <small style="color:var(--ink-light);font-size:.72rem;">阶段 → 角色 → 任务 → 步骤</small>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">🧠</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">B · 知识与引导</strong>
+          <small style="color:var(--ink-light);font-size:.72rem;">知识库 · 引导规则 · 限制 · 脚手架</small>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">🔧</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">A · 功能选配</strong>
+          <small style="color:var(--ink-light);font-size:.72rem;">为每个任务指定工具 + 参数</small>
+        </div>
+        <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:1.3rem;">📊</div>
+          <strong style="font-size:.82rem;display:block;margin-top:4px;">C · 数据采集</strong>
+          <small style="color:var(--ink-light);font-size:.72rem;">采哪些字段 · 评估维度 · 报告结构</small>
+        </div>
       </div>
     </div>
   </div>
 
-  <h3>1.2 从配置到智能体：全链路</h3>
-  <div class="flow-row">
-    <div class="flow-step step-config">课程设计者<br><small>配置 A+B+C</small></div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-step step-engine">Prompt 编译<br><small>生成 System Prompt</small></div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-step step-engine">功能绑定<br><small>A→Tool Calls</small></div>
-    <span class="flow-arrow">→</span>
-    <div class="flow-step step-client">学生端渲染<br><small>课程专属智能体</small></div>
+  <!-- 汇合箭头 -->
+  <div style="text-align:center;margin:12px 0;font-size:1.5rem;color:var(--teal,#1f7a70);">▼ 合成 ▼</div>
+
+  <!-- 产出物 -->
+  <div style="background:#e8f5e9;border:2px solid #a5d6a7;border-radius:var(--radius);padding:20px 24px;text-align:center;">
+    <p style="font-size:1.1rem;font-weight:700;color:#2e7d32;margin:0 0 8px;">最终产出：课程专属的 AI 学习智能体</p>
+    <p style="font-size:.88rem;color:#33691e;margin:0;">学生看到的是一个有独特人格、懂特定知识、会用特定工具引导学习的 AI 同伴。<br>换一套 .md 配置 → 同一个 App 壳变成完全不同的课程体验。</p>
   </div>
+
+  <!-- ===== 1.2 三个表格 ===== -->
+  <h3>1.2 平台底层提供什么（所有课程共享）</h3>
+  <table>
+    <tr><th style="width:150px">底层能力</th><th>说明</th><th style="width:80px">详见</th></tr>
+    <tr><td><strong>AI 对话引擎</strong></td><td>LLM 流式输出 + 知识检索（RAG）+ 苏格拉底式追问 + 人设执行 + 限制过滤 + 上下文状态管理</td><td>§6 P01</td></tr>
+    <tr><td><strong>语音通道</strong></td><td>语音输入（STT 实时转写）+ 语音输出（TTS 朗读 AI 回复），户外手持场景的主交互方式</td><td>§6 P02</td></tr>
+    <tr><td><strong>位置感知</strong></td><td>GPS 实时定位 + 安全围栏 + 到达检测 + 高德地图导航 + 轨迹记录</td><td>§6 P03</td></tr>
+    <tr><td><strong>时间管理</strong></td><td>阶段倒计时 + 时间银行（赚取/赠送）+ 教师加时/暂停控制</td><td>§6 P04</td></tr>
+    <tr><td><strong>师生通信</strong></td><td>教师 → 学生指令推送 + 学生一键求助 + 紧急集合广播</td><td>§6 P05</td></tr>
+    <tr><td><strong>功能模块渲染器</strong></td><td>接收 Agent 的 tool_call → 在对话流中动态渲染对应的工具卡片（拍照/画板/答题/拼合…）</td><td>§2</td></tr>
+    <tr><td><strong>数据管线</strong></td><td>学生操作 → 证据包封装 → 本地暂存 → 联网同步 → 实时反馈/事后报告/课程迭代三重消费</td><td>§4</td></tr>
+  </table>
+
+  <h3>1.3 课程设计者配置什么（每门课程独有）</h3>
+  <table>
+    <tr><th style="width:130px">配置类型</th><th>课程设计者在 .md 中填写什么</th><th>最终效果</th></tr>
+    <tr><td><strong>课程结构</strong></td><td>课程元数据 + 阶段划分 + 角色定义 + 任务编排 + 步骤拆分</td><td>决定学习流程的骨架和状态机</td></tr>
+    <tr><td><strong>A · 功能选配</strong></td><td>每个步骤需要哪些工具（A01–A07）+ 工具参数（最少拍摄数、画布尺寸、题目列表…）</td><td>Agent 运行时能 emit 哪些 tool_call；学生端渲染对应卡片</td></tr>
+    <tr><td><strong>B · 知识与引导</strong></td><td>知识库条目 + 引导规则 + 绝对限制 + 脚手架梯度 + AI人设</td><td>决定 Agent 的人格/知识边界/追问策略/禁区</td></tr>
+    <tr><td><strong>C · 数据采集</strong></td><td>需要采集的字段 + 评估维度 + 报告模板</td><td>决定证据包结构 + 学习报告维度</td></tr>
+  </table>
 
   <div class="callout callout-idea">
-    <strong>💡 核心设计原则：</strong>同一套技术底座，通过配置差异化，生成「故宫治水研学」「长城防御体系」「苏州园林美学」等任意课程的独立智能体——它们界面相同、内核统一、但知识和行为完全不同。
+    <strong>💡 关键洞察：</strong>平台底层定义了「能做什么」（引擎能力 + 模块库），课程配置定义了「做什么和怎么做」（用哪些模块、填什么知识、按什么节奏引导）。学生端 App 是一个通用壳——它不知道自己在教故宫治水还是长城防御——一切差异来自配置。
   </div>
 
-  <h3>1.3 产品角色</h3>
+  <!-- ===== 1.4 合成链路 ===== -->
+  <h3>1.4 从配置到智能体：合成链路</h3>
+  <div class="flow-row">
+    <div class="flow-step step-config">课程 .md<br><small>设计者撰写</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step step-engine">解析引擎<br><small>Markdown → JSON</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step step-engine">Prompt 编译<br><small>+ Tool 绑定</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step" style="background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32;">Agent 实例<br><small>课程专属智能体</small></div>
+    <span class="flow-arrow">↔</span>
+    <div class="flow-step step-client">学生端 App<br><small>通用壳 + SSE</small></div>
+  </div>
+  <p style="font-size:.85rem;color:var(--ink-light);margin-top:8px;text-align:center;">
+    Agent 通过 SSE 流式返回文本气泡和 tool_call → 学生端实时渲染对话和工具卡片 → 学生操作产生证据 → 回传 Agent 决定下一步
+  </p>
+
+  <!-- ===== 1.5 最终渲染：学生看到什么 ===== -->
+  <h3>1.5 最终渲染：学生看到什么</h3>
+  <table>
+    <tr><th style="width:170px">学生看到的</th><th>背后的来源</th></tr>
+    <tr><td>AI 同伴的名字和性格</td><td>课程配置 B · AI人设（course.md 中的 companion 字段）</td></tr>
+    <tr><td>对话中的追问和引导</td><td>平台 AI 引擎 + 课程配置 B · 引导规则 + 脚手架</td></tr>
+    <tr><td>对话中弹出的工具卡片</td><td>平台模块渲染器 + 课程配置 A · 功能选配</td></tr>
+    <tr><td>导航到下一个地点</td><td>平台位置感知 + 课程配置中的 POI 坐标</td></tr>
+    <tr><td>阶段倒计时 + 时间银行</td><td>平台时间管理 + 课程配置中的阶段时长</td></tr>
+    <tr><td>教师突然发来的集合消息</td><td>平台师生通信（教师端实时推送）</td></tr>
+    <tr><td>学习报告</td><td>平台数据管线 + 课程配置 C · 采集项与评估维度</td></tr>
+  </table>
+
+  <!-- ===== 1.6 产品角色 ===== -->
+  <h3>1.6 产品角色</h3>
   <div class="grid-2">
     <div class="card">
       <div class="card-header">
@@ -540,6 +627,10 @@ tr:hover td { background:rgba(184,135,56,.04); }
         </ul>
       </div>
     </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>🔑 后续章节导读：</strong>§2 详述 A 类可配置功能模块库（A01–A07）；§3 详述 B 类智能体知识配置；§4 详述 C 类数据采集架构；§5 展示完整的 .md 配置体系；§6–§7 分别展开学生端和教师端设计。
   </div>
 </section>
 
