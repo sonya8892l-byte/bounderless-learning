@@ -19,7 +19,7 @@
 4. v2 新课程把引导、脚手架和验收标准就地写入任务或 Step，不再创建 `guidance/`、`scaffolds/`。
 5. `_platform/` 是平台维护区，不属于单课提交包；课程只在 `course.md` 的允许小节中覆盖平台默认。
 6. `open`、`inquiry` 遍历模式仍按 `sequential` 执行；正式上线课程先用 `sequential`。
-7. 领取角色前的阶段任务已可运行；领取角色后的全班/小组阶段任务尚未实现聚合进度，案例中保留它们用于说明正确归属，现场仍需教师组织。
+7. 选择角色前的阶段任务已可运行；选择角色后的全班/小组阶段任务尚未实现聚合进度，案例中保留它们用于说明正确归属，现场仍需教师组织。
 8. `能力标签` 当前只保存数据，不进入学生端、Prompt、UI 或评价计算。
 
 ## 2. 完整目录
@@ -103,7 +103,7 @@ lesson_example_001/
 - itemName：角色
 - 选择眉题：{roleCount}种{itemName} · 多条现场证据
 - 选择标题：选择你的{collectionName}{itemName}
-- 选择说明：每位成员负责一条证据线。集齐{roleCount}枚{collectionItemName}，共同解锁{unlockTarget}。
+- 选择说明：每位成员负责一条证据线。教师核对小组证据后，组织进入{unlockTarget}。
 - collectionItemName：色谱印记
 - collectionPanelName：小组证据板
 - unlockTarget：综合色谱发布会
@@ -113,7 +113,6 @@ lesson_example_001/
 - enabled：true
 - default：dialogue
 - allowStudentSwitch：true
-- allowFutureTaskBrowse：false
 
 ## 数值默认
 - 建议时长：12分钟
@@ -195,10 +194,10 @@ lesson_example_001/
 - prelude.收到提交：我收到你的提交了，正在看这条证据。
 - prelude.核对材料：我先按课程材料帮你核对。
 - prelude.寒暄：嗯嗯，我在听～
-- prelude.澄清：我在，不过这句话我还没完全接住。
+- prelude.澄清：我想确认一下你的意思。
 - degraded.情绪：我在听。你可以慢一点说，我会陪你一起理清。
 - degraded.任务线索：我收到啦。先从“{taskName}”里最确定的一条现场线索开始，把它告诉我。
-- degraded.没接住：我听见了，不过这句话我还没完全接住。你愿意再多说一点吗？
+- degraded.没接住：我想确认一下：你是在问当前任务，还是需要别的帮助？
 - tool.show_navigation：我把前往“{location}”的地图打开了。
 - tool.open_task_tool：我把“{taskName}”任务工具打开了，我们继续。
 - tool.call_teacher：我现在帮你呼叫老师，请先停在安全的位置。
@@ -222,8 +221,8 @@ lesson_example_001/
 - avoid_repeat.conversation_repair：我听见了，也先不催你。想回到学习时告诉我“继续”。
 - avoid_repeat.emotion：我还在，先照顾好自己。你可以慢慢说，现在不需要赶任务。
 - avoid_repeat.social：嗯嗯，我还在听～想回到学习时告诉我“继续”。
-- avoid_repeat.有待答：这件事我已经问过了，你可以直接点下面的选项，我会按你的回答继续。
-- avoid_repeat.默认：这句话我刚才说过了。我们接着你现在的想法往下聊。
+- avoid_repeat.有待答：这个选项还在等你确认，点一下就能继续。
+- avoid_repeat.默认：我们接着往下：你现在最想确认哪一点？
 
 ## 组织信息
 - 信息缺失：我这里没有这个信息，问一下带队老师最快。
@@ -259,7 +258,7 @@ lesson_example_001/
 | 基本信息 | `主题模板`必填；其余按规范填写 | `主题模板`只用 `gewu`、`zhizhi`、`youyi`、`zhuhun`；`层级代码`只用 `experience`、`inquiry`、`research`。 |
 | 核心问题 | 建议必填 | 写学生最终要回答的问题，不写活动流程。 |
 | 学生端角色体系 | 8项全部填写 | 英文键区分大小写；占位符要原样保留。 |
-| 学习视图 | 运行时支持的补充配置 | `default`只用 `dialogue`或`challenge`；正式上线把 `allowFutureTaskBrowse` 保持为 `false`。 |
+| 学习视图 | 运行时支持的补充配置 | `default`只用 `dialogue`或`challenge`；闯关模式按正式进度逐项解锁。 |
 | 数值默认 | 可选 | 只用于整课覆盖；任务字段和 Step 字段仍有更高优先级。 |
 | 学段规范 | 可选 | `字数`与`硬上限`成对填写；未覆盖的学段回落平台默认。 |
 | 脚手架 | 可选 | 这里定义等级语义；当前任务的具体提示仍写在任务/Step 的 `##### 脚手架`。 |
@@ -319,15 +318,15 @@ lesson_example_001/
 - 时长：25min
 - 模式：集体→个人
 - 地点：室内教育空间
-- 功能模块：A06(沉浸媒体), A01(文字), A07(扫码)
+- 功能模块：A06(沉浸媒体), A01(文字)
 - 触发条件：教师手动开始课程
-- 结束条件：导入材料完成、个人初始判断提交、角色领取完成
+- 结束条件：导入材料完成、个人初始判断提交，随后进入平台角色选择页
 
 ### 流程
 1. 教师说明安全、隐私与场馆规则
 2. 全班观看导入材料
 3. 每人提交初始判断
-4. 扫码领取角色
+4. 三项导入任务完成后，学生在平台角色选择页阅读角色说明并确认
 
 ### 阶段任务1：阅读并确认现场规则
 - id：phase-1-read-rules
@@ -336,6 +335,7 @@ lesson_example_001/
 - 阶段：Phase 1 进入证据局
 - 配置：阅读安全、隐私和文物保护规则卡并主动确认
 - 通过条件：学生主动点击“我已阅读并理解”
+- 收口方式：auto_on_last_step
 - 推进方式：auto_after_validation
 - 任务图：assets/tasks/phase-safety.svg
 - 位置模式：none
@@ -394,6 +394,7 @@ lesson_example_001/
 - 阶段：Phase 1 进入证据局
 - 配置：完整观看导入材料并留意光线、角度和表面状态
 - 通过条件：媒体播放完成
+- 收口方式：auto_on_last_step
 - 推进方式：auto_after_validation
 - 任务图：assets/tasks/phase-watch.svg
 - 位置模式：none
@@ -459,6 +460,7 @@ lesson_example_001/
 - 阶段：Phase 1 进入证据局
 - 配置：写出一个颜色判断、一条观察依据和一个尚未确定的问题
 - 通过条件：三个字段均完成，理由是否正确不影响通过
+- 收口方式：auto_on_last_step
 - 推进方式：auto_after_validation
 - 任务图：assets/tasks/phase-hypothesis.svg
 - 位置模式：none
@@ -512,71 +514,13 @@ lesson_example_001/
 - 最大尝试：3
 - 失败处理：逐项指出缺少判断、画面依据或问题中的哪一项，不评价观点正误
 - 教师介入：学生无法独立输入或需要无障碍支持
-- 通过后：role-stage:phase-1-scan-role
+- 通过后：role-stage:complete
 
 ##### 验收标准
 结构完整；“观察依据”是可指认的画面信息；“问题”可由后续现场或资料研究推进。
 
-### 阶段任务4：扫描并领取角色
-- id：phase-1-scan-role
-- 执行单位：个人
-- 前置：phase-1-write-hypothesis
-- 阶段：Phase 1 进入证据局
-- 配置：扫描教师发放的角色码并确认身份
-- 通过条件：扫码结果属于本课程允许角色，学生完成确认
-- 推进方式：auto_after_validation
-- 任务图：assets/tasks/phase-role-scan.svg
-- 位置模式：none
-- 地点：室内教育空间
-- 坐标：116.3970, 39.9180
-- 围栏半径：50m
-- 最短停留：0min
-- 到达验证：none
-- 建议时长：3min
-- 无操作提醒：2min
-- 提醒冷却：1min
-- 最大主动提醒：1
-- 功能模块：A07(扫码)
-- 工具参数：{"scanner":{"mode":"qr","prompt":"扫描教师发放的角色卡二维码","allowManualEntry":false,"expectedResults":["color-evidence","pattern-decoder"]}}
-- 完成方式：tool_result
-- 证据要求：有效角色码与学生确认记录
-- 能力标签：CQ-1
-- AI引导方向：只说明角色任务范围，不提前透露另一角色的证据
-
-##### 引导
-扫码失败时先检查权限、光线和二维码距离；不得由 AI 猜测角色。
-
-##### 验收标准
-扫码值命中允许列表；角色确认成功；同一学生只绑定一个角色。
-
-#### Step 1：绑定角色
-- id：phase-1-bind-role
-- 小步目标：为同一会话绑定后续角色任务轨道
-- 学生行动：扫描角色码，阅读角色说明并点击确认
-- 位置：none
-- 地点：室内教育空间
-- 坐标：116.3970, 39.9180
-- 围栏半径：50m
-- 最短停留：0min
-- 到达验证：none
-- 完成方式：tool_result
-- 证据要求：角色码有效且已确认
-- 功能模块：A07(扫码)
-- 工具参数：{"scanner":{"mode":"qr","prompt":"扫描角色卡二维码","allowManualEntry":false,"expectedResults":["color-evidence","pattern-decoder"]}}
-- 知识引用：K-04
-- 限制引用：restrictions.md#跨角色隔离
-- 能力标签：CQ-1, CQ-5
-- 常见误区：多人共用同一设备时误绑上一位学生的角色
-- 最大尝试：3
-- 失败处理：清空本次扫描草稿后重扫；连续失败由教师核对纸质名单
-- 教师介入：角色码损坏、重复绑定或设备权限不可用
-- 通过后：role:complete
-
-##### 验收标准
-角色值有效、确认人为当前学生、会话 ID 保持不变；扫描内容不向其他学生公开。
-
 ### 转场
-- 教师确认全班完成角色领取后推进到 Phase 2。
+- 三项导入任务完成后，学生端进入平台角色选择页；学生阅读角色说明并确认，教师再按现场节奏推进到 Phase 2。
 
 ---
 
@@ -620,6 +564,7 @@ lesson_example_001/
 - 阶段：Phase 3 综合色谱发布会
 - 配置：用两种光线情境检验小组的颜色判断是否稳定
 - 通过条件：完成2轮推演，记录至少1项改变和1项保持不变的判断
+- 收口方式：auto_on_last_step
 - 推进方式：ai_suggest
 - 任务图：assets/tasks/phase-simulation.svg
 - 位置模式：none
@@ -678,6 +623,7 @@ lesson_example_001/
 - 阶段：Phase 3 综合色谱发布会
 - 配置：记录共识、保留意见、待核问题，并由教师确认发布
 - 通过条件：三类记录齐全，教师完成现场审核
+- 收口方式：teacher_confirm
 - 推进方式：teacher
 - 任务图：assets/tasks/phase-release.svg
 - 位置模式：none
@@ -692,7 +638,7 @@ lesson_example_001/
 - 最大主动提醒：2
 - 功能模块：A05(讨论记录)
 - 工具参数：{"team":{"mode":"discussion","prompt":"记录综合色谱的共识、保留意见和待核问题。","minimumEntries":3,"roles":["主持人","证据核对人","记录人","发言人"],"recordTypes":["共识","保留意见","待核问题"],"requiredRecordTypes":["共识","保留意见","待核问题"]}}
-- 完成方式：teacher_confirm
+- 完成方式：tool_result
 - 证据要求：三类记录各至少1条，教师确认无安全、隐私或事实边界问题
 - 能力标签：CC-3.2, CQ-2, DS-03, DS-04
 - AI引导方向：帮助整理分歧，不替小组消除分歧
@@ -713,7 +659,7 @@ lesson_example_001/
 - 围栏半径：50m
 - 最短停留：0min
 - 到达验证：none
-- 完成方式：teacher_confirm
+- 完成方式：tool_result
 - 证据要求：共识、保留意见、待核问题各至少1条；无游客人脸和未经核验的确定性结论
 - 功能模块：A05(讨论记录)
 - 工具参数：{"team":{"mode":"discussion","prompt":"提交发布前记录。","minimumEntries":3,"roles":["主持人","证据核对人","记录人","发言人"],"recordTypes":["共识","保留意见","待核问题"],"requiredRecordTypes":["共识","保留意见","待核问题"]}}
@@ -736,6 +682,7 @@ lesson_example_001/
 - 阶段：Phase 3 综合色谱发布会
 - 配置：对比初始判断，口述一次认识变化并写下一条迁移方法
 - 通过条件：语音和文字均完成，能指出一条促成变化的证据
+- 收口方式：auto_on_last_step
 - 推进方式：auto_after_validation
 - 任务图：assets/tasks/phase-reflection.svg
 - 位置模式：none
@@ -795,8 +742,8 @@ lesson_example_001/
 | Phase | `时长`、`模式`、`地点`、`功能模块`、`触发条件`、`结束条件` | 顶栏、倒计时和教师组织信息来自这里；`### 流程`只给教师阅读。 |
 | 阶段任务 | `执行单位` | 只用 `全班`、`小组`、`个人`；非法词会报 error。 |
 | 阶段任务 | 其他字段 | 与角色 Task 使用同一套字段；`前置`只能指向同一 Phase 内的阶段任务。 |
-| 领取角色前阶段任务 | 运行状态 | 已进入无角色正式会话，可形成连续的导入任务轨道。 |
-| 领取角色后小组任务 | 运行状态 | 字段与 lint 生效；聚合进度尚未实现，案例的 Phase 3 仍需教师组织。 |
+| 选择角色前阶段任务 | 运行状态 | 已进入无角色正式会话，可形成连续的导入任务轨道。 |
+| 选择角色后小组任务 | 运行状态 | 字段与 lint 生效；聚合进度尚未实现，案例的 Phase 3 仍需教师组织。 |
 | `阶段` | 任务注释 | 当前只保存，不做 Phase 绑定；真正影响阶段 Prompt 的是会话 `phaseId` 与 `prompts/phaseN-*.md`。 |
 
 ## 7. `roles/color-evidence.md`
@@ -830,6 +777,7 @@ lesson_example_001/
 - 阶段：Phase 2 现场双线采证
 - 配置：到达批准点位，提交同一对象的环境照、细节照和观察条件
 - 通过条件：到达验证通过，2—4张照片合规，观察条件与初步判断完整
+- 收口方式：explicit_bundle_submit
 - 推进方式：auto_after_validation
 - 任务图：assets/tasks/color-observe.svg
 - 位置模式：geofence
@@ -940,6 +888,7 @@ lesson_example_001/
 - 阶段：Phase 2 现场双线采证
 - 配置：用口述和画板整理观察、推断、待核问题
 - 通过条件：口述引用照片编号，画板包含三栏并至少各有1项
+- 收口方式：explicit_bundle_submit
 - 推进方式：ai_suggest
 - 任务图：assets/tasks/color-report.svg
 - 位置模式：none
@@ -1072,6 +1021,7 @@ lesson_example_001/
 - 阶段：Phase 2 现场双线采证
 - 配置：识别教师指定对象，完成一组证据强度判断题
 - 通过条件：对象识别命中允许结果，判断题达到服务端通过条件
+- 收口方式：auto_on_last_step
 - 推进方式：auto_after_validation
 - 任务图：assets/tasks/pattern-identify.svg
 - 位置模式：point
@@ -1162,6 +1112,7 @@ lesson_example_001/
 - 阶段：Phase 2 现场双线采证
 - 配置：把对象、观察、来源、解释与局限拼成证据链，并完成同伴复核
 - 通过条件：证据链映射正确，讨论记录含质疑、回应和处理状态，教师确认
+- 收口方式：auto_on_last_step
 - 推进方式：teacher
 - 任务图：assets/tasks/pattern-build.svg
 - 位置模式：none
@@ -1368,7 +1319,7 @@ lesson_example_001/
 | 限制项 | 不可透露的内容 | 保护原因 | 解除条件 |
 |---|---|---|---|
 | 初始判断答案 | 哪一种光线解释更符合案例材料 | 学生要先留下自己的观察与问题 | Phase 1 初始判断提交后 |
-| 角色分工答案 | 两类角色最终怎样拼成综合色谱 | 角色领取前不应预告完整证据结构 | 全员完成角色领取后 |
+| 角色分工答案 | 两类角色最终怎样拼成综合色谱 | 角色选择前不应预告完整证据结构 | 全员完成角色选择后 |
 
 ## 安全与隐私限制
 
@@ -1580,12 +1531,12 @@ gift_target: same_group_only
 ```md
 # 进入证据局 阶段提示词
 
-> Phase 1：全班导入、初始判断与角色领取。阶段规则服务于氛围、纪律和全班节奏，不承载某个角色 Task 的具体教学策略。
+> Phase 1：全班导入、初始判断与角色选择。阶段规则服务于氛围、纪律和全班节奏，不承载某个角色 Task 的具体教学策略。
 
 ## 阶段目标
 
 - 建立“观察与解释分开记录”的共同规则
-- 完成导入材料、初始判断和角色领取
+- 完成导入材料、初始判断和角色选择
 - 明确安全、隐私与文物保护边界
 
 ## 絮絮行为
@@ -1602,7 +1553,7 @@ gift_target: same_group_only
 ## 允许行为
 
 - 帮学生区分“看到的”和“想到的”
-- 解释设备操作与角色领取流程
+- 解释设备操作与角色选择流程
 - 在学生提出安全或身体不适时立即呼叫教师
 
 ## 禁止行为
@@ -1765,7 +1716,6 @@ gift_target: same_group_only
 | `tasks/phase-watch.svg` | 导入任务图 | ⬜ | 原创 |
 | `tasks/phase-safety.svg` | 规则确认任务图 | ⬜ | 原创 |
 | `tasks/phase-hypothesis.svg` | 初始判断任务图 | ⬜ | 原创 |
-| `tasks/phase-role-scan.svg` | 角色领取任务图 | ⬜ | 原创 |
 | `tasks/phase-simulation.svg` | 推演任务图 | ⬜ | 原创 |
 | `tasks/phase-release.svg` | 发布任务图 | ⬜ | 原创 |
 | `tasks/phase-reflection.svg` | 反思任务图 | ⬜ | 原创 |
@@ -1832,7 +1782,7 @@ gift_target: same_group_only
 
 - `sequential`任务图与同角色`前置`已生效。
 - `open`、`inquiry`仍按`sequential`执行。
-- 领取角色前阶段任务已可运行；领取角色后的全班/小组阶段任务仍由教师组织聚合进度。
+- 选择角色前阶段任务已可运行；选择角色后的全班/小组阶段任务仍由教师组织聚合进度。
 - `能力标签`只做数据预留。
 - `失败处理`已校验格式，运行时自动执行仍待完善；教师需知道失败出口。
 
@@ -1868,9 +1818,10 @@ README 不参与核心课程解析，但它是团队交接入口。建议写清�
 | Phase | `时长`、`模式`、`地点`、`功能模块`、`触发条件`、`结束条件`、教师流程 |
 | 阶段任务 | `全班`、`小组`、`个人`三种执行单位，以及与角色 Task 相同的任务字段 |
 | 角色 | 排序、地点、围栏、类型、选择说明、角色卡、徽章、收集物、收集物图、服务端关键数据 |
-| Task | ID、前置、阶段、配置、通过条件、推进方式、任务图、完整位置、完整节奏、工具、完成方式、证据、标签、AI方向、就地三段 |
+| Task | ID、前置、阶段、配置、通过条件、收口方式、推进方式、任务图、完整位置、完整节奏、工具、完成方式、证据、标签、AI方向、就地三段 |
 | Step | 全部基础字段、完整位置、工具与参数、两类引用、标签、误区、尝试、失败、教师介入、通过后、就地三段 |
 | 推进方式 | `auto_after_validation`、`ai_suggest`、`teacher` |
+| 收口方式 | `auto_on_last_step`、`explicit_bundle_submit`、`teacher_confirm` |
 | 完成方式 | `user_confirm`、`tool_result`、`ai_evaluation`、`teacher_confirm`、`location_event`、`compound`六种均有正式流程实例 |
 | A类工具 | `photo`、`audio`、`text`、`sketch`、`quiz`、`builder`、`simulation`、`team`、`media`、`scanner` |
 | B类内容 | 知识卡、限制、阶段 Prompt、课程级评估、课程目标 |

@@ -36,5 +36,15 @@ export function createSessionStore({ baseDir }) {
     }
   }
 
-  return { create, get, save };
+  async function remove(id) {
+    try {
+      await fs.unlink(filePath(id));
+      return true;
+    } catch (error) {
+      if (error.code === 'ENOENT') return false;
+      throw error;
+    }
+  }
+
+  return { create, get, save, remove };
 }

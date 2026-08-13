@@ -1,3 +1,5 @@
+import { teacherAuthenticatedFetch } from './teacher-auth.js';
+
 const CONFIG_URL = '/api/map-config';
 const GROUP_ZOOM_THRESHOLD = 16.5;
 
@@ -17,7 +19,7 @@ function validPosition(location) {
 
 async function getMapConfig() {
   if (!configPromise) {
-    configPromise = fetch(CONFIG_URL, { headers: { 'x-teacher-id': 'teacher-demo' } })
+    configPromise = teacherAuthenticatedFetch(CONFIG_URL, { headers: { 'x-teacher-id': 'teacher-demo' } })
       .then(async (response) => {
         const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error || '地图配置读取失败');

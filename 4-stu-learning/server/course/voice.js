@@ -30,17 +30,19 @@ export const VOICE_DEFAULTS = Object.freeze({
   'task_step_completed.可呼叫老师': '已达到本步最大尝试次数，可以呼叫老师一起看。',
   'task_step_completed.继续小步': '第{doneNumber}小步完成了。现在做第{nextNumber}小步：{stepText}。',
   'task_step_completed.全部完成': '很好，这个阶段的{stepCount}个小步都完成了。现在整理好照片或记录，在任务卡里提交给我检查。',
+  'task_step_completed.任务完成': '这一步已通过，这项任务已经完成。',
+  'task_step_completed.等待教师终审': '所有小步已完成，这项任务正在等待老师确认。',
   'proactive_nudge.找不到地点': '还顺利吗？如果没找到“{location}”，我把高德地图再放到这里。',
   'proactive_nudge.试一小步': '还顺利吗？可以先试这一小步：{hint}',
   'degraded.情绪': '我在听。你可以慢一点说，我会陪你一起理清。',
   'degraded.任务线索': '我收到啦。先从“{taskName}”里最确定的一条现场线索开始，把它告诉我，我继续陪你分析。',
-  'degraded.没接住': '我听见了，不过这句话我还没完全接住。你愿意再多说一点吗？',
+  'degraded.没接住': '我想确认一下：你是在问当前任务，还是需要别的帮助？',
   'prelude.求助': '我在。先试一个小步骤：{hint}',
   'prelude.情绪': '我在听，你慢慢说。',
   'prelude.收到提交': '我收到你的提交了，正在看这条证据。',
   'prelude.核对材料': '我先按课程材料帮你核对。',
   'prelude.寒暄': '嗯嗯，我在听～',
-  'prelude.澄清': '我在，不过这句话我还没完全接住。',
+  'prelude.澄清': '我想确认一下你的意思。',
   'tool.show_navigation': '我把前往“{location}”的高德地图打开了。',
   'tool.open_task_tool': '我把“{taskName}”任务工具打开了，我们继续。',
   'tool.call_teacher': '我现在帮你呼叫老师，请先停在安全的位置。',
@@ -65,8 +67,8 @@ export const VOICE_DEFAULTS = Object.freeze({
   'avoid_repeat.safety': '老师已经收到求助。请继续停在安全、显眼的位置，不要独自移动；如果身体更不舒服，马上告诉身边的成年人。',
   'avoid_repeat.emotion': '我还在，先照顾好自己。你可以慢慢说，现在不需要赶任务。',
   'avoid_repeat.social': '嗯嗯，我还在听～你可以接着说，想回到学习时告诉我“继续”。',
-  'avoid_repeat.有待答': '这件事我已经问过了，你可以直接点下面的选项，我会按你的回答继续。',
-  'avoid_repeat.默认': '这句话我刚才说过了。我们接着你现在的想法往下聊。',
+  'avoid_repeat.有待答': '这个选项还在等你确认，点一下就能继续。',
+  'avoid_repeat.默认': '我们接着往下：你现在最想确认哪一点？',
 });
 
 export const VOICE_KEYS = Object.freeze(Object.keys(VOICE_DEFAULTS));
@@ -109,7 +111,14 @@ export function resolveVoice(document, courseOverrides = {}) {
   for (const key of VOICE_KEYS) voice[key] = entries[key] || entries[legacyNameOf(key)] || VOICE_DEFAULTS[key];
   const unknown = Object.keys(normalizedOverrides).filter((key) => !VOICE_KEYS.includes(key));
   for (const key of unknown) {
-    warnings.push({ file: 'voice.md', key, message: `话术覆盖里的「${key}」不是已知模板键，已忽略。` });
+    warnings.push({
+      code: 'unknown_voice_key',
+      source: 'course.md',
+      file: 'voice.md',
+      field: `话术覆盖.${key}`,
+      key,
+      message: `话术覆盖里的「${key}」不是已知模板键，已忽略。`,
+    });
   }
   return { voice: Object.freeze(voice), warnings };
 }

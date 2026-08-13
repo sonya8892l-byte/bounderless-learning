@@ -65,8 +65,8 @@
 - 位置：teacher_approved_route
 - 完成方式：teacher_confirm
 - 证据要求：路线图和安全清单完整；排除屋顶、施工区、车行区和夜间单独调查
-- 功能模块：A01(路线表), A08(教师确认)
-- 工具参数：{"text":{"fields":[{"id":"route","label":"路线、点位、时段与替代点","type":"long_text","required":true,"minLength":100},{"id":"safety","label":"陪同、安全和事件报告流程","type":"long_text","required":true,"minLength":60}]},"teacher_confirm":{"prompt":"踏勘路线并确认时段、陪同、隐私、替代点和鸟类事件报告流程。","required":true}}
+- 功能模块：A01(文字表单)
+- 工具参数：{"text":{"fields":[{"id":"route","label":"路线、点位、时段与替代点","type":"long_text","required":true,"minLength":100},{"id":"safety","label":"陪同、安全和事件报告流程","type":"long_text","required":true,"minLength":60}]}}
 - 知识引用：K-03, K-05
 - 限制引用：restrictions.md#安全、隐私与伦理
 - 常见误区：只画路线，没有退出条件
@@ -74,6 +74,9 @@
 - 失败处理：修改高风险点或改用教师提供的替代范围
 - 教师介入：必须
 - 通过后：role-stage:science-run-survey
+
+##### 验收标准
+路线图明确点位、时段、成人陪同、替代点与退出条件，安全清单经教师确认后完成。
 
 
 ### 任务2：执行建筑风险调查
@@ -116,6 +119,9 @@
 - 教师介入：发现鸟类事件、路线风险或隐私照片
 - 通过后：step:science-map-risk
 
+##### 验收标准
+提交至少3轮同规则记录；每轮含日期、时段、天气、点位、风险变量、事件或零发现及合规照片，路线变化注明理由。
+
 
 #### Step 2：形成风险图
 - id：science-map-risk
@@ -133,6 +139,9 @@
 - 失败处理：提示区分事件记录和代理变量
 - 教师介入：点位可能暴露敏感位置
 - 通过后：role-stage:science-deliver-evidence
+
+##### 验收标准
+风险图覆盖至少5个点位，每点有等级或“未知”的理由及照片/记录编号，并清楚区分事件记录与风险变量。
 
 
 ### 任务3：交付科学证据线
@@ -174,6 +183,9 @@
 - 教师介入：科学结论超出材料强度
 - 通过后：step:science-defend-evidence
 
+##### 验收标准
+摘要引用至少6个来源或数据编号，完整呈现机制、现场发现、零发现、局限和措施含义，并说明相关与因果边界。
+
 
 #### Step 2：接受反证质询
 - id：science-defend-evidence
@@ -191,3 +203,6 @@
 - 失败处理：允许降低结论强度或列为待核
 - 教师介入：争议需要科学核验人
 - 通过后：role:complete
+
+##### 验收标准
+同行评议记录包含1条具体质疑、证据化回应、维持/修改/待核状态及受影响条款位置。

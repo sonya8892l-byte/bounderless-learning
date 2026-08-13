@@ -14,6 +14,50 @@
 3. 选择物种并提出可调查的核心问题。
 4. 制定六线取证计划和来源编号规则。
 
+### 阶段任务1：提交调查开题卡
+- id：phase-1-task-1
+- 执行单位：个人
+- 配置：记录小组物种、核心问题、六线取证计划和来源编号规则
+- 通过条件：四项开题信息齐全，核心问题可调查，来源编号规则可执行
+- 收口方式：auto_on_last_step
+- 推进方式：auto_after_validation
+- 位置模式：none
+- 地点：教育空间
+- 建议时长：8min
+- 无操作提醒：8min
+- 提醒冷却：8min
+- 最大主动提醒：1
+- 功能模块：A01(文字表单)
+- 工具参数：{"text":{"fields":[{"id":"species","label":"调查物种","type":"short_text","required":true,"minLength":2,"maxLength":30},{"id":"question","label":"可调查的核心问题","type":"long_text","required":true,"minLength":20,"maxLength":180},{"id":"plan","label":"六条证据线怎样分工","type":"long_text","required":true,"minLength":60,"maxLength":500},{"id":"source-rule","label":"来源编号规则","type":"long_text","required":true,"minLength":20,"maxLength":180}]}}
+- 完成方式：ai_evaluation
+- 证据要求：物种、核心问题、六线分工和来源编号规则各一项
+- 能力标签：CC-1.2, CQ-1, DS-01
+- AI引导方向：检查问题与证据计划是否可执行，不给物种风险的标准诊断
+
+##### 引导
+先请学生指出简报中的一条具体主张，再区分它属于保护身份、受威胁等级、种群趋势还是措施成效；一次只修正开题卡中的一个首要缺口。
+
+##### 验收标准
+物种明确；核心问题可由后续多源证据推进；六条证据线均有调查方向；来源编号能区分来源、日期和版本。结论是否正确不影响开题通过。
+
+#### Step 1：完成四项开题信息
+- id：phase-1-task-1-step-1
+- 小步目标：建立角色选择后可共同使用的调查起点与来源规则
+- 学生行动：填写调查物种、核心问题、六线分工和来源编号规则
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：四项信息齐全且能支持后续多源取证
+- 功能模块：A01(文字表单)
+- 工具参数：{"text":{"fields":[{"id":"species","label":"调查物种","type":"short_text","required":true,"minLength":2,"maxLength":30},{"id":"question","label":"可调查的核心问题","type":"long_text","required":true,"minLength":20,"maxLength":180},{"id":"plan","label":"六条证据线怎样分工","type":"long_text","required":true,"minLength":60,"maxLength":500},{"id":"source-rule","label":"来源编号规则","type":"long_text","required":true,"minLength":20,"maxLength":180}]}}
+- 常见误区：把保护身份、受威胁等级、种群趋势和措施成效合成一个结论
+- 最大尝试：3
+- 失败处理：只指出物种、核心问题、六线分工或来源规则中的首要缺口
+- 教师介入：小组无法确定物种、研究范围或可用来源
+- 通过后：role-stage:complete
+
+##### 验收标准
+四项信息齐全；核心问题可调查；六线分工不重复；来源编号规则可以在后续证据墙中执行。
+
 ## Phase 2：展厅多源取证
 - 时长：90min
 - 模式：角色分线 + 两次汇合

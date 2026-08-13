@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { clearCourseCache, compileCourse } from '../server/course/compiler.js';
+import { QUALITY_ISSUE_CODES } from '../server/course/course-quality-audit.js';
 import {
   exitCodeForIssues,
   lintAllCourses,
@@ -21,29 +22,33 @@ function cloneCourse(course) {
   });
 }
 
-// 55 → 56：gewu_001 Phase 1 的两个阶段任务中，短片任务没写就地验收标准。
-// 这条是真缺口（作者该补），不是误报，所以基线上调而不是把检查放宽。
-test('5 门真课程：零 error，恰好 56 条缺验收 warning', async () => {
+test('5 门真课程通过结构与语义质量门禁，包括显式声明的静态情境图', async () => {
   const { issues, stats } = await lintAllCourses({ lessonsRoot });
-  const summary = summarizeIssues(issues);
+  const structural = issues.filter((issue) => !QUALITY_ISSUE_CODES.includes(issue.code));
+  const summary = summarizeIssues(structural);
   assert.equal(summary.errors, 0);
-  assert.equal(summary.warnings, 56);
-  assert.equal(exitCodeForIssues(issues), 0);
-  assert.equal(exitCodeForIssues(issues, { strict: true }), 1);
+  assert.equal(summary.warnings, 0);
+  assert.equal(exitCodeForIssues(structural), 0);
+  assert.equal(exitCodeForIssues(structural, { strict: true }), 0);
+  const missingMedia = structural.filter((issue) => issue.code === 'missing_media_source');
+  assert.equal(missingMedia.length, 0);
 
   const knowledgeRefs = stats.reduce((sum, item) => sum + item.knowledgeRefs, 0);
   const restrictionRefs = stats.reduce((sum, item) => sum + item.restrictionRefs, 0);
   const competencyTags = stats.reduce((sum, item) => sum + item.competencyTags, 0);
   const nextEdges = stats.reduce((sum, item) => sum + item.nextEdges, 0);
   assert.equal(knowledgeRefs, 403);
-  assert.equal(restrictionRefs, 216);
-  // 113 → 115：阶段任务2 的 DS-01 / DC-01 也进同一批能力标签校验。
-  assert.equal(competencyTags, 115);
-  assert.equal(nextEdges, 208);
-  assert.equal(stats.reduce((sum, item) => sum + item.missingAcceptance, 0), 56);
+  assert.equal(restrictionRefs, 217);
+  // 各课 Phase 1 入口任务的能力标签与角色任务一并校验。
+  assert.equal(competencyTags, 125);
+  // 五门课的可执行入口任务和明确 `通过后` 一并进图。
+  assert.equal(nextEdges, 214);
+  assert.equal(stats.reduce((sum, item) => sum + item.missingAcceptance, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.deadKnowledgeRefs, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.deadRestrictionRefs, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.missingAssets, 0), 0);
+  assert.equal(stats.reduce((sum, item) => sum + item.missingMediaSources, 0), 0);
+  assert.equal(stats.reduce((sum, item) => sum + item.qualityIssues, 0), 0);
 });
 
 test('注入死知识引用必须报 error（负例）', async () => {

@@ -23,9 +23,9 @@ export function challengeTaskAccess({ taskIndex, progress, taskCount, roleComple
   return 'locked';
 }
 
-export function clampChallengePageIndex({ requestedIndex, progress, taskCount, roleCompleted = false, allowAll = false }) {
+export function clampChallengePageIndex({ requestedIndex, progress, taskCount, roleCompleted = false }) {
   if (taskCount <= 0) return 0;
-  const highestUnlocked = allowAll || roleCompleted
+  const highestUnlocked = roleCompleted
     ? taskCount - 1
     : Math.min(Math.max(0, progress), taskCount - 1);
   return Math.min(Math.max(0, Number(requestedIndex) || 0), highestUnlocked);

@@ -34,9 +34,12 @@
               <p class="eyebrow" id="livePhase">正在读取课程状态</p>
               <h1 id="liveTitle">教师带队台</h1>
             </div>
-            <button class="sync-button" id="syncButton" type="button" data-action="refresh" aria-label="刷新状态">
-              <span class="sync-dot"></span><span id="syncLabel">连接中</span>
-            </button>
+            <div class="live-header__actions">
+              <button class="session-button" id="endTeacherSession" type="button" data-action="end-teacher-session" hidden>结束会话</button>
+              <button class="sync-button" id="syncButton" type="button" data-action="refresh" aria-label="刷新状态">
+                <span class="sync-dot"></span><span id="syncLabel">连接中</span>
+              </button>
+            </div>
           </div>
           <div class="status-strip" id="statusStrip"></div>
         </header>
@@ -120,6 +123,24 @@
       <div class="dialog-actions">
         <button class="outline-button" type="button" data-action="close-layer">取消</button>
         <button class="primary-button" id="confirmCommandButton" type="button" data-action="confirm-command">确认并发送</button>
+      </div>
+    </section>
+
+    <section class="teacher-access-gate" id="teacherAccessGate" hidden role="dialog" aria-modal="true" aria-labelledby="teacherAccessTitle">
+      <div class="teacher-access-card">
+        <span class="teacher-access-mark" aria-hidden="true">师</span>
+        <p class="eyebrow" id="teacherAccessEyebrow">教师安全会话</p>
+        <h1 id="teacherAccessTitle">输入教师访问凭证</h1>
+        <p class="teacher-access-description" id="teacherAccessDescription">预览和正式环境需要教师访问凭证。</p>
+        <form id="teacherAccessForm">
+          <label class="field-label" for="teacherCredential">访问凭证</label>
+          <input id="teacherCredential" name="teacherCredential" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required />
+          <p class="field-hint">凭证只保存在当前标签页的会话存储中；关闭标签页后自动失效。</p>
+          <button class="primary-button teacher-access-submit" type="submit">验证并进入</button>
+        </form>
+        <div class="teacher-config-actions" id="teacherConfigActions" hidden>
+          <button class="primary-button" type="button" data-action="retry-teacher-access">重新检查配置</button>
+        </div>
       </div>
     </section>
 

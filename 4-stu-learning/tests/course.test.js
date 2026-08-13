@@ -6,17 +6,19 @@ import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
 import { findSpoiler, retrieveKnowledge, restrictionUnlocked } from '../server/course/retrieval.js';
 import { parseLesson } from '../src/engine/lesson-parser.js';
 import { PLATFORM_COMPANION } from '../src/engine/platform-config.js';
-import publicLessons from '../src/generated/lesson-public.js';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
-test('公开课程包默认开启双学习视图，只有故宫验收课开放未来关卡浏览', () => {
-  for (const [courseId, course] of Object.entries(publicLessons)) {
-    assert.deepEqual(course.learningView, {
+test('全部课程编译结果默认开启双学习视图，并保持严格顺序闯关', async () => {
+  const courseIds = (await fs.readdir(lessonsRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith('lesson_'))
+    .map((entry) => entry.name);
+  for (const courseId of courseIds) {
+    const course = await compileCourse({ lessonsRoot, courseId });
+    assert.deepEqual(course.lesson.learningView, {
       enabled: true,
       default: 'dialogue',
       allowStudentSwitch: true,
-      allowFutureTaskBrowse: courseId === 'lesson_gewu_001',
     });
   }
 });
@@ -32,7 +34,6 @@ test('课程编译器生成六角色、知识、限制和工具实例', async ()
     enabled: true,
     default: 'dialogue',
     allowStudentSwitch: true,
-    allowFutureTaskBrowse: true,
   });
   for (const role of course.roles) {
     for (const task of role.tasks) {
@@ -80,7 +81,6 @@ test('第二门课程可从课程配置解析新角色、工具和角色解锁�
     enabled: true,
     default: 'dialogue',
     allowStudentSwitch: true,
-    allowFutureTaskBrowse: false,
   });
   assert.equal(course.roles.length, 5);
   assert.equal(course.knowledge.length, 21);

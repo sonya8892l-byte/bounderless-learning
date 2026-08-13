@@ -90,6 +90,29 @@ test('Step 级验收标准就地装配，阅卷器不再需要整份课程量规
   assert.ok(longest < course.evaluation.length, '单步验收标准不应长于整份课程量规');
 });
 
+test('格物六角色 54 个 Step 均有 L0–L4 专属脚手架，L4 只给核验框架', async () => {
+  clearCourseCache();
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const entries = course.roles.flatMap((role) => role.tasks.flatMap((task) => (
+    task.steps.map((step) => ({ roleId: role.id, taskId: task.id, step }))
+  )));
+  assert.equal(entries.length, 54);
+
+  const protectedAnswerPattern = /(?:1142|2%|0\.2%|52\s*米|2100\s*米|60\s*万\s*(?:m³|立方米)|水从北向南流|从西北角流入|从东南角流出|2023\s*年故宫局部积水|因势利导)/u;
+  const repeatedSafetyPattern = /(?:安全|护栏|指定观察点|开放动线)/u;
+  for (const { roleId, taskId, step } of entries) {
+    const label = `${roleId}/${taskId}/${step.id}`;
+    assert.ok(step.scaffold, `${label} 缺 Step 级脚手架`);
+    for (const level of ['L0', 'L1', 'L2', 'L3', 'L4']) {
+      assert.match(step.scaffold, new RegExp(`^\\|\\s*${level}\\s*\\|\\s*\\S`, 'mi'), `${label} 缺 ${level}`);
+    }
+    const l4 = step.scaffold.match(/^\|\s*L4\s*\|\s*(.*?)\s*\|$/mi)?.[1] || '';
+    assert.match(l4, /(?:核验|检查|复核|审计|审核|框架)/u, `${label} 的 L4 缺核验语义`);
+    assert.doesNotMatch(l4, protectedAnswerPattern, `${label} 的 L4 泄露保护答案`);
+    assert.doesNotMatch(step.scaffold, repeatedSafetyPattern, `${label} 把工具安全提示重复进脚手架`);
+  }
+});
+
 test('能力标签解析为四棵树前缀，非法前缀被丢弃', () => {
   const lesson = parseLesson({
     id: 'unit-test',

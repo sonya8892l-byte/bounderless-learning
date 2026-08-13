@@ -54,6 +54,19 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const COMPLETE_CHAT_FINISH_REASONS = new Set(['stop', 'tool_calls', 'function_call']);
+const FAILED_RESPONSE_STATUSES = new Set(['failed', 'cancelled', 'incomplete']);
+
+function terminalFailureBody({ responses, payload, finishReason }) {
+  if (responses) {
+    return payload?.incomplete_details
+      || payload?.error
+      || payload?.status
+      || 'missing_completed_status';
+  }
+  return finishReason || 'missing_finish_reason';
+}
+
 async function consumeTextStream(response, responses, onTextDelta) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -69,18 +82,42 @@ async function consumeTextStream(response, responses, onTextDelta) {
     const data = line.slice(5).trim();
     if (!data) return;
     if (data === '[DONE]') {
-      if (!responses) sawTerminal = true;
+      // [DONE] is only a transport sentinel.  The provider must also have sent
+      // an explicit successful protocol terminal below.
       return;
     }
     let payload;
     try { payload = JSON.parse(data); } catch { return; }
+    const wasTerminal = sawTerminal;
+    const delta = responses
+      ? (payload.type === 'response.output_text.delta' ? payload.delta : '')
+      : payload?.choices?.[0]?.delta?.content;
+    if (typeof delta === 'string' && delta) {
+      if (wasTerminal) {
+        terminalError ||= 'data_after_terminal';
+      } else {
+        text += delta;
+        onTextDelta(delta);
+      }
+    }
     if (payload.type === 'response.completed') {
       finalPayload = payload.response;
       sawTerminal = true;
+      if (
+        finalPayload?.status !== 'completed'
+        || finalPayload?.incomplete_details
+        || finalPayload?.error
+      ) {
+        terminalError = finalPayload?.incomplete_details?.reason
+          || finalPayload?.error?.message
+          || finalPayload?.status
+          || 'missing_completed_status';
+      }
     }
-    if (['response.incomplete', 'response.failed', 'error'].includes(payload.type)) {
+    if (['response.incomplete', 'response.failed', 'response.cancelled', 'error'].includes(payload.type)) {
       finalPayload = payload.response || finalPayload;
       terminalError = payload.response?.incomplete_details?.reason
+        || payload.response?.error?.message
         || payload.error?.message
         || payload.type;
       sawTerminal = true;
@@ -88,13 +125,6 @@ async function consumeTextStream(response, responses, onTextDelta) {
     if (!responses && payload?.choices?.[0]?.finish_reason) {
       finishReason = payload.choices[0].finish_reason;
       sawTerminal = true;
-    }
-    const delta = responses
-      ? (payload.type === 'response.output_text.delta' ? payload.delta : '')
-      : payload?.choices?.[0]?.delta?.content;
-    if (typeof delta === 'string' && delta) {
-      text += delta;
-      onTextDelta(delta);
     }
   }
 
@@ -108,9 +138,14 @@ async function consumeTextStream(response, responses, onTextDelta) {
   }
   if (buffer) consumeLine(buffer);
   if (!sawTerminal) throw new LLMError('模型流在完整结束前中断。');
-  if (terminalError || finalPayload?.status === 'incomplete' || finishReason === 'length') {
+  const successfulTerminal = responses
+    ? finalPayload?.status === 'completed'
+      && !finalPayload?.incomplete_details
+      && !terminalError
+    : COMPLETE_CHAT_FINISH_REASONS.has(finishReason) && !terminalError;
+  if (!successfulTerminal) {
     throw new LLMError('模型回复未完整生成，请缩短后重试。', {
-      body: terminalError || finalPayload?.incomplete_details || finishReason,
+      body: terminalError || terminalFailureBody({ responses, payload: finalPayload, finishReason }),
     });
   }
   if (!text && finalPayload) text = responseText(finalPayload);
@@ -284,12 +319,21 @@ export function createLLM({
           throw new LLMError('模型返回了无法解析的内容。', { body: rawText, cause });
         }
         const message = responses ? null : payload?.choices?.[0]?.message;
-        const responseIncomplete = responses
-          && (payload?.status === 'incomplete' || Boolean(payload?.incomplete_details));
+        const responseIncomplete = responses && (
+          payload?.status !== 'completed'
+          || FAILED_RESPONSE_STATUSES.has(payload?.status)
+          || Boolean(payload?.incomplete_details)
+          || Boolean(payload?.error)
+        );
         const chatFinishReason = responses ? '' : payload?.choices?.[0]?.finish_reason;
-        if (responseIncomplete || chatFinishReason === 'length') {
+        const chatIncomplete = !responses && !COMPLETE_CHAT_FINISH_REASONS.has(chatFinishReason);
+        if (responseIncomplete || chatIncomplete) {
           throw new LLMError('模型回复未完整生成，请缩短后重试。', {
-            body: responses ? payload?.incomplete_details : chatFinishReason,
+            body: terminalFailureBody({
+              responses,
+              payload,
+              finishReason: chatFinishReason,
+            }),
           });
         }
         const result = {

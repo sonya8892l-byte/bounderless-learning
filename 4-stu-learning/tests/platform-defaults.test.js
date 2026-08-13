@@ -141,7 +141,7 @@ test('端到端：defaults.md 把无操作提醒改成 5 分钟，nudge-policy �
   clearCourseCache();
   const before = await compileCourse({ lessonsRoot: root, courseId: 'lesson_gewu_001' });
   const taskOf = (course) => course.roles[0].tasks[0];
-  assert.equal(taskOf(before).timing.idleNudgeSeconds, 3 * 60);
+  assert.equal(taskOf(before).timing.idleNudgeSeconds, 8 * 60);
 
   await fs.writeFile(
     path.join(root, '_platform', 'defaults.md'),

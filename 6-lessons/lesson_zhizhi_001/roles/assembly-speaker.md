@@ -82,6 +82,7 @@
 
 ### 任务2：完成议事发布
 - id：speaker-present-assembly
+- 收口方式：teacher_confirm
 - 阶段：Phase 6 居民发布会
 - 地点：教育空间
 - 位置模式：none

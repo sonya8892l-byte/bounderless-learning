@@ -4,6 +4,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { buildApp } from '../server/app.js';
+import { createAgentService } from '../server/agent/service.js';
+import { compileCourse } from '../server/course/compiler.js';
 import { createSessionRecord } from '../server/services/session-factory.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -176,14 +178,88 @@ test('production without DATABASE_URL refuses state writes and disables demo boo
       groupId: 'production-test-group',
     },
   });
-  assert.equal(createSession.statusCode, 503);
-  assert.deepEqual(createSession.json(), { error: '服务暂时不可用，请稍后重试。' });
+  assert.equal(createSession.statusCode, 422);
+  assert.equal(createSession.json().code, 'COURSE_RUN_REQUIRED');
 
   const demo = await app.inject({ method: 'POST', url: '/api/teacher/demo' });
   assert.equal(demo.statusCode, 404);
 });
 
-test('agent route returns an in-flight conflict and replays a completed leased request', async (t) => {
+test('Vercel Preview 优先于误带的本地环境配置，关闭 demo 并强制正式场次', async (t) => {
+  const app = await buildApp({
+    env: env({
+      APP_ENV: 'local',
+      VERCEL_ENV: 'preview',
+      ENABLE_DEMO: true,
+      DATABASE_URL: undefined,
+      S3_BUCKET: undefined,
+      S3_ENDPOINT: undefined,
+      S3_ACCESS_KEY_ID: undefined,
+      S3_SECRET_ACCESS_KEY: undefined,
+      TEACHER_API_TOKEN: undefined,
+    }),
+    llm,
+    serveStatic: false,
+    realtimeMode: 'polling',
+  });
+  t.after(() => app.close());
+
+  const standalone = await app.inject({
+    method: 'POST',
+    url: '/api/sessions',
+    payload: {
+      courseId: 'lesson_gewu_001',
+      roleId: 'dragon-counter',
+      studentId: 'preview-student',
+      groupId: 'preview-group',
+    },
+  });
+  assert.equal(standalone.statusCode, 422);
+  assert.equal(standalone.json().code, 'COURSE_RUN_REQUIRED');
+
+  const demo = await app.inject({ method: 'POST', url: '/api/teacher/demo' });
+  assert.equal(demo.statusCode, 404);
+
+  const teacherRuns = await app.inject({ method: 'GET', url: '/api/teacher/runs' });
+  assert.equal(teacherRuns.statusCode, 503);
+  assert.match(teacherRuns.json().error, /认证尚未配置/);
+});
+
+test('DB completed lease 只重放兼容 envelope，存量结果仅恢复当前权威状态', async (t) => {
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const sessions = new Map();
+  const replaySessionStore = {
+    async create(values) {
+      const session = createSessionRecord({ ...values, id: 'ses_request_lease' });
+      sessions.set(session.id, structuredClone(session));
+      return session;
+    },
+    async get(id) {
+      const session = sessions.get(id);
+      return session ? structuredClone(session) : null;
+    },
+    async save(session) {
+      sessions.set(session.id, structuredClone(session));
+      return session;
+    },
+  };
+  const seedAgent = createAgentService({
+    llm,
+    store: replaySessionStore,
+    getCourse: async () => course,
+  });
+  const { session } = await seedAgent.createSession({
+    courseId: course.id,
+    roleId: 'dragon-counter',
+    studentId: 'request-lease-student',
+    groupId: 'request-lease-group',
+  });
+  const turnInput = { type: 'lifecycle_event', event: 'role_assigned' };
+  const seeded = await seedAgent.runTurn({
+    sessionId: session.id,
+    requestId: 'request-lease-test',
+    input: turnInput,
+  });
   const claims = [
     {
       status: 'pending',
@@ -191,11 +267,12 @@ test('agent route returns an in-flight conflict and replays a completed leased r
     },
     {
       status: 'completed',
+      result: seeded.replayEnvelope,
+    },
+    {
+      status: 'completed',
       result: {
-        events: [{
-          type: 'assistant.completed',
-          data: { id: 'msg_cached', text: '这是缓存结果。' },
-        }],
+        events: [{ type: 'assistant.completed', data: { text: '存量未验证文本' } }],
       },
     },
   ];
@@ -210,18 +287,19 @@ test('agent route returns an in-flight conflict and replays a completed leased r
   const app = await buildApp({
     env: env({ APP_ENV: 'test', EVIDENCE_UPLOAD_MODE: 'proxy' }),
     llm,
-    sessionStore,
+    sessionStore: replaySessionStore,
     courseRunStore,
     evidenceStore,
     learnerRequestStore,
+    getCourse: async () => course,
     serveStatic: false,
     realtimeMode: 'polling',
   });
   t.after(() => app.close());
   const payload = {
-    sessionId: 'ses_request_lease',
+    sessionId: session.id,
     requestId: 'request-lease-test',
-    input: { type: 'user_text', text: '请继续' },
+    input: turnInput,
   };
 
   const pending = await app.inject({ method: 'POST', url: '/api/agent/turn', payload });
@@ -232,7 +310,14 @@ test('agent route returns an in-flight conflict and replays a completed leased r
   assert.equal(replay.statusCode, 200);
   assert.match(replay.headers['content-type'], /^text\/event-stream\b/);
   assert.match(replay.body, /event: assistant\.completed/);
-  assert.match(replay.body, /这是缓存结果/);
+  assert.match(replay.body, /欢迎你/);
+
+  const legacy = await app.inject({ method: 'POST', url: '/api/agent/turn', payload });
+  assert.equal(legacy.statusCode, 200);
+  assert.doesNotMatch(legacy.body, /存量未验证文本/);
+  assert.doesNotMatch(legacy.body, /event: assistant\.completed/);
+  assert.match(legacy.body, /event: state\.updated/);
+  assert.match(legacy.body, /authoritative_recovery/);
 });
 
 test('PostgreSQL 风格 session store 通过原子入口同时保存状态和回放事件', async (t) => {
@@ -321,6 +406,19 @@ test('PostgreSQL 风格 session store 通过原子入口同时保存状态和回
   assert.ok(
     atomicWrite.request.result.events.some((event) => event.type === 'state.updated'),
   );
+  assert.equal(atomicWrite.request.result.kind, 'learner_turn_replay');
+  assert.equal(atomicWrite.request.result.schemaVersion, 1);
+  assert.match(atomicWrite.request.result.requestDigest, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(atomicWrite.request.result.trace.schemaVersion, 3);
+  assert.equal(atomicWrite.request.result.events.at(-1).type, 'state.updated');
+  assert.deepEqual(atomicWrite.request.runtimeGuard, {
+    required: true,
+    operation: 'learner_turn',
+    roleAssignment: true,
+    requestedRoleId: '',
+    teacherCommandId: '',
+    teacherCommandAction: '',
+  });
 });
 
 test('客户端在 claim 期间断开时会释放取得的 lease，且不调用模型', async (t) => {

@@ -32,6 +32,17 @@ test('缺省提示来自 scaffolding；课程脚手架表有内容时仍优先�
   );
 });
 
+test('脚手架列表写法与表格写法同样可按档读取，缺档仍向下回退', () => {
+  const scaffolding = resolveScaffolding(null).scaffolding;
+  const task = {
+    scaffold: '- L1：先找一个固定参照\n- L3: 比较两个位置的同一特征',
+    guidanceSteps: [],
+  };
+  assert.equal(taskScaffoldHint(task, 0, 0, null, scaffolding), '先找一个固定参照。');
+  assert.equal(taskScaffoldHint(task, 2, 0, null, scaffolding), '比较两个位置的同一特征。');
+  assert.equal(taskScaffoldHint(task, 1, 0, null, scaffolding), '先找一个固定参照。');
+});
+
 test('升档参数关闭后，同类求助第二次不再升档', () => {
   const understanding = { intent: 'help_stuck', emotion: 'neutral', confidence: 0.9 };
   const recent = [{ action: 'give_scaffold', intent: 'help_stuck' }];

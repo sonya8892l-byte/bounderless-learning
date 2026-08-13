@@ -19,10 +19,11 @@
 | `scaffolding.md` | L0–L4 语义定义 + 升档参数（本阶段只升不降） | overridable | **已接入** |
 | `tool-defaults.md` | 十种活动工具显示名 + 默认字段 label | overridable | **已接入**（中文正则匹配器仍在 `tool-registry.js`） |
 | `defaults.md` | 时长/提醒/冷却/推进方式等数值默认 | overridable | **已接入** |
+| `logistics.md` | 信息缺失、设施、时间安排、找老师等组织话术 | overridable | **已接入** |
 
 前三份规则文件为必需。缺失或内容为空时服务端课程编译失败，避免线上静默跳过平台底线。
 
-**六份默认层 md（`companion` / `voice` / `language-levels` / `scaffolding` / `tool-defaults` / `defaults`）删掉任意一份，行为与建立之前完全一致**——代码里的常量作为回落保留（如 `voice.js` 的 `VOICE_DEFAULTS`）。这是双轨期的安全网：任何一份 md 写坏或被误删，学生端不会开天窗。等线上跑稳再单独提一次删除 JS 常量的收尾提交。
+**七份默认层 md（`companion` / `voice` / `language-levels` / `scaffolding` / `tool-defaults` / `defaults` / `logistics`）删掉任意一份，行为与建立之前完全一致**——代码里的常量作为回落保留（如 `voice.js` 的 `VOICE_DEFAULTS`）。这是双轨期的安全网：任何一份 md 写坏或被误删，学生端不会开天窗。等线上跑稳再单独提一次删除 JS 常量的收尾提交。
 
 ## 覆盖白名单（D4）
 
@@ -37,11 +38,12 @@
 | 课程侧写在哪 | 覆盖什么 | 平台默认 |
 |---|---|---|
 | `course.md / ## 人设侧重` | `character`、`tone`、`口头禅`、`侧重` | `companion.md` |
-| `course.md / ## 话术覆盖` | 61 个话术模板，按 key 逐条 | `voice.md` |
+| `course.md / ## 话术覆盖` | 66 个话术模板，按 key 逐条 | `voice.md` |
 | `course.md / ## 学段规范` | 各学段字数、硬上限、句式 | `language-levels.md` |
 | `course.md / ## 脚手架` | L0–L4 语义与升档参数 | `scaffolding.md` |
 | `course.md / ## 工具默认` | 十种工具显示名与默认 label | `tool-defaults.md` |
 | `course.md / ## 数值默认`、任务块字段 | 时长、提醒、冷却、推进方式 | `defaults.md` |
+| `course.md / ## 组织信息` | 信息缺失、设施、时间和找老师等组织话术 | `logistics.md` |
 
 判断标准：教研或内容团队可能想调的 → 进 md；纯工程参数（超时、重试、连接池）→ 留代码。
 

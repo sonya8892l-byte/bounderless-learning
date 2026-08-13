@@ -9,14 +9,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { clearCourseCache, compileCourse } from '../server/course/compiler.js';
+import { auditCourseQuality } from '../server/course/course-quality-audit.js';
 import {
   resolveStepRestrictions,
   restrictionReferenceTitles,
 } from '../server/course/restriction-sections.js';
 import { PHASE_TASK_EXECUTORS } from '../src/engine/lesson-parser.js';
+import { isPosterOnlyMedia } from '../src/engine/tool-registry.js';
 
 const COMPETENCY_PREFIX = /^(CC|CQ|DK|DS|DC)(-|$)/;
 const ASSET_PATH_RE = /lessons\/[A-Za-z0-9_./-]+\.(?:png|jpe?g|webp|svg|mp3|mp4)/gi;
+const ACTIVITY_MODULES = new Set(['A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07']);
 
 /**
  * 与 task-graph.parseNextRef 同语义的本地副本。
@@ -103,6 +106,44 @@ function findAssetLine(sourceMarkdown = '', assetPath = '') {
   return 1;
 }
 
+function relativeCourseSource(courseId, source = '') {
+  const normalized = String(source || '').replaceAll('\\', '/').replace(/^\.\//, '');
+  const prefix = `6-lessons/${courseId}/`;
+  return normalized.startsWith(prefix) ? normalized.slice(prefix.length) : normalized;
+}
+
+/**
+ * 编译 warning 的 source/field/code 是稳定契约；行号尽量从原文反查。
+ * 优先用 key/target 找精确值，其次用 Step/Task id，最后才回落到字段名。
+ */
+function findCompilerWarningLine(course, warning = {}, courseId = '') {
+  if (Number(warning.line) > 0) return Number(warning.line);
+  const relativeSource = relativeCourseSource(courseId, warning.source || warning.file || 'course.md');
+  const markdown = String(course?.files?.[relativeSource] || '');
+  if (!markdown) return 1;
+  const lines = markdown.split('\n');
+  const exactId = warning.stepId || warning.taskId || '';
+  const valueNeedles = [warning.key, warning.target, warning.value]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  for (const needle of valueNeedles) {
+    const index = lines.findIndex((line) => line.includes(needle));
+    if (index >= 0) return index + 1;
+  }
+  if (exactId) {
+    const idPattern = new RegExp(`^\\s*-\\s*id\\s*[：:]\\s*${escapeRegExp(exactId)}\\s*$`);
+    const index = lines.findIndex((line) => idPattern.test(line));
+    if (index >= 0) return index + 1;
+  }
+  const field = String(warning.field || '').split('.').at(-1).trim();
+  if (field) {
+    const fieldPattern = new RegExp(`^\\s*-\\s*${escapeRegExp(field)}\\s*[：:]`);
+    const index = lines.findIndex((line) => fieldPattern.test(line));
+    if (index >= 0) return index + 1;
+  }
+  return 1;
+}
+
 function escapeRegExp(value = '') {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -160,6 +201,70 @@ function findPhaseTaskHeadingLines(markdown = '') {
   return found;
 }
 
+/**
+ * 直接读取 phases.md 的阶段任务执行单位。
+ *
+ * parser 会把非法值归一为「全班」并只留下 warning；如果 lint 只看编译结果，
+ * 作者原来写的「全组」等值会失去证据，随后静默按全班执行。
+ */
+function findInvalidPhaseTaskExecutors(markdown = '') {
+  const lines = String(markdown || '').split('\n');
+  const invalid = [];
+  let inPhaseTask = false;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^###\s*阶段任务\d+\s*[：:]/.test(line)) {
+      inPhaseTask = true;
+      continue;
+    }
+    if (/^#{1,3}\s+/.test(line)) inPhaseTask = false;
+    if (!inPhaseTask) continue;
+    const match = line.match(/^\s*-\s*执行单位\s*[：:]\s*(.*?)\s*$/);
+    if (!match) continue;
+    const value = match[1].trim();
+    if (!PHASE_TASK_EXECUTORS.includes(value)) invalid.push({ line: index + 1, value });
+  }
+  return invalid;
+}
+
+/**
+ * 原始 Markdown 的活动模块与工具参数门禁。
+ *
+ * tool-registry 只识别 A01–A07；未知模块目前会被静默丢弃，若整行都无法识别还会
+ * 回落成一个文字工具。`teacher_confirm` 是 Step 完成方式，不是活动工具参数。
+ */
+function findUnsupportedToolDeclarations(files = {}) {
+  const found = [];
+  for (const [relativeFile, markdown] of Object.entries(files)) {
+    const lines = String(markdown || '').split('\n');
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (/^\s*-\s*功能模块\s*[：:]/.test(line)) {
+        for (const match of line.matchAll(/\bA\d{2}\b/gi)) {
+          const module = match[0].toUpperCase();
+          if (!ACTIVITY_MODULES.has(module)) {
+            found.push({
+              code: 'unknown_activity_module',
+              line: index + 1,
+              relativeFile,
+              value: module,
+            });
+          }
+        }
+      }
+      if (/^\s*-\s*工具参数\s*[：:]/.test(line) && /["']teacher_confirm["']\s*:/.test(line)) {
+        found.push({
+          code: 'unsupported_tool_parameter',
+          line: index + 1,
+          relativeFile,
+          value: 'teacher_confirm',
+        });
+      }
+    }
+  }
+  return found;
+}
+
 function collectAssetPaths(value, bucket = new Set()) {
   if (typeof value === 'string') {
     for (const match of value.matchAll(ASSET_PATH_RE)) bucket.add(match[0]);
@@ -198,6 +303,7 @@ export function lintCourse(course, options = {}) {
     deadRestrictionRefs: 0,
     assetRefs: 0,
     missingAssets: 0,
+    missingMediaSources: 0,
     competencyTags: 0,
     badCompetencyTags: 0,
     missingAcceptance: 0,
@@ -210,6 +316,10 @@ export function lintCourse(course, options = {}) {
     emptyFailureHandling: 0,
     crossScopePrerequisites: 0,
     unsupportedTraversalModes: 0,
+    compilerWarnings: 0,
+    unknownActivityModules: 0,
+    unsupportedToolParameters: 0,
+    qualityIssues: 0,
   };
 
   const knowledgeIds = new Set((course?.knowledge || []).map((item) => item.id));
@@ -225,6 +335,7 @@ export function lintCourse(course, options = {}) {
     stepId = '',
     phaseTask = null,
     field = '',
+    source = '',
     line,
     file,
   }) => {
@@ -246,6 +357,8 @@ export function lintCourse(course, options = {}) {
       roleId,
       stepId,
       phaseId: phaseTask?.phaseId || '',
+      source: source || relativeCourseSource(courseId, resolvedFile),
+      field,
     });
   };
 
@@ -301,6 +414,35 @@ export function lintCourse(course, options = {}) {
           field: '能力标签',
         });
       }
+    }
+
+    const mediaDeclarations = [
+      ...(task.tools || []).map((tool) => ({ tool, stepId: '' })),
+      ...(task.steps || []).flatMap((step) => (step.tools || []).map((tool) => ({
+        tool,
+        stepId: step.id || '',
+      }))),
+    ];
+    const seenMedia = new Set();
+    for (const { tool, stepId } of mediaDeclarations) {
+      if (tool?.id !== 'media') continue;
+      const type = String(tool.config?.type || '').trim().toLowerCase();
+      if (!['video', 'audio', 'image'].includes(type)) continue;
+      const source = String(tool.config?.url || '').trim();
+      if (source || isPosterOnlyMedia(tool.config)) continue;
+      const key = `${type}:${tool.config?.poster || ''}:${tool.config?.requireCompletion !== false}`;
+      if (seenMedia.has(key)) continue;
+      seenMedia.add(key);
+      stats.missingMediaSources += 1;
+      const required = tool.config?.requireCompletion !== false;
+      pushIssue({
+        level: required ? 'error' : 'warning',
+        code: 'missing_media_source',
+        message: `${type} 工具缺少可用 url${required ? '，且该任务要求完成媒体后推进' : ''}。视频若只需静态情境图，须同时配置非空 poster 与 posterOnly: true；其他情况须补充真实媒体源。`,
+        ...where,
+        stepId,
+        field: '工具参数',
+      });
     }
 
     for (const step of task.steps || []) {
@@ -417,6 +559,34 @@ export function lintCourse(course, options = {}) {
         }
     }
   };
+
+  // 源码级门禁必须先于编译结果检查：非法值在 parser 中会回落成「全班」。
+  for (const invalid of findInvalidPhaseTaskExecutors(phasesMarkdown)) {
+    stats.badExecutors += 1;
+    pushIssue({
+      level: 'error',
+      code: 'bad_executor',
+      message: `执行单位非法：${invalid.value || '(空)'}（允许 ${PHASE_TASK_EXECUTORS.join(' / ')}）。修复：直接改 phases.md 的原字段，不能依赖 parser 回落。`,
+      file: phasesFilePath(courseId),
+      line: invalid.line,
+      field: '执行单位',
+    });
+  }
+
+  for (const invalid of findUnsupportedToolDeclarations(course?.files || {})) {
+    if (invalid.code === 'unknown_activity_module') stats.unknownActivityModules += 1;
+    else stats.unsupportedToolParameters += 1;
+    pushIssue({
+      level: 'error',
+      code: invalid.code,
+      message: invalid.code === 'unknown_activity_module'
+        ? `功能模块 ${invalid.value} 不受支持（只允许 A01–A07）。修复：改用已注册活动工具；教师确认请写「完成方式：teacher_confirm」。`
+        : `工具参数 ${invalid.value} 没有活动工具消费者。修复：删除该参数；教师确认请写「完成方式：teacher_confirm」并配「教师介入：必须」。`,
+      file: `6-lessons/${courseId}/${invalid.relativeFile}`,
+      line: invalid.line,
+      field: invalid.code === 'unknown_activity_module' ? '功能模块' : '工具参数',
+    });
+  }
 
   for (const role of course?.roles || []) {
     for (const task of role.tasks || []) checkTask(task, { roleId: role.id });
@@ -536,11 +706,52 @@ export function lintCourse(course, options = {}) {
     });
   }
 
+  for (const warning of course?.platformDefaults?.warnings || []) {
+    stats.compilerWarnings += 1;
+    const warningSource = String(warning.source || warning.file || 'course.md');
+    const warningFile = warningSource.startsWith('6-lessons/')
+      ? warningSource
+      : `6-lessons/${courseId}/${warningSource}`;
+    pushIssue({
+      level: warning.level === 'error' ? 'error' : 'warning',
+      code: warning.code || 'compiler_warning',
+      message: warning.message || `课程编译告警：${warning.code || 'compiler_warning'}`,
+      file: warningFile,
+      line: findCompilerWarningLine(course, warning, courseId),
+      source: warningSource,
+      field: warning.field || warning.key || '编译配置',
+      roleId: warning.roleId || '',
+      stepId: warning.stepId || '',
+      phaseTask: warning.phaseId ? { phaseId: warning.phaseId } : null,
+    });
+  }
+
+  const quality = auditCourseQuality(course, { lessonsRoot, courseId });
+  for (const issue of quality.issues) {
+    stats.qualityIssues += 1;
+    issues.push({
+      level: issue.level,
+      code: issue.code,
+      message: issue.message,
+      file: issue.file,
+      line: issue.line || 1,
+      courseId: issue.courseId || courseId,
+      course: issue.course || issue.courseId || courseId,
+      roleId: issue.roleId || '',
+      stepId: issue.stepId || '',
+      phaseId: issue.phaseId || '',
+      source: issue.source || '',
+      field: issue.field || '',
+    });
+  }
+
   return { issues, stats };
 }
 
 export function formatIssue(issue) {
-  return `${issue.file}:${issue.line}\n  ${issue.level}  ${issue.message}`;
+  const code = issue.code ? `${issue.code}  ` : '';
+  const field = issue.field ? `[字段：${issue.field}] ` : '';
+  return `${issue.file}:${issue.line}\n  ${issue.level}  ${code}${field}${issue.message}`;
 }
 
 export function summarizeIssues(issues = []) {

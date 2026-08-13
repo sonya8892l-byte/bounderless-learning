@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadEnv } from '../server/config/env.js';
+import { effectiveAppEnvironment, loadEnv } from '../server/config/env.js';
 
 // loadEnv 只读 process.env，所以每个用例自己搭一份最小环境再还原。
 const REQUIRED = {
@@ -11,6 +11,9 @@ const REQUIRED = {
 
 const MANAGED = [
   ...Object.keys(REQUIRED),
+  'APP_ENV',
+  'VERCEL_ENV',
+  'ENABLE_DEMO',
   'OPENAI_UNDERSTAND_MODEL',
   'OPENAI_UNDERSTAND_BASE_URL',
   'OPENAI_UNDERSTAND_API_KEY',
@@ -51,6 +54,31 @@ test('轻量理解模型未配置时保持缺席，由 app 层回落到主模型
   assert.equal(env.AI_UNDERSTAND_TIMEOUT_MS, 20_000);
   assert.equal(env.AI_TURN_TIMEOUT_MS, 75_000);
   assert.equal(env.AI_REQUEST_LEASE_MS, 85_000);
+});
+
+test('Vercel Preview 覆盖误带的本地 APP_ENV，并永久关闭 demo bootstrap', () => {
+  const env = withEnv({
+    APP_ENV: 'local',
+    VERCEL_ENV: 'preview',
+    ENABLE_DEMO: 'true',
+  }, () => loadEnv());
+
+  assert.equal(env.APP_ENV, 'preview');
+  assert.equal(env.ENABLE_DEMO, false);
+});
+
+test('托管与手工环境声明按最高安全级别归一', () => {
+  const cases = [
+    [{ APP_ENV: 'local', VERCEL_ENV: 'preview' }, 'preview'],
+    [{ APP_ENV: 'test', VERCEL_ENV: 'production' }, 'production'],
+    [{ APP_ENV: 'production', VERCEL_ENV: 'development' }, 'production'],
+    [{ APP_ENV: 'preview' }, 'preview'],
+    [{ APP_ENV: 'local' }, 'local'],
+    [{ APP_ENV: 'test' }, 'test'],
+  ];
+  for (const [input, expected] of cases) {
+    assert.equal(effectiveAppEnvironment(input), expected, JSON.stringify(input));
+  }
 });
 
 test('配置了轻量理解模型与预算时按配置读出', () => {

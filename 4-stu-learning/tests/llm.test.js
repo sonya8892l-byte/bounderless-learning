@@ -17,7 +17,7 @@ test('模型不支持 minimal 时自动降为 none 并重试同一请求', async
       }), { status: 400, headers: { 'content-type': 'application/json' } });
     }
     return new Response(JSON.stringify({
-      choices: [{ message: { content: '{"ok":true}', tool_calls: [] } }],
+      choices: [{ message: { content: '{"ok":true}', tool_calls: [] }, finish_reason: 'stop' }],
     }), { status: 200, headers: { 'content-type': 'application/json' } });
   };
 
@@ -166,4 +166,127 @@ test('模型流 EOF 前没有终态时不产出完成消息', async (t) => {
     }),
     /完整结束前中断/,
   );
+});
+
+test('Chat 流只有 DONE 而没有 finish_reason 时不接受半截回复', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => new Response([
+    `data: ${JSON.stringify({ choices: [{ delta: { content: '半句' }, finish_reason: null }] })}`,
+    '',
+    'data: [DONE]',
+    '',
+  ].join('\n'), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+  const llm = createLLM({
+    baseUrl: 'https://example.test/v1', apiKey: 'test-key', model: 'test-model',
+    wireApi: 'chat_completions', timeoutMs: 5000,
+  });
+
+  await assert.rejects(llm.generate({
+    instructions: '回答问题。',
+    messages: [{ role: 'user', content: '请完整回答' }],
+    onTextDelta: () => {},
+  }), /完整结束前中断/);
+});
+
+test('Chat 流只接受明确成功的 finish_reason', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let terminal = 'stop';
+  globalThis.fetch = async () => new Response([
+    `data: ${JSON.stringify({ choices: [{ delta: { content: '完整回复' }, finish_reason: null }] })}`,
+    '',
+    `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: terminal }] })}`,
+    '',
+    'data: [DONE]',
+    '',
+  ].join('\n'), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+  const llm = createLLM({
+    baseUrl: 'https://example.test/v1', apiKey: 'test-key', model: 'test-model',
+    wireApi: 'chat_completions', timeoutMs: 5000,
+  });
+
+  const complete = await llm.generate({
+    instructions: '回答问题。', messages: [{ role: 'user', content: '你好' }], onTextDelta: () => {},
+  });
+  assert.equal(complete.text, '完整回复');
+
+  terminal = 'content_filter';
+  await assert.rejects(llm.generate({
+    instructions: '回答问题。', messages: [{ role: 'user', content: '你好' }], onTextDelta: () => {},
+  }), /未完整生成/);
+});
+
+test('Chat 非流式拒绝 content_filter 和缺失 finish_reason', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let finishReason = 'content_filter';
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: '部分内容', tool_calls: [] }, finish_reason: finishReason }],
+  }), { status: 200, headers: { 'content-type': 'application/json' } });
+  const llm = createLLM({
+    baseUrl: 'https://example.test/v1', apiKey: 'test-key', model: 'test-model',
+    wireApi: 'chat_completions', timeoutMs: 5000,
+  });
+  const request = {
+    instructions: '回答问题。', messages: [{ role: 'user', content: '你好' }],
+  };
+
+  await assert.rejects(llm.generate(request), /未完整生成/);
+  finishReason = undefined;
+  await assert.rejects(llm.generate(request), /未完整生成/);
+  finishReason = 'stop';
+  assert.equal((await llm.generate(request)).text, '部分内容');
+});
+
+test('Responses 非流式只接受 status=completed', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let status = 'failed';
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    status,
+    output: [{ type: 'message', content: [{ type: 'output_text', text: '回复' }] }],
+  }), { status: 200, headers: { 'content-type': 'application/json' } });
+  const llm = createLLM({
+    baseUrl: 'https://example.test/v1', apiKey: 'test-key', model: 'test-model',
+    wireApi: 'responses', timeoutMs: 5000,
+  });
+  const request = {
+    instructions: '回答问题。', messages: [{ role: 'user', content: '你好' }],
+  };
+
+  for (const rejectedStatus of ['failed', 'cancelled', 'incomplete', undefined]) {
+    status = rejectedStatus;
+    await assert.rejects(llm.generate(request), /未完整生成/);
+  }
+  status = 'completed';
+  assert.equal((await llm.generate(request)).text, '回复');
+});
+
+test('Responses 流式拒绝 failed 终态，接受明确 completed 终态', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let failed = true;
+  globalThis.fetch = async () => {
+    const terminal = failed
+      ? { type: 'response.failed', response: { status: 'failed', error: { message: '上游失败' } } }
+      : { type: 'response.completed', response: { status: 'completed', output: [] } };
+    return new Response([
+      `data: ${JSON.stringify({ type: 'response.output_text.delta', delta: '回复' })}`,
+      '',
+      `data: ${JSON.stringify(terminal)}`,
+      '',
+    ].join('\n'), { status: 200, headers: { 'content-type': 'text/event-stream' } });
+  };
+  const llm = createLLM({
+    baseUrl: 'https://example.test/v1', apiKey: 'test-key', model: 'test-model',
+    wireApi: 'responses', timeoutMs: 5000,
+  });
+  const request = {
+    instructions: '回答问题。', messages: [{ role: 'user', content: '你好' }], onTextDelta: () => {},
+  };
+
+  await assert.rejects(llm.generate(request), /未完整生成/);
+  failed = false;
+  assert.equal((await llm.generate(request)).text, '回复');
 });

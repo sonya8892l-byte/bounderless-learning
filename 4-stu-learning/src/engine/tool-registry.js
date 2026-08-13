@@ -32,6 +32,19 @@ const DEFAULT_CONFIG = Object.freeze({
   scanner: { mode: 'qr', expectedResults: [], allowManualEntry: true, prompt: '' },
 });
 
+/**
+ * `posterOnly: true` 是视频工具显式的静态情境图契约。
+ *
+ * 必须同时满足 video、无 url、有 poster，避免拼错字段或漏配 poster 时
+ * 被误当成一个可以完成的课程活动。有真实 url 时始终走正常播放器。
+ */
+export function isPosterOnlyMedia(config = {}) {
+  return String(config.type || '').trim().toLowerCase() === 'video'
+    && config.posterOnly === true
+    && !String(config.url || '').trim()
+    && Boolean(String(config.poster || '').trim());
+}
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }

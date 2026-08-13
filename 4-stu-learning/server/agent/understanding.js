@@ -55,6 +55,7 @@ const IMPLIES_TASK_REQUEST = Object.freeze([
 const DEFAULT_TIMEOUT_MS = 8_000;
 const MAX_ATTEMPTS = 2;
 const HISTORY_LIMIT = 4;
+const UNDERSTANDING_BUDGET_EXHAUSTED = Symbol('understanding_budget_exhausted');
 
 function fastResult(intent, {
   emotion = 'neutral',
@@ -200,6 +201,7 @@ function buildMessages({ recentMessages, text } = {}) {
 export function createUnderstanding({ llm, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   async function requestOnce(input, budgetMs, outerSignal) {
     const controller = new AbortController();
+    let budgetExhausted = false;
     // 整轮被取消（客户端断开或触达 turn deadline）时，理解调用必须一起取消，
     // 否则它会用完自己那份预算，把已经该结束的回合又拖住几秒。
     const abortOuter = () => controller.abort(outerSignal?.reason);
@@ -207,6 +209,7 @@ export function createUnderstanding({ llm, timeoutMs = DEFAULT_TIMEOUT_MS } = {}
     let timer;
     const deadline = new Promise((_, reject) => {
       timer = setTimeout(() => {
+        budgetExhausted = true;
         controller.abort(new DOMException('语义理解超时。', 'TimeoutError'));
         reject(new Error('UNDERSTANDING_TIMEOUT'));
       }, budgetMs);
@@ -237,7 +240,7 @@ export function createUnderstanding({ llm, timeoutMs = DEFAULT_TIMEOUT_MS } = {}
         confidence: parsed.data.confidence,
       };
     } catch {
-      return null;
+      return budgetExhausted ? UNDERSTANDING_BUDGET_EXHAUSTED : null;
     } finally {
       clearTimeout(timer);
       outerSignal?.removeEventListener?.('abort', abortOuter);
@@ -256,6 +259,7 @@ export function createUnderstanding({ llm, timeoutMs = DEFAULT_TIMEOUT_MS } = {}
       const remaining = expiresAt - Date.now();
       if (remaining <= 0) break;
       const result = await requestOnce(input, remaining, signal);
+      if (result === UNDERSTANDING_BUDGET_EXHAUSTED) break;
       if (result) return result;
     }
     return { ...FALLBACK_UNDERSTANDING };

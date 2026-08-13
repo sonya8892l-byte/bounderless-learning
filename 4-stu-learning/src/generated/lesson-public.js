@@ -29,9 +29,9 @@ export default {
         "location": "集合区域（午门广场或指定教室）",
         "modules": "A06(沉浸媒体)",
         "trigger": "教师手动启动",
-        "endCondition": "视频播放完成 + AI收集完初始猜想",
+        "endCondition": "情境预览图已确认 + AI收集完初始猜想",
         "flow": [
-          "播放\"暴雨将至\"沉浸短片（3min）",
+          "查看\"暴雨将至\"情境预览图",
           "AI（絮絮）出场，自我介绍，建立关系",
           "AI向每个学生提问：「你觉得故宫暴雨时会积水吗？为什么？」",
           "收集学生的初始假设（C类数据：C2认知数据）",
@@ -42,7 +42,7 @@ export default {
           {
             "id": "phase-1-task-1",
             "roleStageId": "",
-            "name": "看\"暴雨将至\"短片",
+            "name": "查看\"暴雨将至\"情境图",
             "phase": "课程任务",
             "modules": "A06(沉浸媒体)",
             "tools": [
@@ -57,30 +57,56 @@ export default {
                   "url": "",
                   "poster": "lessons/lesson_gewu_001/assets/videos/video-storm-coming.png",
                   "title": "暴雨将至",
-                  "requireCompletion": true
+                  "requireCompletion": true,
+                  "posterOnly": true
                 }
               }
             ],
-            "requirement": "短片播放完毕",
+            "requirement": "学生确认已查看情境预览图",
             "guidanceSteps": [
-              "短片播放完毕"
+              "观察情境图并确认已查看"
             ],
             "steps": [
               {
                 "id": "phase-1-task-1-step-1",
-                "objective": "短片播放完毕",
-                "studentAction": "短片播放完毕",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "查看情境预览图",
+                "objective": "查看“暴雨将至”情境图，形成最初的情境感受",
+                "studentAction": "观察情境图并确认已查看",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "媒体工具返回情境图查看确认",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
+                "modules": "A06(沉浸媒体)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "media",
+                    "module": "A06",
+                    "name": "沉浸媒体",
+                    "icon": "play",
+                    "output": "playback",
+                    "config": {
+                      "type": "video",
+                      "url": "",
+                      "poster": "lessons/lesson_gewu_001/assets/videos/video-storm-coming.png",
+                      "title": "暴雨将至",
+                      "requireCompletion": true,
+                      "posterOnly": true
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "tool_result",
-            "evidenceRequirement": "无需提交，播放完成即通过",
-            "passCondition": "短片播放完毕",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "无需提交，确认查看即通过",
+            "passCondition": "学生确认已查看情境预览图",
             "goals": "",
             "prerequisites": [],
             "toolType": "media",
@@ -97,11 +123,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 180,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation",
             "scope": "phase",
@@ -124,10 +150,11 @@ export default {
                 "config": {
                   "fields": [
                     {
-                      "id": "observation",
-                      "label": "观察记录",
+                      "id": "initial-hypothesis",
+                      "label": "你的初始猜想和理由",
                       "type": "long_text",
-                      "required": true
+                      "required": true,
+                      "minLength": 15
                     }
                   ]
                 }
@@ -135,34 +162,50 @@ export default {
             ],
             "requirement": "写出是否会积水的判断，并给出至少一条理由",
             "guidanceSteps": [
-              "写出是否会积水的判断",
-              "并给出至少一条理由"
+              "写下你认为暴雨时故宫会不会积水，并说明至少一条理由"
             ],
             "steps": [
               {
                 "id": "phase-1-task-2-step-1",
-                "objective": "写出是否会积水的判断",
-                "studentAction": "写出是否会积水的判断",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
+                "title": "提交初始猜想",
+                "objective": "留下探究开始前的判断和一条理由，供课程结束时回看",
+                "studentAction": "写下你认为暴雨时故宫会不会积水，并说明至少一条理由",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "一段包含明确判断与至少一条理由的文字；理由是否正确不影响通过",
                 "location": {
-                  "mode": "inherit"
+                  "mode": "inherit",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
                 },
-                "tools": []
-              },
-              {
-                "id": "phase-1-task-2-step-2",
-                "objective": "并给出至少一条理由",
-                "studentAction": "并给出至少一条理由",
-                "completionMode": "user_confirm",
-                "evidenceRequirement": "",
-                "location": {
-                  "mode": "inherit"
-                },
-                "tools": []
+                "modules": "A01(文字)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "initial-hypothesis",
+                          "label": "你的初始猜想和理由",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 15
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ],
             "completionMode": "ai_evaluation",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "一段文字，含判断与理由",
             "passCondition": "写出是否会积水的判断，并给出至少一条理由",
             "goals": "",
@@ -181,11 +224,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 300,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation",
             "scope": "phase",
@@ -238,7 +281,7 @@ export default {
         "mode": "小组协作",
         "location": "集合区域",
         "modules": "A04(沙盘推演), A06(沉浸媒体)",
-        "trigger": "密符集齐 或 教师解锁",
+        "trigger": "教师核对 Phase 3 后手动推进",
         "endCondition": "暴雨模拟完成",
         "flow": [
           "小组在沙盘中搭建完整水系图（基于Phase 3的拼合结果）",
@@ -290,7 +333,7 @@ export default {
       "itemName": "身份",
       "pickerEyebrow": "{roleCount}种身份 · {roleCount}段证据",
       "pickerTitle": "选择你的{collectionName}身份",
-      "pickerDescription": "每位成员负责一个系统环节。集齐{roleCount}枚{collectionItemName}，才能解锁{unlockTarget}。",
+      "pickerDescription": "每位成员领取一个本组尚未占用的系统环节。集齐{roleCount}枚{collectionItemName}后，由老师组织进入{unlockTarget}。",
       "collectionItemName": "密符",
       "collectionPanelName": "小组密符",
       "unlockTarget": "璇玑时刻",
@@ -299,8 +342,7 @@ export default {
     "learningView": {
       "enabled": true,
       "default": "dialogue",
-      "allowStudentSwitch": true,
-      "allowFutureTaskBrowse": true
+      "allowStudentSwitch": true
     },
     "roles": [
       {
@@ -325,7 +367,7 @@ export default {
             "requirement": "拍照最少5张，含正面/侧面/细节",
             "guidanceSteps": [
               "选择一处可安全观察的螭首，拍摄1—2张同时包含螭首、台基边缘和周围位置的正面全景",
-              "换到安全侧面，拍摄1—2张能看清螭首、出水口和台基连接位置的照片",
+              "从教师指定观察点拍摄1—2张能看清螭首开口和台基连接位置的照片",
               "再拍至少3张照片，分别记录材质或纹理、出水口细节和相邻螭首的排列关系"
             ],
             "steps": [
@@ -335,7 +377,7 @@ export default {
                 "objective": "获得能够确认螭首及其台基位置关系的现场全景证据",
                 "studentAction": "选择一处可安全观察的螭首，拍摄1—2张同时包含螭首、台基边缘和周围位置的正面全景",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "至少1张清楚照片；画面同时包含螭首主体与台基环境；不得跨越护栏或拍入其他参观者正脸",
+                "evidenceRequirement": "至少1张清楚照片；画面同时包含螭首主体与台基环境；从教师指定的安全观察点拍摄且避开其他参观者正脸",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -358,7 +400,7 @@ export default {
                       "maxCount": 2,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "请安全拍摄，让螭首、台基边缘和周围位置同时入镜。"
+                      "prompt": "请安全拍摄。让螭首、台基边缘和周围位置同时入镜。"
                     }
                   }
                 ]
@@ -366,10 +408,10 @@ export default {
               {
                 "id": "task-1-step-2",
                 "title": "记录连接方式",
-                "objective": "观察螭首如何嵌入台基并承担出水功能",
-                "studentAction": "换到安全侧面，拍摄1—2张能看清螭首、出水口和台基连接位置的照片",
+                "objective": "观察螭首如何嵌入台基，并记录开口与连接结构",
+                "studentAction": "从教师指定观察点拍摄1—2张能看清螭首开口和台基连接位置的照片",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "至少1张侧面或斜侧面照片；能够辨认螭首与台基的连接处或出水口",
+                "evidenceRequirement": "至少1张侧面或斜侧面照片；能够辨认螭首与台基的连接处或可见开口",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -392,7 +434,7 @@ export default {
                       "maxCount": 2,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "从安全侧面拍清螭首与台基的连接处或出水口，不要攀爬、触摸文物。"
+                      "prompt": "请安全拍摄。让螭首与台基的连接位置清楚入镜。"
                     }
                   }
                 ]
@@ -426,13 +468,14 @@ export default {
                       "maxCount": 5,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "分别补拍材质或纹理、出水口细节、相邻螭首排列；避免重复同一画面。"
+                      "prompt": "请安全拍摄。分别补拍材质或纹理、开口细节、相邻螭首排列；避免重复同一画面。"
                     }
                   }
                 ]
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成5张有效照片采集",
             "passCondition": "完成5张有效照片采集",
             "goals": "K1(排水系统构成), K3(螭首功能), S4(史料实证)",
@@ -455,11 +498,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -646,6 +689,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "提交估算值 + 说明估算方法",
             "passCondition": "提交估算值 + 说明估算方法",
             "goals": "K3(螭首功能), S1(估算计数), C1(证据意识), C4(科学精神)",
@@ -668,11 +712,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -827,6 +871,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "提交包含\"误差来源分析\"的反思",
             "passCondition": "提交包含\"误差来源分析\"的反思",
             "goals": "C3(元认知), C4(科学精神), S1(估算计数)",
@@ -849,11 +894,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -916,7 +961,7 @@ export default {
                       "maxCount": 3,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "分别拍下可能的高点和低点，并保留台阶、墙根或沟渠等固定参照。"
+                      "prompt": "请安全拍摄。分别记录可能的高点和低点，并保留台阶、墙根或沟渠等固定参照。"
                     }
                   }
                 ]
@@ -950,7 +995,7 @@ export default {
                       "maxCount": 2,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "补拍第三个位置，尽量保持与前两张相近的拍摄高度和方向。"
+                      "prompt": "请安全拍摄。补拍第三个位置，尽量保持与前两张相近的拍摄高度和方向。"
                     }
                   }
                 ]
@@ -1014,6 +1059,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "拍照完成 + 描述观察到的高差线索",
             "passCondition": "拍照完成 + 描述观察到的高差线索",
             "goals": "K4(坡度与排水), S2(坡度与流向判断)",
@@ -1036,11 +1082,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -1221,6 +1267,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "正确判断坡度方向（北高南低）+ 给出估算值",
             "passCondition": "正确判断坡度方向（北高南低）+ 给出估算值",
             "goals": "K4(坡度与排水), S2(坡度判断), S1(估算), C1(证据意识)",
@@ -1243,11 +1290,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -1383,9 +1430,10 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "示意图标注正确的流向 + 文字解释逻辑通顺",
             "passCondition": "示意图标注正确的流向 + 文字解释逻辑通顺",
-            "goals": "K2([待学生探索]), C2(系统思维), S2(坡度判断)",
+            "goals": "K2(设计归纳), C2(系统思维), S2(坡度判断)",
             "prerequisites": [],
             "toolType": "text",
             "image": "",
@@ -1405,11 +1453,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -1421,7 +1469,7 @@ export default {
         "id": "ditch-finder",
         "order": 3,
         "name": "寻沟官",
-        "question": "水从螭首流出后，走了一条怎样的\"地下旅程\"？",
+        "question": "屋面雨水离开屋檐后，走了一条怎样的\"地下旅程\"？",
         "selectionDescription": "寻找可见与隐藏的排水沟渠，把零散设施连接成地下排水网络。",
         "location": "东西六宫区域（御沟可见段）",
         "geofence": "中心(116.3985, 39.9185) 半径120m",
@@ -1449,7 +1497,7 @@ export default {
                 "objective": "从地面、墙根或台基边缘识别一处具有排水特征的现场对象",
                 "studentAction": "在安全动线内找到第一处疑似排水设施，拍摄1张全景和1张结构细节",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "至少2张照片；一张说明设施所在环境，一张能看清开口、沟槽、篦子或汇水边缘；不得俯身进入危险区域",
+                "evidenceRequirement": "至少2张照片；一张说明设施所在环境，一张能看清开口、沟槽、篦子或汇水边缘；从开放动线内完成",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -1472,7 +1520,7 @@ export default {
                       "maxCount": 3,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "先拍设施所在环境，再拍开口、沟槽或篦子等结构细节。"
+                      "prompt": "请安全拍摄。先拍设施所在环境，再拍开口、沟槽或篦子等结构细节。"
                     }
                   }
                 ]
@@ -1506,7 +1554,7 @@ export default {
                       "maxCount": 3,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "补拍另一处不同位置或不同类型的排水设施，并保留周围环境。"
+                      "prompt": "请安全拍摄。补拍另一处不同位置或不同形态的候选设施，并保留周围环境。"
                     }
                   }
                 ]
@@ -1565,6 +1613,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "3张有效照片 + 标注每处设施类型",
             "passCondition": "3张有效照片 + 标注每处设施类型",
             "goals": "K5(明暗沟系统), S4(史料实证), C1(证据意识)",
@@ -1587,11 +1636,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -1739,6 +1788,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "画出至少3个节点的连接关系图 + 正确区分明暗沟",
             "passCondition": "画出至少3个节点的连接关系图 + 正确区分明暗沟",
             "goals": "K5(明暗沟系统), S5(系统分级), C2(系统思维)",
@@ -1761,11 +1811,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -1943,9 +1993,10 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "网络图包含3级以上层级 + 标注流向",
             "passCondition": "网络图包含3级以上层级 + 标注流向",
-            "goals": "K5(明暗沟系统), K2([待学生探索]), S5(系统分级), C2(系统思维)",
+            "goals": "K5(明暗沟系统), K2(设计归纳), S5(系统分级), C2(系统思维)",
             "prerequisites": [],
             "toolType": "text",
             "image": "",
@@ -1961,11 +2012,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1200,
-              "idleNudgeSeconds": 240,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -2005,7 +2056,7 @@ export default {
                 "objective": "找到河段的一端或来水方向，并保留可定位的现场证据",
                 "studentAction": "在老师指定的安全观察点拍摄1张河段全景，并记录你判断来水方向的依据",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "至少1张包含河道和固定参照物的全景；文字说明引用水面、河道形态、桥位或地图中的至少一种依据；不得向水中投放物品",
+                "evidenceRequirement": "至少1张包含河道和固定参照物的全景；文字说明引用水面、河道形态、桥位或地图中的至少一种依据；从教师指定观察点完成",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -2028,7 +2079,7 @@ export default {
                       "maxCount": 2,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "拍下河道全景和桥、岸线等固定参照，不靠近水边。"
+                      "prompt": "请安全拍摄。让河道全景和桥、岸线等固定参照入镜。"
                     }
                   },
                   {
@@ -2080,7 +2131,7 @@ export default {
                       "maxCount": 4,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "在两个不同节点拍照，优先记录桥下、弯道或岸线变化，并保留定位参照。"
+                      "prompt": "请安全拍摄。在两个不同节点记录桥下、弯道或岸线变化，并保留定位参照。"
                     }
                   }
                 ]
@@ -2114,7 +2165,7 @@ export default {
                       "maxCount": 2,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "补拍下游或出水方向的节点，并保留岸线或桥位参照。"
+                      "prompt": "请安全拍摄。补充一个可能的后续节点，并保留岸线或桥位参照。"
                     }
                   },
                   {
@@ -2129,7 +2180,7 @@ export default {
                           "id": "sequence",
                           "label": "照片顺序与节点标注",
                           "type": "long_text",
-                          "placeholder": "例：照片1入水方向→照片2桥下→照片3弯道→照片4出水方向",
+                          "placeholder": "按观察顺序标注照片位置、方向依据和不确定处",
                           "required": true,
                           "minLength": 40
                         }
@@ -2140,9 +2191,10 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "4张有效照片 + 标注上下游方向",
             "passCondition": "4张有效照片 + 标注上下游方向",
-            "goals": "K5(明暗沟系统), K2([待学生探索]), S2(流向判断)",
+            "goals": "K5(明暗沟系统), K2(设计归纳), S2(流向判断)",
             "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_gewu_001/assets/maps/inner-river-path.png",
@@ -2162,11 +2214,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -2177,9 +2229,9 @@ export default {
             "phase": "Phase 2 现场采证",
             "modules": "",
             "tools": [],
-            "requirement": "观察法估测流速（投叶片/观水面）\n表单：[估测河宽(m), 估测河深(m), 估测流速(m/s), 计算流量]\n允许较大误差，重在方法",
+            "requirement": "岸上观察法估测流速（观察水面纹理、已有漂浮物或视频中的位移）\n表单：[估测河宽(m), 估测河深(m), 估测流速(m/s), 计算流量]\n允许较大误差，重在方法",
             "guidanceSteps": [
-              "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和安全边界",
+              "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和站位",
               "填写河宽、河深和流速估测值，逐项注明观察或推算依据",
               "按“河宽×河深×流速”计算流量，写出单位，并选择不确定性最大的输入解释原因"
             ],
@@ -2187,10 +2239,10 @@ export default {
               {
                 "id": "task-2-step-1",
                 "title": "设计安全观察方法",
-                "objective": "形成不接触河水、不投放物体的可执行流速观察方案",
-                "studentAction": "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和安全边界",
+                "objective": "形成可在教师指定观察点完成的流速观察方案",
+                "studentAction": "选择观察水面纹理、已有漂浮物经过固定参照或视频计时中的一种方法，说明观察距离、时间和站位",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "方法可在岸上完成；包含固定参照、观察时长或距离中的至少两项；明确不向水中投放物品",
+                "evidenceRequirement": "方法可在教师指定观察点完成；包含固定参照、观察时长或距离中的至少两项",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -2338,6 +2390,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "给出估测方法说明 + 估测值",
             "passCondition": "给出估测方法说明 + 估测值",
             "goals": "S1(估算), S3(实验设计), C1(证据意识), C4(科学精神)",
@@ -2360,11 +2413,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -2581,9 +2634,10 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "描述\"正常/中雨/暴雨\"三种情况下河道状态变化",
             "passCondition": "描述\"正常/中雨/暴雨\"三种情况下河道状态变化",
-            "goals": "K2([待学生探索]), C2(系统思维), S5(系统分级)",
+            "goals": "K2(设计归纳), C2(系统思维), S5(系统分级)",
             "prerequisites": [],
             "toolType": "text",
             "image": "lessons/lesson_gewu_001/assets/videos/video-simulation.png",
@@ -2599,11 +2653,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1200,
-              "idleNudgeSeconds": 240,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -2615,7 +2669,7 @@ export default {
         "id": "moat-guard",
         "order": 5,
         "name": "护城官",
-        "question": "[待学生探索]宽的护城河，除了防御还有什么隐藏功能？",
+        "question": "宽阔的护城河，除了防御还有什么隐藏功能？",
         "selectionDescription": "观察护城河结构与容量，发现它在防御之外承担的多重功能。",
         "location": "护城河沿线（东华门至午门段）",
         "geofence": "中心(116.3995, 39.9165) 半径130m",
@@ -2643,7 +2697,7 @@ export default {
                 "objective": "获得能够说明河堤轮廓、岸线与水体关系的现场全景",
                 "studentAction": "在老师指定的安全观察点拍摄1—2张河堤和水面全景，保留城墙、岸线或桥位参照",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "至少1张清楚全景；画面同时包含河堤和水体，并有可定位参照；不得靠近无护栏水边",
+                "evidenceRequirement": "至少1张清楚全景；画面同时包含河堤和水体，并有可定位参照；从教师指定观察点完成",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -2666,7 +2720,7 @@ export default {
                       "maxCount": 2,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "拍下河堤与水体的整体关系，并保留城墙、岸线或桥位参照。"
+                      "prompt": "请安全拍摄。记录河堤与水体的整体关系，并保留城墙、岸线或桥位参照。"
                     }
                   }
                 ]
@@ -2700,7 +2754,7 @@ export default {
                       "maxCount": 5,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "从安全位置补拍排水口、岸壁结构或水位痕迹，避免重复同一画面。"
+                      "prompt": "请安全拍摄。补拍开口、岸壁结构或水位痕迹，避免重复同一画面。"
                     }
                   }
                 ]
@@ -2759,9 +2813,10 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "4张有效照片 + 描述观察到的结构特征",
             "passCondition": "4张有效照片 + 描述观察到的结构特征",
-            "goals": "K6(护城河蓄排并用), S4(史料实证), C1(证据意识)",
+            "goals": "K6(护城河水量调节), S4(史料实证), C1(证据意识)",
             "prerequisites": [],
             "toolType": "text",
             "image": "",
@@ -2781,11 +2836,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -2798,7 +2853,7 @@ export default {
             "tools": [],
             "requirement": "步测法估测河宽 + 观察法推测河深\n表单：[估测河宽(m), 估测深度(m), 估测周长(m), 计算蓄水体积]\n引导计算蓄水量（简化为矩形截面×周长）",
             "guidanceSteps": [
-              "在不靠近水边的前提下，记录步数、个人步长或地图比例，计算一处河宽估测值",
+              "在教师指定的安全路线记录步数、个人步长或地图比例，计算一处河宽估测值",
               "根据可见岸壁、课程材料或地图记录河深和周长估测值，并逐项标注“观察推测”或“资料值”",
               "按“河宽×河深×周长”计算简化蓄水量，写出计算过程、单位和模型可能造成的偏差"
             ],
@@ -2807,7 +2862,7 @@ export default {
                 "id": "task-2-step-1",
                 "title": "估测河宽",
                 "objective": "用步测或地图比例形成可复算的河宽估测",
-                "studentAction": "在不靠近水边的前提下，记录步数、个人步长或地图比例，计算一处河宽估测值",
+                "studentAction": "在教师指定的安全路线记录步数、个人步长或地图比例，计算一处河宽估测值",
                 "completionMode": "ai_evaluation",
                 "evidenceRequirement": "包含河宽数值和单位；写明步数与步长或地图比例；说明测量路线的安全边界",
                 "location": {
@@ -2957,6 +3012,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "给出蓄水量量级估算（万级m³即可）",
             "passCondition": "给出蓄水量量级估算（万级m³即可）",
             "goals": "K6(护城河), S1(估算), C1(证据意识), C4(科学精神)",
@@ -2979,11 +3035,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -2994,11 +3050,11 @@ export default {
             "phase": "Phase 2 / Phase 3",
             "modules": "",
             "tools": [],
-            "requirement": "问答：护城河至少有哪3个功能？（防御/排水/景观/消防/交通）\n文字：解释\"蓄排并用\"——为什么先蓄后排而不是直接排走？",
+            "requirement": "问答：护城河可能承担哪些不同功能？请至少提出3项主张\n文字：解释蓄存与排放怎样配合，以及依赖哪些条件",
             "guidanceSteps": [
               "列出至少3个不同功能，并分别用一句话说明该功能解决什么问题",
               "为三个功能各匹配一条照片、计算结果或课程材料，并标明证据来源和强弱",
-              "结合自己的蓄水量估算和排水路径，解释为什么护城河需要先承接一部分来水，再逐步排向城外水系"
+              "结合自己的量级估算和路径证据，解释蓄存、排放和容量之间的关系，并说明成立条件"
             ],
             "steps": [
               {
@@ -3107,9 +3163,9 @@ export default {
               },
               {
                 "id": "task-3-step-3",
-                "title": "解释蓄排并用",
-                "objective": "理解先蓄后排如何调节暴雨来水并兼顾其他功能",
-                "studentAction": "结合自己的蓄水量估算和排水路径，解释为什么护城河需要先承接一部分来水，再逐步排向城外水系",
+                "title": "解释蓄存与排放的关系",
+                "objective": "解释临时承接能力与后续排放怎样共同影响系统表现",
+                "studentAction": "结合自己的量级估算和路径证据，解释蓄存、排放和容量之间的关系，并说明成立条件",
                 "completionMode": "ai_evaluation",
                 "evidenceRequirement": "不少于60字；包含来水增加、暂时蓄存、下游排放和容量有限四个关系；引用至少一项本组数据或照片",
                 "location": {
@@ -3133,7 +3189,7 @@ export default {
                       "fields": [
                         {
                           "id": "storage-discharge",
-                          "label": "蓄排并用解释",
+                          "label": "蓄存与排放关系",
                           "type": "long_text",
                           "placeholder": "结合你的估算和现场证据说明",
                           "required": true,
@@ -3147,9 +3203,10 @@ export default {
               }
             ],
             "completionMode": "tool_result",
-            "evidenceRequirement": "列出≥3个功能 + 解释蓄排并用逻辑",
-            "passCondition": "列出≥3个功能 + 解释蓄排并用逻辑",
-            "goals": "K6(护城河), K2([待学生探索]), C2(系统思维), C5(文化认同)",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "列出≥3个有证据支持的功能 + 解释蓄存与排放的关系",
+            "passCondition": "列出≥3个有证据支持的功能 + 解释蓄存与排放的关系",
+            "goals": "K6(护城河), K2(设计归纳), C2(系统思维), C5(文化认同)",
             "prerequisites": [],
             "toolType": "text",
             "image": "",
@@ -3169,11 +3226,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -3419,6 +3476,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "收集≥5条 + 每条有来源标注",
             "passCondition": "收集≥5条 + 每条有来源标注",
             "goals": "S4(史料实证), S6(信息整合), C1(证据意识)",
@@ -3441,11 +3499,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -3456,7 +3514,7 @@ export default {
             "phase": "Phase 2 / Phase 3",
             "modules": "",
             "tools": [],
-            "requirement": "对每条证据做可信度评级（强/中/弱）\n问答：\"600年不积水\"这个说法精确吗？有没有反例？\n提供[待学生探索]故宫局部积水的新闻资料（AI适时出示）",
+            "requirement": "对每条证据做可信度评级（强/中/弱）\n问答：\"600年不积水\"这个说法精确吗？有没有反例？\n提供一则故宫局部积水的公开报道（AI适时出示）",
             "guidanceSteps": [
               "把5张证据卡分为强、中、弱或待核，并写出你使用的三个评级标准",
               "用已收集证据分析“600年不积水”需要在哪些降雨、维护、区域和时间条件下才可能成立",
@@ -3645,6 +3703,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成证据评级 + 对\"600年不积水\"给出带条件的判断",
             "passCondition": "完成证据评级 + 对\"600年不积水\"给出带条件的判断",
             "goals": "C4(科学精神), C1(证据意识), S4(史料实证)",
@@ -3667,11 +3726,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -3866,6 +3925,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "报告包含：系统能力总结 + 已知局限 + 带条件的结论",
             "passCondition": "报告包含：系统能力总结 + 已知局限 + 带条件的结论",
             "goals": "C4(科学精神), C2(系统思维), S6(信息整合), C5(文化认同)",
@@ -3884,11 +3944,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1200,
-              "idleNudgeSeconds": 240,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -4094,7 +4154,143 @@ export default {
           "学生写下三个真正想查明的问题。",
           "絮絮说明四类信息：观察、资料、推断、期待。"
         ],
-        "tasks": []
+        "tasks": [
+          {
+            "id": "phase-1-task-1",
+            "roleStageId": "",
+            "name": "确认物种并提交三个研究问题",
+            "phase": "课程任务",
+            "modules": "A01(文字表单)",
+            "tools": [
+              {
+                "id": "text",
+                "module": "A01",
+                "name": "文字表单",
+                "icon": "notebook-pen",
+                "output": "fields",
+                "config": {
+                  "fields": [
+                    {
+                      "id": "species",
+                      "label": "教师分配的物种",
+                      "type": "short_text",
+                      "required": true,
+                      "minLength": 2,
+                      "maxLength": 30
+                    },
+                    {
+                      "id": "point",
+                      "label": "候选展品点位",
+                      "type": "short_text",
+                      "required": true,
+                      "minLength": 2,
+                      "maxLength": 50
+                    },
+                    {
+                      "id": "questions",
+                      "label": "三个真正想查明的问题",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 30,
+                      "maxLength": 300
+                    }
+                  ]
+                }
+              }
+            ],
+            "requirement": "记录教师分配的物种与候选点位，提交三个真正想查明的问题",
+            "guidanceSteps": [
+              "填写教师分配的物种、候选点位和三个想查明的问题"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-1-step-1",
+                "title": "提交居民招募问题卡",
+                "objective": "留下角色选择前共同使用的物种、点位和问题起点",
+                "studentAction": "填写教师分配的物种、候选点位和三个想查明的问题",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "物种、点位和三个可调查问题齐全",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字表单)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "species",
+                          "label": "教师分配的物种",
+                          "type": "short_text",
+                          "required": true,
+                          "minLength": 2,
+                          "maxLength": 30
+                        },
+                        {
+                          "id": "point",
+                          "label": "候选展品点位",
+                          "type": "short_text",
+                          "required": true,
+                          "minLength": 2,
+                          "maxLength": 50
+                        },
+                        {
+                          "id": "questions",
+                          "label": "三个真正想查明的问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30,
+                          "maxLength": 300
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "ai_evaluation",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "物种与点位明确；三个问题可通过观察或资料继续调查",
+            "passCondition": "物种、候选点位和三个可调查问题齐全",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "入口集合区",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 300,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "个人"
+          }
+        ]
       },
       {
         "id": "phase-2",
@@ -4104,7 +4300,7 @@ export default {
         "mode": "角色分工 + 小组汇合",
         "location": "经踏勘确认的展品主点或替代点",
         "modules": "A07(实物识别), A01(拍照/文字)",
-        "trigger": "Phase 1结束 + 教师开放角色领取",
+        "trigger": "Phase 1结束 + 教师开放角色选择页",
         "endCondition": "身份、家园和生活事实完成初审",
         "flow": [
           "确认标本与展签来源。",
@@ -4192,7 +4388,7 @@ export default {
       "itemName": "身份",
       "pickerEyebrow": "6种分工 · 共同完成1张居民证",
       "pickerTitle": "选择你的{collectionName}身份",
-      "pickerDescription": "每位成员负责一种证据。集齐6枚{collectionItemName}，才能解锁{unlockTarget}。",
+      "pickerDescription": "每位成员负责一种证据。教师核对小组6类证据后，组织进入{unlockTarget}。",
       "collectionItemName": "证据章",
       "collectionPanelName": "小组证据章",
       "unlockTarget": "居民发布会",
@@ -4201,8 +4397,7 @@ export default {
     "learningView": {
       "enabled": true,
       "default": "dialogue",
-      "allowStudentSwitch": true,
-      "allowFutureTaskBrowse": false
+      "allowStudentSwitch": true
     },
     "roles": [
       {
@@ -4316,6 +4511,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成实物识别并提交1张同时保留标本与来源区域的照片",
             "passCondition": "完成实物识别并提交1张同时保留标本与来源区域的照片",
             "goals": "",
@@ -4334,11 +4530,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -4447,6 +4643,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "2个观察事实 + 1条明确标为推断的结构功能关系",
             "passCondition": "2个观察事实 + 1条明确标为推断的结构功能关系",
             "goals": "",
@@ -4466,11 +4663,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 600,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -4594,6 +4791,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "三项内容完整且关键事实有来源",
             "passCondition": "三项内容完整且关键事实有来源",
             "goals": "",
@@ -4612,11 +4810,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -4764,6 +4962,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "1份可读展签证据 + 1个唯一来源编号",
             "passCondition": "1份可读展签证据 + 1个唯一来源编号",
             "goals": "",
@@ -4782,11 +4981,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -4930,6 +5129,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "3条事实逐条绑定来源编号",
             "passCondition": "3条事实逐条绑定来源编号",
             "goals": "",
@@ -4949,11 +5149,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 600,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -5074,6 +5274,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "事实包完整且无未标注推断",
             "passCondition": "事实包完整且无未标注推断",
             "goals": "",
@@ -5092,11 +5293,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -5277,6 +5478,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "四类节点各至少1项并标来源或待核",
             "passCondition": "四类节点各至少1项并标来源或待核",
             "goals": "",
@@ -5295,11 +5497,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -5449,6 +5651,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少5个节点、4条有说明的关系和1个待核节点",
             "passCondition": "至少5个节点、4条有说明的关系和1个待核节点",
             "goals": "",
@@ -5467,11 +5670,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -5593,6 +5796,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "需要、证据、威胁和措施形成对应链",
             "passCondition": "需要、证据、威胁和措施形成对应链",
             "goals": "",
@@ -5611,11 +5815,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -5747,6 +5951,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "五类材料完整且期待与事实分开",
             "passCondition": "五类材料完整且期待与事实分开",
             "goals": "",
@@ -5765,11 +5970,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -5862,6 +6067,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "脚本完整、事实可追溯、录音时长合格",
             "passCondition": "脚本完整、事实可追溯、录音时长合格",
             "goals": "",
@@ -5880,11 +6086,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 840,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -5999,6 +6205,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少1条保留、1条修改或确认无需修改的理由",
             "passCondition": "至少1条保留、1条修改或确认无需修改的理由",
             "goals": "",
@@ -6017,11 +6224,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 480,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -6192,6 +6399,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "四类成果和至少1条待核项进入档案区",
             "passCondition": "四类成果和至少1条待核项进入档案区",
             "goals": "",
@@ -6210,11 +6418,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 360,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -6375,6 +6583,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "核心字段完整，事实有编号，期待和措施标签清楚",
             "passCondition": "核心字段完整，事实有编号，期待和措施标签清楚",
             "goals": "",
@@ -6393,11 +6602,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -6523,6 +6732,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "teacher_confirm",
             "evidenceRequirement": "小组自检完成且教师确认可发布",
             "passCondition": "小组自检完成且教师确认可发布",
             "goals": "",
@@ -6541,11 +6751,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 360,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "teacher"
           }
@@ -6679,6 +6889,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "判断、证据和边界完整",
             "passCondition": "判断、证据和边界完整",
             "goals": "",
@@ -6697,11 +6908,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 240,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -6803,6 +7014,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "teacher_confirm",
             "evidenceRequirement": "教师确认发布与回应完成",
             "passCondition": "教师确认发布与回应完成",
             "goals": "",
@@ -6821,11 +7033,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 240,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "teacher"
           },
@@ -6940,6 +7152,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "小组至少6条行动记录，每条含时间和观察方法",
             "passCondition": "小组至少6条行动记录，每条含时间和观察方法",
             "goals": "",
@@ -6958,11 +7171,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 180,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -7116,7 +7329,159 @@ export default {
           "选择物种并提出可调查的核心问题。",
           "制定六线取证计划和来源编号规则。"
         ],
-        "tasks": []
+        "tasks": [
+          {
+            "id": "phase-1-task-1",
+            "roleStageId": "",
+            "name": "提交调查开题卡",
+            "phase": "课程任务",
+            "modules": "A01(文字表单)",
+            "tools": [
+              {
+                "id": "text",
+                "module": "A01",
+                "name": "文字表单",
+                "icon": "notebook-pen",
+                "output": "fields",
+                "config": {
+                  "fields": [
+                    {
+                      "id": "species",
+                      "label": "调查物种",
+                      "type": "short_text",
+                      "required": true,
+                      "minLength": 2,
+                      "maxLength": 30
+                    },
+                    {
+                      "id": "question",
+                      "label": "可调查的核心问题",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 20,
+                      "maxLength": 180
+                    },
+                    {
+                      "id": "plan",
+                      "label": "六条证据线怎样分工",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 60,
+                      "maxLength": 500
+                    },
+                    {
+                      "id": "source-rule",
+                      "label": "来源编号规则",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 20,
+                      "maxLength": 180
+                    }
+                  ]
+                }
+              }
+            ],
+            "requirement": "记录小组物种、核心问题、六线取证计划和来源编号规则",
+            "guidanceSteps": [
+              "填写调查物种、核心问题、六线分工和来源编号规则"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-1-step-1",
+                "title": "完成四项开题信息",
+                "objective": "建立角色选择后可共同使用的调查起点与来源规则",
+                "studentAction": "填写调查物种、核心问题、六线分工和来源编号规则",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四项信息齐全且能支持后续多源取证",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字表单)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "species",
+                          "label": "调查物种",
+                          "type": "short_text",
+                          "required": true,
+                          "minLength": 2,
+                          "maxLength": 30
+                        },
+                        {
+                          "id": "question",
+                          "label": "可调查的核心问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20,
+                          "maxLength": 180
+                        },
+                        {
+                          "id": "plan",
+                          "label": "六条证据线怎样分工",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 60,
+                          "maxLength": 500
+                        },
+                        {
+                          "id": "source-rule",
+                          "label": "来源编号规则",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20,
+                          "maxLength": 180
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "ai_evaluation",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "物种、核心问题、六线分工和来源编号规则各一项",
+            "passCondition": "四项开题信息齐全，核心问题可调查，来源编号规则可执行",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 480,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "个人"
+          }
+        ]
       },
       {
         "id": "phase-2",
@@ -7214,7 +7579,7 @@ export default {
       "itemName": "证据",
       "pickerEyebrow": "6种调查分工 · 共写1份行动书",
       "pickerTitle": "选择你的{collectionName}身份",
-      "pickerDescription": "每位成员负责一条证据线。集齐6枚{collectionItemName}，才能解锁{unlockTarget}。",
+      "pickerDescription": "每位成员负责一条证据线。教师核对小组6条证据线后，组织进入{unlockTarget}。",
       "collectionItemName": "调查章",
       "collectionPanelName": "小组调查章",
       "unlockTarget": "守护方案听证会",
@@ -7223,8 +7588,7 @@ export default {
     "learningView": {
       "enabled": true,
       "default": "dialogue",
-      "allowStudentSwitch": true,
-      "allowFutureTaskBrowse": false
+      "allowStudentSwitch": true
     },
     "roles": [
       {
@@ -7243,7 +7607,7 @@ export default {
             "id": "profiler-baseline",
             "roleStageId": "profiler-baseline",
             "name": "建立档案骨架",
-            "phase": "Phase 1 调查开题",
+            "phase": "Phase 2 展厅多源取证（角色取证准备）",
             "modules": "",
             "tools": [],
             "requirement": "先写已知、未知和需要的来源，不让AI直接填档案",
@@ -7334,6 +7698,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少4个档案字段，分别标记已有证据或待核",
             "passCondition": "至少4个档案字段，分别标记已有证据或待核",
             "goals": "",
@@ -7352,11 +7717,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -7379,7 +7744,7 @@ export default {
                 "objective": "保存可回到展项复核的身份、形态和生态线索",
                 "studentAction": "拍摄展品与展签，填写三条事实及其照片编号",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "至少1张照片、3条事实和对应来源编号；不拍[待学生探索]",
+                "evidenceRequirement": "至少1张照片、3条事实和对应来源编号；不拍他人正脸",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -7402,7 +7767,7 @@ export default {
                       "maxCount": 4,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "拍摄展品主体和可定位的展签区域，避开[待学生探索]。"
+                      "prompt": "拍摄展品主体和可定位的展签区域，避开他人正脸。"
                     }
                   },
                   {
@@ -7482,6 +7847,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少3条现场事实和1条动态待核项，均有来源编号",
             "passCondition": "至少3条现场事实和1条动态待核项，均有来源编号",
             "goals": "",
@@ -7500,11 +7866,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1680,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -7652,6 +8018,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "档案字段、来源表和未知项完整，并通过同伴复核",
             "passCondition": "档案字段、来源表和未知项完整，并通过同伴复核",
             "goals": "",
@@ -7670,11 +8037,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -7698,10 +8065,10 @@ export default {
             "id": "verifier-separate-labels",
             "roleStageId": "verifier-separate-labels",
             "name": "拆分保护标签",
-            "phase": "Phase 1 调查开题",
+            "phase": "Phase 2 展厅多源取证（角色取证准备）",
             "modules": "",
             "tools": [],
-            "requirement": "把简报中的保护说法分成法律身份、[待学生探索]、趋势和措施成效",
+            "requirement": "把简报中的保护说法分成法律身份、IUCN等级、趋势和措施成效",
             "guidanceSteps": [
               "把简报主张拖入四类证据槽，并标出不能判断的条目",
               "写两条“知道A仍不能直接知道B”的边界句"
@@ -7789,6 +8156,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成至少4条主张分类并指出一处不可互推",
             "passCondition": "完成至少4条主张分类并指出一处不可互推",
             "goals": "",
@@ -7807,11 +8175,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -7979,6 +8347,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "三类记录独立成行，含来源、版本/日期、范围、访问日期与核验人",
             "passCondition": "三类记录独立成行，含来源、版本/日期、范围、访问日期与核验人",
             "goals": "",
@@ -7997,11 +8366,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1680,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -8014,7 +8383,7 @@ export default {
             "tools": [],
             "requirement": "向行动书提供四维状态表和效力日期说明",
             "guidanceSteps": [
-              "分别填写国内身份、[待学生探索]、趋势、措施成效及待核项",
+              "分别填写国内身份、IUCN等级、趋势、措施成效及待核项",
               "提交需要教师或专家核验的条目清单，记录核验人、日期和处理结果"
             ],
             "steps": [
@@ -8022,7 +8391,7 @@ export default {
                 "id": "verifier-compose-matrix",
                 "title": "制作四维状态表",
                 "objective": "让读者一眼看出四类结论、来源和边界",
-                "studentAction": "分别填写国内身份、[待学生探索]、趋势、措施成效及待核项",
+                "studentAction": "分别填写国内身份、IUCN等级、趋势、措施成效及待核项",
                 "completionMode": "ai_evaluation",
                 "evidenceRequirement": "四行独立；每行有来源编号、日期/版本和适用范围",
                 "location": {
@@ -8074,7 +8443,7 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A08(教师确认)",
+                "modules": "A01(文字记录)",
                 "next": "role:complete",
                 "tools": [
                   {
@@ -8086,22 +8455,33 @@ export default {
                     "config": {
                       "fields": [
                         {
-                          "id": "observation",
-                          "label": "观察记录",
+                          "id": "items",
+                          "label": "待核条目与来源编号",
                           "type": "long_text",
+                          "required": true,
+                          "minLength": 40
+                        },
+                        {
+                          "id": "reviewer",
+                          "label": "核验人及核验日期",
+                          "type": "text",
                           "required": true
+                        },
+                        {
+                          "id": "result",
+                          "label": "处理结果与仍待核内容",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 30
                         }
-                      ],
-                      "teacher_confirm": {
-                        "prompt": "核对来源对象、版本/效力日期、适用范围；不能确认的条目标记待核。",
-                        "required": true
-                      }
+                      ]
                     }
                   }
                 ]
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "四维状态表清楚，动态项有复核提示，冲突项未被隐藏",
             "passCondition": "四维状态表清楚，动态项有复核提示，冲突项未被隐藏",
             "goals": "",
@@ -8120,11 +8500,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -8148,7 +8528,7 @@ export default {
             "id": "threat-frame-hypotheses",
             "roleStageId": "threat-frame-hypotheses",
             "name": "提出风险假设",
-            "phase": "Phase 1 调查开题",
+            "phase": "Phase 2 展厅多源取证（角色取证准备）",
             "modules": "",
             "tools": [],
             "requirement": "把先入印象改写为可被证据支持或推翻的风险假设",
@@ -8283,6 +8663,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少2条假设，各有需要寻找的证据与可能反证",
             "passCondition": "至少2条假设，各有需要寻找的证据与可能反证",
             "goals": "",
@@ -8301,11 +8682,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -8405,6 +8786,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少4个节点、3条有方向连接、来源编号和1个替代解释",
             "passCondition": "至少4个节点、3条有方向连接、来源编号和1个替代解释",
             "goals": "",
@@ -8423,11 +8805,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1500,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -8564,6 +8946,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "核心链、优先风险、证据强度和未知项完整",
             "passCondition": "核心链、优先风险、证据强度和未知项完整",
             "goals": "",
@@ -8582,11 +8965,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -8599,7 +8982,7 @@ export default {
         "order": 4,
         "name": "保护措施审计员",
         "question": "一项保护措施针对什么风险，做了什么，怎样知道它产生了成效？",
-        "selectionDescription": "追踪措施逻辑、成效证据与保护缺口，防止“做过”被写成“[待学生探索]”。",
+        "selectionDescription": "追踪措施逻辑、成效证据与保护缺口，防止“做过”被写成“有效”。",
         "location": "相关展项与教育空间",
         "geofence": "国家动物博物馆课程允许动线",
         "type": "核心角色",
@@ -8610,7 +8993,7 @@ export default {
             "id": "auditor-frame-questions",
             "roleStageId": "auditor-frame-questions",
             "name": "定义审计问题",
-            "phase": "Phase 1 调查开题",
+            "phase": "Phase 2 展厅多源取证（角色取证准备）",
             "modules": "",
             "tools": [],
             "requirement": "为措施建立“目标—活动—结果—证据”问题框架",
@@ -8745,6 +9128,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少为两类候选措施提出完整审计问题",
             "passCondition": "至少为两类候选措施提出完整审计问题",
             "goals": "",
@@ -8763,11 +9147,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -8909,6 +9293,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少3项措施完成审计，产生2条有依据的保护缺口",
             "passCondition": "至少3项措施完成审计，产生2条有依据的保护缺口",
             "goals": "",
@@ -8927,11 +9312,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1500,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -9029,6 +9414,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "报告至少包含1项可保留措施、1项待改进措施和2项缺口",
             "passCondition": "报告至少包含1项可保留措施、1项待改进措施和2项缺口",
             "goals": "",
@@ -9047,11 +9433,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -9075,7 +9461,7 @@ export default {
             "id": "stakeholder-frame-map",
             "roleStageId": "stakeholder-frame-map",
             "name": "建立相关者假设图",
-            "phase": "Phase 1 调查开题",
+            "phase": "Phase 2 展厅多源取证（角色取证准备）",
             "modules": "",
             "tools": [],
             "requirement": "从威胁和措施出发识别相关者，不替任何群体编造态度",
@@ -9209,6 +9595,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少5类相关者及需要核验的问题",
             "passCondition": "至少5类相关者及需要核验的问题",
             "goals": "",
@@ -9227,11 +9614,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -9371,6 +9758,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少4类相关者完成影响、资源、成本、参与方式记录",
             "passCondition": "至少4类相关者完成影响、资源、成本、参与方式记录",
             "goals": "",
@@ -9389,11 +9777,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1320,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -9536,6 +9924,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少3类相关者发言，产生3条处置记录",
             "passCondition": "至少3类相关者发言，产生3条处置记录",
             "goals": "",
@@ -9554,11 +9943,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -9582,7 +9971,7 @@ export default {
             "id": "designer-define-success",
             "roleStageId": "designer-define-success",
             "name": "定义方案成功",
-            "phase": "Phase 1 调查开题",
+            "phase": "Phase 2 展厅多源取证（角色取证准备）",
             "modules": "",
             "tools": [],
             "requirement": "先定义可观察的成功，再等待证据决定行动",
@@ -9689,6 +10078,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "形成一个目标草案、两个可监测指标和证据需求",
             "passCondition": "形成一个目标草案、两个可监测指标和证据需求",
             "goals": "",
@@ -9707,11 +10097,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 720,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -9825,6 +10215,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成一轮配置、一轮冲击调整和取舍说明",
             "passCondition": "完成一轮配置、一轮冲击调整和取舍说明",
             "goals": "",
@@ -9843,11 +10234,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1500,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -9967,7 +10358,7 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A05(版本对照), A08(教师确认)",
+                "modules": "A05(版本对照)",
                 "next": "role:complete",
                 "tools": [
                   {
@@ -9978,7 +10369,7 @@ export default {
                     "output": "teamLog",
                     "config": {
                       "mode": "revision",
-                      "prompt": "登记意见、采纳状态、修改位置与理由。",
+                      "prompt": "登记意见、采纳状态、修改位置与理由；完成后交由教师核对来源、效力表述、安全边界和AI披露。",
                       "minimumEntries": 3,
                       "roles": []
                     }
@@ -9987,6 +10378,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "teacher_confirm",
             "evidenceRequirement": "七要素完整，引用六线证据，含版本修订和AI披露",
             "passCondition": "七要素完整，引用六线证据，含版本修订和AI披露",
             "goals": "",
@@ -10005,11 +10397,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 960,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -10163,7 +10555,159 @@ export default {
           "确定一处校园/机构研究范围与替代范围。",
           "完成研究问题、角色分工、伦理与AI使用计划。"
         ],
-        "tasks": []
+        "tasks": [
+          {
+            "id": "phase-1-task-1",
+            "roleStageId": "",
+            "name": "提交研究开题边界卡",
+            "phase": "课程任务",
+            "modules": "A01(文字表单)",
+            "tools": [
+              {
+                "id": "text",
+                "module": "A01",
+                "name": "文字表单",
+                "icon": "notebook-pen",
+                "output": "fields",
+                "config": {
+                  "fields": [
+                    {
+                      "id": "object",
+                      "label": "研究对象与主要问题",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 40,
+                      "maxLength": 300
+                    },
+                    {
+                      "id": "scope",
+                      "label": "研究范围与替代范围",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 40,
+                      "maxLength": 300
+                    },
+                    {
+                      "id": "ethics",
+                      "label": "安全、隐私与知情同意边界",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 60,
+                      "maxLength": 500
+                    },
+                    {
+                      "id": "ai-boundary",
+                      "label": "AI可以做什么、不能代替什么",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 40,
+                      "maxLength": 300
+                    }
+                  ]
+                }
+              }
+            ],
+            "requirement": "记录研究对象、主要问题、研究范围、替代范围、伦理边界与AI使用边界",
+            "guidanceSteps": [
+              "填写研究对象与问题、主范围与替代范围、伦理边界和AI使用边界"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-1-step-1",
+                "title": "完成研究开题边界卡",
+                "objective": "建立角色分线前共同使用的研究范围、伦理与AI边界",
+                "studentAction": "填写研究对象与问题、主范围与替代范围、伦理边界和AI使用边界",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "四组信息齐全且能支持后续六条研究线继续细化",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字表单)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "object",
+                          "label": "研究对象与主要问题",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40,
+                          "maxLength": 300
+                        },
+                        {
+                          "id": "scope",
+                          "label": "研究范围与替代范围",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40,
+                          "maxLength": 300
+                        },
+                        {
+                          "id": "ethics",
+                          "label": "安全、隐私与知情同意边界",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 60,
+                          "maxLength": 500
+                        },
+                        {
+                          "id": "ai-boundary",
+                          "label": "AI可以做什么、不能代替什么",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 40,
+                          "maxLength": 300
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "ai_evaluation",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "研究对象与问题、主范围与替代范围、伦理边界、AI边界各一项",
+            "passCondition": "六项开题信息齐全；问题可研究；范围可替代；安全、隐私和AI边界可执行",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "国家动物博物馆或教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 900,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "个人"
+          }
+        ]
       },
       {
         "id": "phase-2",
@@ -10188,14 +10732,14 @@ export default {
         "number": 3,
         "name": "中国规范与域外比较",
         "duration": "第3—5周",
-        "mode": "规范检索 + [待学生探索]",
+        "mode": "规范检索 + 三城比较",
         "location": "资料空间",
         "modules": "A03(规范层级图/比较矩阵), A01(原文摘录)",
         "trigger": "研究对象与主要风险变量明确",
         "endCondition": "中国规范地图和多伦多、纽约、旧金山比较报告完成",
         "flow": [
           "核对中国现行法律、已公布待施行法典和深圳实践。",
-          "区分法律、[待学生探索]、设计指引、[待学生探索]和倡议。",
+          "区分法律、地方标准、设计指引、机构规则和倡议。",
           "仅用三城官方原文比较适用范围、措施、程序与执行。",
           "记录版本、效力、适用条件和不可直接移植之处。"
         ],
@@ -10244,7 +10788,7 @@ export default {
         "duration": "第10—12周",
         "mode": "课程表决 + 研究发布 + 可选真实沟通",
         "location": "教育空间或经批准的发布场所",
-        "modules": "A05(表决), A01(发布包), A08(教师终审)",
+        "modules": "A05(表决), A01(发布包)",
         "trigger": "终稿通过科学、规范、伦理和程序审查",
         "endCondition": "课程表决、少数意见、AI披露和后续路径完整",
         "flow": [
@@ -10261,7 +10805,7 @@ export default {
       "itemName": "证据线",
       "pickerEyebrow": "6种研究分工 · 共创1份建议稿",
       "pickerTitle": "选择你的{collectionName}身份",
-      "pickerDescription": "每位成员负责一条研究线。完成3轮研究与复核，才能解锁{unlockTarget}。",
+      "pickerDescription": "每位成员负责一条研究线。完成3轮研究与复核并经教师确认后，进入{unlockTarget}。",
       "collectionItemName": "研究章",
       "collectionPanelName": "四线证据包",
       "unlockTarget": "规则表决与发布",
@@ -10270,8 +10814,7 @@ export default {
     "learningView": {
       "enabled": true,
       "default": "dialogue",
-      "allowStudentSwitch": true,
-      "allowFutureTaskBrowse": false
+      "allowStudentSwitch": true
     },
     "roles": [
       {
@@ -10346,7 +10889,7 @@ export default {
                 "objective": "确保调查可重复且人身安全",
                 "studentAction": "提交路线、点位、时段、成人陪同、替代点、天气与零发现记录方式",
                 "completionMode": "teacher_confirm",
-                "evidenceRequirement": "路线图和安全清单完整；排除屋顶、施工区、车行区和[待学生探索]",
+                "evidenceRequirement": "路线图和安全清单完整；排除屋顶、施工区、车行区和夜间单独调查",
                 "location": {
                   "mode": "none",
                   "name": "",
@@ -10355,35 +10898,9 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A01(路线表), A08(教师确认)",
+                "modules": "A01(文字表单)",
                 "next": "role-stage:science-run-survey",
                 "tools": [
-                  {
-                    "id": "photo",
-                    "module": "A01",
-                    "name": "拍照采集",
-                    "icon": "camera",
-                    "output": "files",
-                    "config": {
-                      "minCount": 1,
-                      "maxCount": 6,
-                      "accept": "image/*",
-                      "recognition": "course-evidence"
-                    }
-                  },
-                  {
-                    "id": "audio",
-                    "module": "A01",
-                    "name": "语音记录",
-                    "icon": "mic",
-                    "output": "recording",
-                    "config": {
-                      "minSeconds": 3,
-                      "maxSeconds": 90,
-                      "language": "zh-CN",
-                      "transcribe": true
-                    }
-                  },
                   {
                     "id": "text",
                     "module": "A01",
@@ -10408,28 +10925,12 @@ export default {
                         }
                       ]
                     }
-                  },
-                  {
-                    "id": "sketch",
-                    "module": "A01",
-                    "name": "画板标注",
-                    "icon": "pen-tool",
-                    "output": "image",
-                    "config": {
-                      "width": 720,
-                      "height": 420,
-                      "brushColors": [
-                        "#8d211f",
-                        "#245c4f",
-                        "#1f2937"
-                      ],
-                      "backgroundImage": ""
-                    }
                   }
                 ]
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "机制假设、变量表、记录规则和安全路线经教师确认",
             "passCondition": "机制假设、变量表、记录规则和安全路线经教师确认",
             "goals": "",
@@ -10448,11 +10949,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -10498,7 +10999,7 @@ export default {
                       "maxCount": 18,
                       "accept": "image/*",
                       "recognition": "course-evidence",
-                      "prompt": "拍玻璃与环境关系，避开人脸、门牌、工位和[待学生探索]。"
+                      "prompt": "拍玻璃与环境关系，避开人脸、门牌、工位和无关室内信息。"
                     }
                   },
                   {
@@ -10592,6 +11093,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检",
             "passCondition": "至少3轮调查、每轮含零发现、照片和环境记录，并通过抽检",
             "goals": "",
@@ -10610,11 +11112,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 2,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -10758,6 +11260,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "机制、现场模式、局限和措施证据完整，接受一次反证质询",
             "passCondition": "机制、现场模式、局限和措施证据完整，接受一次反证质询",
             "goals": "",
@@ -10776,11 +11279,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -10842,14 +11345,14 @@ export default {
                       "items": [],
                       "zones": [],
                       "connections": [],
-                      "prompt": "按法律、法规/规章、标准、指引、[待学生探索]、倡议分类；不确定时标待核。",
+                      "prompt": "按法律、法规/规章、标准、指引、机构规则、倡议分类；不确定时标待核。",
                       "minimumItems": 6,
                       "categories": [
                         "法律",
                         "法规或规章",
                         "标准",
                         "设计指引",
-                        "[待学生探索]",
+                        "机构规则",
                         "倡议",
                         "待核"
                       ]
@@ -10946,6 +11449,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "形成规范层级图和五字段来源登记规则",
             "passCondition": "形成规范层级图和五字段来源登记规则",
             "goals": "",
@@ -10964,11 +11468,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -10979,7 +11483,7 @@ export default {
             "phase": "Phase 3 中国规范与域外比较",
             "modules": "",
             "tools": [],
-            "requirement": "核验野生动物保护法、生态环境法典时间状态和深圳[待学生探索]",
+            "requirement": "核验野生动物保护法、生态环境法典时间状态和深圳地方标准",
             "guidanceSteps": [
               "定位原文，记录公布/修订日、施行日、相关条文、范围和当前状态",
               "用官方材料建立时间线，提取DB4403/T 616—2025的范围、措施和用语"
@@ -11000,35 +11504,9 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A01(原文摘录), A08(人工核验)",
+                "modules": "A01(文字记录)",
                 "next": "step:china-study-shenzhen",
                 "tools": [
-                  {
-                    "id": "photo",
-                    "module": "A01",
-                    "name": "拍照采集",
-                    "icon": "camera",
-                    "output": "files",
-                    "config": {
-                      "minCount": 1,
-                      "maxCount": 6,
-                      "accept": "image/*",
-                      "recognition": "course-evidence"
-                    }
-                  },
-                  {
-                    "id": "audio",
-                    "module": "A01",
-                    "name": "语音记录",
-                    "icon": "mic",
-                    "output": "recording",
-                    "config": {
-                      "minSeconds": 3,
-                      "maxSeconds": 90,
-                      "language": "zh-CN",
-                      "transcribe": true
-                    }
-                  },
                   {
                     "id": "text",
                     "module": "A01",
@@ -11052,23 +11530,6 @@ export default {
                           "minLength": 100
                         }
                       ]
-                    }
-                  },
-                  {
-                    "id": "sketch",
-                    "module": "A01",
-                    "name": "画板标注",
-                    "icon": "pen-tool",
-                    "output": "image",
-                    "config": {
-                      "width": 720,
-                      "height": 420,
-                      "brushColors": [
-                        "#8d211f",
-                        "#245c4f",
-                        "#1f2937"
-                      ],
-                      "backgroundImage": ""
                     }
                   }
                 ]
@@ -11102,7 +11563,7 @@ export default {
                       "items": [],
                       "zones": [],
                       "connections": [],
-                      "prompt": "连接调查、研讨、征求意见、[待学生探索]和实践，分别标效力。",
+                      "prompt": "连接调查、研讨、征求意见、地方标准和实践，分别标效力。",
                       "minimumItems": 5
                     }
                   },
@@ -11171,6 +11632,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "三类核心材料原文、效力、范围和人工签注完整",
             "passCondition": "三类核心材料原文、效力、范围和人工签注完整",
             "goals": "",
@@ -11189,11 +11651,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 2,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -11260,7 +11722,7 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A05(条款审查), A08(教师确认)",
+                "modules": "A05(条款审查)",
                 "next": "role:complete",
                 "tools": [
                   {
@@ -11271,7 +11733,7 @@ export default {
                     "output": "teamLog",
                     "config": {
                       "mode": "clause_review",
-                      "prompt": "逐条标注现行依据、借鉴依据、课程选择或待核。",
+                      "prompt": "逐条标注现行依据、借鉴依据、课程选择或待核；完成后交由教师确认条款未冒充现行法律义务或正式法律意见。",
                       "minimumEntries": 5,
                       "roles": []
                     }
@@ -11280,6 +11742,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "规范地图、可引用结论、不可推出事项和更新提示完整",
             "passCondition": "规范地图、可引用结论、不可推出事项和更新提示完整",
             "goals": "",
@@ -11298,11 +11761,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -11470,6 +11933,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "三城来源、七项字段、版本记录和翻译核验规则完整",
             "passCondition": "三城来源、七项字段、版本记录和翻译核验规则完整",
             "goals": "",
@@ -11488,18 +11952,18 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
           {
             "id": "comparative-build-matrix",
             "roleStageId": "comparative-build-matrix",
-            "name": "完成[待学生探索]",
+            "name": "完成三城比较",
             "phase": "Phase 3 中国规范与域外比较",
             "modules": "",
             "tools": [],
@@ -11633,6 +12097,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "三城七项矩阵、原文编号、双人译文复核和不可比说明完整",
             "passCondition": "三城七项矩阵、原文编号、双人译文复核和不可比说明完整",
             "goals": "",
@@ -11651,11 +12116,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 2,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -11669,7 +12134,7 @@ export default {
             "requirement": "筛选可借鉴做法，并说明本地权限、条件、调整与试点需求",
             "guidanceSteps": [
               "为3项候选做法回答问题相似性、主体权限、技术成本条件和试点/例外",
-              "提交[待学生探索]、候选做法、不可直接移植项和待核清单"
+              "提交三城比较、候选做法、不可直接移植项和待核清单"
             ],
             "steps": [
               {
@@ -11711,7 +12176,7 @@ export default {
                 "id": "comparative-deliver-report",
                 "title": "发布比较报告",
                 "objective": "向起草组交付可追溯、不过度移植的结论",
-                "studentAction": "提交[待学生探索]、候选做法、不可直接移植项和待核清单",
+                "studentAction": "提交三城比较、候选做法、不可直接移植项和待核清单",
                 "completionMode": "tool_result",
                 "evidenceRequirement": "至少3项可借鉴建议、1项不建议直接移植、1项待核",
                 "location": {
@@ -11761,7 +12226,7 @@ export default {
                       "fields": [
                         {
                           "id": "report",
-                          "label": "[待学生探索]与可借鉴性报告",
+                          "label": "三城比较与可借鉴性报告",
                           "type": "long_text",
                           "required": true,
                           "minLength": 350
@@ -11806,6 +12271,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少3项候选做法通过四问，含1项不建议直接移植",
             "passCondition": "至少3项候选做法通过四问，含1项不建议直接移植",
             "goals": "",
@@ -11824,11 +12290,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -11867,7 +12333,7 @@ export default {
                 "objective": "只收集回答研究问题所必需的信息",
                 "studentAction": "说明需要听见哪些群体、为何需要、招募方式、最少字段和未代表群体",
                 "completionMode": "ai_evaluation",
-                "evidenceRequirement": "至少3类群体；每个数据字段有用途；不收集姓名和无关[待学生探索]",
+                "evidenceRequirement": "至少3类群体；每个数据字段有用途；不收集姓名和无关联系方式",
                 "location": {
                   "mode": "none",
                   "name": "",
@@ -11964,7 +12430,7 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A05(试访谈), A08(教师确认)",
+                "modules": "A05(试访谈)",
                 "next": "role-stage:social-collect-code",
                 "tools": [
                   {
@@ -11975,7 +12441,7 @@ export default {
                     "output": "teamLog",
                     "config": {
                       "mode": "pilot",
-                      "prompt": "标记诱导、双重、含糊、过度隐私或无法回答的问题。",
+                      "prompt": "标记诱导、双重、含糊、过度隐私或无法回答的问题；完成后交由教师核对同意、最少采集、未成年人要求、退出和公开边界。",
                       "minimumEntries": 2,
                       "roles": []
                     }
@@ -11984,6 +12450,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "同意页、样本计划和调查工具经教师批准",
             "passCondition": "同意页、样本计划和调查工具经教师批准",
             "goals": "",
@@ -12002,11 +12469,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -12029,7 +12496,7 @@ export default {
                 "objective": "获得合规、可撤回且不超范围的材料",
                 "studentAction": "先完成同意确认，再收集回答；分别保存同意状态与匿名研究数据",
                 "completionMode": "tool_result",
-                "evidenceRequirement": "每条记录有同意状态和匿名编号；无姓名、[待学生探索]或可识别原音频进入公开对象",
+                "evidenceRequirement": "每条记录有同意状态和匿名编号；无姓名、联系方式或可识别原音频进入公开对象",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -12156,6 +12623,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "匿名数据、退出记录、编码本和分歧处理完整",
             "passCondition": "匿名数据、退出记录、编码本和分歧处理完整",
             "goals": "",
@@ -12174,11 +12642,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 2,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -12298,7 +12766,7 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A05(匿名复核), A08(教师确认)",
+                "modules": "A05(匿名复核)",
                 "next": "role:complete",
                 "tools": [
                   {
@@ -12309,7 +12777,7 @@ export default {
                     "output": "teamLog",
                     "config": {
                       "mode": "ethical_review",
-                      "prompt": "只使用匿名编号，核对主题、反例、代表性和重新识别风险。",
+                      "prompt": "只使用匿名编号，核对主题、反例、代表性和重新识别风险；完成后交由教师确认公开材料去标识、同意范围匹配、撤回已执行。",
                       "minimumEntries": 3,
                       "roles": []
                     }
@@ -12318,6 +12786,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "teacher_confirm",
             "evidenceRequirement": "报告不暴露身份、不夸大代表性，并接受成员核验",
             "passCondition": "报告不暴露身份、不夸大代表性，并接受成员核验",
             "goals": "",
@@ -12336,11 +12805,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -12497,6 +12966,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "形成评估问题、参数表和不确定性记录规则",
             "passCondition": "形成评估问题、参数表和不确定性记录规则",
             "goals": "",
@@ -12515,11 +12985,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -12682,6 +13152,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少3种组合、2种情境和敏感性分析完成",
             "passCondition": "至少3种组合、2种情境和敏感性分析完成",
             "goals": "",
@@ -12700,11 +13171,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 2,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -12852,6 +13323,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "报告能追溯到参数并回应一次预算/公平质询",
             "passCondition": "报告能追溯到参数并回应一次预算/公平质询",
             "goals": "",
@@ -12870,11 +13342,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -12963,7 +13435,7 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A05(小组协商), A08(教师确认)",
+                "modules": "A05(小组协商)",
                 "next": "role-stage:drafting-three-drafts",
                 "tools": [
                   {
@@ -12974,7 +13446,7 @@ export default {
                     "output": "teamLog",
                     "config": {
                       "mode": "consensus",
-                      "prompt": "逐项确认程序日历、意见处置、回避、表决、少数意见和AI披露。",
+                      "prompt": "逐项确认程序日历、意见处置、回避、表决、少数意见和AI披露；完成后交由教师核对研究伦理、程序公平、发布边界和真实沟通授权。",
                       "minimumEntries": 6,
                       "roles": []
                     }
@@ -12983,6 +13455,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "程序日历、四线证据闸门和研究诚信协议经全组确认",
             "passCondition": "程序日历、四线证据闸门和研究诚信协议经全组确认",
             "goals": "",
@@ -13001,11 +13474,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -13145,6 +13618,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "初稿、听证稿、终稿与逐条证据、意见处置完整",
             "passCondition": "初稿、听证稿、终稿与逐条证据、意见处置完整",
             "goals": "",
@@ -13163,11 +13637,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 3,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -13199,7 +13673,7 @@ export default {
                   "minDwellSeconds": 0,
                   "verification": "none"
                 },
-                "modules": "A05(表决), A08(教师确认)",
+                "modules": "A05(表决)",
                 "next": "step:drafting-publish-status",
                 "tools": [
                   {
@@ -13210,7 +13684,7 @@ export default {
                     "output": "teamLog",
                     "config": {
                       "mode": "vote",
-                      "prompt": "记录票型与可选理由；表决只代表课程内部选择。",
+                      "prompt": "记录票型与可选理由；表决只代表课程内部选择。完成后交由教师核对科学、规范、伦理、程序、AI披露及“青少年建议稿”效力声明。",
                       "minimumEntries": 1,
                       "roles": [],
                       "options": [
@@ -13319,6 +13793,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "teacher_confirm",
             "evidenceRequirement": "发布包通过人工终审，表决与外部状态准确分开",
             "passCondition": "发布包通过人工终审，表决与外部状态准确分开",
             "goals": "",
@@ -13337,11 +13812,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 1,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -13498,9 +13973,153 @@ export default {
           "学生阅读1935年1月遵义会议后的初始态势卡",
           "学生提交初始选择：继续北渡、原地作战、向东转移或暂不决策",
           "AI只追问判断依据，不公布后续四渡路线",
-          "教师开启角色领取"
+          "教师开放角色选择页"
         ],
-        "tasks": []
+        "tasks": [
+          {
+            "id": "phase-1-task-1",
+            "roleStageId": "",
+            "name": "提交局势初始判断",
+            "phase": "课程任务",
+            "modules": "A01(文字表单)",
+            "tools": [
+              {
+                "id": "text",
+                "module": "A01",
+                "name": "文字表单",
+                "icon": "notebook-pen",
+                "output": "fields",
+                "config": {
+                  "fields": [
+                    {
+                      "id": "choice",
+                      "label": "我的初始方案",
+                      "type": "select",
+                      "options": [
+                        "继续北渡",
+                        "原地作战",
+                        "向东转移",
+                        "暂不决策"
+                      ],
+                      "required": true
+                    },
+                    {
+                      "id": "evidence",
+                      "label": "我依据的态势证据",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 20,
+                      "maxLength": 180
+                    },
+                    {
+                      "id": "uncertainty",
+                      "label": "我仍不确定的信息",
+                      "type": "long_text",
+                      "required": true,
+                      "minLength": 10,
+                      "maxLength": 120
+                    }
+                  ]
+                }
+              }
+            ],
+            "requirement": "阅读教师展示的1935年1月初始态势卡，选择当前方案并写出证据与不确定性",
+            "guidanceSteps": [
+              "选择当前方案，填写态势证据与仍不确定的信息"
+            ],
+            "steps": [
+              {
+                "id": "phase-1-task-1-step-1",
+                "title": "留下推演前判断",
+                "objective": "保存后续复盘可对照的初始判断与证据",
+                "studentAction": "选择当前方案，填写态势证据与仍不确定的信息",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "方案、至少一条态势证据和一项不确定性齐全",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字表单)",
+                "next": "role-stage:complete",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "choice",
+                          "label": "我的初始方案",
+                          "type": "select",
+                          "options": [
+                            "继续北渡",
+                            "原地作战",
+                            "向东转移",
+                            "暂不决策"
+                          ],
+                          "required": true
+                        },
+                        {
+                          "id": "evidence",
+                          "label": "我依据的态势证据",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 20,
+                          "maxLength": 180
+                        },
+                        {
+                          "id": "uncertainty",
+                          "label": "我仍不确定的信息",
+                          "type": "long_text",
+                          "required": true,
+                          "minLength": 10,
+                          "maxLength": 120
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "ai_evaluation",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "选择一项方案，并写出至少一条态势证据和一项不确定性",
+            "passCondition": "方案、至少一条态势证据和一项不确定性齐全；是否符合后续史实不影响通过",
+            "goals": "",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "集合教室或展馆指定教育空间",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 360,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation",
+            "scope": "phase",
+            "phaseId": "phase-1",
+            "executor": "个人"
+          }
+        ]
       },
       {
         "id": "phase-2",
@@ -13553,7 +14172,7 @@ export default {
         "endCondition": "完成双视角回应",
         "flow": [
           "战图从“全局指挥视角”切换为“基层士兵有限视角”",
-          "展示[待学生探索]课程情境材料，并明确标注出处待核",
+          "展示本阶段解锁的双视角课程情境材料，并明确标注出处待核",
           "学生回答：看不到全局时，一个人凭什么判断、行动和坚持",
           "AI要求区分史实证据、情境推断与价值判断",
           "小组形成双栏结论：战略层的行动逻辑 / 个体层的行动依据"
@@ -13603,7 +14222,7 @@ export default {
       "itemName": "身份",
       "pickerEyebrow": "{roleCount}种推演身份 · {roleCount}层战图证据",
       "pickerTitle": "选择你的推演身份",
-      "pickerDescription": "每位成员负责一种观察视角。集齐{roleCount}层{collectionItemName}，共同还原四渡赤水的决策链。",
+      "pickerDescription": "每位成员负责一种观察视角。教师核对{roleCount}层{collectionItemName}已汇集后，组织小组共同还原四渡赤水的决策链。",
       "collectionItemName": "战图图层",
       "collectionPanelName": "五层战图",
       "unlockTarget": "璇玑时刻",
@@ -13612,8 +14231,7 @@ export default {
     "learningView": {
       "enabled": true,
       "default": "dialogue",
-      "allowStudentSwitch": true,
-      "allowFutureTaskBrowse": false
+      "allowStudentSwitch": true
     },
     "roles": [
       {
@@ -13774,6 +14392,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少2张有效证据照片 + 1条展项来源 + 至少2个正确空间标注",
             "passCondition": "至少2张有效证据照片 + 1条展项来源 + 至少2个正确空间标注",
             "goals": "K1(时空坐标), S1(地图判读), S3(史料实证)",
@@ -13793,11 +14412,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -14014,6 +14633,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成四类标注 + 至少3条证据说明 + 明确区分展陈信息与个人推断",
             "passCondition": "完成四类标注 + 至少3条证据说明 + 明确区分展陈信息与个人推断",
             "goals": "K2(敌我态势), S1(地图判读), S6(因果表达), C3(证据边界)",
@@ -14033,11 +14653,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -14220,6 +14840,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "提交1条连续路线 + 4项理由完整 + 至少引用2条现场证据",
             "passCondition": "提交1条连续路线 + 4项理由完整 + 至少引用2条现场证据",
             "goals": "K3(四次渡河), S5(决策矩阵), C1(实事求是), C2(战略思维)",
@@ -14239,11 +14860,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -14441,6 +15062,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少2张有效照片 + 1条展项来源 + 至少3项信息字段；无法确认的字段标记“未知”",
             "passCondition": "至少2张有效照片 + 1条展项来源 + 至少3项信息字段；无法确认的字段标记“未知”",
             "goals": "K4(情报与信息差), S3(史料实证), C3(证据边界)",
@@ -14460,11 +15082,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -14727,6 +15349,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "四个象限均有记录 + 至少5条信息卡 + 每条含来源和可靠度",
             "passCondition": "四个象限均有记录 + 至少5条信息卡 + 每条含来源和可靠度",
             "goals": "K4(情报与信息差), S4(信息不对称分析), C2(战略思维)",
@@ -14746,11 +15369,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -14988,6 +15611,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "提交2种敌方判断 + 每种至少1条依据 + 1项利用窗口 + 1项失败风险",
             "passCondition": "提交2种敌方判断 + 每种至少1条依据 + 1项利用窗口 + 1项失败风险",
             "goals": "K4(情报与信息差), K6(虚实行动链), S5(决策矩阵), C2(战略思维)",
@@ -15007,11 +15631,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -15212,6 +15836,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少1张来源照片 + 2个方案条目 + 每个方案含支持与反对理由",
             "passCondition": "至少1张来源照片 + 2个方案条目 + 每个方案含支持与反对理由",
             "goals": "K5(遵义与苟坝), S3(史料实证), S5(决策矩阵)",
@@ -15231,11 +15856,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -15515,6 +16140,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成2个方案的五维比较 + 1条少数意见保护机制 + 小组提交阶段选择",
             "passCondition": "完成2个方案的五维比较 + 1条少数意见保护机制 + 小组提交阶段选择",
             "goals": "K5(遵义与苟坝), S5(决策矩阵), C1(实事求是), C4(民主与担当)",
@@ -15534,11 +16160,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -15760,6 +16386,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "三段式复盘完整 + 引用至少2条证据 + 明确1项统一行动安排",
             "passCondition": "三段式复盘完整 + 引用至少2条证据 + 明确1项统一行动安排",
             "goals": "K5(遵义与苟坝), S6(因果表达), C1(实事求是), C4(民主与担当)",
@@ -15779,11 +16406,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -15883,7 +16510,7 @@ export default {
                 "objective": "在不提前打开完整史实路线的前提下建立行动影响的先后链",
                 "studentAction": "根据现场材料排列四张行动逻辑卡，并为每一处相邻关系指出一条日期、先后词、地点或图例依据",
                 "completionMode": "tool_result",
-                "evidenceRequirement": "四张卡形成一条可解释的因果顺序；排序依据来自任务照片或展项先后词，不补写尚未解锁的渡口和[待学生探索]",
+                "evidenceRequirement": "四张卡形成一条可解释的因果顺序；排序依据来自任务照片或展项先后词，不补写尚未解锁的渡口和完整路线",
                 "location": {
                   "mode": "inherit",
                   "name": "",
@@ -15971,6 +16598,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少1张展项来源照片 + 4张行动卡 + 顺序、地点和来源完整",
             "passCondition": "至少1张展项来源照片 + 4张行动卡 + 顺序、地点和来源完整",
             "goals": "K3(四次渡河), S3(史料实证), S6(因果表达)",
@@ -15990,11 +16618,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -16213,6 +16841,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "完成三栏虚实图 + 1种替代解释 + 至少2条证据引用",
             "passCondition": "完成三栏虚实图 + 1种替代解释 + 至少2条证据引用",
             "goals": "K4(情报与信息差), K6(虚实行动链), S4(信息不对称分析), C2(战略思维)",
@@ -16232,11 +16861,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -16479,6 +17108,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "1条四环行动链 + 2种敌方反应分支 + 1项失败风险 + 保留运行记录",
             "passCondition": "1条四环行动链 + 2种敌方反应分支 + 1项失败风险 + 保留运行记录",
             "goals": "K6(虚实行动链), S4(信息不对称分析), S5(决策矩阵), C2(战略思维)",
@@ -16498,11 +17128,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }
@@ -16719,6 +17349,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "至少2张有效照片 + 1条展项来源 + “已知/未知”各至少2项",
             "passCondition": "至少2张有效照片 + 1条展项来源 + “已知/未知”各至少2项",
             "goals": "K4(情报与信息差), S3(史料实证), C5(多视角同理)",
@@ -16738,11 +17369,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -16967,6 +17598,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "五项信息完整 + 完成1次同伴复述核对 + 标记至少1项不能自行猜测的内容",
             "passCondition": "五项信息完整 + 完成1次同伴复述核对 + 标记至少1项不能自行猜测的内容",
             "goals": "S4(信息不对称分析), C4(民主与担当), C5(多视角同理)",
@@ -16986,11 +17618,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           },
@@ -17280,6 +17912,7 @@ export default {
               }
             ],
             "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
             "evidenceRequirement": "达到字数 + 至少引用2条证据 + 三类边界标记完整 + 无虚构直接引语",
             "passCondition": "达到字数 + 至少引用2条证据 + 三类边界标记完整 + 无虚构直接引语",
             "goals": "S3(史料实证), S6(因果表达), C3(证据边界), C5(多视角同理)",
@@ -17299,11 +17932,11 @@ export default {
             },
             "timing": {
               "suggestedSeconds": 900,
-              "idleNudgeSeconds": 180,
-              "nudgeCooldownSeconds": 120
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
             },
             "nudgePolicy": {
-              "maxNudges": 2
+              "maxNudges": 1
             },
             "advanceMode": "auto_after_validation"
           }

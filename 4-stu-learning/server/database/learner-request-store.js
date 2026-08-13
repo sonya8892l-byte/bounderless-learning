@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { TURN_TRACE_SCHEMA_VERSION } from '../agent/turn-trace.js';
 
 const EXPIRED_LEASE_ERROR = JSON.stringify({ code: 'LEASE_EXPIRED' });
 
@@ -44,18 +45,25 @@ function toIsoString(value) {
   return Number.isNaN(parsed.valueOf()) ? null : parsed.toISOString();
 }
 
-function safeFailure(error) {
+function safeFailure(error, trace = null) {
   const name = typeof error?.name === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(error.name)
     ? error.name
     : 'Error';
   const code = typeof error?.code === 'string' && /^[A-Z0-9_-]{1,64}$/.test(error.code)
     ? error.code
     : null;
-  return {
+  const failure = {
     name,
     code,
     message: '请求处理失败。',
   };
+  // trace 由服务端的隐私最小化构建器生成；失败请求也保留同一
+  // 份可审计投影，不记学生原话、Prompt 或完整回复。
+  if (
+    trace?.schemaVersion === TURN_TRACE_SCHEMA_VERSION
+    && trace?.status === 'failed'
+  ) failure.trace = trace;
+  return failure;
 }
 
 function unavailableError() {
@@ -279,12 +287,12 @@ export function createLearnerRequestStore({ pool, leaseMs = 90_000 } = {}) {
     }
   }
 
-  async function fail({ sessionId, requestId, leaseToken, error } = {}) {
+  async function fail({ sessionId, requestId, leaseToken, error, trace = null } = {}) {
     requireText(sessionId, 'sessionId');
     requireText(requestId, 'requestId');
     requireLeaseToken(leaseToken);
     try {
-      const failure = safeFailure(error);
+      const failure = safeFailure(error, trace);
       const failed = await pool.query(`
         update learner_requests
         set status = 'failed',

@@ -1,3 +1,12 @@
+import {
+  createTaskFinalizationState,
+  reduceTaskFinalization,
+} from '../../src/engine/task-finalization.js';
+import {
+  activateScaffoldContext,
+  scaffoldContextForTask,
+} from './scaffold-context.js';
+
 function iso(value = Date.now()) {
   return new Date(value).toISOString();
 }
@@ -39,6 +48,7 @@ function environmentDefaults() {
     activeTab: 'task',
     learningView: 'dialogue',
     hasDraft: false,
+    busy: {},
     phaseRemainingSeconds: null,
     teacherCommand: null,
     groupStatus: null,
@@ -72,7 +82,9 @@ function syncLearningState(session, task) {
   session.learningState.stepId = stepIndex >= stepCount
     ? null
     : (task?.steps?.[stepIndex]?.id || `${task?.id || 'step'}-step-${stepIndex + 1}`);
-  session.learningState.stepStatus = stepIndex >= stepCount ? 'awaiting_evidence' : 'active';
+  session.learningState.stepStatus = stepIndex >= stepCount
+    ? (session.taskState?.finalization?.status || 'awaiting_bundle_submit')
+    : 'active';
   session.learningState.completedRoleStageIds = [...(session.completedTaskIds || [])];
   session.learningState.completedStepIds ||= [];
   session.learningState.evidenceIds ||= [];
@@ -153,6 +165,10 @@ export function ensureSessionRuntime(session, task, now = Date.now()) {
       lastToolActionAt: null,
       guidanceStepIndex: 0,
       stageAnnounced: false,
+      stepEvidenceFingerprints: {},
+      stepRevisionHistory: [],
+      lastStepRevision: null,
+      finalization: createTaskFinalizationState(task),
     };
     session.locationState = locationDefaults(task);
     session.conversationState.lastNudgeAt = null;
@@ -169,8 +185,18 @@ export function ensureSessionRuntime(session, task, now = Date.now()) {
     session.taskState.lastToolActionAt ||= null;
     session.taskState.guidanceStepIndex = Number(session.taskState.guidanceStepIndex || 0);
     session.taskState.stageAnnounced = Boolean(session.taskState.stageAnnounced);
+    session.taskState.stepEvidenceFingerprints ||= {};
+    session.taskState.stepRevisionHistory ||= [];
+    session.taskState.lastStepRevision ||= null;
+    session.taskState.finalization ||= createTaskFinalizationState(task, {
+      completedStepIds: session.learningState?.completedStepIds || [],
+      completed: (session.completedTaskIds || []).some((id) => id.endsWith(`:${task?.id || ''}`)),
+    });
     session.locationState ||= locationDefaults(task);
   }
+  activateScaffoldContext(session, scaffoldContextForTask(task, session), {
+    migrateLegacy: true,
+  });
   syncLearningState(session, task);
   updateDwell(session, now);
   return session;
@@ -306,9 +332,44 @@ export function markMeaningfulAction(session, value = Date.now(), kind = 'other'
 export function recordStepCompletion(session, task, stepIndex) {
   const learning = syncLearningState(session, task);
   const stepId = task?.steps?.[stepIndex]?.id || `${task?.id || 'step'}-step-${stepIndex + 1}`;
+  session.taskState.finalization ||= createTaskFinalizationState(task, {
+    completedStepIds: learning.completedStepIds,
+  });
   if (!learning.completedStepIds.includes(stepId)) learning.completedStepIds.push(stepId);
+  const finalization = reduceTaskFinalization(
+    session.taskState.finalization,
+    { type: 'step_passed', stepId },
+    task,
+  );
+  session.taskState.finalization = finalization.state;
   syncLearningState(session, task);
   return stepId;
+}
+
+export function recordStepFailure(session, task, stepIndex, reason = '') {
+  const learning = syncLearningState(session, task);
+  const stepId = task?.steps?.[stepIndex]?.id || `${task?.id || 'step'}-step-${stepIndex + 1}`;
+  session.taskState.finalization ||= createTaskFinalizationState(task, {
+    completedStepIds: learning.completedStepIds,
+  });
+  const finalization = reduceTaskFinalization(
+    session.taskState.finalization,
+    { type: 'step_failed', stepId, reason },
+    task,
+  );
+  session.taskState.finalization = finalization.state;
+  syncLearningState(session, task);
+  return finalization;
+}
+
+export function recordTaskFinalizationEvent(session, task, event) {
+  session.taskState.finalization ||= createTaskFinalizationState(task, {
+    completedStepIds: session.learningState?.completedStepIds || [],
+    completed: (session.completedTaskIds || []).some((id) => id.endsWith(`:${task?.id || ''}`)),
+  });
+  const finalization = reduceTaskFinalization(session.taskState.finalization, event, task);
+  session.taskState.finalization = finalization.state;
+  return finalization;
 }
 
 export function recordActiveTool(session, toolCallId = null) {
@@ -332,6 +393,11 @@ export function recordClientContext(session, data = {}, now = Date.now()) {
   if (typeof data.activeTab === 'string') session.environmentState.activeTab = data.activeTab;
   if (['dialogue', 'challenge'].includes(data.learningView)) session.environmentState.learningView = data.learningView;
   if (typeof data.hasDraft === 'boolean') session.environmentState.hasDraft = data.hasDraft;
+  if (data.busy && typeof data.busy === 'object' && !Array.isArray(data.busy)) {
+    session.environmentState.busy = Object.fromEntries(
+      Object.entries(data.busy).map(([key, value]) => [key, value === true]),
+    );
+  }
   if (Number.isFinite(Number(data.phaseRemainingSeconds))) {
     session.environmentState.phaseRemainingSeconds = Number(data.phaseRemainingSeconds);
   }
@@ -413,13 +479,14 @@ export function recordIntent(session, intent, signal = 'neutral', now = Date.now
 const TUTOR_ACTION_HISTORY_LIMIT = 6;
 
 /** 记录一次教学决策，供 tutorPolicy 的防复读规则读取。 */
-export function recordTutorAction(session, { intent, action }, now = Date.now()) {
+export function recordTutorAction(session, { intent, action, contextKey = '' }, now = Date.now()) {
   if (!action) return;
   session.conversationState ||= {};
   session.conversationState.recentTutorActions ||= [];
   session.conversationState.recentTutorActions.push({
     intent: String(intent || 'unknown'),
     action: String(action),
+    contextKey: String(contextKey || ''),
     at: iso(now),
   });
   session.conversationState.recentTutorActions = session.conversationState.recentTutorActions
@@ -445,5 +512,7 @@ export function runtimeSnapshot(session, now = Date.now()) {
     learner: structuredClone(session.learnerState || learnerDefaults(session)),
     environment: structuredClone(session.environmentState || environmentDefaults()),
     learning: structuredClone(session.learningState || learningDefaults(session, null)),
+    taskFinalization: structuredClone(session.taskState?.finalization || null),
+    lastStepRevision: structuredClone(session.taskState?.lastStepRevision || null),
   };
 }

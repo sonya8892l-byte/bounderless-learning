@@ -17,7 +17,7 @@
 
 ### 任务1：定义方案成功
 - id：designer-define-success
-- 阶段：Phase 1 调查开题
+- 阶段：Phase 2 展厅多源取证（角色取证准备）
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -75,6 +75,8 @@
 - 教师介入：无
 - 通过后：role-stage:designer-allocate-resources
 
+##### 验收标准
+风险、措施、相关者和资源四类证据各有一项，并已分配负责角色
 
 ### 任务2：模拟资源配置
 - id：designer-allocate-resources
@@ -115,6 +117,8 @@
 - 教师介入：总额或行动边界不清
 - 通过后：step:designer-shock-revision
 
+##### 验收标准
+资源总计100点，至少3项行动均关联风险或缺口，并说明暂缓项目
 
 #### Step 2：应对约束变化
 - id：designer-shock-revision
@@ -133,9 +137,12 @@
 - 教师介入：无
 - 通过后：role-stage:designer-publish-plan
 
+##### 验收标准
+记录新旧配置差异、调整依据、延后行动及恢复条件
 
 ### 任务3：发布守护行动书
 - id：designer-publish-plan
+- 收口方式：teacher_confirm
 - 阶段：Phase 6 行动书发布
 - 地点：教育空间
 - 位置模式：none
@@ -173,6 +180,8 @@
 - 教师介入：方案包含现实执行承诺或安全风险
 - 通过后：step:designer-final-revision
 
+##### 验收标准
+七要素完整，至少标注6个证据编号，并列出未知项和复盘日期
 
 #### Step 2：完成听证修订并发布
 - id：designer-final-revision
@@ -181,8 +190,8 @@
 - 位置：none
 - 完成方式：teacher_confirm
 - 证据要求：至少3条意见处置、版本差异、待核清单和人工终审
-- 功能模块：A05(版本对照), A08(教师确认)
-- 工具参数：{"team":{"mode":"revision","prompt":"登记意见、采纳状态、修改位置与理由。","minimumEntries":3},"teacher_confirm":{"prompt":"核对来源、效力表述、安全边界和AI披露后批准课程内发布。","required":true}}
+- 功能模块：A05(版本对照)
+- 工具参数：{"team":{"mode":"revision","prompt":"登记意见、采纳状态、修改位置与理由；完成后交由教师核对来源、效力表述、安全边界和AI披露。","minimumEntries":3}}
 - 知识引用：K-15, K-17, K-19
 - 限制引用：restrictions.md#方案效力
 - 常见误区：把课堂通过写成机构采纳

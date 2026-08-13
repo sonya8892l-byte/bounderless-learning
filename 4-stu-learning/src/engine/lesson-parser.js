@@ -1,5 +1,11 @@
 import { PLATFORM_LEARNING_VIEW } from './platform-config.js';
 import { courseOverrideSection, mergeDefaults } from './platform-defaults.js';
+import {
+  DEFAULT_TASK_FINALIZATION_MODE,
+  TASK_FINALIZATION_MODES,
+  isTaskFinalizationMode,
+  normalizeTaskFinalizationMode,
+} from './task-finalization.js';
 import { resolveToolDefaults } from './tool-defaults.js';
 import { resolveActivityTools } from './tool-registry.js';
 
@@ -58,9 +64,9 @@ export const ADVANCE_MODES = Object.freeze(['ai_suggest', 'auto_after_validation
 // resolveTaskDefaults 的兜底基线，保证默认层缺失时行为与建立默认层之前完全一致。
 export const TASK_DEFAULTS = Object.freeze({
   suggestedSeconds: 15 * 60,
-  idleNudgeSeconds: 3 * 60,
-  nudgeCooldownSeconds: 2 * 60,
-  maxNudges: 2,
+  idleNudgeSeconds: 8 * 60,
+  nudgeCooldownSeconds: 8 * 60,
+  maxNudges: 1,
   maxAttempts: 3,
   advanceMode: 'auto_after_validation',
 });
@@ -280,7 +286,14 @@ function parseStructuredSteps(block, roleStageId, assetBase, defaults = TASK_DEF
   });
 }
 
-function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS, toolDefaults = null) {
+function parseTaskBlock(
+  block,
+  index,
+  assetBase,
+  defaults = TASK_DEFAULTS,
+  toolDefaults = null,
+  onWarning = null,
+) {
   const firstStepIndex = block.search(/^####\s*(?:Step|小步)\s*\d+[：:]/im);
   const roleStageBlock = firstStepIndex === -1 ? block : block.slice(0, firstStepIndex);
   const fields = parseBlockFields(fieldRegion(roleStageBlock));
@@ -300,6 +313,17 @@ function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS, toolD
   const locationMode = normalizeLocationMode(rawLocationMode, Boolean(coordinates), Boolean(fields['地点']));
   const requirement = fields['配置'] || fields['通过条件'] || '提交你的现场发现';
   const id = clean(fields.id || fields.ID || `task-${index + 1}`);
+  const rawFinalizationMode = clean(fields['收口方式'] || '').toLowerCase();
+  const finalizationMode = normalizeTaskFinalizationMode(rawFinalizationMode);
+  if (rawFinalizationMode && !isTaskFinalizationMode(rawFinalizationMode)) {
+    onWarning?.({
+      code: 'bad_task_finalization_mode',
+      field: '收口方式',
+      taskId: id,
+      value: rawFinalizationMode,
+      message: `任务「${id}」的收口方式「${rawFinalizationMode}」不是 ${TASK_FINALIZATION_MODES.join(' / ')} 之一，已按 ${DEFAULT_TASK_FINALIZATION_MODE} 处理。`,
+    });
+  }
   const structuredSteps = parseStructuredSteps(block, id, assetBase, defaults, toolDefaults);
   const guidanceSteps = structuredSteps.length
     ? structuredSteps.map((step) => step.studentAction)
@@ -324,6 +348,7 @@ function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS, toolD
     guidanceSteps,
     steps,
     completionMode: normalizeCompletionMode(fields['完成方式']),
+    finalizationMode,
     evidenceRequirement: fields['证据要求'] || fields['通过条件'] || '完成提交',
     passCondition: fields['通过条件'] || '完成提交',
     goals: fields['目标关联'] || '',
@@ -359,14 +384,29 @@ function parseTaskBlock(block, index, assetBase, defaults = TASK_DEFAULTS, toolD
   };
 }
 
-function parseRole(path, markdown, assetBase, index, defaults = TASK_DEFAULTS, toolDefaults = null) {
+function parseRole(
+  path,
+  markdown,
+  assetBase,
+  index,
+  defaults = TASK_DEFAULTS,
+  toolDefaults = null,
+  onWarning = null,
+) {
   const slug = path.split('/').at(-1).replace('.md', '');
   const info = parseKeyValues(markdown, '## 基本信息');
   const taskMatches = [...markdown.matchAll(/^###\s*(?:任务|角色阶段)\d+[：:].*$/gm)];
   const tasks = taskMatches.map((match, taskIndex) => {
     const start = match.index;
     const end = taskMatches[taskIndex + 1]?.index ?? markdown.indexOf('\n## Phase 3', start);
-    return parseTaskBlock(markdown.slice(start, end === -1 ? markdown.length : end), taskIndex, assetBase, defaults, toolDefaults);
+    return parseTaskBlock(
+      markdown.slice(start, end === -1 ? markdown.length : end),
+      taskIndex,
+      assetBase,
+      defaults,
+      toolDefaults,
+      onWarning,
+    );
   });
 
   const token = requiredField(info['收集物'], `${path} / 基本信息 / 收集物`);
@@ -433,7 +473,7 @@ function parsePhaseTasks(block, phaseNumber, assetBase, defaults, toolDefaults, 
     const body = block.slice(start, end);
     // parseTaskBlock 读 `### 任务N：` 取名字，这里的标题是 `### 阶段任务N：`，
     // 取不到就回落成「任务N」。所以名字由本函数从标题直接给，覆盖掉那个回落值。
-    const task = parseTaskBlock(body, index, assetBase, defaults, toolDefaults);
+    const task = parseTaskBlock(body, index, assetBase, defaults, toolDefaults, onWarning);
     const rawExecutor = clean(body.match(/^-\s*执行单位[：:]\s*(.+)$/m)?.[1] || '');
     const executor = PHASE_TASK_EXECUTORS.includes(rawExecutor) ? rawExecutor : DEFAULT_PHASE_TASK_EXECUTOR;
     if (rawExecutor && !PHASE_TASK_EXECUTORS.includes(rawExecutor)) {
@@ -573,7 +613,15 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
   const roleFiles = Object.entries(source.files)
     .filter(([path]) => path.startsWith('roles/') && path.endsWith('.md'));
   const roles = roleFiles
-    .map(([path, markdown], index) => parseRole(path, markdown, assetBase, index, taskDefaults, toolDefaults))
+    .map(([path, markdown], index) => parseRole(
+      path,
+      markdown,
+      assetBase,
+      index,
+      taskDefaults,
+      toolDefaults,
+      onWarning,
+    ))
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
   const requestedLearningView = clean(learningView.default || PLATFORM_LEARNING_VIEW.default).toLowerCase();
   if (!['dialogue', 'challenge'].includes(requestedLearningView)) {
@@ -619,10 +667,6 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
       allowStudentSwitch: parseBoolean(
         learningView.allowStudentSwitch,
         PLATFORM_LEARNING_VIEW.allowStudentSwitch,
-      ),
-      allowFutureTaskBrowse: parseBoolean(
-        learningView.allowFutureTaskBrowse,
-        PLATFORM_LEARNING_VIEW.allowFutureTaskBrowse,
       ),
     },
     roles,

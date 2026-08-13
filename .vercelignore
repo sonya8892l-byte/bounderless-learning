@@ -1,0 +1,33 @@
+# Repository and local agent state
+.git/
+.agents/
+.codex/
+.claude/
+
+# Secrets and local Vercel state
+.env
+.env.*
+.vercel/
+
+# Dependencies and generated output (Vercel installs/builds these itself)
+**/node_modules/
+**/dist/
+**/.runtime/
+**/uploads/
+**/test-artifacts/
+**/coverage/
+
+# Local source material, evaluation references, and backups
+0-temp-asset/
+1-docs/
+5-evaluation/
+**/_temp_ref/
+**/_backups/
+*.zip
+*.mov
+*.mp4
+
+# Tests and local-only development artifacts
+4-stu-learning/tests/
+4-stu-learning/screenshots/
+supabase/.temp/

@@ -10,6 +10,7 @@ import { evaluateNudge, recordNudge } from './nudge-policy.js';
 import {
   advanceToNextTask,
   advanceWaitModeOf,
+  clearPendingAdvance,
   currentTaskOf,
   currentToolOf,
   markPendingAdvance,
@@ -31,6 +32,8 @@ import {
   recordIntent,
   recordLocationObservation,
   recordStepCompletion,
+  recordStepFailure,
+  recordTaskFinalizationEvent,
   recordTutorAction,
   runtimeSnapshot,
   setDialogueLifecycle,
@@ -47,19 +50,49 @@ import {
 import { createUnderstanding, fastUnderstanding } from './understanding.js';
 import { phaseNumber } from '../services/session-factory.js';
 import { decideTutorAction } from './tutor-policy.js';
+import { createStudentFacingPolicy, STUDENT_FACING_POLICY_VERSION } from './student-facing-policy.js';
+import { appendTurnTrace, buildTurnTrace, traceStateSnapshot } from './turn-trace.js';
 import {
-  applyGradeResponsePolicy,
+  activateScaffoldContext,
+  scaffoldContextForTask,
+  scaffoldStateSnapshot,
+  setScaffoldContextLevel,
+  setScaffoldStepOverride,
+} from './scaffold-context.js';
+import {
   applyPendingAnswer,
   arrivalQuestion,
   askQuestion,
-  avoidRepeatedReply,
   conversationRepair,
   nextOnboardingQuestion,
   readinessQuestion,
-  splitGradeResponse,
+  safetyHelpReply,
   taskRequiresArrival,
   unclearInputReply,
 } from './dialogue-policy.js';
+import {
+  acceptStepEvidence,
+  acceptedStepEvidence,
+  recordStepRevision,
+  stepEvidenceFingerprint,
+} from './step-evidence.js';
+import {
+  planTurnPresentation,
+  selectTurnPrimaryAction,
+  summarizeTurnStateChanges,
+} from '../../src/engine/turn-plan.js';
+import { entryPhaseForLesson } from '../../src/engine/entry-phase.js';
+import { DEFAULT_TASK_FINALIZATION_MODE } from '../../src/engine/task-finalization.js';
+import { isPosterOnlyMedia } from '../../src/engine/tool-registry.js';
+import { checkCourseContentVersion } from './content-version-gate.js';
+import {
+  createReplayEnvelope,
+  learnerRequestDigest,
+  rememberRequestResult,
+  replayRequestResult,
+  resolveReplayEnvelope,
+  RequestReplayConflictError,
+} from './request-replay.js';
 
 export class AgentActionError extends Error {
   constructor(message, code, details = {}) {
@@ -68,6 +101,77 @@ export class AgentActionError extends Error {
     this.code = code;
     this.details = details;
   }
+}
+
+export function assertCourseContentVersion(session, course) {
+  const version = checkCourseContentVersion(session, course);
+  if (version.ok) return version;
+  throw new AgentActionError(
+    '课程内容已更新，为避免把旧进度套到新任务，请由老师重新开启本次课程。',
+    'COURSE_VERSION_CHANGED',
+    {
+      sessionVersion: version.sessionVersion,
+      currentVersion: version.currentVersion,
+    },
+  );
+}
+
+const TEACHER_EVENT_ACTIONS = Object.freeze({
+  teacher_confirm_arrival: 'confirm_arrival',
+  teacher_finalize_task: 'approve_evidence',
+  teacher_reject_task: 'reject_evidence',
+  teacher_advance_task: 'advance_task',
+});
+
+/**
+ * Returns the server-side command capability required by a privileged lifecycle
+ * input.  A command id in JSON is only a reference: createAgentService still
+ * asks its server-owned consumer to prove and consume the capability before any
+ * session state is changed.
+ */
+export function teacherCommandRequirement(input = {}) {
+  if (input?.type !== 'lifecycle_event') return null;
+  const event = String(input.event || '');
+  const data = input.data || {};
+  const commandId = String(data.teacherCommandId || '').trim();
+  const teacherApproved = data.teacherApproved === true;
+  const teacherOverride = data.teacherOverride === true;
+
+  if (event === 'task_step_completed' && (teacherApproved || teacherOverride)) {
+    if (teacherApproved && teacherOverride) {
+      return { required: true, commandId, action: '', invalid: 'ambiguous_step_authority' };
+    }
+    return {
+      required: true,
+      commandId,
+      action: teacherOverride ? 'skip_step' : 'approve_evidence',
+    };
+  }
+  if (teacherApproved || teacherOverride) {
+    return { required: true, commandId, action: '', invalid: 'authority_on_wrong_event' };
+  }
+  if (event === 'teacher_directive') {
+    const changesScaffold = data.scaffoldLevel !== undefined && data.scaffoldLevel !== null;
+    const changesPhase = Boolean(String(data.phaseId || '').trim());
+    if (!changesScaffold && !changesPhase) {
+      return { required: true, commandId, action: '', invalid: 'ambiguous_directive' };
+    }
+    return {
+      required: true,
+      commandId,
+      // An advance_phase command may atomically carry a server-authored
+      // scaffoldLevel in its payload.  A set_scaffold command can never choose
+      // a phase.
+      action: changesPhase ? 'advance_phase' : 'set_scaffold',
+    };
+  }
+  if (Object.hasOwn(TEACHER_EVENT_ACTIONS, event)) {
+    return { required: true, commandId, action: TEACHER_EVENT_ACTIONS[event] };
+  }
+  if (event.startsWith('teacher_')) {
+    return { required: true, commandId, action: '', invalid: 'unsupported_teacher_event' };
+  }
+  return null;
 }
 
 function courseConversationTrack(course, phaseId) {
@@ -116,13 +220,7 @@ function phaseTrackFor(course, phaseId) {
 }
 
 function entryPhaseTrackFor(course) {
-  const rolePhaseIndex = course.lesson.phases.findIndex(
-    (item) => item.id === course.lesson.roleSystem.phaseId,
-  );
-  const preRolePhases = rolePhaseIndex > 0
-    ? course.lesson.phases.slice(0, rolePhaseIndex)
-    : [];
-  const phase = preRolePhases.find((item) => course.phaseTracks?.[item.id]?.tasks?.length)
+  const phase = entryPhaseForLesson(course.lesson)
     || course.lesson.phases.find((item) => item.id === course.lesson.roleSystem.phaseId)
     || course.lesson.phases[0];
   return phaseTrackFor(course, phase?.id || course.lesson.roleSystem.phaseId);
@@ -140,19 +238,19 @@ function bindRoleToSession({ course, session, roleId }) {
   if (!role) throw new AgentActionError(`角色 ${roleId} 不存在。`, 'ROLE_NOT_FOUND');
   if (session.roleId) {
     if (session.roleId !== role.id) {
-      throw new AgentActionError('当前会话已经领取了其他角色，请返回原角色继续。', 'ROLE_ALREADY_ASSIGNED');
+      throw new AgentActionError('当前会话已经选择了其他角色，请返回原角色继续。', 'ROLE_ALREADY_ASSIGNED');
     }
     return role;
   }
 
-  const phaseTrack = phaseTrackFor(course, session.phaseId);
-  const configuredPhaseTasks = course.phaseTracks?.[session.phaseId]?.tasks || [];
+  const phaseTrack = entryPhaseTrackFor(course);
+  const configuredPhaseTasks = course.phaseTracks?.[phaseTrack.id]?.tasks || [];
   const missing = configuredPhaseTasks.filter(
     (task) => !session.completedTaskIds.includes(`${phaseTrack.id}:${task.id}`),
   );
   if (missing.length) {
     throw new AgentActionError(
-      `请先完成「${missing[0].name}」，再领取角色。`,
+      `请先完成「${missing[0].name}」，再选择角色。`,
       'PHASE_TASKS_INCOMPLETE',
       { missingTaskIds: missing.map((task) => task.id) },
     );
@@ -160,11 +258,14 @@ function bindRoleToSession({ course, session, roleId }) {
 
   // 角色补绑只切换任务轨道，消息、证据引用和对话记忆都留在原会话里。
   session.phaseTaskState = {
-    phaseId: session.phaseId,
+    phaseId: phaseTrack.id,
     currentTaskIndex: session.currentTaskIndex,
     completedTaskIds: [...session.completedTaskIds],
+    dialogueState: structuredClone(session.dialogueState || null),
+    learningState: structuredClone(session.learningState || null),
     completedAt: new Date().toISOString(),
   };
+  const preservedEvidenceIds = [...(session.learningState?.evidenceIds || [])];
   session.roleId = role.id;
   session.phaseId = course.lesson.roleSystem.phaseId;
   session.phaseNumber = phaseNumber(session.phaseId);
@@ -179,8 +280,25 @@ function bindRoleToSession({ course, session, roleId }) {
     readyConfirmed: false,
     completed: false,
   };
-  session.dialogueState = null;
-  session.learningState = null;
+  session.dialogueState = {
+    ...(session.dialogueState || {}),
+    pendingQuestion: null,
+    interruptedQuestion: null,
+  };
+  session.learningState = {
+    ...(session.learningState || {}),
+    coursePhaseId: session.phaseId,
+    roleId: role.id,
+    roleStageId: '',
+    stepId: '',
+    stepStatus: 'active',
+    completedStepIds: [],
+    completedRoleStageIds: [],
+    activeToolCallId: null,
+    evidenceIds: preservedEvidenceIds,
+    stageValidation: 'pending',
+    teacherLock: null,
+  };
   session.events.push(`${role.id}:role-assigned`);
   return role;
 }
@@ -306,6 +424,99 @@ function guidanceSteps(task) {
   return task.guidanceSteps?.length ? task.guidanceSteps : [task.requirement];
 }
 
+function stateUpdatedData(session, intent = '') {
+  return {
+    roleId: session.roleId || '',
+    taskScope: session.roleId ? 'role' : 'phase',
+    phaseId: session.phaseId,
+    phaseTaskContext: session.phaseTaskState || (!session.roleId ? {
+      phaseId: session.phaseId,
+      currentTaskIndex: session.currentTaskIndex,
+      completedTaskIds: [...session.completedTaskIds],
+      taskId: session.taskState?.taskId || '',
+      guidanceStepIndex: Number(session.taskState?.guidanceStepIndex || 0),
+    } : null),
+    currentTaskIndex: session.currentTaskIndex,
+    completedTaskIds: [...session.completedTaskIds],
+    scaffoldLevel: session.scaffoldLevel,
+    scaffoldState: scaffoldStateSnapshot(session),
+    pendingAdvance: session.pendingAdvance
+      ? { mode: session.pendingAdvance.mode, taskId: session.pendingAdvance.taskId }
+      : null,
+    taskFinalization: structuredClone(session.taskState?.finalization || null),
+    intent,
+    runtime: runtimeSnapshot(session),
+    learningState: structuredClone(session.learningState),
+    dialogueState: structuredClone(session.dialogueState),
+  };
+}
+
+function authoritativeReplayEvents(session, course, reason = 'cache_incompatible') {
+  const visible = [];
+  const activeCallId = session.learningState?.activeToolCallId;
+  const pending = activeCallId ? session.pendingTools?.[activeCallId] : null;
+  if (pending?.payload) {
+    const policy = createStudentFacingPolicy({ course, session });
+    const surface = policy.processSurface(pending.payload, { channel: 'replay_tool' });
+    visible.push({
+      type: 'tool.requested',
+      data: {
+        callId: activeCallId,
+        name: pending.name,
+        payload: surface.value,
+      },
+    });
+  }
+  const primaryAction = visible.length
+    ? { kind: 'tool', name: visible[0].data.name, id: visible[0].data.callId }
+    : { kind: 'none', name: '', id: '' };
+  const planned = planTurnPresentation(visible, { primaryAction });
+  return [
+    ...planned.events,
+    {
+      type: 'state.updated',
+      data: {
+        ...stateUpdatedData(session, 'request_replay_recovery'),
+        turnPlan: planned.summary,
+        replayed: true,
+        replayMode: 'authoritative_recovery',
+        replayReason: reason,
+      },
+    },
+  ];
+}
+
+function requestReplayEvents({
+  session,
+  course,
+  requestId,
+  requestDigest,
+  replayEnvelope,
+}) {
+  let cachedEnvelope = replayEnvelope;
+  try {
+    if (cachedEnvelope === undefined) {
+      cachedEnvelope = replayRequestResult(session, requestId, { requestDigest });
+    }
+  } catch (error) {
+    if (error instanceof RequestReplayConflictError) {
+      throw new AgentActionError(
+        'requestId 已用于不同的请求内容。',
+        error.code,
+      );
+    }
+    throw error;
+  }
+  const resolution = resolveReplayEnvelope(cachedEnvelope, {
+    requestId,
+    requestDigest,
+    courseContentVersion: course.contentVersion,
+    session,
+  });
+  if (resolution.compatible) return resolution.events;
+  return authoritativeReplayEvents(session, course, resolution.reason);
+}
+
 // 当前小步对象：用于取该步的就地脚手架与引导（无结构化 Step 时返回 null）。
 function currentStepOf(task, session) {
   if (!task?.steps?.length) return null;
@@ -349,21 +560,13 @@ function valuesMatch(actual, expected, { orderMatters = true } = {}) {
   return normalize(actual) === normalize(expected);
 }
 
-function validateStepCompletion({ task, stepIndex, input, session }) {
+function validateStepToolEvidence({
+  task,
+  stepIndex,
+  input,
+}) {
   const step = task.steps?.[stepIndex];
   const mode = step?.completionMode || 'user_confirm';
-  if (input.data?.teacherOverride === true && input.data?.teacherCommandId) return;
-  if (mode === 'teacher_confirm') {
-    if (input.data?.teacherApproved === true) return;
-    throw new AgentActionError('这一步需要老师确认，请先呼叫老师或等待教师端处理。', 'STEP_TEACHER_CONFIRM_REQUIRED');
-  }
-  if (mode === 'location_event' && session.locationState?.status !== 'arrived') {
-    throw new AgentActionError('到达指定地点并完成位置验证后，这一步才会通过。', 'STEP_LOCATION_REQUIRED');
-  }
-  if (mode === 'compound' && step?.location?.mode !== 'none' && session.locationState?.status !== 'arrived') {
-    throw new AgentActionError('这个小步还需要完成到位验证。', 'STEP_LOCATION_REQUIRED');
-  }
-  if (mode === 'user_confirm') return;
   const tools = step?.tools?.length ? step.tools : task.tools || [];
   if (!tools.length && !['location_event', 'teacher_confirm'].includes(mode)) {
     throw new AgentActionError('课程没有为这个小步配置可验证工具，请联系课程管理员。', 'STEP_TOOL_MISSING');
@@ -445,8 +648,17 @@ function validateStepCompletion({ task, stepIndex, input, session }) {
       const missingType = (config.requiredRecordTypes || []).find((type) => !recordedTypes.has(type));
       if (missingType) throw new AgentActionError(`还需要一条“${missingType}”记录。`, 'STEP_TEAM_RECORD_TYPE_REQUIRED');
     }
-    if (tool.id === 'media' && config.requireCompletion !== false && !value.completed) {
-      throw new AgentActionError('请先查看完课程材料。', 'STEP_MEDIA_INCOMPLETE');
+    if (tool.id === 'media' && config.requireCompletion !== false) {
+      const posterOnly = isPosterOnlyMedia(config);
+      if (!config.url && !posterOnly) {
+        throw new AgentActionError('课程素材尚未配置，请联系老师。', 'STEP_MEDIA_SOURCE_MISSING');
+      }
+      if (!value.completed) {
+        throw new AgentActionError(
+          posterOnly ? '请先查看课程情境图。' : '请先查看完课程材料。',
+          'STEP_MEDIA_INCOMPLETE',
+        );
+      }
     }
     if (tool.id === 'scanner') {
       if (!value.result) throw new AgentActionError('请先完成扫码或识别。', 'STEP_SCAN_REQUIRED');
@@ -455,6 +667,79 @@ function validateStepCompletion({ task, stepIndex, input, session }) {
       }
     }
   }
+}
+
+function validateStepCompletion({
+  task,
+  stepIndex,
+  input,
+  session,
+  teacherCommandAuthorization,
+}) {
+  const step = task.steps?.[stepIndex];
+  const mode = step?.completionMode || 'user_confirm';
+  if (input.data?.teacherOverride === true) {
+    if (teacherCommandAuthorization?.action === 'skip_step') return;
+    throw new AgentActionError('这次跳过指令没有有效的教师授权。', 'TEACHER_COMMAND_UNAUTHORIZED');
+  }
+  if (mode === 'teacher_confirm') {
+    if (
+      input.data?.teacherApproved === true
+      && teacherCommandAuthorization?.action === 'approve_evidence'
+    ) return;
+    throw new AgentActionError('这一步需要老师确认，请先呼叫老师或等待教师端处理。', 'STEP_TEACHER_CONFIRM_REQUIRED');
+  }
+  if (mode === 'location_event' && session.locationState?.status !== 'arrived') {
+    throw new AgentActionError('到达指定地点并完成位置验证后，这一步才会通过。', 'STEP_LOCATION_REQUIRED');
+  }
+  if (mode === 'compound' && step?.location?.mode !== 'none' && session.locationState?.status !== 'arrived') {
+    throw new AgentActionError('这个小步还需要完成到位验证。', 'STEP_LOCATION_REQUIRED');
+  }
+  if (mode === 'user_confirm') return;
+  validateStepToolEvidence({ task, stepIndex, input });
+}
+
+function withStepDetails(error, step, stepIndex) {
+  if (!(error instanceof AgentActionError)) return error;
+  error.details = {
+    ...(error.details || {}),
+    stepId: step?.id || '',
+    stepIndex,
+  };
+  if (step?.studentAction || step?.objective) {
+    error.message = `第 ${stepIndex + 1} 步“${step.studentAction || step.objective}”：${error.message}`;
+  }
+  return error;
+}
+
+function validateTaskBundleStepEvidence({ task, session, toolValues }) {
+  if (!task.steps?.length) return;
+  const input = { data: { toolValues } };
+  task.steps.forEach((step, stepIndex) => {
+    const tools = step?.tools?.length ? step.tools : task.tools || [];
+    if (tools.length) {
+      try {
+        validateStepToolEvidence({ task, stepIndex, input });
+      } catch (error) {
+        throw withStepDetails(error, step, stepIndex);
+      }
+    }
+    if (step.completionMode !== 'ai_evaluation') return;
+    const accepted = acceptedStepEvidence(session, step.id);
+    const currentFingerprint = stepEvidenceFingerprint(toolValues, step.id);
+    if (!accepted?.fingerprint || accepted.fingerprint !== currentFingerprint) {
+      throw new AgentActionError(
+        `第 ${stepIndex + 1} 步的证据已经修改，请先点击“保存并重新检查这一步”。`,
+        'STEP_REVISION_REQUIRES_REEVALUATION',
+        {
+          stepId: step.id,
+          stepIndex,
+          acceptedFingerprint: accepted?.fingerprint || null,
+          currentFingerprint,
+        },
+      );
+    }
+  });
 }
 
 function parseEvaluationResult(text = '') {
@@ -597,12 +882,7 @@ async function evaluateStepSubmission({
     }, 'ai evaluation result invalid');
     throw new AgentActionError('絮絮收到了一份无法解析的检查结果，请稍后再试。', 'STEP_AI_INVALID_RESULT');
   }
-  if (findSpoiler(evaluation.feedback, course, session)) {
-    evaluation.feedback = evaluation.passed
-      ? '这一步的证据结构已经达到继续条件。'
-      : '这一步仍缺少可核对的证据，请回看小步要求后补充。';
-  }
-  evaluation.missing = evaluation.missing.filter((item) => !findSpoiler(item, course, session));
+  const policyResult = createStudentFacingPolicy({ course, session }).processEvaluation(evaluation);
   logger?.debug?.({
     aiEvaluation: {
       courseId: course.id,
@@ -613,7 +893,10 @@ async function evaluateStepSubmission({
       passed: evaluation.passed,
     },
   }, 'ai evaluation completed');
-  return evaluation;
+  return {
+    ...policyResult.value,
+    policyActions: policyResult.actions,
+  };
 }
 
 function stageTimeline(task, taskIndex) {
@@ -700,7 +983,7 @@ function workflowResult({ decision, role, session, course, input }) {
   const say = (key, params = {}) => renderVoice(voice, key, params);
   const locationName = task.location?.name || role.location;
   if (decision.intent === 'phase_started') {
-    // 阶段任务发生在角色领取前，不需要再问一次“是否到达／是否准备好”。
+    // 阶段任务发生在角色选择前，不需要再问一次“是否到达／是否准备好”。
     // 前端点击进入课程就是明确的开始信号，直接打开当前阶段任务。
     session.onboardingState.arrivedConfirmed = true;
     session.onboardingState.readyConfirmed = true;
@@ -879,7 +1162,7 @@ function workflowResult({ decision, role, session, course, input }) {
   }
   if (decision.intent === 'safety_help') {
     return {
-      text: say('safety_help.呼叫老师'),
+      text: safetyHelpReply(input.text, voice),
       toolCalls: [{
         id: `call_${crypto.randomUUID()}`,
         name: 'call_teacher',
@@ -913,9 +1196,14 @@ function workflowResult({ decision, role, session, course, input }) {
       if (currentIndex < steps.length && currentStep?.completionMode === 'user_confirm') {
         session.taskState.guidanceStepIndex = currentIndex + 1;
         recordStepCompletion(session, task, currentIndex);
+        const finalizationStatus = session.taskState?.finalization?.status;
         setDialogueLifecycle(session, currentIndex + 1 < steps.length ? 'GUIDE_CURRENT_STEP' : 'WAIT_FOR_TOOL_RESULT');
         return {
-          text: currentIndex + 1 < steps.length
+          text: finalizationStatus === 'completed'
+            ? say('task_step_completed.任务完成')
+            : finalizationStatus === 'awaiting_teacher_confirm'
+              ? say('task_step_completed.等待教师终审')
+              : currentIndex + 1 < steps.length
             ? say('task_progress.小步记下', {
               doneNumber: currentIndex + 1,
               nextNumber: currentIndex + 2,
@@ -923,7 +1211,9 @@ function workflowResult({ decision, role, session, course, input }) {
             })
             : say('task_progress.小步全记下', { stepCount: steps.length }),
           toolCalls: [],
-          dialogueMove: currentIndex + 1 < steps.length ? 'guide_current_step' : 'request_required_evidence',
+          dialogueMove: finalizationStatus === 'completed'
+            ? 'confirm_task_completion'
+            : (currentIndex + 1 < steps.length ? 'guide_current_step' : 'request_required_evidence'),
           quickReplies: [],
         };
       }
@@ -983,9 +1273,15 @@ function workflowResult({ decision, role, session, course, input }) {
     }
     setDialogueLifecycle(session, 'WAIT_FOR_TOOL_RESULT');
     return {
-      text: say('task_step_completed.全部完成', { stepCount: steps.length }),
+      text: session.taskState?.finalization?.status === 'completed'
+        ? say('task_step_completed.任务完成')
+        : session.taskState?.finalization?.status === 'awaiting_teacher_confirm'
+          ? say('task_step_completed.等待教师终审')
+          : say('task_step_completed.全部完成', { stepCount: steps.length }),
       toolCalls: [],
-      dialogueMove: 'request_required_evidence',
+      dialogueMove: session.taskState?.finalization?.status === 'completed'
+        ? 'confirm_task_completion'
+        : 'request_required_evidence',
       quickReplies: [],
     };
   }
@@ -1089,12 +1385,10 @@ function appendStateDrivenTools(result, { input, role, session }) {
   // ② 教师／学生解除等待后推进——它是 lifecycle_event，不是 tool_result。
   //    漏掉②的话老师按了确认，进度确实 +1，但**新任务的工具卡永远不开**，
   //    学生停在一张已完成的旧卡上，卡死只是换了个位置。
-  const autoAdvanced = input.type === 'tool_result'
-    && input.result?.status === 'completed'
-    && input.data?.resolvedTool === 'open_task_tool'
-    && Boolean(input.data?.completedTaskId);
+  const completedAndAdvanced = Boolean(input.data?.completedTaskId)
+    && !pendingAdvanceOf(session);
   const resolvedAdvance = input.type === 'lifecycle_event' && Boolean(input.data?.advancedBy);
-  if (!autoAdvanced && !resolvedAdvance) return result;
+  if (!completedAndAdvanced && !resolvedAdvance) return result;
   if (input.data?.allTasksCompleted) return result;
   if (result.toolCalls?.length) return result;
   // 等教师／学生推进时 currentTaskIndex 还没动，这里再自动开卡会把**刚做完的那个任务**
@@ -1133,7 +1427,7 @@ function appendStateDrivenTools(result, { input, role, session }) {
  *
  * 教师是现场的权威，所以这里不做教学判断，只做合法性校验。
  */
-function applyTeacherDirective({ session, course, data }) {
+function applyTeacherDirective({ session, course, task, data }) {
   const applied = [];
 
   // 阶段是课程编排里的既有阶段才认。写错一个不存在的 phaseId 会让「阶段规则」段整段变空，
@@ -1153,7 +1447,12 @@ function applyTeacherDirective({ session, course, data }) {
     const level = Number(data.scaffoldLevel);
     if (Number.isFinite(level)) {
       const maxLevel = Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4);
-      session.scaffoldLevel = Math.max(0, Math.min(maxLevel, Math.trunc(level)));
+      setScaffoldStepOverride(
+        session,
+        scaffoldContextForTask(task, session),
+        level,
+        { maxLevel, source: 'teacher' },
+      );
       applied.push('scaffold');
     }
   }
@@ -1232,6 +1531,23 @@ async function applyToolResult({
       { completed: completedSteps, total: steps.length },
     );
   }
+  const finalizationMode = task.finalizationMode || DEFAULT_TASK_FINALIZATION_MODE;
+  if (finalizationMode !== 'explicit_bundle_submit') {
+    throw new AgentActionError(
+      finalizationMode === 'teacher_confirm'
+        ? '这项任务正在等待老师终审，学生不需要再提交一次。'
+        : '这项任务会在最后一步通过后自动完成，不需要再提交。',
+      'TASK_FINALIZATION_MODE_REJECTS_BUNDLE',
+      { mode: finalizationMode },
+    );
+  }
+  if (session.taskState?.finalization?.status !== 'awaiting_bundle_submit') {
+    throw new AgentActionError(
+      '当前任务还没有进入整包提交状态，请按当前小步继续。',
+      'TASK_FINALIZATION_NOT_READY',
+      { status: session.taskState?.finalization?.status || 'unknown' },
+    );
+  }
   const completedLocationName = task.location?.name || '';
   const completedLocationStatus = session.locationState?.status;
   const completedVerification = session.locationState?.verifiedBy;
@@ -1251,6 +1567,9 @@ async function applyToolResult({
   if (!evidence.length && !text && !Object.keys(toolValues).length) {
     throw new AgentActionError('请先提交现场证据或观察记录。', 'EVIDENCE_REQUIRED');
   }
+  // 整包提交必须重新核对每个 Step 的当前值。任务总数达标不能补偿某一步
+  // 证据被删空；AI 已验收的 Step 若指纹变化，也必须先走 revision 生命周期。
+  validateTaskBundleStepEvidence({ task, session, toolValues });
   if (task.completionMode === 'ai_evaluation') {
     // 少数阶段任务只有任务级「完成方式」，没有手写 Step。它们的最终提交仍需真正经过
     // AI 验收；否则课程写了 ai_evaluation，运行时却会直接判定完成。
@@ -1295,18 +1614,26 @@ async function applyToolResult({
       );
     }
   }
+  const finalization = recordTaskFinalizationEvent(session, task, { type: 'bundle_submitted' });
+  if (!finalization.changed || finalization.state.status !== 'completed') {
+    throw new AgentActionError(
+      '这次整包提交没有改变任务状态，请按当前提示继续。',
+      'TASK_FINALIZATION_REJECTED',
+      { reason: finalization.reason },
+    );
+  }
   input.data = {
     ...(input.data || {}),
     submissionTaskId: task.id,
     submissionTaskName: task.name,
-    pendingCompletion: {
-      toolCallId: input.toolCallId,
-      taskId: task.id,
-      taskIndex: session.currentTaskIndex,
-      completedLocationName,
-      completedLocationStatus,
-      completedVerification,
-    },
+  };
+  stagePendingTaskCompletion({ session, role, task, input, source: 'bundle_submitted' });
+  input.data.pendingCompletion = {
+    ...input.data.pendingCompletion,
+    toolCallId: input.toolCallId,
+    completedLocationName,
+    completedLocationStatus,
+    completedVerification,
   };
 }
 
@@ -1328,6 +1655,31 @@ function applyAdvanceOutcome(input, role, advance) {
   }
 }
 
+function taskToolCallIdFor(session, taskId) {
+  return Object.entries(session.pendingTools || {}).find(([, pending]) => (
+    pending.name === 'open_task_tool' && pending.payload?.taskId === taskId
+  ))?.[0] || null;
+}
+
+function stagePendingTaskCompletion({ session, role, task, input, source = '' }) {
+  if (!task || session.taskState?.finalization?.status !== 'completed') return false;
+  const completedId = `${role.id}:${task.id}`;
+  if (session.completedTaskIds.includes(completedId)) return false;
+  input.data = {
+    ...(input.data || {}),
+    pendingCompletion: input.data?.pendingCompletion || {
+      toolCallId: taskToolCallIdFor(session, task.id),
+      taskId: task.id,
+      taskIndex: session.currentTaskIndex,
+      source: source || session.taskState.finalization.mode,
+      completedLocationName: task.location?.name || '',
+      completedLocationStatus: session.locationState?.status,
+      completedVerification: session.locationState?.verifiedBy,
+    },
+  };
+  return true;
+}
+
 function finalizeToolResult({ session, role, input, course }) {
   const completion = input.data?.pendingCompletion;
   if (!completion) return;
@@ -1335,12 +1687,24 @@ function finalizeToolResult({ session, role, input, course }) {
   if (!task || task.id !== completion.taskId || session.currentTaskIndex !== completion.taskIndex) {
     throw new AgentActionError('任务已经切换，这次提交没有改变新任务进度。', 'TASK_SUBMISSION_EXPIRED');
   }
-  delete session.pendingTools[completion.toolCallId];
+  if (completion.toolCallId) delete session.pendingTools[completion.toolCallId];
+  for (const [callId, pending] of Object.entries(session.pendingTools || {})) {
+    if (pending.name === 'open_task_tool' && pending.payload?.taskId === task.id) {
+      delete session.pendingTools[callId];
+    }
+  }
   recordActiveTool(session, null);
   const completedId = `${role.id}:${task.id}`;
   if (!session.completedTaskIds.includes(completedId)) session.completedTaskIds.push(completedId);
   session.learningState.completedRoleStageIds = [...session.completedTaskIds];
   session.learningState.stageValidation = 'passed';
+  if (session.taskState?.finalization) {
+    session.taskState.finalization = {
+      ...session.taskState.finalization,
+      status: 'completed',
+      revision: null,
+    };
+  }
   markMeaningfulAction(session, Date.now(), 'tool');
   setDialogueLifecycle(session, 'GIVE_FEEDBACK');
   input.data = {
@@ -1376,7 +1740,15 @@ export function createAgentService({
   understandingLlm = llm,
   // 语义理解的总预算（含一次重试）。默认值由 understanding.js 持有。
   understandingTimeoutMs,
+  // 由应用装配层持有的一次性教师命令消费器。浏览器输入无法自行提供。
+  consumeTeacherCommand,
+  // 应用装配层把这个入口连到 Postgres 的 runtime_state 行锁。
+  // 单元测试和本地独立会话仍可以使用普通 store.save。
+  persistLearnerMutation,
 }) {
+  const saveLearnerMutation = typeof persistLearnerMutation === 'function'
+    ? persistLearnerMutation
+    : (session) => store.save(session);
   const understanding = createUnderstanding({
     llm: understandingLlm,
     ...(understandingTimeoutMs ? { timeoutMs: understandingTimeoutMs } : {}),
@@ -1385,14 +1757,17 @@ export function createAgentService({
   // 自由文字必经「轻量语义理解 → 确定性教学决策 → 映射为 decision」三段。
   async function resolveDecision({ input, session, course, role, nudge, task, signal }) {
     if (routeInput(input).kind === 'non_language') {
-      return classifyTurn({ input, session, course, role, nudge });
+      return {
+        ...classifyTurn({ input, session, course, role, nudge }),
+        decisionSource: 'non_language_state',
+      };
     }
 
     const text = String(input.text || '').trim();
     // 状态机输入与时效动作（安全/到达就绪/抱怨/无语义）先由确定性规则处理，
     // 不等模型，也不因轻量模型不可用而卡死。都不命中才做语义理解。
     const deterministic = deterministicLanguageDecision({ text, session });
-    if (deterministic) return deterministic;
+    if (deterministic) return { ...deterministic, decisionSource: 'deterministic_rule' };
 
     const pendingQuestion = session.dialogueState?.pendingQuestion || null;
     const currentStep = currentStepOf(task, session);
@@ -1420,13 +1795,24 @@ export function createAgentService({
     }, { signal });
 
     const scaffolding = course?.platformDefaults?.scaffolding;
+    const helpType = ['help_start', 'help_stuck', 'request_answer'].includes(result.intent)
+      ? result.intent
+      : 'task_help';
+    const scaffoldContext = scaffoldContextForTask(task, session, helpType);
+    const activeScaffold = activateScaffoldContext(session, scaffoldContext, {
+      maxLevel: scaffolding?.maxLevel,
+    });
+    const recentTutorActions = session.conversationState?.recentTutorActions || [];
+    const contextActions = ['help_start', 'help_stuck', 'request_answer'].includes(result.intent)
+      ? recentTutorActions.filter((entry) => entry.contextKey === activeScaffold.key)
+      : recentTutorActions;
     const tutor = decideTutorAction(result, {
-      scaffoldLevel: Number(session.scaffoldLevel || 0),
+      scaffoldLevel: activeScaffold.level,
       maxScaffoldLevel: scaffolding?.maxLevel,
       upgradeOnRepeatHelp: scaffolding?.upgradeOnRepeatHelp,
       pendingQuestion,
       currentStep,
-      recentActions: session.conversationState?.recentTutorActions || [],
+      recentActions: contextActions,
       idleSeconds: Number(runtimeSnapshot(session).idleSeconds || 0),
     });
 
@@ -1450,9 +1836,13 @@ export function createAgentService({
 
     return {
       ...decision,
+      decisionSource: 'semantic_tutor_policy',
       signal: normalizeEmotion(result.emotion),
       params: tutor.params || {},
       understanding: result,
+      scaffoldContext: ['help_start', 'help_stuck', 'request_answer'].includes(result.intent)
+        ? { ...scaffoldContext, key: activeScaffold.key, level: activeScaffold.level }
+        : null,
     };
   }
 
@@ -1475,6 +1865,132 @@ export function createAgentService({
     return { session, course, role };
   }
 
+  async function claimRole({ sessionId, roleId }) {
+    const session = await store.get(sessionId);
+    if (!session) throw new AgentActionError('会话不存在或已经失效。', 'SESSION_NOT_FOUND');
+    const course = await getCourse(session.courseId);
+    assertCourseContentVersion(session, course);
+    const role = bindRoleToSession({ course, session, roleId });
+    ensureSessionRuntime(session, role.tasks[0]);
+    await saveLearnerMutation(session, {
+      required: true,
+      operation: 'role_claim',
+      roleAssignment: true,
+      requestedRoleId: role.id,
+    });
+    return { session, course, role };
+  }
+
+  async function forceCompleteCurrentTask({ sessionId, taskId, requestId = '' }) {
+    const session = await store.get(sessionId);
+    if (!session) throw new AgentActionError('会话不存在或已经失效。', 'QA_SESSION_NOT_FOUND');
+    const course = await getCourse(session.courseId);
+    assertCourseContentVersion(session, course);
+    const role = roleFor(course, session);
+    const task = currentTaskOf(role, session);
+    ensureSessionRuntime(session, task);
+
+    if (!task || task.id !== taskId) {
+      throw new AgentActionError(
+        '当前任务已经变化，这次验收跳关没有生效。',
+        'QA_TASK_EXPIRED',
+        { currentTaskId: task?.id || '' },
+      );
+    }
+
+    const completedId = `${role.id}:${task.id}`;
+    if (session.completedTaskIds.includes(completedId)) {
+      throw new AgentActionError('当前任务已经完成，进度未重复推进。', 'QA_TASK_ALREADY_COMPLETED');
+    }
+
+    const completedAt = new Date().toISOString();
+    const stepCount = guidanceSteps(task).length;
+    session.taskState.guidanceStepIndex = stepCount;
+    for (let stepIndex = 0; stepIndex < stepCount; stepIndex += 1) {
+      recordStepCompletion(session, task, stepIndex);
+    }
+    session.pendingTools = {};
+    recordActiveTool(session, null);
+    clearPendingAdvance(session);
+    session.completedTaskIds.push(completedId);
+    session.learningState.completedRoleStageIds = [...session.completedTaskIds];
+    session.learningState.stageValidation = 'passed';
+    markMeaningfulAction(session, Date.now(), 'other');
+
+    const audit = {
+      type: 'qa_override',
+      actor: 'platform_qa',
+      roleId: role.id,
+      taskId: task.id,
+      taskIndex: session.currentTaskIndex,
+      requestId,
+      completedAt,
+    };
+    session.qaOverrides ||= [];
+    session.qaOverrides.push(audit);
+    session.events.push(`qa_override:${role.id}:${task.id}:completed`);
+
+    const advance = advanceToNextTask({
+      role,
+      session,
+      taskGraph: session.roleId ? course.taskGraph : null,
+    });
+    const events = [];
+    if (advance.advanced) {
+      const nextTask = currentTaskOf(role, session);
+      ensureSessionRuntime(session, nextTask);
+      const nextResult = appendStateDrivenTools(
+        { text: '', timeline: [], toolCalls: [] },
+        {
+          input: {
+            type: 'lifecycle_event',
+            data: { advancedBy: 'qa', allTasksCompleted: false },
+          },
+          role,
+          session,
+        },
+      );
+      for (const item of nextResult.timeline || []) {
+        if (item.type === 'stage.started') events.push(item);
+      }
+      for (const call of nextResult.toolCalls || []) {
+        const payload = validateClientTool({ call, role, session });
+        session.pendingTools[call.id] = {
+          name: call.name,
+          arguments: call.arguments,
+          payload,
+        };
+        recordActiveTool(session, call.id);
+        events.push({ type: 'tool.requested', data: { callId: call.id, name: call.name, payload } });
+      }
+    }
+
+    const allTasksCompleted = role.tasks.every((item) => (
+      session.completedTaskIds.includes(`${role.id}:${item.id}`)
+    ));
+    audit.advanced = Boolean(advance.advanced);
+    audit.allTasksCompleted = allTasksCompleted;
+    const stateEvent = {
+      type: 'state.updated',
+      data: {
+        ...stateUpdatedData(session, 'qa_override'),
+        qaOverride: { ...audit },
+      },
+    };
+    events.push(stateEvent);
+    await saveLearnerMutation(session, {
+      required: true,
+      operation: 'qa_force_complete',
+    });
+    return {
+      session,
+      events,
+      qaOverride: stateEvent.data.qaOverride,
+      advanced: Boolean(advance.advanced),
+      allTasksCompleted,
+    };
+  }
+
   async function runTurn({
     sessionId,
     requestId,
@@ -1483,13 +1999,74 @@ export function createAgentService({
     signal,
     persistSession,
   }) {
+    // 后续生命周期处理会把服务端验证结果写入 input.data。
+    // 保留调用方的原始 payload，使同一对象重试仍得到相同摘要。
+    input = structuredClone(input);
+    const traceStartedAt = Date.now();
     throwIfAborted(signal);
     const session = await store.get(sessionId);
     if (!session) throw new Error('会话不存在或已经失效。');
-    if (session.handledRequestIds.includes(requestId)) {
-      return { duplicate: true, session, events: [] };
-    }
+    const requestDigest = learnerRequestDigest({ sessionId, input });
     const course = await getCourse(session.courseId);
+    assertCourseContentVersion(session, course);
+    const hasStoredReplay = (session.handledRequestResults || [])
+      .some((item) => item?.requestId === requestId);
+    if (session.handledRequestIds.includes(requestId) || hasStoredReplay) {
+      return {
+        duplicate: true,
+        replayed: true,
+        session,
+        events: requestReplayEvents({ session, course, requestId, requestDigest }),
+      };
+    }
+    const teacherRequirement = teacherCommandRequirement(input);
+    let teacherCommandAuthorization = null;
+    if (teacherRequirement) {
+      if (teacherRequirement.invalid) {
+        throw new AgentActionError(
+          '这条教师指令的类型或参数不匹配。',
+          'TEACHER_COMMAND_INVALID',
+          { reason: teacherRequirement.invalid },
+        );
+      }
+      if (!teacherRequirement.commandId) {
+        throw new AgentActionError(
+          '这次操作需要一条有效的教师指令。',
+          'TEACHER_COMMAND_REQUIRED',
+        );
+      }
+      if (typeof consumeTeacherCommand !== 'function') {
+        throw new AgentActionError(
+          '这条教师指令无法验证，进度未改变。',
+          'TEACHER_COMMAND_UNAUTHORIZED',
+        );
+      }
+      if ((session.consumedTeacherCommandIds || []).includes(teacherRequirement.commandId)) {
+        throw new AgentActionError(
+          '这条教师指令已经应用过，进度未重复改动。',
+          'TEACHER_COMMAND_UNAUTHORIZED',
+        );
+      }
+      const grant = await consumeTeacherCommand({
+        sessionId,
+        input,
+        requirement: teacherRequirement,
+      });
+      if (
+        !grant
+        || String(grant.sessionId || '') !== String(sessionId)
+        || String(grant.commandId || '') !== teacherRequirement.commandId
+        || String(grant.action || '') !== teacherRequirement.action
+      ) {
+        throw new AgentActionError(
+          '这条教师指令无效或已经使用过，进度未改变。',
+          'TEACHER_COMMAND_UNAUTHORIZED',
+        );
+      }
+      teacherCommandAuthorization = grant;
+    }
+    try {
+    const traceStateBefore = traceStateSnapshot(session);
     const requestedRoleId = input.type === 'lifecycle_event' && input.event === 'role_assigned'
       ? String(input.data?.roleId || '')
       : '';
@@ -1508,10 +2085,35 @@ export function createAgentService({
         const steps = guidanceSteps(task);
         const currentIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
         const requestedIndex = Number(input.data?.stepIndex);
+        if (
+          !Number.isInteger(requestedIndex)
+          || requestedIndex !== currentIndex
+          || currentIndex >= steps.length
+        ) {
+          throw new AgentActionError(
+            '当前小步已经变化，这次操作没有改动进度。',
+            'TASK_STEP_EXPIRED',
+          );
+        }
+        const expectedStepId = String(task.steps?.[currentIndex]?.id || steps[currentIndex]?.id || '');
+        if (input.data?.stepId && String(input.data.stepId) !== expectedStepId) {
+          throw new AgentActionError(
+            '当前小步已经变化，这次操作没有改动进度。',
+            'TASK_STEP_EXPIRED',
+          );
+        }
         if (requestedIndex === currentIndex && currentIndex < steps.length) {
           const completionMode = task.steps?.[currentIndex]?.completionMode || 'user_confirm';
-          validateStepCompletion({ task, stepIndex: currentIndex, input, session });
-          if (completionMode === 'ai_evaluation') {
+          validateStepCompletion({
+            task,
+            stepIndex: currentIndex,
+            input,
+            session,
+            teacherCommandAuthorization,
+          });
+          const teacherSkipped = input.data?.teacherOverride === true
+            && teacherCommandAuthorization?.action === 'skip_step';
+          if (completionMode === 'ai_evaluation' && !teacherSkipped) {
             const step = task.steps[currentIndex];
             const evaluation = await evaluateStepSubmission({
               llm, evaluationLlm, course, role, session, task, step, input, signal, logger,
@@ -1524,23 +2126,197 @@ export function createAgentService({
               teacherRecommended: !evaluation.passed && maxAttempts > 0 && session.taskState.stepAttempts[step.id] >= maxAttempts,
             };
             if (evaluation.passed) {
+              acceptStepEvidence(session, {
+                stepId: step.id,
+                fingerprint: stepEvidenceFingerprint(input.data?.toolValues || {}, step.id),
+                source: 'ai_evaluation',
+              });
               session.taskState.guidanceStepIndex = currentIndex + 1;
               recordStepCompletion(session, task, currentIndex);
               markMeaningfulAction(session, Date.now(), 'tool');
+            } else {
+              recordStepFailure(session, task, currentIndex, evaluation.feedback);
             }
           } else {
+            if (completionMode === 'ai_evaluation' && teacherSkipped) {
+              const step = task.steps[currentIndex];
+              acceptStepEvidence(session, {
+                stepId: step.id,
+                fingerprint: stepEvidenceFingerprint(input.data?.toolValues || {}, step.id),
+                source: 'teacher_override',
+              });
+            }
             session.taskState.guidanceStepIndex = currentIndex + 1;
             recordStepCompletion(session, task, currentIndex);
             markMeaningfulAction(session, Date.now(), 'tool');
           }
         }
       }
+      if (input.event === 'task_step_revised') {
+        if (input.data?.taskId !== task.id) {
+          throw new AgentActionError('当前任务已经切换，这次修改没有提交。', 'TASK_STEP_EXPIRED');
+        }
+        const requestedIndex = Number(input.data?.stepIndex);
+        const currentIndex = Math.min(
+          Number(session.taskState.guidanceStepIndex || 0),
+          task.steps?.length || 0,
+        );
+        const step = task.steps?.[requestedIndex];
+        const completedStepIds = session.learningState?.completedStepIds || [];
+        if (
+          !Number.isInteger(requestedIndex)
+          || requestedIndex < 0
+          || requestedIndex >= currentIndex
+          || !step
+          || step.id !== input.data?.stepId
+          || !completedStepIds.includes(step.id)
+        ) {
+          throw new AgentActionError(
+            '只有当前任务中已经完成的小步可以重新检查。',
+            'STEP_REVISION_NOT_ALLOWED',
+            { stepId: String(input.data?.stepId || ''), stepIndex: requestedIndex },
+          );
+        }
+        if (step.completionMode === 'teacher_confirm') {
+          throw new AgentActionError(
+            '这一步由老师确认，修改证据后请重新请老师检查。',
+            'STEP_REVISION_TEACHER_CONFIRM_REQUIRED',
+            { stepId: step.id, stepIndex: requestedIndex },
+          );
+        }
+        if (
+          step.completionMode === 'compound'
+          && step?.location?.mode !== 'none'
+          && session.locationState?.status !== 'arrived'
+        ) {
+          throw new AgentActionError('这个小步还需要保持到位验证。', 'STEP_LOCATION_REQUIRED');
+        }
+        const tools = step?.tools?.length ? step.tools : task.tools || [];
+        if (tools.length) {
+          try {
+            validateStepToolEvidence({ task, stepIndex: requestedIndex, input });
+          } catch (error) {
+            throw withStepDetails(error, step, requestedIndex);
+          }
+        }
+        const currentFingerprint = stepEvidenceFingerprint(input.data?.toolValues || {}, step.id);
+        const previous = acceptedStepEvidence(session, step.id);
+        let evaluation = {
+          passed: true,
+          feedback: '这一步修改后的证据已重新检查并记录。',
+          missing: [],
+          safetyIssue: false,
+        };
+        let checkedBy = 'runtime_validation';
+        if (step.completionMode === 'ai_evaluation') {
+          checkedBy = 'ai_evaluation';
+          if (previous?.fingerprint === currentFingerprint) {
+            checkedBy = 'unchanged_evidence';
+            evaluation.feedback = '这一步的证据没有变化，原检查结果仍然有效。';
+          } else {
+            evaluation = await evaluateStepSubmission({
+              llm, evaluationLlm, course, role, session, task, step, input, signal, logger,
+            });
+            session.taskState.stepAttempts ||= {};
+            session.taskState.stepAttempts[step.id] = Number(
+              session.taskState.stepAttempts[step.id] || 0,
+            ) + 1;
+          }
+        }
+        if (evaluation.passed) {
+          acceptStepEvidence(session, {
+            stepId: step.id,
+            fingerprint: currentFingerprint,
+            source: checkedBy,
+          });
+          markMeaningfulAction(session, Date.now(), 'tool');
+          session.learningState.stageValidation = 'passed';
+        } else {
+          session.learningState.stageValidation = 'revision_required';
+        }
+        input.data.aiEvaluation = evaluation;
+        input.data.stepRevision = recordStepRevision(session, {
+          revisionId: input.data?.revisionId,
+          stepId: step.id,
+          completionMode: step.completionMode,
+          previousFingerprint: previous?.fingerprint || '',
+          currentFingerprint,
+          changed: previous?.fingerprint !== currentFingerprint,
+          passed: evaluation.passed,
+          checkedBy,
+          feedback: evaluation.feedback,
+        });
+      }
       if (input.event === 'location_updated') {
         recordLocationObservation(session, input.data || {});
         markMeaningfulAction(session, Date.now(), 'other');
       }
+      if (input.event === 'teacher_confirm_arrival') {
+        if (input.data?.taskId && input.data.taskId !== task.id) {
+          throw new AgentActionError(
+            '老师确认的到达记录属于之前的任务点，当前位置未改动。',
+            'TASK_STEP_EXPIRED',
+          );
+        }
+        const locationObservedAt = Date.parse(input.data?.locationObservedAt || '');
+        const locationAgeMs = Date.now() - locationObservedAt;
+        if (!Number.isFinite(locationObservedAt) || locationAgeMs < 0 || locationAgeMs > 60_000) {
+          throw new AgentActionError(
+            '定位快照已经过期，请重新定位后让老师再确认。',
+            'TEACHER_LOCATION_SNAPSHOT_STALE',
+          );
+        }
+        recordArrival(session, 'teacher');
+        confirmDialogueSlot(session, 'arrival', true);
+        if (session.dialogueState?.pendingQuestion?.kind === 'arrival') {
+          clearPendingQuestion(session, { outcome: 'teacher_confirmed' });
+        }
+        input.data = {
+          ...(input.data || {}),
+          arrived: true,
+          verification: 'teacher',
+        };
+      }
       if (input.event === 'teacher_directive') {
-        applyTeacherDirective({ session, course, data: input.data || {} });
+        applyTeacherDirective({ session, course, task, data: input.data || {} });
+      }
+      if (['teacher_finalize_task', 'teacher_reject_task'].includes(input.event)) {
+        if (String(input.data?.taskId || '') !== task.id) {
+          throw new AgentActionError('当前任务已经变化，这次教师审核没有生效。', 'TASK_FINALIZATION_EXPIRED');
+        }
+        const rejected = input.event === 'teacher_reject_task';
+        const finalization = recordTaskFinalizationEvent(session, task, {
+          type: rejected ? 'teacher_rejected' : 'teacher_confirmed',
+          stepId: task.steps?.at(-1)?.id || '',
+          reason: String(input.data?.reason || ''),
+        });
+        if (!finalization.changed) {
+          throw new AgentActionError(
+            '这次教师审核与当前任务状态不匹配，进度未改变。',
+            'TASK_FINALIZATION_TEACHER_REJECTED',
+            { reason: finalization.reason },
+          );
+        }
+        if (rejected) {
+          const lastStepIndex = Math.max(0, (task.steps?.length || 1) - 1);
+          const lastStepId = task.steps?.[lastStepIndex]?.id || '';
+          session.taskState.guidanceStepIndex = lastStepIndex;
+          session.learningState.completedStepIds = (session.learningState.completedStepIds || [])
+            .filter((stepId) => stepId !== lastStepId);
+          session.taskState.finalization.completedStepIds = (
+            session.taskState.finalization.completedStepIds || []
+          ).filter((stepId) => stepId !== lastStepId);
+          delete session.taskState.stepEvidenceFingerprints?.[lastStepId];
+          input.data.aiEvaluation = {
+            passed: false,
+            feedback: String(input.data?.reason || '老师请你修改最后一步后再次提交确认。'),
+            missing: [],
+          };
+        } else {
+          stagePendingTaskCompletion({
+            session, role, task, input, source: 'teacher_confirmed',
+          });
+        }
       }
       // 解除"等谁推进"。两个入口共用同一套校验（task-advance.js），只有 actor 不同：
       // teacher_advance_task 走教师指令桥，student_advance_task 是学生点了「继续下一个」。
@@ -1570,6 +2346,13 @@ export function createAgentService({
     });
     task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
+    stagePendingTaskCompletion({
+      session,
+      role,
+      task,
+      input,
+      source: session.taskState?.finalization?.mode,
+    });
     if (input.data?.continueAtSameLocation && task.location?.mode !== 'none') {
       recordArrival(session, input.data.previousVerification || 'manual');
     }
@@ -1600,15 +2383,25 @@ export function createAgentService({
     }
     updateDialogueLifecycleForDecision(session, decision);
     if (['user_text', 'quick_reply'].includes(input.type)) {
-      // 升档由 tutorPolicy 判定（它看得到教学动作历史），这里只执行。
-      if (decision.params?.scaffoldLevelDelta) {
-        session.scaffoldLevel = Math.min(
-          Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4),
-          session.scaffoldLevel + decision.params.scaffoldLevelDelta,
+      // 升档只写当前任务 × 小步 × 求助类型；切换小步或换一种求助不会继承旧档位。
+      if (decision.scaffoldContext) {
+        const maxLevel = Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4);
+        const nextLevel = decision.scaffoldContext.level
+          + Number(decision.params?.scaffoldLevelDelta || 0);
+        const active = setScaffoldContextLevel(
+          session,
+          decision.scaffoldContext,
+          nextLevel,
+          { maxLevel, source: 'automatic' },
         );
+        decision.params.scaffoldLevel = active.level;
       }
       if (decision.tutorAction) {
-        recordTutorAction(session, { intent: decision.understanding?.intent, action: decision.tutorAction });
+        recordTutorAction(session, {
+          intent: decision.understanding?.intent,
+          action: decision.tutorAction,
+          contextKey: decision.scaffoldContext?.key || '',
+        });
       }
       recordIntent(session, decision.intent, decision.signal);
       // clarify_intent 与 unclear_input 同类：都是"这轮没读懂"，要累计而不是清零。
@@ -1648,20 +2441,14 @@ export function createAgentService({
           ].filter(Boolean).join(' '),
       })
       : [];
-    const prompt = buildAgentPrompt({
-      course,
-      session,
-      role,
-      knowledge,
-      input,
-      decision,
-      // 教师称呼在 run 上而不是 session 上；取不到时由投影回落到"带队老师"。
-      teacherName: session.teacherName || '',
-    });
-    const tools = toolsForDecision(decision, TOOL_DEFINITIONS);
+    // 只有真正进入主模型分支时才组装 Prompt。规则、固定话术和
+    // 即时脚手架回合不伪造“已使用 Prompt”的 trace，也不做无用取料。
+    let prompt = null;
+    let tools = [];
     let result = { text: '', toolCalls: [] };
     let streamed = false;
     let modelFailure = null;
+    let outputPath = decision.silent ? 'silent' : 'unresolved';
 
     if (!decision.silent) {
       const localReply = decision.intent === 'social'
@@ -1672,27 +2459,41 @@ export function createAgentService({
             ? platformEmotionReply(query)
           : '';
       if (localReply) {
+        outputPath = `local:${decision.intent}`;
         result = { text: localReply, toolCalls: [], dialogueMove: decision.intent };
       } else if (input.type === 'tool_result' && input.data?.aiEvaluation?.passed === true) {
         // 验收器已经给出经过防剧透处理的结构化反馈，直接复用即可。
         // 再调用一次主对话模型只会增加延迟，并让一次提交承担两次模型故障概率。
+        outputPath = 'evaluation_feedback';
         result = {
           text: input.data.aiEvaluation.feedback || '这项提交已经达到继续条件。',
           toolCalls: [],
           dialogueMove: 'confirm_evidence',
         };
       } else if (decision.fastWorkflow) {
+        outputPath = 'fast_workflow';
         result = workflowResult({ decision, role, session, course, input });
       } else if (decision.fastGuidance) {
+        outputPath = 'fast_guidance';
         result.text = immediatePrelude(decision, role, session, course);
       } else {
         try {
+        outputPath = 'model';
+        prompt = buildAgentPrompt({
+          course,
+          session,
+          role,
+          knowledge,
+          input,
+          decision,
+          // 教师称呼在 run 上而不是 session 上；取不到时由投影回落。
+          teacherName: session.teacherName || '',
+        });
+        tools = toolsForDecision(decision, TOOL_DEFINITIONS);
         let shouldUseStructured = Boolean(tools.length && !llm.capabilities().nativeTools);
-        const canStream = Boolean(
-          onTextDelta
-          && !tools.length
-          && !['proactive_nudge', 'lifecycle_event'].includes(decision.intent),
-        );
+        // 模型原始 delta 在完整策略、trace 与持久化之前不可下发。这里仍允许 LLM
+        // 客户端内部使用流式传输，但学生端只接收下面统一策略批准后的文本。
+        const canStream = false;
         const prelude = canStream ? immediatePrelude(decision, role, session, course) : '';
         if (prelude) {
           streamed = true;
@@ -1730,17 +2531,7 @@ export function createAgentService({
           result = { ...result, text: toolNarration(result.toolCalls[0], role, session, course) };
         }
 
-        const spoiler = deltaGuard?.isBlocked() || findSpoiler(result.text, course, session);
-        if (spoiler) {
-          result = {
-            ...result,
-            text: '这个精确结论仍在探索区。把你的观察方法或现场证据告诉我，我可以陪你检查推理过程。',
-          };
-        }
-        result.text = String(result.text || '').replaceAll(
-          '[待学生探索的数据]',
-          '尚待你通过现场证据验证的内容',
-        );
+        if (deltaGuard?.isBlocked()) outputPath = 'model:protected_blocked';
         if (decision.intent === 'course_knowledge') {
           result.text = result.text.replaceAll(
             '根据我的认知',
@@ -1750,6 +2541,7 @@ export function createAgentService({
         } catch (error) {
           if (signal?.aborted || error?.name === 'AbortError') throw error;
           modelFailure = error;
+          outputPath = 'degraded';
           logger?.warn?.({
             modelError: {
               name: error?.name || 'Error',
@@ -1767,17 +2559,6 @@ export function createAgentService({
       }
     }
 
-    if (result.text) {
-      result.text = applyGradeResponsePolicy(
-        avoidRepeatedReply(session, result.text, {
-          intent: decision.intent,
-          dialogueMove: result.dialogueMove,
-          voice: course?.platformDefaults?.voice,
-        }),
-        session.learnerState?.grade || session.grade,
-        course?.platformDefaults?.languageLevels,
-      );
-    }
     const taskIndexBeforeFinalize = session.currentTaskIndex;
     finalizeToolResult({ session, role, input, course: session.roleId ? course : null });
     if (input.data?.advanceBlockedMessage) {
@@ -1793,15 +2574,31 @@ export function createAgentService({
     result = appendStateDrivenTools(result, { input, role, session });
 
     const events = [];
+    const policy = createStudentFacingPolicy({ course, session });
+    const policyActions = [...(input.data?.aiEvaluation?.policyActions || [])];
     const responseSource = sourceMeta(knowledge, input, decision);
+    const primarySelection = selectTurnPrimaryAction({
+      toolCalls: (result.toolCalls || []).filter((item) => item.name !== 'retrieve_course_knowledge'),
+      quickReplies: result.quickReplies || [],
+    });
+    result.toolCalls = primarySelection.toolCalls;
+    result.quickReplies = primarySelection.quickReplies;
+    policyActions.push(...primarySelection.issues.map((issue) => `turn_plan:${issue}`));
     if (result.text) {
+      const mainResponse = policy.processText(result.text, {
+        channel: 'assistant',
+        intent: decision.intent,
+        dialogueMove: result.dialogueMove || decision.intent,
+      });
+      result.text = mainResponse.text;
+      policyActions.push(...mainResponse.actions.map((action) => `assistant:${action}`));
+      if (onTextDelta && outputPath.startsWith('model') && mainResponse.text) {
+        onTextDelta(mainResponse.text);
+        streamed = true;
+      }
       session.messages.push({ role: 'user', content: query, createdAt: new Date().toISOString() });
       session.messages.push({ role: 'assistant', content: result.text, createdAt: new Date().toISOString() });
-      const parts = splitGradeResponse(
-        result.text,
-        session.learnerState?.grade || session.grade,
-        course?.platformDefaults?.languageLevels,
-      );
+      const parts = mainResponse.parts;
       parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
         data: {
@@ -1824,25 +2621,21 @@ export function createAgentService({
 
     for (const item of result.timeline || []) {
       if (item.type === 'stage.started') {
-        events.push(item);
+        const stageSurface = policy.processSurface(item.data, { channel: 'stage' });
+        policyActions.push(...stageSurface.actions);
+        events.push({ ...item, data: stageSurface.value });
         continue;
       }
       if (item.type !== 'assistant' || !item.text) continue;
-      const timelineText = applyGradeResponsePolicy(
-        avoidRepeatedReply(session, item.text, {
-          intent: decision.intent,
-          dialogueMove: item.dialogueMove || result.dialogueMove,
-          voice: course?.platformDefaults?.voice,
-        }),
-        session.learnerState?.grade || session.grade,
-        course?.platformDefaults?.languageLevels,
-      );
+      const timelineResponse = policy.processText(item.text, {
+        channel: 'timeline',
+        intent: decision.intent,
+        dialogueMove: item.dialogueMove || result.dialogueMove || decision.intent,
+      });
+      const timelineText = timelineResponse.text;
+      policyActions.push(...timelineResponse.actions.map((action) => `timeline:${action}`));
       session.messages.push({ role: 'assistant', content: timelineText, createdAt: new Date().toISOString() });
-      const parts = splitGradeResponse(
-        timelineText,
-        session.learnerState?.grade || session.grade,
-        course?.platformDefaults?.languageLevels,
-      );
+      const parts = timelineResponse.parts;
       parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
         data: {
@@ -1864,17 +2657,24 @@ export function createAgentService({
     }
 
     if (result.quickReplies?.length) {
+      const quickReplySurface = policy.processSurface(result.quickReplies.slice(0, 3), {
+        channel: 'quick_replies',
+      });
+      policyActions.push(...quickReplySurface.actions);
       events.push({
         type: 'ui.quick_replies',
         data: {
           questionId: session.dialogueState?.pendingQuestion?.id || null,
-          options: result.quickReplies.slice(0, 3),
+          options: quickReplySurface.value,
         },
       });
     }
 
-    for (const call of result.toolCalls.filter((item) => item.name !== 'retrieve_course_knowledge')) {
-      const payload = validateClientTool({ call, role, session });
+    for (const call of result.toolCalls || []) {
+      const rawPayload = validateClientTool({ call, role, session });
+      const toolSurface = policy.processSurface(rawPayload, { channel: `tool:${call.name}` });
+      const payload = toolSurface.value;
+      policyActions.push(...toolSurface.actions);
       if (call.name === 'show_navigation') {
         for (const [pendingId, pending] of Object.entries(session.pendingTools)) {
           if (pending.name === 'show_navigation' && pending.payload?.taskId === payload.taskId) {
@@ -1887,48 +2687,87 @@ export function createAgentService({
       events.push({ type: 'tool.requested', data: { callId: call.id, name: call.name, payload } });
     }
 
+    const traceStateAfter = traceStateSnapshot(session);
+    const turnPlan = planTurnPresentation(events, {
+      primaryAction: primarySelection.primaryAction,
+      issues: primarySelection.issues,
+      stateChanges: summarizeTurnStateChanges(traceStateBefore, traceStateAfter),
+      source: responseSource,
+    });
+    events.splice(0, events.length, ...turnPlan.events);
     throwIfAborted(signal);
-    session.handledRequestIds.push(requestId);
-    session.handledRequestIds = session.handledRequestIds.slice(-100);
     events.push({
       type: 'state.updated',
-      data: {
-        roleId: session.roleId || '',
-        taskScope: session.roleId ? 'role' : 'phase',
-        phaseId: session.phaseId,
-        phaseTaskContext: session.phaseTaskState || (!session.roleId ? {
-          phaseId: session.phaseId,
-          currentTaskIndex: session.currentTaskIndex,
-          completedTaskIds: [...session.completedTaskIds],
-          taskId: session.taskState?.taskId || '',
-          guidanceStepIndex: Number(session.taskState?.guidanceStepIndex || 0),
-        } : null),
-        currentTaskIndex: session.currentTaskIndex,
-        completedTaskIds: session.completedTaskIds,
-        scaffoldLevel: session.scaffoldLevel,
-        // 等谁推进（`teacher`／`student`／null）。学生端据此决定显示「等老师推进」
-        // 还是「继续下一个」按钮——否则做完任务后界面看不出为什么停住了。
-        pendingAdvance: session.pendingAdvance
-          ? { mode: session.pendingAdvance.mode, taskId: session.pendingAdvance.taskId }
-          : null,
-        intent: decision.intent,
-        runtime: runtimeSnapshot(session),
-        learningState: structuredClone(session.learningState),
-        dialogueState: structuredClone(session.dialogueState),
-      },
+      data: { ...stateUpdatedData(session, decision.intent), turnPlan: turnPlan.summary },
     });
-    if (persistSession) {
-      await persistSession({ session, events });
-    } else {
-      await store.save(session);
+    if (teacherCommandAuthorization?.commandId) {
+      session.consumedTeacherCommandIds ||= [];
+      if (!session.consumedTeacherCommandIds.includes(teacherCommandAuthorization.commandId)) {
+        session.consumedTeacherCommandIds.push(teacherCommandAuthorization.commandId);
+        if (session.consumedTeacherCommandIds.length > 200) {
+          session.consumedTeacherCommandIds = session.consumedTeacherCommandIds.slice(-200);
+        }
+      }
     }
-    return { duplicate: false, session, events, streamed };
+    const trace = buildTurnTrace({
+      requestId,
+      startedAt: traceStartedAt,
+      course,
+      input,
+      stateBefore: traceStateBefore,
+      stateAfter: traceStateAfter,
+      decision,
+      prompt: outputPath.startsWith('model') ? prompt : null,
+      outputPath,
+      outputText: events
+        .filter((event) => event.type === 'assistant.completed')
+        .map((event) => event.data?.text || '')
+        .join(''),
+      events,
+      turnPlan: turnPlan.summary,
+      policyVersion: policy.version || STUDENT_FACING_POLICY_VERSION,
+      policyActions,
+      degraded: Boolean(modelFailure),
+      streamed,
+      teacherCommand: teacherCommandAuthorization?.commandId ? {
+        teacherCommandId: teacherCommandAuthorization.commandId,
+        action: teacherCommandAuthorization.action,
+      } : null,
+    });
+    const replayEnvelope = createReplayEnvelope({ events, trace, requestDigest });
+    rememberRequestResult(session, requestId, replayEnvelope, { requestDigest });
+    appendTurnTrace(session, trace);
+    const runtimeGuard = {
+      required: true,
+      operation: 'learner_turn',
+      roleAssignment: input.type === 'lifecycle_event' && input.event === 'role_assigned',
+      requestedRoleId,
+      teacherCommandId: teacherCommandAuthorization?.commandId || '',
+      teacherCommandAction: teacherCommandAuthorization?.action || '',
+    };
+    if (persistSession) {
+      await persistSession({ session, events, trace, replayEnvelope, runtimeGuard });
+    } else {
+      await saveLearnerMutation(session, runtimeGuard);
+    }
+    try {
+      await teacherCommandAuthorization?.commit?.();
+    } catch (error) {
+      logger?.warn?.({ err: error, commandId: teacherCommandAuthorization?.commandId }, 'teacher command receipt commit delayed');
+    }
+    await teacherCommandAuthorization?.release?.();
+    return { duplicate: false, session, events, streamed, trace, replayEnvelope };
+    } catch (error) {
+      await teacherCommandAuthorization?.release?.();
+      throw error;
+    }
   }
 
   async function answerTimeBank({ sessionId, taskId, answer, evidence = [], location }) {
     const session = await store.get(sessionId);
     if (!session) throw new Error('会话不存在或已经失效。');
     const course = await getCourse(session.courseId);
+    assertCourseContentVersion(session, course);
     const bank = course.lesson.timeBank;
     const task = bank.tasks.find((item) => item.id === taskId);
     if (!task || session.completedBankTaskIds.includes(taskId)) throw new Error('该时间银行任务不可用。');
@@ -1965,7 +2804,10 @@ export function createAgentService({
     session.completedBankTaskIds.push(taskId);
     session.timeBalance += task.reward;
     session.timeEarned += task.reward;
-    await store.save(session);
+    await saveLearnerMutation(session, {
+      required: true,
+      operation: 'time_bank_answer',
+    });
     return { correct: true, reward: task.reward, balance: session.timeBalance, completedTaskIds: session.completedBankTaskIds };
   }
 
@@ -1973,6 +2815,7 @@ export function createAgentService({
     const session = await store.get(sessionId);
     if (!session) throw new Error('会话不存在或已经失效。');
     const course = await getCourse(session.courseId);
+    assertCourseContentVersion(session, course);
     const role = course.roles.find((item) => item.id === roleId);
     if (!role) throw new Error('赠送对象不存在。');
     const rules = course.lesson.timeBank.giftRules;
@@ -1981,9 +2824,38 @@ export function createAgentService({
     if (session.timeBalance < amount) throw new Error('时间余额不足。');
     session.timeBalance -= amount;
     session.gifts.push({ roleId, amount, createdAt: new Date().toISOString() });
-    await store.save(session);
+    await saveLearnerMutation(session, {
+      required: true,
+      operation: 'time_bank_gift',
+    });
     return { balance: session.timeBalance };
   }
 
-  return { createSession, runTurn, answerTimeBank, giftTime };
+  async function replayCompletedRequest({ sessionId, requestId, input, replayEnvelope }) {
+    const session = await store.get(sessionId);
+    if (!session) throw new Error('会话不存在或已经失效。');
+    const course = await getCourse(session.courseId);
+    assertCourseContentVersion(session, course);
+    const requestDigest = learnerRequestDigest({ sessionId, input });
+    return {
+      session,
+      events: requestReplayEvents({
+        session,
+        course,
+        requestId,
+        requestDigest,
+        replayEnvelope,
+      }),
+    };
+  }
+
+  return {
+    createSession,
+    claimRole,
+    runTurn,
+    replayCompletedRequest,
+    forceCompleteCurrentTask,
+    answerTimeBank,
+    giftTime,
+  };
 }

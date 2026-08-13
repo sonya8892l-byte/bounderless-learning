@@ -1,9 +1,15 @@
 import {
+  CourseRunMutationConflictError,
   DatabaseSchemaError,
   LearnerRequestLeaseConflictError,
   SessionWriteConflictError,
 } from '../database/errors.js';
 import { createSessionRecord, normalizeSessionRecord } from '../services/session-factory.js';
+import {
+  claimParticipantRole,
+  learnerRoleState,
+  normalizeRunRoleClaims,
+} from './role-claims.js';
 
 const EMPTY_STATE = {
   schemaVersion: 1, sequence: 0, runs: [], alerts: [], commands: [], receipts: [],
@@ -11,6 +17,118 @@ const EMPTY_STATE = {
 };
 
 const SESSION_STATE_VERSION = Symbol('sessionStateVersion');
+
+function learnerRunState(run, participant = null) {
+  return {
+    status: run?.status || null,
+    paused: Boolean(run?.paused),
+    rallyActive: Boolean(run?.rallyActive),
+    rolesReleased: Boolean(run?.rolesReleased),
+    rolesLocked: Boolean(run?.rolesLocked),
+    phaseId: run?.phaseId || null,
+    phaseIndex: Number(run?.phaseIndex || 0),
+    version: Number(run?.version || 0),
+    ...(participant ? learnerRoleState(run, participant) : {}),
+  };
+}
+
+function mutationDenied(code, message, run = null, participant = null) {
+  throw new CourseRunMutationConflictError(code, message, {
+    runState: run ? learnerRunState(run, participant) : null,
+  });
+}
+
+/**
+ * This check runs only after SELECT ... FOR UPDATE has acquired the shared
+ * `runtime_state/course-runs` row. Teacher transitions use the same row lock,
+ * so the learner write and pause/end/rally/session-switch have one serial order.
+ */
+function assertCourseRunAllowsSessionMutation(state, session, guard = {}) {
+  if (!guard?.required || !session?.runId) return { run: null, participant: null };
+  const run = state?.runs?.find((item) => item.id === session.runId);
+  const normalizedLegacyRoles = Boolean(run && run.roleClaimMode !== 'student_claim');
+  if (run) normalizeRunRoleClaims(run);
+  const participant = run?.participants?.find((item) => item.id === session.participantId);
+  if (
+    !run
+    || !participant
+    || run.courseId !== session.courseId
+    || participant.learnerSessionId !== session.id
+  ) {
+    mutationDenied(
+      'COURSE_SESSION_INACTIVE',
+      '这个学习会话已不是当前教师场次的活动会话。',
+      run,
+    );
+  }
+  const requestedRoleId = String(guard.requestedRoleId || session.roleId || '');
+  const repeatsCurrentRole = Boolean(
+    guard.roleAssignment
+    && requestedRoleId
+    && participant.roleId === requestedRoleId,
+  );
+  if (run.status !== 'active') {
+    if (run.status === 'completed') {
+      mutationDenied('COURSE_RUN_COMPLETED', '本次课程已结束，学习记录已转为只读。', run, participant);
+    }
+    mutationDenied('COURSE_RUN_NOT_ACTIVE', '课程尚未开始，请等待老师发出开始指令。', run, participant);
+  }
+  if (run.paused && !repeatsCurrentRole) {
+    mutationDenied('COURSE_RUN_PAUSED', '课程已暂停，请留在安全位置等待老师恢复。', run, participant);
+  }
+  if (run.rallyActive && !repeatsCurrentRole) {
+    mutationDenied('COURSE_RUN_RALLY_ACTIVE', '请先按老师要求前往集合点。', run, participant);
+  }
+  if (
+    guard.roleAssignment
+    && participant.roleId !== requestedRoleId
+    && (run.rolesReleased !== true || run.rolesLocked === true)
+  ) {
+    mutationDenied('COURSE_ROLES_LOCKED', '老师还没有开放角色选择。', run, participant);
+  }
+  if (!guard.roleAssignment && session.roleId && participant.roleId !== session.roleId) {
+    mutationDenied('COURSE_SESSION_INACTIVE', '该角色会话已不是当前活动会话。', run, participant);
+  }
+  return { run, participant, normalizedLegacyRoles };
+}
+
+function deliverTeacherCommand(state, { run, participant }, session, guard = {}) {
+  const commandId = String(guard.teacherCommandId || '').trim();
+  if (!commandId) return false;
+  const command = state.commands?.find((item) => item.id === commandId && item.runId === run.id);
+  const receipt = state.receipts?.find((item) => (
+    item.commandId === commandId
+    && item.participantId === participant.id
+    && item.learnerSessionId === session.id
+  ));
+  if (
+    !command
+    || !receipt
+    || receipt.status !== 'accepted'
+    || !(session.consumedTeacherCommandIds || []).includes(commandId)
+    || (guard.teacherCommandAction && command.action !== guard.teacherCommandAction)
+  ) {
+    mutationDenied(
+      'TEACHER_COMMAND_UNAUTHORIZED',
+      '这条教师指令不属于当前会话、已经使用，或与操作类型不匹配。',
+      run,
+    );
+  }
+  const deliveredAt = new Date().toISOString();
+  receipt.status = 'delivered';
+  receipt.deliveredAt ||= deliveredAt;
+  state.sequence = Number(state.sequence || 0) + 1;
+  state.events ||= [];
+  state.events.push({
+    sequence: state.sequence,
+    runId: run.id,
+    type: 'teacher.command.receipt',
+    data: { commandId, participantId: participant.id, status: 'delivered' },
+    createdAt: deliveredAt,
+  });
+  if (state.events.length > 5000) state.events.splice(0, state.events.length - 5000);
+  return true;
+}
 
 function requirePool(pool) {
   if (!pool?.query || !pool?.connect) {
@@ -66,6 +184,66 @@ export function createPostgresCourseRunStore({ pool: providedPool }) {
 export function createPostgresSessionStore({ pool: providedPool }) {
   const pool = requirePool(providedPool);
 
+  async function lockCourseRunState(client, session, runtimeGuard) {
+    if (!runtimeGuard?.required || !session?.runId) {
+      return { state: null, changed: false };
+    }
+    const result = await client.query(
+      'select payload from runtime_state where id = $1 for update',
+      ['course-runs'],
+    );
+    if (!result.rows[0]) throw new DatabaseSchemaError('数据库缺少 course-runs 兼容状态行。');
+    const state = structuredClone(result.rows[0].payload || EMPTY_STATE);
+    const located = assertCourseRunAllowsSessionMutation(state, session, runtimeGuard);
+    let changed = located.normalizedLegacyRoles;
+    if (runtimeGuard.roleAssignment) {
+      const previousRoleId = located.participant.roleId || '';
+      try {
+        claimParticipantRole({
+          run: located.run,
+          participant: located.participant,
+          sessionId: session.id,
+          roleId: runtimeGuard.requestedRoleId || session.roleId,
+          source: 'student',
+        });
+        changed = true;
+        if (previousRoleId !== located.participant.roleId) {
+          state.sequence = Number(state.sequence || 0) + 1;
+          state.events ||= [];
+          state.events.push({
+            sequence: state.sequence,
+            runId: located.run.id,
+            type: 'participant.role_claimed',
+            data: {
+              participantId: located.participant.id,
+              previousRoleId,
+              roleId: located.participant.roleId,
+            },
+            createdAt: new Date().toISOString(),
+          });
+          if (state.events.length > 5000) state.events.splice(0, state.events.length - 5000);
+        }
+      } catch (error) {
+        throw new CourseRunMutationConflictError(
+          error.code || 'COURSE_ROLE_CLAIM_FAILED',
+          error.message || '角色领取失败。',
+          { runState: learnerRunState(located.run, located.participant), ...(error.details || {}) },
+        );
+      }
+    }
+    changed = deliverTeacherCommand(state, located, session, runtimeGuard) || changed;
+    return { state, changed };
+  }
+
+  async function persistCourseRunState(client, locked) {
+    if (!locked?.changed) return;
+    const update = await client.query(
+      'update runtime_state set payload = $1::jsonb, updated_at = now() where id = $2',
+      [JSON.stringify(locked.state), 'course-runs'],
+    );
+    if (update.rowCount !== 1) throw new DatabaseSchemaError('course-runs 兼容状态行写入失败。');
+  }
+
   async function updateSession(queryable, session) {
     const expectedVersion = session?.[SESSION_STATE_VERSION];
     if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
@@ -102,20 +280,40 @@ export function createPostgresSessionStore({ pool: providedPool }) {
     return session;
   }
 
-  async function save(session) {
-    return updateSession(pool, session);
+  async function save(session, { runtimeGuard } = {}) {
+    if (!runtimeGuard?.required || !session?.runId) return updateSession(pool, session);
+    const previousVersion = session?.[SESSION_STATE_VERSION];
+    const previousUpdatedAt = session?.updatedAt;
+    const client = await pool.connect();
+    try {
+      await client.query('begin');
+      const locked = await lockCourseRunState(client, session, runtimeGuard);
+      await updateSession(client, session);
+      await persistCourseRunState(client, locked);
+      await client.query('commit');
+      return session;
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      session.updatedAt = previousUpdatedAt;
+      attachSessionVersion(session, previousVersion);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async function saveWithRequestResult(session, {
     requestId,
     leaseToken,
     result,
+    runtimeGuard,
   } = {}) {
     const previousVersion = session?.[SESSION_STATE_VERSION];
     const previousUpdatedAt = session?.updatedAt;
     const client = await pool.connect();
     try {
       await client.query('begin');
+      const locked = await lockCourseRunState(client, session, runtimeGuard);
       await updateSession(client, session);
       const completed = await client.query(`
         update learner_requests
@@ -141,6 +339,7 @@ export function createPostgresSessionStore({ pool: providedPool }) {
       if (completed.rowCount !== 1) {
         throw new LearnerRequestLeaseConflictError(requestId);
       }
+      await persistCourseRunState(client, locked);
       await client.query('commit');
       return session;
     } catch (error) {
@@ -192,11 +391,17 @@ export function createPostgresSessionStore({ pool: providedPool }) {
     return attachSessionVersion(session, result.rows[0].state_version);
   }
 
+  async function remove(id) {
+    const result = await pool.query('delete from learner_sessions where id = $1', [id]);
+    return result.rowCount === 1;
+  }
+
   return {
     create,
     get,
     save,
     saveWithRequestResult,
+    remove,
     kind: 'postgres',
   };
 }

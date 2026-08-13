@@ -2,11 +2,15 @@ import { runtimeSnapshot } from './session-state.js';
 import { toAgentContext, toLogisticsContext } from '../course/agent-context.js';
 import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { languageLevelFor } from '../course/platform-defaults.js';
+import { phasePolicyInstructions } from '../course/phase-policy.js';
+
+export const AGENT_PROMPT_VERSION = '2026-08-11.1';
 
 function compactHistory(messages) {
   return messages.slice(-8).map(({ role, content }) => ({
     role,
-    content: String(content || '').slice(0, 600),
+    // 保留完整气泡；压缩通过限制消息数实现，不在句中硬切。
+    content: String(content || ''),
   }));
 }
 
@@ -20,6 +24,10 @@ export function platformRuleInstructions(course) {
   return rules;
 }
 
+export function phasePromptForDecision(phasePolicy, includePhasePrompt = false) {
+  return includePhasePrompt ? phasePolicyInstructions(phasePolicy) : '';
+}
+
 function gradeDialoguePolicy(grade = '', languageLevels = null) {
   const level = languageLevelFor(languageLevels, grade);
   return `${level.id}：${level.words}字为主，${level.style}。`;
@@ -30,7 +38,9 @@ function scaffoldLineFor(source, level) {
   const text = String(source || '');
   if (!text) return '';
   for (let candidate = level; candidate >= 1; candidate -= 1) {
-    const match = text.match(new RegExp(`\\|\\s*L${candidate}\\s*\\|\\s*["“]?([^|\\n"”]+)`));
+    const table = text.match(new RegExp(`\\|\\s*L${candidate}\\s*\\|\\s*["“]?([^|\\n"”]+)`));
+    const list = text.match(new RegExp(`^\\s*[-*]?\\s*L${candidate}\\s*[：:]\\s*["“]?([^\\n"”]+)`, 'm'));
+    const match = table || list;
     if (match?.[1]) return match[1].trim().replace(/[。！？!?]?$/, '。');
   }
   return '';
@@ -129,7 +139,11 @@ export function buildAgentPrompt({
   const {
     phase, task, tool, step: currentStep, stepIndex: currentStepIndex, stepCount, stepLabel,
   } = context;
-  const phasePrompt = decision.includePhasePrompt ? context.phasePrompt.slice(0, 500) : '';
+  const scaffoldLevel = Number(decision.params?.scaffoldLevel ?? session.scaffoldLevel ?? 0);
+  // 结构化 Phase 只允许注入编译后有明确运行时语义的章节。opening、phrases 与未知
+  // 章节即使是结构化文件里的唯一内容，也不能因为结果为空而回落整份 Markdown；
+  // 原文回落只属于无二级标题的 compat 课程。
+  const phasePrompt = phasePromptForDecision(context.phasePolicy, decision.includePhasePrompt);
   const lockedRestrictionNames = decision.includeRestrictions
     ? context.lockedRestrictionNames.join('、')
     : '';
@@ -161,18 +175,22 @@ export function buildAgentPrompt({
 证据要求：${currentStep?.evidenceRequirement || task.evidenceRequirement || task.passCondition}
 常见误区：${currentStep?.commonMisconception || '按课程证据边界检查'}
 地点：${task.location?.name || '无需指定地点'}；到达：${runtime.location.status || '未知'}；停留：${runtime.location.dwellSeconds || 0}秒
-已进行：${runtime.taskElapsedSeconds}秒；无操作：${runtime.idleSeconds}秒；脚手架：L${session.scaffoldLevel}`.trim() : '';
+已进行：${runtime.taskElapsedSeconds}秒；无操作：${runtime.idleSeconds}秒；脚手架：L${scaffoldLevel}`.trim() : '';
   const taskHint = decision.includeTaskContext
     ? taskScaffoldHint(
       task,
-      session.scaffoldLevel,
+      scaffoldLevel,
       runtime.guidanceStepIndex,
       currentStep,
       course?.platformDefaults?.scaffolding,
     )
     : '';
-  // 就地引导由投影负责 Step 优先于任务级；这里只截断，防止长引导挤占 Prompt。
-  const guidanceContext = decision.includeTaskContext ? context.guidance.slice(0, 600) : '';
+  // 就地引导由投影负责 Step 优先于任务级。保留完整语义，
+  // 过长内容由课程 lint 在发布前给出定位告警，运行时不做无语义硬切。
+  const guidanceContext = decision.includeTaskContext ? context.guidance : '';
+  const scaffoldSemantic = decision.includeTaskContext
+    ? course?.platformDefaults?.scaffolding?.levels?.[`L${scaffoldLevel}`] || ''
+    : '';
   const logisticsContext = decision.includeLogistics
     ? logisticsSection(toLogisticsContext({ course, session, role, teacherName }))
     : '';
@@ -184,7 +202,7 @@ export function buildAgentPrompt({
   const pendingContext = pending
     ? `当前仍等待的问题：${pending.prompt}（${pending.type}）。学生本轮若没有回答它，先回应学生当前表达，不复读该问题，也不修改对应状态。`
     : '当前没有待回答问题。';
-  const learnerContext = `${gradeDialoguePolicy(session.learnerState?.grade || session.grade, course?.platformDefaults?.languageLevels)} 当前脚手架：L${session.scaffoldLevel}。`;
+  const learnerContext = `${gradeDialoguePolicy(session.learnerState?.grade || session.grade, course?.platformDefaults?.languageLevels)} 当前脚手架：L${scaffoldLevel}。`;
   const companion = course?.platformDefaults?.companion || PLATFORM_COMPANION;
   const companionSides = [
     companion.catchphrase ? `口头禅：${companion.catchphrase}。` : '',
@@ -207,6 +225,7 @@ ${section('活动组织信息', logisticsContext)}
 ${section('任务', taskContext)}
 ${section('阶段规则', phasePrompt)}
 ${section('本步引导方向', guidanceContext)}
+${section('当前脚手架档位语义（只控制帮助深度，不可逐字念给学生）', scaffoldSemantic)}
 ${section('本轮可用线索', taskHint)}
 ${section('主动提醒', nudgeContext)}
 ${section('未解锁表格限制名称（不能透露）', lockedRestrictionNames)}

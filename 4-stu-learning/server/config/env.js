@@ -14,11 +14,18 @@ const booleanFromEnv = z.preprocess((value) => {
 
 const schema = z.object({
   APP_ENV: z.enum(['local', 'development', 'test', 'preview', 'production']).default('local'),
+  VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   AI_ENABLED: booleanFromEnv.default(true),
   REALTIME_MODE: z.enum(['polling', 'websocket', 'supabase']).default('polling'),
   EVIDENCE_UPLOAD_MODE: z.enum(['proxy', 'direct']).default('proxy'),
   ENABLE_DEMO: booleanFromEnv.default(true),
+  // 只允许 test 环境显式跳过学生专属入课凭证；preview / production 永远强制验证。
+  JOIN_CREDENTIAL_BYPASS: booleanFromEnv.default(false),
+  // 仅供本地／预览验收真实推进测试会话。生产环境会在运行时强制关闭。
+  QA_FORCE_COMPLETE_ENABLED: booleanFromEnv.default(false),
   READINESS_TOKEN: z.string().min(24).optional(),
+  TEACHER_API_TOKEN: z.string().min(24).optional(),
+  TEACHER_ID: z.string().min(1).max(100).default('teacher-primary'),
   OPENAI_BASE_URL: z.string().url(),
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_MODEL: z.string().min(1),
@@ -78,13 +85,31 @@ function defaultAppEnv() {
   return 'local';
 }
 
+export function effectiveAppEnvironment(env = {}) {
+  const declared = [env.APP_ENV, env.VERCEL_ENV].filter(Boolean);
+  if (declared.includes('production')) return 'production';
+  if (declared.includes('preview')) return 'preview';
+  return env.APP_ENV || (env.VERCEL_ENV === 'development' ? 'development' : 'local');
+}
+
+export function qaForceCompleteEnabled(env = {}) {
+  // Vercel 的托管环境优先级高于手工导入的 APP_ENV，避免整包导入本地 .env 时误开公网验收接口。
+  const appEnvironment = effectiveAppEnvironment(env);
+  if (appEnvironment === 'production') return false;
+  // 本地服务默认也是普通学生体验；只有专门的 QA 运行才开放跳关接口。
+  return env.QA_FORCE_COMPLETE_ENABLED === true;
+}
+
 export function loadEnv({
   projectRoot = defaultProjectRoot,
   lessonsRoot = path.resolve(projectRoot, '../6-lessons'),
 } = {}) {
   const parsed = schema.safeParse({
     ...process.env,
-    APP_ENV: process.env.APP_ENV || defaultAppEnv(),
+    APP_ENV: effectiveAppEnvironment({
+      APP_ENV: process.env.APP_ENV || defaultAppEnv(),
+      VERCEL_ENV: process.env.VERCEL_ENV,
+    }),
   });
   if (!parsed.success) {
     const fields = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ');
@@ -95,7 +120,7 @@ export function loadEnv({
     projectRoot: path.resolve(projectRoot),
     lessonsRoot: path.resolve(lessonsRoot),
   };
-  if (process.env.ENABLE_DEMO === undefined && ['preview', 'production'].includes(values.APP_ENV)) {
+  if (['preview', 'production'].includes(effectiveAppEnvironment(values))) {
     values.ENABLE_DEMO = false;
   }
   if (values.AI_TIMEOUT_MS >= values.AI_TURN_TIMEOUT_MS) {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createLearnerRequestStore } from '../server/database/learner-request-store.js';
+import { TURN_TRACE_SCHEMA_VERSION } from '../server/agent/turn-trace.js';
 
 function compactSql(sql) {
   return String(sql).replaceAll(/\s+/g, ' ').trim();
@@ -390,4 +391,39 @@ test('complete 与 fail 只更新持有对应 UUID lease 的请求', async () =>
     'req_fail',
     failToken,
   ]);
+});
+
+test('fail 持久化当前 schema v3 的隐私最小化失败 trace', async () => {
+  const leaseToken = '5bcd66f7-ea52-4af0-b06c-0ccf06929c1a';
+  const trace = {
+    schemaVersion: TURN_TRACE_SCHEMA_VERSION,
+    traceId: 'trace_failed_v3',
+    status: 'failed',
+    requestIdDigest: `sha256:${'a'.repeat(64)}`,
+    output: { path: 'error:connection', chars: 18 },
+    error: { code: 'AGENT_TURN_FAILED' },
+  };
+  const pool = createScriptedPool([], async (sql, parameters) => {
+    assert.match(sql, /^update learner_requests set status = 'failed'/i);
+    const storedError = JSON.parse(parameters[3]);
+    assert.equal(storedError.name, 'Error');
+    assert.equal(storedError.message, '请求处理失败。');
+    assert.deepEqual(storedError.trace, trace);
+    assert.doesNotMatch(parameters[3], /学生原话|postgresql|secret/i);
+    return result([{ updated_at: new Date('2026-07-31T15:02:00.000Z') }]);
+  });
+
+  const failed = await createLearnerRequestStore({ pool }).fail({
+    sessionId: 'ses_lease_001',
+    requestId: 'req_trace_v3',
+    leaseToken,
+    error: new Error('学生原话不应进入失败记录'),
+    trace,
+  });
+
+  assert.deepEqual(failed, {
+    status: 'failed',
+    requestId: 'req_trace_v3',
+    failedAt: '2026-07-31T15:02:00.000Z',
+  });
 });

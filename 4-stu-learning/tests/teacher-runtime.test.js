@@ -9,11 +9,12 @@ import { compileCourse } from '../server/course/compiler.js';
 import { createCourseRunService } from '../server/runtime/course-run-service.js';
 import { createCourseRunStore } from '../server/runtime/course-run-store.js';
 import { createEvidenceStore } from '../server/services/evidence-store.js';
+import { createRuntimeTeacherCommandConsumer } from '../server/app.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lessonsRoot = path.resolve(projectRoot, '../6-lessons');
 
-async function fixture() {
+async function fixture({ requireJoinCredential = false } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'teacher-runtime-'));
   const events = [];
   const realtime = {
@@ -24,6 +25,7 @@ async function fixture() {
     store: createCourseRunStore({ baseDir: directory }),
     getCourse: (courseId) => compileCourse({ lessonsRoot, courseId }),
     realtime,
+    requireJoinCredential,
   });
   return { directory, events, service };
 }
@@ -69,6 +71,188 @@ test('教师场次以小组组织六个角色，不将角色当成小组', async
   }
 });
 
+test('小组密符按服务端可信角色完成度统计，集齐后只提示教师核对', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.ensureDemoRun();
+  let snapshot = await service.getSnapshot(run.id);
+  const initialPhaseId = snapshot.run.phaseId;
+  const group = snapshot.groups[0];
+  assert.equal(group.collectionTotal, 6);
+  assert.equal(group.collectionReady, false);
+
+  for (const participant of group.members) {
+    const sessionId = `ses_collection_${participant.id}`;
+    await service.bindLearnerSession({
+      runId: run.id,
+      participantId: participant.id,
+      sessionId,
+      roleId: participant.roleId,
+    });
+    await service.reportPresence(sessionId, { online: true }, {
+      trustedLearningProjection: {
+        sessionId,
+        runId: run.id,
+        participantId: participant.id,
+        roleId: participant.roleId,
+        progress: 100,
+        evidenceCount: 1,
+        currentTask: '角色任务已完成',
+        currentTaskId: 'completed-task',
+        currentStepId: 'completed-step',
+        idleSeconds: 0,
+        lastMeaningfulActionAt: new Date().toISOString(),
+      },
+    });
+  }
+
+  snapshot = await service.getSnapshot(run.id);
+  const completedGroup = snapshot.groups[0];
+  assert.equal(completedGroup.collectionCount, 6);
+  assert.equal(completedGroup.collectionTotal, 6);
+  assert.equal(completedGroup.collectionReady, true);
+  assert.equal(snapshot.run.phaseId, initialPhaseId);
+});
+
+test('指定场次只按 participantId 绑定，会话可安全重新激活', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.ensureDemoRun();
+  const initial = await service.getSnapshot(run.id);
+  const participant = initial.participants[0];
+
+  await assert.rejects(
+    service.bindLearnerSession({
+      runId: run.id,
+      groupId: participant.groupId,
+      roleId: participant.roleId,
+      sessionId: 'ses_group_role_only',
+    }),
+    (error) => error.statusCode === 422,
+  );
+  await assert.rejects(
+    service.bindLearnerSession({
+      runId: run.id,
+      participantId: 'student-not-in-this-run',
+      groupId: participant.groupId,
+      roleId: participant.roleId,
+      sessionId: 'ses_invalid_participant',
+    }),
+    (error) => error.statusCode === 422,
+  );
+
+  await service.bindLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    sessionId: 'ses_role_a',
+    roleId: participant.roleId,
+  });
+  await service.bindLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    sessionId: 'ses_role_b',
+    roleId: participant.roleId,
+  });
+  assert.equal(
+    participantById(await service.getSnapshot(run.id), participant.id).learnerSessionId,
+    'ses_role_b',
+  );
+
+  await service.activateLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    sessionId: 'ses_role_a',
+    roleId: participant.roleId,
+  });
+  assert.equal(
+    participantById(await service.getSnapshot(run.id), participant.id).learnerSessionId,
+    'ses_role_a',
+  );
+  await assert.rejects(
+    service.activateLearnerSession({ participantId: participant.id, sessionId: 'ses_untrusted' }),
+    (error) => error.statusCode === 422,
+  );
+});
+
+test('教师 runtime 按完整身份返回当前可恢复 session', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.ensureDemoRun();
+  const snapshot = await service.getSnapshot(run.id);
+  const [participant, neverStarted] = snapshot.participants;
+  await service.bindLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    courseId: run.courseId,
+    sessionId: 'ses_resume_runtime',
+    roleId: participant.roleId,
+  });
+
+  const resumed = await service.resumeLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    courseId: run.courseId,
+  });
+  assert.equal(resumed.sessionId, 'ses_resume_runtime');
+  assert.equal(resumed.runId, run.id);
+  assert.equal(resumed.participantId, participant.id);
+  assert.equal(resumed.courseId, run.courseId);
+  assert.equal(resumed.runState.status, run.status);
+
+  const empty = await service.resumeLearnerSession({
+    runId: run.id,
+    participantId: neverStarted.id,
+    courseId: run.courseId,
+  });
+  assert.equal(empty.sessionId, null);
+  await assert.rejects(
+    service.resumeLearnerSession({
+      runId: run.id,
+      participantId: participant.id,
+      courseId: 'lesson_zhizhi_001',
+    }),
+    (error) => error.statusCode === 422,
+  );
+});
+
+test('runtime 用 participant 专属凭证阻止可预测 ID 抢绑', async (t) => {
+  const { directory, service } = await fixture({ requireJoinCredential: true });
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ courseId: 'lesson_gewu_001', status: 'active' });
+  const snapshot = await service.getSnapshot(run.id);
+  const [owner, other] = snapshot.participants;
+  const credentials = (await service.preflight(run.id)).joinCredentials;
+  const ownerCredential = credentials.find((item) => item.participantId === owner.id)?.joinCredential;
+  const otherCredential = credentials.find((item) => item.participantId === other.id)?.joinCredential;
+
+  await assert.rejects(
+    service.validateLearnerBinding({
+      runId: run.id,
+      participantId: owner.id,
+      courseId: run.courseId,
+    }),
+    (error) => error.statusCode === 401 && error.code === 'JOIN_CREDENTIAL_REQUIRED',
+  );
+  await assert.rejects(
+    service.validateLearnerBinding({
+      runId: run.id,
+      participantId: owner.id,
+      courseId: run.courseId,
+      joinCredential: otherCredential,
+    }),
+    (error) => error.statusCode === 403 && error.code === 'JOIN_CREDENTIAL_INVALID',
+  );
+  const valid = await service.validateLearnerBinding({
+    runId: run.id,
+    participantId: owner.id,
+    courseId: run.courseId,
+    joinCredential: ownerCredential,
+  });
+  assert.equal(valid.participantId, owner.id);
+  assert.equal(snapshot.run.joinCredentialSecret, undefined);
+  assert.ok(ownerCredential.length >= 40);
+});
+
 test('四渡赤水场次使用中国共产党历史展览馆的课程中心坐标', async (t) => {
   const { directory, service } = await fixture();
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
@@ -77,8 +261,9 @@ test('四渡赤水场次使用中国共产党历史展览馆的课程中心坐�
   assert.deepEqual(snapshot.run.mapCenter, [116.3953, 40.0071]);
   assert.equal(snapshot.run.courseTitle, '得意之笔·四渡赤水');
   assert.equal(snapshot.participants.length, 25);
-  assert.ok(snapshot.participants.every((item) => Math.abs(item.location.lng - 116.3953) < 0.001));
-  assert.ok(snapshot.participants.every((item) => Math.abs(item.location.lat - 40.0071) < 0.001));
+  assert.ok(snapshot.participants.every((item) => item.location.lng === null));
+  assert.ok(snapshot.participants.every((item) => item.location.lat === null));
+  assert.ok(snapshot.participants.every((item) => item.positionStatus === 'unknown'));
 });
 
 test('教师指令支持版本冲突与幂等，并产生学生回执', async (t) => {
@@ -87,7 +272,7 @@ test('教师指令支持版本冲突与幂等，并产生学生回执', async (t
   const run = await service.ensureDemoRun();
   const snapshot = await service.getSnapshot(run.id);
   const participant = snapshot.participants[0];
-  await service.bindLearnerSession({ runId: run.id, participantId: participant.id, sessionId: 'ses_teacher_test' });
+  await service.bindLearnerSession({ runId: run.id, participantId: participant.id, sessionId: 'ses_teacher_test', roleId: participant.roleId });
   const input = {
     actorId: 'teacher-demo', idempotencyKey: 'idem-teacher-001', expectedVersion: snapshot.run.version,
     action: 'send_notice', target: { scope: 'participant', id: participant.id },
@@ -96,18 +281,24 @@ test('教师指令支持版本冲突与幂等，并产生学生回执', async (t
   const first = await service.sendCommand(run.id, input);
   const duplicate = await service.sendCommand(run.id, input);
   assert.equal(duplicate.id, first.id);
+  assert.equal(duplicate.runVersion, first.runVersion);
+  assert.deepEqual(duplicate.receipts, first.receipts);
   assert.equal(first.receipts[0].status, 'accepted');
   const pending = await service.commandsForSession('ses_teacher_test', 0);
   assert.equal(pending.commands.length, 1);
   const delivered = await service.confirmCommand('ses_teacher_test', first.id, 'delivered');
   assert.equal(delivered.status, 'delivered');
+  await assert.rejects(
+    service.confirmCommand('ses_teacher_test', first.id, 'failed'),
+    (error) => error.statusCode === 409,
+  );
   const consumed = await service.commandsForSession('ses_teacher_test', 0);
   assert.equal(consumed.commands.length, 0);
   const receipt = await service.confirmCommand('ses_teacher_test', first.id, 'confirmed');
   assert.equal(receipt.status, 'confirmed');
   const confirmedAgain = await service.confirmCommand('ses_teacher_test', first.id, 'delivered');
   assert.equal(confirmedAgain.status, 'confirmed');
-  await service.bindLearnerSession({ runId: run.id, participantId: participant.id, sessionId: 'ses_teacher_rebound' });
+  await service.bindLearnerSession({ runId: run.id, participantId: participant.id, sessionId: 'ses_teacher_rebound', roleId: participant.roleId });
   const rebound = await service.commandsForSession('ses_teacher_rebound', 0);
   assert.equal(rebound.commands.length, 0);
   await assert.rejects(
@@ -116,13 +307,237 @@ test('教师指令支持版本冲突与幂等，并产生学生回执', async (t
   );
 });
 
+test('教师指令幂等键只回放同一规范化请求，变更任一语义字段均 409 且零写入', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.ensureDemoRun();
+  const snapshot = await service.getSnapshot(run.id);
+  const [participant, other] = snapshot.participants;
+  const input = commandInput(snapshot, {
+    idempotencyKey: 'idem-semantic-command-001',
+    action: 'add_time',
+    target: { scope: 'participant', id: participant.id },
+    payload: { metadata: { beta: 2, alpha: 1 }, amount: '3' },
+    reason: '学生主动求助',
+  });
+
+  const first = await service.sendCommand(run.id, input);
+  const replay = await service.sendCommand(run.id, {
+    ...input,
+    payload: { amount: 3, metadata: { alpha: 1, beta: 2 } },
+  });
+  assert.equal(replay.id, first.id);
+  assert.equal(replay.runVersion, first.runVersion);
+  assert.deepEqual(replay.payload, first.payload);
+  assert.deepEqual(replay.receipts, first.receipts);
+
+  const target = path.join(directory, 'course-runs.json');
+  const persistedAfterAccept = await fs.readFile(target, 'utf8');
+  const conflictCases = [
+    ['action', { action: 'remove_time' }],
+    ['target', { target: { scope: 'participant', id: other.id } }],
+    ['reason', { reason: '改成另一个原因' }],
+    ['payload', { payload: { amount: 4, metadata: { alpha: 1, beta: 2 } } }],
+  ];
+  for (const [field, change] of conflictCases) {
+    await assert.rejects(
+      service.sendCommand(run.id, { ...input, ...change }),
+      (error) => (
+        error.statusCode === 409
+        && error.code === 'TEACHER_COMMAND_IDEMPOTENCY_CONFLICT'
+        && error.details?.teacherCommandId === first.id
+        && error.details?.conflictingFields?.includes(field)
+      ),
+      `${field} 改变必须返回可识别的幂等冲突`,
+    );
+    assert.equal(await fs.readFile(target, 'utf8'), persistedAfterAccept, `${field} 冲突不得落盘`);
+  }
+
+  const after = await service.getReview(run.id);
+  assert.equal(after.run.version, first.runVersion);
+  assert.equal(after.interventions.length, 1);
+  const audit = after.auditEvents.find((item) => item.action === 'teacher.command');
+  assert.equal(audit.payload.teacherCommandId, first.id);
+  assert.equal(audit.payload.teacherCommandAction, first.action);
+});
+
+test('推进阶段的幂等回放使用原指令的服务端补全 payload', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.ensureDemoRun();
+  const snapshot = await service.getSnapshot(run.id);
+  const input = commandInput(snapshot, {
+    idempotencyKey: 'idem-advance-phase-replay',
+    action: 'advance_phase',
+    target: { scope: 'all' },
+    payload: {},
+    reason: '进入下一阶段',
+  });
+
+  const first = await service.sendCommand(run.id, input);
+  const replay = await service.sendCommand(run.id, input);
+  assert.equal(replay.id, first.id);
+  assert.deepEqual(replay.payload, first.payload);
+  assert.ok(first.payload.phaseId);
+  assert.ok(first.payload.phaseName);
+
+  await assert.rejects(
+    service.sendCommand(run.id, { ...input, payload: { phaseId: 'phase-does-not-match' } }),
+    (error) => (
+      error.statusCode === 409
+      && error.code === 'TEACHER_COMMAND_IDEMPOTENCY_CONFLICT'
+      && error.details?.conflictingFields?.includes('payload')
+    ),
+  );
+});
+
+test('待处理教师指令绑定派发时的会话，角色切换不能误领或改写回执', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ className: '会话指令隔离班', groupCount: 2, status: 'active' });
+  let snapshot = await service.getSnapshot(run.id);
+  const participant = snapshot.participants[0];
+  await service.bindLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    sessionId: 'ses_role_a',
+    courseId: snapshot.run.courseId,
+  });
+  const sent = await service.sendCommand(run.id, commandInput(snapshot, {
+    action: 'set_scaffold',
+    target: { scope: 'participant', id: participant.id },
+    payload: { level: 2 },
+  }));
+
+  await service.bindLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    sessionId: 'ses_role_b',
+    courseId: snapshot.run.courseId,
+  });
+  assert.equal((await service.commandsForSession('ses_role_b', 0)).commands.length, 0);
+  await assert.rejects(
+    service.confirmCommand('ses_role_b', sent.id, 'failed'),
+    (error) => error.statusCode === 404,
+  );
+
+  await service.activateLearnerSession({
+    runId: run.id,
+    participantId: participant.id,
+    sessionId: 'ses_role_a',
+    courseId: snapshot.run.courseId,
+  });
+  const returned = await service.commandsForSession('ses_role_a', 0);
+  assert.equal(returned.commands.length, 1);
+  assert.equal(returned.commands[0].id, sent.id);
+});
+
+test('Agent 教师命令桥只消费当前会话未使用的服务端指令', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.ensureDemoRun();
+  let snapshot = await service.getSnapshot(run.id);
+  const [owner, other] = snapshot.participants;
+  await service.bindLearnerSession({ runId: run.id, participantId: owner.id, sessionId: 'ses_command_owner', roleId: owner.roleId });
+  await service.bindLearnerSession({ runId: run.id, participantId: other.id, sessionId: 'ses_command_other', roleId: other.roleId });
+
+  const sent = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'set_scaffold',
+    target: { scope: 'participant', id: owner.id },
+    payload: { level: 2 },
+  });
+  snapshot = sent.snapshot;
+  const command = sent.result;
+  assert.equal(command.receipts[0].targetSnapshot.taskId, owner.learning.currentTaskId);
+  assert.equal(command.receipts[0].targetSnapshot.stepId, owner.learning.currentStepId);
+  const consume = createRuntimeTeacherCommandConsumer(service);
+  const requirement = { commandId: command.id, action: 'set_scaffold' };
+
+  await assert.rejects(consume({
+    sessionId: 'ses_command_other',
+    requirement,
+    input: {
+      type: 'lifecycle_event',
+      event: 'teacher_directive',
+      data: { scaffoldLevel: 99, teacherCommandId: command.id },
+    },
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+  assert.equal((await service.commandsForSession('ses_command_owner', 0)).commands.length, 1);
+
+  const input = {
+    type: 'lifecycle_event',
+    event: 'teacher_directive',
+    data: { scaffoldLevel: 99, teacherCommandId: command.id },
+  };
+  const grant = await consume({ sessionId: 'ses_command_owner', requirement, input });
+  assert.equal(grant.sessionId, 'ses_command_owner');
+  assert.equal(grant.commandId, command.id);
+  assert.equal(grant.action, 'set_scaffold');
+  assert.equal(typeof grant.commit, 'function');
+  assert.equal(typeof grant.release, 'function');
+  assert.equal(input.data.scaffoldLevel, 2, '特权参数取服务端 payload，忽略客户端伪造值');
+  assert.equal(input.data.taskId, owner.learning.currentTaskId);
+  assert.equal((await service.commandsForSession('ses_command_owner', 0)).commands.length, 1, '状态落盘前不提前消费回执');
+
+  await assert.rejects(consume({
+    sessionId: 'ses_command_owner',
+    requirement,
+    input,
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+  await grant.commit();
+  assert.equal((await service.commandsForSession('ses_command_owner', 0)).commands.length, 0);
+
+  await assert.rejects(consume({
+    sessionId: 'ses_command_owner',
+    requirement,
+    input,
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+
+  const phaseSent = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'advance_phase',
+    target: { scope: 'all' },
+    payload: { phaseId: 'phase-3' },
+  });
+  const phaseInput = {
+    type: 'lifecycle_event',
+    event: 'teacher_directive',
+    data: { phaseId: 'phase-99', scaffoldLevel: 4, teacherCommandId: phaseSent.result.id },
+  };
+  const phaseGrant = await consume({
+    sessionId: 'ses_command_owner',
+    requirement: { commandId: phaseSent.result.id, action: 'advance_phase' },
+    input: phaseInput,
+  });
+  assert.equal(phaseInput.data.phaseId, 'phase-3');
+  assert.equal(Object.hasOwn(phaseInput.data, 'scaffoldLevel'), false);
+  await phaseGrant.commit();
+});
+
 test('学生求助五分钟内去重，事件按固定状态机处理', async (t) => {
   const { directory, service } = await fixture();
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const run = await service.ensureDemoRun();
   const snapshot = await service.getSnapshot(run.id);
   const participant = snapshot.participants[2];
-  await service.bindLearnerSession({ runId: run.id, participantId: participant.id, sessionId: 'ses_help_test' });
+  await assert.rejects(
+    service.requestHelp({
+      sessionId: '伪造的会话',
+      participantId: participant.id,
+      kind: 'safety',
+      reason: '伪造安全告警',
+    }),
+    (error) => error.statusCode === 404,
+  );
+  await service.bindLearnerSession({ runId: run.id, participantId: participant.id, sessionId: 'ses_help_test', roleId: participant.roleId });
+  await assert.rejects(
+    service.requestHelp({
+      sessionId: 'ses_help_test',
+      participantId: snapshot.participants[3].id,
+      kind: 'safety',
+      reason: '串用其他学生身份',
+    }),
+    (error) => error.statusCode === 403,
+  );
   const first = await service.requestHelp({ sessionId: 'ses_help_test', kind: 'task', reason: '我不知道下一步做什么' });
   const duplicate = await service.requestHelp({ sessionId: 'ses_help_test', kind: 'task', reason: '再次求助' });
   assert.equal(duplicate.id, first.id);
@@ -143,10 +558,17 @@ test('名单导入、设备重检和角色唯一性均由服务端校验', async
   const attention = snapshot.participants.find((item) => item.device.location !== 'ready');
   await service.updateParticipant(run.id, attention.id, { recheckDevice: true, actorId: 'teacher-demo', reason: '重新检测' });
   const updated = await service.getSnapshot(run.id);
-  assert.equal(updated.participants.find((item) => item.id === attention.id).device.location, 'ready');
+  assert.equal(updated.participants.find((item) => item.id === attention.id).device.location, 'checking');
+  assert.equal(updated.participants.find((item) => item.id === attention.id).device.camera, 'checking');
   const [first, second] = updated.groups[0].members;
+  const roleId = updated.run.roleOptions[0].id;
+  await service.updateParticipant(run.id, first.id, {
+    roleId,
+    actorId: 'teacher-demo',
+    reason: '教师分配首个角色',
+  });
   await assert.rejects(
-    service.updateParticipant(run.id, second.id, { roleId: first.roleId, actorId: 'teacher-demo', reason: '测试重复角色' }),
+    service.updateParticipant(run.id, second.id, { roleId, actorId: 'teacher-demo', reason: '测试重复角色' }),
     (error) => error.statusCode === 409,
   );
 });
@@ -172,11 +594,13 @@ test('applyCommand 第一层：run.* 状态改动', async (t) => {
     action: 'release_roles', target: { scope: 'all' },
   }));
   assert.equal(snapshot.run.rolesReleased, true);
+  assert.equal(snapshot.run.rolesLocked, false);
 
   ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'lock_roles', target: { scope: 'all' },
   }));
   assert.equal(snapshot.run.rolesLocked, true);
+  assert.equal(snapshot.run.rolesReleased, true);
 
   ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'start_phase', target: { scope: 'all' },
@@ -197,19 +621,30 @@ test('applyCommand 第一层：run.* 状态改动', async (t) => {
   ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'advance_phase',
     target: { scope: 'all' },
-    payload: { phaseId: 'phase-test-2', phaseName: '测试阶段二' },
+    payload: { phaseId: 'phase-2', phaseName: '客户端伪造名称' },
   }));
   assert.equal(snapshot.run.phaseIndex, phaseBefore + 1);
-  assert.equal(snapshot.run.phaseId, 'phase-test-2');
-  assert.equal(snapshot.run.phaseName, '测试阶段二');
+  assert.equal(snapshot.run.phaseId, 'phase-2');
+  assert.notEqual(snapshot.run.phaseName, '客户端伪造名称');
 
   ({ snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'end_run', target: { scope: 'all' },
   }));
   assert.equal(snapshot.run.status, 'completed');
+
+  const completedVersion = snapshot.run.version;
+  await assert.rejects(
+    service.sendCommand(run.id, commandInput(snapshot, {
+      action: 'start_phase', target: { scope: 'all' },
+    })),
+    (error) => error.statusCode === 409 && /已结束/.test(error.message),
+  );
+  snapshot = await service.getSnapshot(run.id);
+  assert.equal(snapshot.run.status, 'completed');
+  assert.equal(snapshot.run.version, completedVersion);
 });
 
-test('applyCommand 第二层：participant.learning.* 状态改动', async (t) => {
+test('applyCommand 第二层：教师时间指令不改学生时间银行', async (t) => {
   const { directory, service } = await fixture();
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const run = await service.createRun({ className: '参与者指令班', groupCount: 3 });
@@ -228,8 +663,15 @@ test('applyCommand 第二层：participant.learning.* 状态改动', async (t) =
     target: { scope: 'participant', id: target.id },
     payload: { amount: 5 },
   }));
-  assert.equal(participantById(snapshot, target.id).learning.timeBalance, before.timeBalance + 5);
+  assert.equal(participantById(snapshot, target.id).learning.timeBalance, before.timeBalance);
   assert.equal(participantsWithDirective(snapshot, result.id).length, 1);
+
+  ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
+    action: 'remove_time',
+    target: { scope: 'participant', id: target.id },
+    payload: { amount: 2 },
+  }));
+  assert.equal(participantById(snapshot, target.id).learning.timeBalance, before.timeBalance);
 
   ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'set_scaffold',
@@ -238,30 +680,30 @@ test('applyCommand 第二层：participant.learning.* 状态改动', async (t) =
   }));
   assert.equal(participantById(snapshot, target.id).learning.scaffoldLevel, 3);
 
-  participantById(snapshot, target.id).location.insideFence = false;
   ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'confirm_arrival',
     target: { scope: 'participant', id: target.id },
   }));
-  assert.equal(participantById(snapshot, target.id).location.insideFence, true);
+  assert.equal(
+    participantById(snapshot, target.id).location.insideFence,
+    before.insideFence,
+    '发指令只创建回执，不先伪写学生已到达',
+  );
 
   ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'approve_evidence',
     target: { scope: 'participant', id: target.id },
   }));
-  assert.equal(participantById(snapshot, target.id).learning.progress, Math.min(100, before.progress + 12));
+  assert.equal(participantById(snapshot, target.id).learning.progress, before.progress);
 
   ({ result, snapshot } = await sendAndRefresh(service, run.id, snapshot, {
     action: 'skip_step',
     target: { scope: 'participant', id: target.id },
   }));
-  assert.equal(
-    participantById(snapshot, target.id).learning.progress,
-    Math.min(100, before.progress + 12 + 8),
-  );
+  assert.equal(participantById(snapshot, target.id).learning.progress, before.progress);
 });
 
-test('applyCommand：仅写 latestDirective、不改 learning/run 的 6 个 action', async (t) => {
+test('applyCommand：仅写 latestDirective、不改 learning/run 的 5 个 action', async (t) => {
   const { directory, service } = await fixture();
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const run = await service.createRun({ className: '只留指令班', groupCount: 3 });
@@ -277,7 +719,6 @@ test('applyCommand：仅写 latestDirective、不改 learning/run 的 6 个 acti
   };
 
   for (const action of [
-    'remove_time',
     'send_notice',
     'push_knowledge',
     'reject_evidence',
@@ -286,7 +727,9 @@ test('applyCommand：仅写 latestDirective、不改 learning/run 的 6 个 acti
   ]) {
     const { result, snapshot: next } = await sendAndRefresh(service, run.id, snapshot, {
       action,
-      target: { scope: 'participant', id: target.id },
+      target: action === 'emergency_rally'
+        ? { scope: 'all' }
+        : { scope: 'participant', id: target.id },
       payload: action === 'send_notice'
         ? { text: '请继续任务' }
         : action === 'emergency_rally'
@@ -307,7 +750,7 @@ test('applyCommand：仅写 latestDirective、不改 learning/run 的 6 个 acti
 test('target.scope 四种取值只影响目标范围内的 participant', async (t) => {
   const { directory, service } = await fixture();
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
-  const run = await service.createRun({ className: '范围测试班', groupCount: 3 });
+  const run = await service.ensureDemoRun();
   let snapshot = await service.getSnapshot(run.id);
   const participant = snapshot.participants[0];
   const groupId = participant.groupId;
@@ -351,29 +794,33 @@ test('target.scope 四种取值只影响目标范围内的 participant', async (
   assert.ok(snapshot.participants.some((item) => item.id !== participant.id && item.latestDirective?.commandId !== result.id));
 });
 
-test('18 个 action 均可被 sendCommand 接受并产生回执', async (t) => {
+test('19 个 action 均可被 sendCommand 接受并产生回执', async (t) => {
   const { directory, service } = await fixture();
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
-  const run = await service.createRun({ className: '全 action 覆盖班', groupCount: 2 });
+  const run = await service.createRun({ className: '全 action 覆盖班', groupCount: 2, status: 'draft' });
   let snapshot = await service.getSnapshot(run.id);
   const participant = snapshot.participants[0];
   const actions = [
-    'send_notice', 'push_knowledge', 'add_time', 'remove_time', 'pause', 'resume',
-    'release_roles', 'lock_roles', 'start_phase', 'advance_phase', 'end_run',
+    'start_phase', 'send_notice', 'push_knowledge', 'add_time', 'remove_time', 'pause', 'resume',
+    'release_roles', 'lock_roles', 'advance_phase',
     'confirm_arrival', 'reject_evidence', 'approve_evidence', 'skip_step',
-    'set_scaffold', 'switch_alternative', 'emergency_rally',
+    'set_scaffold', 'switch_alternative', 'emergency_rally', 'advance_task', 'end_run',
   ];
+  const runWideActions = new Set([
+    'pause', 'resume', 'release_roles', 'lock_roles', 'start_phase',
+    'advance_phase', 'end_run', 'emergency_rally',
+  ]);
 
   for (const action of actions) {
     const { result } = await sendAndRefresh(service, run.id, snapshot, {
       action,
-      target: action === 'end_run' ? { scope: 'all' } : { scope: 'participant', id: participant.id },
+      target: runWideActions.has(action) ? { scope: 'all' } : { scope: 'participant', id: participant.id },
       payload: action === 'add_time'
         ? { amount: 2 }
         : action === 'set_scaffold'
           ? { level: 1 }
           : action === 'advance_phase'
-            ? { phaseId: `phase-${action}`, phaseName: '阶段' }
+            ? { phaseId: 'phase-2', phaseName: '客户端阶段名' }
             : action === 'send_notice'
               ? { text: '继续' }
               : action === 'emergency_rally'
@@ -385,4 +832,30 @@ test('18 个 action 均可被 sendCommand 接受并产生回执', async (t) => {
     assert.ok(result.receipts.length >= 1);
     assert.equal(result.receipts[0].status, 'accepted');
   }
+});
+
+test('非法教师参数在写入场次、指令和回执之前被拒绝', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const run = await service.createRun({ className: '非法指令参数班', groupCount: 2, status: 'active' });
+  const before = await service.getSnapshot(run.id);
+  const participant = before.participants[0];
+  const invalidInputs = [
+    { action: 'add_time', target: { scope: 'participant', id: participant.id }, payload: { amount: 'abc' } },
+    { action: 'set_scaffold', target: { scope: 'participant', id: participant.id }, payload: { level: 99 } },
+    { action: 'advance_phase', target: { scope: 'all' }, payload: { phaseId: 'phase-99' } },
+    { action: 'pause', target: { scope: 'participant', id: participant.id }, payload: {} },
+  ];
+
+  for (const input of invalidInputs) {
+    await assert.rejects(
+      service.sendCommand(run.id, commandInput(before, input)),
+      (error) => [400, 409].includes(error.statusCode),
+    );
+  }
+  const after = await service.getSnapshot(run.id);
+  assert.equal(after.run.version, before.run.version);
+  assert.equal(after.run.status, before.run.status);
+  assert.equal(after.participants[0].learning.timeBalance, participant.learning.timeBalance);
+  assert.equal(after.participants[0].learning.scaffoldLevel, participant.learning.scaffoldLevel);
 });

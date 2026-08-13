@@ -14,6 +14,11 @@ import { courseOverrideSection } from '../../src/engine/platform-defaults.js';
 import { assertVoiceHasNoSpoiler, resolveVoice } from './voice.js';
 import { parseRestrictionDocument } from './restriction-sections.js';
 import { buildTaskGraph } from './task-graph.js';
+import { compilePhasePolicy } from './phase-policy.js';
+import {
+  restrictionProtectedMatchers,
+  restrictionProtectedTerms,
+} from './projections.js';
 
 export {
   parseRestrictionDocument,
@@ -46,6 +51,70 @@ function clean(value = '') {
   const pair = [["'", "'"], ['"', '"'], ['“', '”']]
     .find(([open, close]) => result.length >= 2 && result.startsWith(open) && result.endsWith(close));
   return pair ? result.slice(1, -1).trim() : result;
+}
+
+const OVERRIDE_SECTION_BY_PLATFORM_FILE = Object.freeze({
+  'defaults.md': '数值默认',
+  'tool-defaults.md': '工具默认',
+  'companion.md': '人设侧重',
+  'voice.md': '话术覆盖',
+  'scaffolding.md': '脚手架',
+  'logistics.md': '组织信息',
+});
+
+function compilerWarningCode(warning = {}) {
+  if (warning.code) return String(warning.code);
+  const message = String(warning.message || '');
+  if (message.includes('锁定')) return 'platform_locked_override';
+  if (message.includes('不可覆盖')) return 'platform_immutable_override';
+  return 'compiler_warning';
+}
+
+/**
+ * 编译告警是发布门禁的输入，不是 debug 字符串。每条都必须保留稳定 code、
+ * 课程源文件 source 和字段 field。`file` 可以继续指向被覆盖的平台文档，
+ * 但 lint 定位必须以 source（例如 course.md）为准。
+ */
+function structuredCompilerWarning(warning = {}, context = {}) {
+  const source = String(context.source || warning.source || warning.file || 'course.md');
+  const section = String(context.field || OVERRIDE_SECTION_BY_PLATFORM_FILE[warning.file] || '');
+  const field = String(
+    warning.field
+      || (warning.key && section ? `${section}.${warning.key}` : '')
+      || section
+      || '编译配置',
+  );
+  return {
+    ...warning,
+    level: warning.level === 'error' ? 'error' : 'warning',
+    code: compilerWarningCode(warning),
+    source,
+    field,
+  };
+}
+
+function parserWarningContext(warning = {}, files = {}) {
+  if (warning.code === 'bad_phase_task_executor') {
+    return { source: 'phases.md', field: '执行单位' };
+  }
+  if (warning.file && OVERRIDE_SECTION_BY_PLATFORM_FILE[warning.file]) {
+    return { source: 'course.md', field: OVERRIDE_SECTION_BY_PLATFORM_FILE[warning.file] };
+  }
+  if (warning.taskId) {
+    const field = String(warning.field || 'id');
+    const value = String(warning.value || '');
+    const fieldPattern = new RegExp(`^-\\s*${field.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}[\\s　]*[：:]`, 'm');
+    for (const [filename, markdown] of Object.entries(files)) {
+      if (filename !== 'phases.md' && !filename.startsWith('roles/')) continue;
+      if (!fieldPattern.test(markdown)) continue;
+      if (value && !String(markdown).includes(value)) continue;
+      return { source: filename, field };
+    }
+  }
+  return {
+    source: 'course.md',
+    field: String(warning.field || OVERRIDE_SECTION_BY_PLATFORM_FILE[warning.file] || '编译配置'),
+  };
 }
 
 async function collectMarkdown(directory, base = directory, result = {}) {
@@ -96,19 +165,15 @@ function parseRestrictionRows(markdown = '') {
     if (!line.startsWith('|') || /^\|\s*-/.test(line)) continue;
     const cells = line.split('|').slice(1, -1).map(clean);
     if (cells.length !== 4 || cells[0] === '限制项') continue;
-    const numericTerms = [...cells[1].matchAll(/\d{4}年(?:\d{1,2}月(?:\d{1,2}(?:日至\d{1,2})?日?)?)?|\d+(?:\.\d+)?(?:%|万?m³|米)|\d{3,}/g)].map((match) => match[0]);
-    const quotedTerms = [...`${cells[0]} ${cells[1]}`.matchAll(/["“”']([^"“”']{2,})["“”']/g)].map((match) => match[1]);
-    const phraseTerms = cells[1]
-      .split(/[、，；和的]/)
-      .map(clean)
-      .filter((value) => value.length >= 4 && !/这个概念性总结语/.test(value));
+    const protectedTerms = restrictionProtectedTerms(cells[0], cells[1]);
     rows.push({
       id: `restriction-${rows.length + 1}`,
       name: cells[0],
       protectedContent: cells[1],
       reason: cells[2],
       unlockWhen: cells[3],
-      protectedTerms: [...new Set([...numericTerms, ...quotedTerms, ...phraseTerms])],
+      protectedTerms,
+      protectedMatchers: restrictionProtectedMatchers(cells[0], cells[1], protectedTerms),
     });
   }
   return rows;
@@ -226,13 +291,18 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     && cached?.courseVersion === courseVersion) return cached;
 
   const defaultWarnings = [];
+  const parserWarnings = [];
   // 全量解析产物。含 keyData／guide／就地验收标准／能力标签与时间银行答案——
   // 服务端要用（时间银行判分读 task.answer/verify/radius），下发浏览器前必须过 toPublic。
   const lesson = parseLesson({
     id: courseId,
     files,
     assetBase: `lessons/${courseId}/assets`,
-  }, { platformDefaults, onWarning: (warning) => defaultWarnings.push(warning) });
+  }, { platformDefaults, onWarning: (warning) => parserWarnings.push(warning) });
+  defaultWarnings.push(...parserWarnings.map((warning) => structuredCompilerWarning(
+    warning,
+    parserWarningContext(warning, files),
+  )));
   const roleFiles = Object.fromEntries(
     Object.entries(files).filter(([filename]) => filename.startsWith('roles/')),
   );
@@ -289,6 +359,18 @@ export async function compileCourse({ lessonsRoot, courseId }) {
         markdown,
       ]),
   );
+  const phasePolicies = Object.fromEntries(Object.entries(phasePrompts).map(([phaseId, markdown]) => {
+    const filename = Object.keys(files).find((name) => (
+      /^prompts\/phase\d+-.+\.md$/.test(name)
+      && `phase-${name.match(/phase(\d+)/)?.[1]}` === phaseId
+    )) || '';
+    const policy = compilePhasePolicy(markdown, { file: filename });
+    defaultWarnings.push(...policy.warnings.map((warning) => structuredCompilerWarning(warning, {
+      source: filename,
+      field: 'Phase Prompt',
+    })));
+    return [phaseId, policy];
+  }));
 
   // 人设侧重是课程私有配置：只在服务端 Prompt 里生效，不经过 parseLesson，因此不会进公开包。
   const { 侧重: sectionEmphasis = '', ...companionOverrides } = courseOverrideSection(files['course.md'], '人设侧重');
@@ -297,30 +379,42 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     companionOverrides,
     sectionEmphasis || courseOverrideSection(files['course.md'], '基本信息')['人设侧重'] || '',
   );
-  defaultWarnings.push(...companion.warnings);
+  defaultWarnings.push(...companion.warnings.map((warning) => structuredCompilerWarning(warning, {
+    source: 'course.md',
+    field: '人设侧重',
+  })));
 
   const voice = resolveVoice(
     platformDefaults.documents.voice,
     courseOverrideSection(files['course.md'], '话术覆盖'),
   );
-  defaultWarnings.push(...voice.warnings);
+  defaultWarnings.push(...voice.warnings.map((warning) => structuredCompilerWarning(warning, {
+    source: 'course.md',
+    field: '话术覆盖',
+  })));
 
   const scaffolding = resolveScaffolding(
     platformDefaults.documents.scaffolding,
     courseOverrideSection(files['course.md'], '脚手架'),
   );
-  defaultWarnings.push(...scaffolding.warnings);
+  defaultWarnings.push(...scaffolding.warnings.map((warning) => structuredCompilerWarning(warning, {
+    source: 'course.md',
+    field: '脚手架',
+  })));
 
   const logistics = resolveLogistics(
     platformDefaults.documents.logistics,
     courseOverrideSection(files['course.md'], '组织信息'),
   );
-  defaultWarnings.push(...logistics.warnings);
+  defaultWarnings.push(...logistics.warnings.map((warning) => structuredCompilerWarning(warning, {
+    source: 'course.md',
+    field: '组织信息',
+  })));
 
-  // 任务图：本轮只装配，运行时推进仍走 currentTaskIndex（换成读图是 R3）。
-  // 阶段任务（非角色任务）一并进图，但不带 roleId，所以不进角色遍历。
+  // 任务图：角色任务运行时由 task-advance.js 读取拓扑顺序与前置门禁。
+  // 阶段任务（非角色任务）一并进图做编译检查，但不带 roleId，所以不进角色遍历。
   const taskGraph = buildTaskGraph(roles, lesson.phases);
-  defaultWarnings.push(...taskGraph.warnings);
+  defaultWarnings.push(...taskGraph.warnings.map((warning) => structuredCompilerWarning(warning)));
 
   const restrictionMarkdown = files['restrictions.md'] || '';
   const restrictions = parseRestrictionRows(restrictionMarkdown);
@@ -361,6 +455,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     restrictionMarkdown,
     restrictionDocument: parseRestrictionDocument(restrictionMarkdown),
     phasePrompts,
+    phasePolicies,
     evaluation: files['evaluation.md'] || '',
     files,
   };

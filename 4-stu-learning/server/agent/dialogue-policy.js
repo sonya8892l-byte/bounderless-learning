@@ -94,6 +94,36 @@ export function unclearInputReply(session, voice = null) {
   };
 }
 
+/**
+ * 安全回合保持确定性和即时性，同时根据明确风险给出一条对应行动。
+ * 这里不做诊断，不给处置细节；所有分支都会停止当前活动并呼叫成人。
+ */
+export function safetyHelpReply(text = '', voice = null) {
+  const value = String(text || '');
+  if (/着火|起火|烟味|有烟/.test(value)) {
+    return '请立即远离烟火，跟随现场工作人员疏散。我已经呼叫老师。';
+  }
+  if (/呼吸困难|喘不上气|胸闷|晕倒/.test(value)) {
+    return '立即停止活动，留在安全位置，马上告诉身边的成年人。我已经呼叫老师。';
+  }
+  if (/陌生人/.test(value)) {
+    return '不要跟陌生人离开，去有工作人员或同伴的显眼位置。我已经呼叫老师。';
+  }
+  if (/走失|走散|落单|迷路|找不到.{0,6}(?:队伍|同学|小组|老师)/.test(value)) {
+    return '留在安全、显眼的位置，不要独自继续找路。我已经呼叫老师。';
+  }
+  if (/掉进水|滑下去|水边/.test(value)) {
+    return '马上远离水边，不要自行下水或拉人。我已经呼叫老师。';
+  }
+  if (/(?:翻|跨|爬).{0,5}护栏|护栏.{0,5}(?:翻|跨|爬)/.test(value)) {
+    return '请立即停下，退回护栏内的安全位置。我已经呼叫老师。';
+  }
+  if (/受伤|流血|摔倒|被推|脚.{0,3}(?:扭|崴)|头晕|恶心|肢子疼|不舒服/.test(value)) {
+    return '先停下，在安全位置休息，不要继续走动。我已经呼叫老师。';
+  }
+  return renderVoice(voice, 'safety_help.呼叫老师');
+}
+
 export function applyGradeResponsePolicy(text, grade, languageLevels = null) {
   // 学段“硬上限”现在约束单个气泡；全文会由 splitGradeResponse 分泡保留。
   // 这里继续作为统一的清理入口，禁止再用字符切片丢掉后半句。
@@ -141,7 +171,10 @@ export function avoidRepeatedReply(session, text, { intent = '', dialogueMove = 
   if (/greeting|gratitude|goodbye|social|course_knowledge/.test(move)) {
     return renderVoice(voice, 'avoid_repeat.social');
   }
+  // 教学回复重复通常意味着学生仍在处理同一步或再次提交了
+  // 相同证据。保留有用内容，不用“这句话我说过了”指责学生；
+  // 真正需要换档的求助由 tutorPolicy 的脚手架升档处理。
   return session.dialogueState?.pendingQuestion
     ? renderVoice(voice, 'avoid_repeat.有待答')
-    : renderVoice(voice, 'avoid_repeat.默认');
+    : text;
 }

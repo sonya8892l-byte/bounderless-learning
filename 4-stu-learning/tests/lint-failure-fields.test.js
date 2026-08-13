@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { clearCourseCache, compileCourse } from '../server/course/compiler.js';
+import { QUALITY_ISSUE_CODES } from '../server/course/course-quality-audit.js';
 import { lintAllCourses, lintCourse, summarizeIssues } from '../scripts/lint-lesson.mjs';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
@@ -63,6 +64,43 @@ test('最大尝试≥1 且失败处理为「无」→ empty_failure_handling war
   assert.equal(hit[0].level, 'warning');
 });
 
+test('要求完成的图片／音视频工具缺少 url 时统一阻断发布', () => {
+  for (const type of ['image', 'audio', 'video']) {
+    const { issues } = lintCourse(fakeCourse({
+      tools: [{
+        id: 'media',
+        config: { type, url: '', requireCompletion: true },
+      }],
+    }));
+    const hit = issues.filter((item) => item.code === 'missing_media_source');
+    assert.equal(hit.length, 1, `${type} 应报告缺少媒体源`);
+    assert.equal(hit[0].level, 'error');
+  }
+});
+
+test('只有显式且完整的 video posterOnly 契约可以不配置 url', () => {
+  const accepted = lintCourse(fakeCourse({
+    tools: [{
+      id: 'media',
+      config: {
+        type: 'video', url: '', poster: 'opening-preview.png', posterOnly: true, requireCompletion: true,
+      },
+    }],
+  })).issues.filter((item) => item.code === 'missing_media_source');
+  assert.equal(accepted.length, 0);
+
+  for (const config of [
+    { type: 'video', url: '', poster: '', posterOnly: true, requireCompletion: true },
+    { type: 'video', url: '', poster: 'opening-preview.png', requireCompletion: true },
+    { type: 'audio', url: '', poster: 'opening-preview.png', posterOnly: true, requireCompletion: true },
+  ]) {
+    const { issues } = lintCourse(fakeCourse({ tools: [{ id: 'media', config }] }));
+    const blocked = issues.filter((item) => item.code === 'missing_media_source');
+    assert.equal(blocked.length, 1, JSON.stringify(config));
+    assert.equal(blocked[0].level, 'error');
+  }
+});
+
 test('配对正确且有实质失败处理 → 两条规则都不报', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhizhi_001' });
@@ -82,9 +120,12 @@ test('配对正确且有实质失败处理 → 两条规则都不报', async () 
   assert.equal(issues.filter((item) => item.code === 'empty_failure_handling').length, 0);
 });
 
-test('5 门真课程仍 0 error、56 warning（配对回归锁）', async () => {
+test('5 门真课程除正式媒体缺失外，配对结构契约为 0 error、0 warning', async () => {
   const { issues } = await lintAllCourses({ lessonsRoot });
-  const summary = summarizeIssues(issues);
+  const structural = issues.filter((issue) => (
+    !QUALITY_ISSUE_CODES.includes(issue.code) && issue.code !== 'missing_media_source'
+  ));
+  const summary = summarizeIssues(structural);
   assert.equal(summary.errors, 0);
-  assert.equal(summary.warnings, 56);
+  assert.equal(summary.warnings, 0);
 });

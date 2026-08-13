@@ -34,6 +34,43 @@ function validSessionValues(overrides = {}) {
   };
 }
 
+function activeRuntimeState(overrides = {}) {
+  const run = {
+    id: 'run-001',
+    courseId: 'lesson_gewu_001',
+    status: 'active',
+    paused: false,
+    rallyActive: false,
+    rolesReleased: true,
+    rolesLocked: false,
+    roleClaimMode: 'student_claim',
+    roleOptions: [{ id: 'role-water', name: '水务角色' }],
+    phaseId: 'phase-2',
+    phaseIndex: 1,
+    version: 7,
+    participants: [{
+      id: 'participant-001',
+      groupId: 'group-001',
+      roleId: 'role-water',
+      roleName: '水务角色',
+      device: { roleClaimed: true },
+      learnerSessionId: 'ses_guarded',
+    }],
+    ...overrides,
+  };
+  return {
+    schemaVersion: 1,
+    sequence: 0,
+    runs: [run],
+    alerts: [],
+    commands: [],
+    receipts: [],
+    interventions: [],
+    auditEvents: [],
+    events: [],
+  };
+}
+
 test('共享数据库 pool 使用受限连接数、超时配置并监听 idle client error', () => {
   const logEntries = [];
 
@@ -204,6 +241,372 @@ test('PostgreSQL session CAS 未更新任何行时抛出 SESSION_WRITE_CONFLICT'
   );
 });
 
+test('PostgreSQL 普通 learner save 在同一事务锁住 course-runs 并校验当前会话', async () => {
+  const calls = [];
+  const runtimeState = activeRuntimeState();
+  const client = {
+    async query(sql, parameters) {
+      const normalized = compactSql(sql);
+      calls.push({ sql: normalized, parameters });
+      if (normalized === 'begin' || normalized === 'commit') return { rowCount: null, rows: [] };
+      if (normalized.startsWith('select payload from runtime_state')) {
+        return { rowCount: 1, rows: [{ payload: runtimeState }] };
+      }
+      if (normalized.startsWith('update learner_sessions')) {
+        return {
+          rowCount: 1,
+          rows: [{ state_version: 2, updated_at: new Date('2026-08-11T01:00:02.000Z') }],
+        };
+      }
+      throw new Error(`未预期的 SQL：${normalized}`);
+    },
+    release() {},
+  };
+  const pool = {
+    async query(sql) {
+      const normalized = compactSql(sql);
+      if (normalized.startsWith('insert into learner_sessions')) {
+        return {
+          rowCount: 1,
+          rows: [{ state_version: 1, updated_at: new Date('2026-08-11T01:00:01.000Z') }],
+        };
+      }
+      throw new Error(`未预期的 direct SQL：${normalized}`);
+    },
+    async connect() { return client; },
+  };
+  const store = createPostgresSessionStore({ pool });
+  const session = await store.create(validSessionValues({ id: 'ses_guarded' }));
+
+  await store.save(session, {
+    runtimeGuard: { required: true, operation: 'time_bank_answer' },
+  });
+
+  assert.deepEqual(calls.map(({ sql }) => sql), [
+    'begin',
+    'select payload from runtime_state where id = $1 for update',
+    calls[2].sql,
+    'commit',
+  ]);
+  assert.match(calls[2].sql, /^update learner_sessions/i);
+  assert.deepEqual(calls[1].parameters, ['course-runs']);
+});
+
+test('PostgreSQL 角色领取在同一事务写入 Agent 会话和场次占位', async () => {
+  const runtimeState = activeRuntimeState({
+    participants: [{
+      id: 'participant-001',
+      groupId: 'group-001',
+      roleId: '',
+      roleName: '',
+      device: { roleClaimed: false },
+      learnerSessionId: 'ses_role_claim_atomic',
+    }],
+  });
+  let persistedRuntime = null;
+  const statements = [];
+  const client = {
+    async query(sql, parameters) {
+      const normalized = compactSql(sql);
+      statements.push(normalized);
+      if (normalized === 'begin' || normalized === 'commit') return { rowCount: null, rows: [] };
+      if (normalized.startsWith('select payload from runtime_state')) {
+        return { rowCount: 1, rows: [{ payload: runtimeState }] };
+      }
+      if (normalized.startsWith('update learner_sessions')) {
+        assert.equal(parameters[5], 'role-water');
+        return {
+          rowCount: 1,
+          rows: [{ state_version: 2, updated_at: new Date('2026-08-11T01:30:02.000Z') }],
+        };
+      }
+      if (normalized.startsWith('update runtime_state')) {
+        persistedRuntime = JSON.parse(parameters[0]);
+        return { rowCount: 1, rows: [] };
+      }
+      throw new Error(`未预期的 SQL：${normalized}`);
+    },
+    release() {},
+  };
+  const pool = {
+    async query(sql) {
+      if (compactSql(sql).startsWith('insert into learner_sessions')) {
+        return {
+          rowCount: 1,
+          rows: [{ state_version: 1, updated_at: new Date('2026-08-11T01:30:01.000Z') }],
+        };
+      }
+      throw new Error(`未预期的 direct SQL：${compactSql(sql)}`);
+    },
+    async connect() { return client; },
+  };
+  const store = createPostgresSessionStore({ pool });
+  const session = await store.create(validSessionValues({ id: 'ses_role_claim_atomic' }));
+
+  await store.save(session, {
+    runtimeGuard: {
+      required: true,
+      operation: 'role_claim',
+      roleAssignment: true,
+      requestedRoleId: 'role-water',
+    },
+  });
+
+  assert.deepEqual(statements, [
+    'begin',
+    'select payload from runtime_state where id = $1 for update',
+    statements[2],
+    statements[3],
+    'commit',
+  ]);
+  assert.match(statements[2], /^update learner_sessions/u);
+  assert.match(statements[3], /^update runtime_state/u);
+  const participant = persistedRuntime.runs[0].participants[0];
+  assert.equal(participant.roleId, 'role-water');
+  assert.equal(participant.learnerSessionId, 'ses_role_claim_atomic');
+  assert.equal(participant.device.roleClaimed, true);
+  assert.equal(
+    persistedRuntime.events.some((event) => event.type === 'participant.role_claimed'),
+    true,
+  );
+});
+
+test('PostgreSQL 在 pause/rally 中允许同角色幂等重试，仍拒绝不同角色', async () => {
+  for (const scenario of [
+    { name: 'pause', flag: 'paused', rejectedCode: 'COURSE_RUN_PAUSED' },
+    { name: 'rally', flag: 'rallyActive', rejectedCode: 'COURSE_RUN_RALLY_ACTIVE' },
+  ]) {
+    const sessionId = `ses_role_claim_idempotent_${scenario.name}`;
+    const runtimeState = activeRuntimeState({
+      [scenario.flag]: true,
+      roleOptions: [
+        { id: 'role-water', name: '水务角色' },
+        { id: 'role-fire', name: '防火角色' },
+      ],
+      participants: [{
+        id: 'participant-001',
+        groupId: 'group-001',
+        roleId: 'role-water',
+        roleName: '水务角色',
+        roleClaimedAt: '2026-08-11T01:20:00.000Z',
+        roleClaimSource: 'student',
+        device: { roleClaimed: true },
+        learnerSessionId: sessionId,
+      }],
+    });
+    let learnerWrites = 0;
+    let runtimeWrites = 0;
+    const client = {
+      async query(sql) {
+        const normalized = compactSql(sql);
+        if (['begin', 'commit', 'rollback'].includes(normalized)) return { rowCount: null, rows: [] };
+        if (normalized.startsWith('select payload from runtime_state')) {
+          return { rowCount: 1, rows: [{ payload: runtimeState }] };
+        }
+        if (normalized.startsWith('update learner_sessions')) {
+          learnerWrites += 1;
+          return {
+            rowCount: 1,
+            rows: [{ state_version: learnerWrites + 1, updated_at: new Date('2026-08-11T01:25:00.000Z') }],
+          };
+        }
+        if (normalized.startsWith('update runtime_state')) {
+          runtimeWrites += 1;
+          return { rowCount: 1, rows: [] };
+        }
+        throw new Error(`未预期的 SQL：${normalized}`);
+      },
+      release() {},
+    };
+    const pool = {
+      async query(sql) {
+        if (compactSql(sql).startsWith('insert into learner_sessions')) {
+          return {
+            rowCount: 1,
+            rows: [{ state_version: 1, updated_at: new Date('2026-08-11T01:24:00.000Z') }],
+          };
+        }
+        throw new Error(`未预期的 direct SQL：${compactSql(sql)}`);
+      },
+      async connect() { return client; },
+    };
+    const store = createPostgresSessionStore({ pool });
+    const session = await store.create(validSessionValues({ id: sessionId }));
+
+    await store.save(session, {
+      runtimeGuard: {
+        required: true,
+        operation: 'role_claim',
+        roleAssignment: true,
+        requestedRoleId: 'role-water',
+      },
+    });
+    assert.equal(learnerWrites, 1, `${scenario.name} 同角色重试应允许 Agent 会话幂等落盘`);
+
+    const writesBeforeConflict = { learnerWrites, runtimeWrites };
+    await assert.rejects(
+      store.save(session, {
+        runtimeGuard: {
+          required: true,
+          operation: 'role_claim',
+          roleAssignment: true,
+          requestedRoleId: 'role-fire',
+        },
+      }),
+      (error) => error.code === scenario.rejectedCode,
+    );
+    assert.deepEqual(
+      { learnerWrites, runtimeWrites },
+      writesBeforeConflict,
+      `${scenario.name} 不同角色重试不应产生写入`,
+    );
+  }
+});
+
+test('PostgreSQL 同组角色冲突回滚且不写 Agent 会话', async () => {
+  const runtimeState = activeRuntimeState({
+    participants: [
+      {
+        id: 'participant-001', groupId: 'group-001', roleId: '', roleName: '',
+        device: { roleClaimed: false }, learnerSessionId: 'ses_role_claim_conflict',
+      },
+      {
+        id: 'participant-002', groupId: 'group-001', roleId: 'role-water', roleName: '水务角色',
+        device: { roleClaimed: true }, learnerSessionId: 'ses_role_owner',
+      },
+    ],
+  });
+  let learnerWrites = 0;
+  let runtimeWrites = 0;
+  const client = {
+    async query(sql) {
+      const normalized = compactSql(sql);
+      if (normalized === 'begin' || normalized === 'rollback') return { rowCount: null, rows: [] };
+      if (normalized.startsWith('select payload from runtime_state')) {
+        return { rowCount: 1, rows: [{ payload: runtimeState }] };
+      }
+      if (normalized.startsWith('update learner_sessions')) learnerWrites += 1;
+      if (normalized.startsWith('update runtime_state')) runtimeWrites += 1;
+      throw new Error(`不应执行写入：${normalized}`);
+    },
+    release() {},
+  };
+  const pool = {
+    async query(sql) {
+      if (compactSql(sql).startsWith('insert into learner_sessions')) {
+        return {
+          rowCount: 1,
+          rows: [{ state_version: 1, updated_at: new Date('2026-08-11T01:40:01.000Z') }],
+        };
+      }
+      throw new Error(`未预期的 direct SQL：${compactSql(sql)}`);
+    },
+    async connect() { return client; },
+  };
+  const store = createPostgresSessionStore({ pool });
+  const session = await store.create(validSessionValues({ id: 'ses_role_claim_conflict' }));
+
+  await assert.rejects(
+    store.save(session, {
+      runtimeGuard: {
+        required: true,
+        operation: 'role_claim',
+        roleAssignment: true,
+        requestedRoleId: 'role-water',
+      },
+    }),
+    (error) => {
+      assert.equal(error.code, 'COURSE_ROLE_TAKEN');
+      assert.equal(error.details.runState.takenRoleIds.includes('role-water'), true);
+      return true;
+    },
+  );
+  assert.equal(learnerWrites, 0);
+  assert.equal(runtimeWrites, 0);
+});
+
+test('save 已进入后教师 pause/end/rally/切换会话先生效时，锁内门禁拒绝落盘', async () => {
+  const cases = [
+    {
+      name: 'pause',
+      code: 'COURSE_RUN_PAUSED',
+      apply(run) { run.paused = true; },
+    },
+    {
+      name: 'end',
+      code: 'COURSE_RUN_COMPLETED',
+      apply(run) { run.status = 'completed'; },
+    },
+    {
+      name: 'rally',
+      code: 'COURSE_RUN_RALLY_ACTIVE',
+      apply(run) { run.rallyActive = true; },
+    },
+    {
+      name: 'activate-B',
+      code: 'COURSE_SESSION_INACTIVE',
+      apply(run) { run.participants[0].learnerSessionId = 'ses_role_b'; },
+    },
+  ];
+
+  for (const scenario of cases) {
+    const runtimeState = activeRuntimeState();
+    let releaseRuntimeRead;
+    let markRuntimeRead;
+    let learnerWrites = 0;
+    const runtimeReadStarted = new Promise((resolve) => { markRuntimeRead = resolve; });
+    const runtimeReadReleased = new Promise((resolve) => { releaseRuntimeRead = resolve; });
+    const client = {
+      async query(sql) {
+        const normalized = compactSql(sql);
+        if (normalized === 'begin' || normalized === 'rollback') return { rowCount: null, rows: [] };
+        if (normalized.startsWith('select payload from runtime_state')) {
+          markRuntimeRead();
+          await runtimeReadReleased;
+          return { rowCount: 1, rows: [{ payload: runtimeState }] };
+        }
+        if (normalized.startsWith('update learner_sessions')) {
+          learnerWrites += 1;
+          return {
+            rowCount: 1,
+            rows: [{ state_version: 2, updated_at: new Date('2026-08-11T02:00:02.000Z') }],
+          };
+        }
+        throw new Error(`未预期的 SQL：${normalized}`);
+      },
+      release() {},
+    };
+    const pool = {
+      async query(sql) {
+        if (compactSql(sql).startsWith('insert into learner_sessions')) {
+          return {
+            rowCount: 1,
+            rows: [{ state_version: 1, updated_at: new Date('2026-08-11T02:00:01.000Z') }],
+          };
+        }
+        throw new Error(`未预期的 direct SQL：${compactSql(sql)}`);
+      },
+      async connect() { return client; },
+    };
+    const store = createPostgresSessionStore({ pool });
+    const session = await store.create(validSessionValues({ id: 'ses_guarded' }));
+    const saving = store.save(session, {
+      runtimeGuard: { required: true, operation: 'learner_turn' },
+    });
+
+    await runtimeReadStarted;
+    scenario.apply(runtimeState.runs[0]);
+    releaseRuntimeRead();
+
+    await assert.rejects(saving, (error) => {
+      assert.equal(error.code, scenario.code, scenario.name);
+      assert.equal(error.statusCode, 409, scenario.name);
+      return true;
+    });
+    assert.equal(learnerWrites, 0, `${scenario.name} 生效后不应写 learner_sessions`);
+  }
+});
+
 test('PostgreSQL session 与 AI 请求结果在同一事务内原子提交', async () => {
   const calls = [];
   let released = false;
@@ -278,6 +681,91 @@ test('PostgreSQL session 与 AI 请求结果在同一事务内原子提交', asy
   assert.equal(calls[3].sql, 'commit');
   assert.equal(session.updatedAt, '2026-07-31T04:00:02.000Z');
   assert.equal(released, true);
+});
+
+test('教师指令的 session 状态、请求结果与 delivered 回执在同一 Postgres 事务提交', async () => {
+  const calls = [];
+  const runtimeState = activeRuntimeState();
+  runtimeState.commands.push({
+    id: 'cmd-atomic', runId: 'run-001', action: 'set_scaffold',
+  });
+  runtimeState.receipts.push({
+    id: 'receipt-atomic',
+    commandId: 'cmd-atomic',
+    participantId: 'participant-001',
+    learnerSessionId: 'ses_guarded',
+    status: 'accepted',
+    deliveredAt: null,
+  });
+  let persistedRuntimeState = null;
+  const client = {
+    async query(sql, parameters) {
+      const normalized = compactSql(sql);
+      calls.push(normalized);
+      if (normalized === 'begin' || normalized === 'commit') return { rowCount: null, rows: [] };
+      if (normalized.startsWith('select payload from runtime_state')) {
+        return { rowCount: 1, rows: [{ payload: runtimeState }] };
+      }
+      if (normalized.startsWith('update learner_sessions')) {
+        return {
+          rowCount: 1,
+          rows: [{ state_version: 2, updated_at: new Date('2026-08-11T03:00:02.000Z') }],
+        };
+      }
+      if (normalized.startsWith('update learner_requests')) return { rowCount: 1, rows: [] };
+      if (normalized.startsWith('update runtime_state')) {
+        persistedRuntimeState = JSON.parse(parameters[0]);
+        return { rowCount: 1, rows: [] };
+      }
+      throw new Error(`未预期的 SQL：${normalized}`);
+    },
+    release() {},
+  };
+  const pool = {
+    async query(sql) {
+      if (compactSql(sql).startsWith('insert into learner_sessions')) {
+        return {
+          rowCount: 1,
+          rows: [{ state_version: 1, updated_at: new Date('2026-08-11T03:00:01.000Z') }],
+        };
+      }
+      throw new Error(`未预期的 direct SQL：${compactSql(sql)}`);
+    },
+    async connect() { return client; },
+  };
+  const store = createPostgresSessionStore({ pool });
+  const session = await store.create(validSessionValues({ id: 'ses_guarded' }));
+  session.consumedTeacherCommandIds.push('cmd-atomic');
+
+  await store.saveWithRequestResult(session, {
+    requestId: 'req-teacher-atomic',
+    leaseToken: 'd8e6ff2f-dfbe-49a5-8404-44ae963abc8b',
+    result: { events: [] },
+    runtimeGuard: {
+      required: true,
+      operation: 'learner_turn',
+      teacherCommandId: 'cmd-atomic',
+      teacherCommandAction: 'set_scaffold',
+    },
+  });
+
+  assert.deepEqual(calls, [
+    'begin',
+    'select payload from runtime_state where id = $1 for update',
+    calls[2],
+    calls[3],
+    'update runtime_state set payload = $1::jsonb, updated_at = now() where id = $2',
+    'commit',
+  ]);
+  assert.match(calls[2], /^update learner_sessions/i);
+  assert.match(calls[3], /^update learner_requests/i);
+  assert.equal(persistedRuntimeState.receipts[0].status, 'delivered');
+  assert.ok(persistedRuntimeState.receipts[0].deliveredAt);
+  assert.deepEqual(persistedRuntimeState.events.at(-1).data, {
+    commandId: 'cmd-atomic',
+    participantId: 'participant-001',
+    status: 'delivered',
+  });
 });
 
 test('原子请求完成失败时回滚 session 版本，随后仍可按旧版本重试', async () => {

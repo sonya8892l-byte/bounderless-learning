@@ -22,7 +22,7 @@
 - itemName：身份
 - 选择眉题：{roleCount}种身份 · {roleCount}段证据
 - 选择标题：选择你的{collectionName}身份
-- 选择说明：每位成员负责一个系统环节。集齐{roleCount}枚{collectionItemName}，才能解锁{unlockTarget}。
+- 选择说明：每位成员领取一个本组尚未占用的系统环节。集齐{roleCount}枚{collectionItemName}后，由老师组织进入{unlockTarget}。
 - collectionItemName：密符
 - collectionPanelName：小组密符
 - unlockTarget：璇玑时刻
@@ -32,7 +32,6 @@
 - enabled：true
 - default：dialogue
 - allowStudentSwitch：true
-- allowFutureTaskBrowse：true
 
 ## 学生端视觉素材
 - 课程封面：assets/backgrounds/cover.png
@@ -42,13 +41,20 @@
 - 导航地图：assets/maps/navigation-map.png
 - 导入占位图：assets/videos/video-storm-coming.png
 - 推演占位图：assets/videos/video-simulation.png
+
 ## 叙事框架
+
+> 教研说明：本节记录课程叙事设计，不作为运行时自动转场、自动聚合或自动解锁配置。
+
 - 开场：暴雨将至的紧迫感——600年古建筑面临考验
 - 中段：每个角色探索排水系统的一个环节
 - 高潮：璇玑时刻——6人拼合完整水系图，验证系统能否抵御暴雨
 - 结局：暴雨动画验证 + "600年不积水"的答案揭晓
 
 ## 密符机制
+
+> 教研说明：本节记录小组活动机制；集齐与解锁由教师组织，平台不会仅凭本节自动执行。
+
 - 每个角色完成任务后获得一个字母
 - 6个字母拼合为：Y-I-N-S-H-U（因水）
-- 全组集齐后解锁"璇玑时刻"阶段
+- 全组集齐后提示教师核对 Phase 3 的证据拼合；由教师手动推进到"璇玑时刻"阶段

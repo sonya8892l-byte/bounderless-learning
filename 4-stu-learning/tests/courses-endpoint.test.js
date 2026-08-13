@@ -5,6 +5,9 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { buildApp } from '../server/app.js';
+import { compileCourse } from '../server/course/compiler.js';
+import { ensureSessionRuntime } from '../server/agent/session-state.js';
+import { createSessionRecord } from '../server/services/session-factory.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lessonsRoot = path.resolve(projectRoot, '../6-lessons');
@@ -130,4 +133,59 @@ test('/api/courses skips a course that fails to compile instead of failing the w
   assert.equal(response.statusCode, 200);
   const { courses } = response.json();
   assert.deepEqual(courses.map((course) => course.id), ['lesson_alpha', 'lesson_gamma']);
+});
+
+test('Production 即使误配开关也不暴露平台验收跳关接口', async (t) => {
+  const app = await testApp({
+    env: env({ APP_ENV: 'production', QA_FORCE_COMPLETE_ENABLED: true }),
+  });
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/qa/sessions/ses_hidden/complete-current-task',
+    payload: { taskId: 'task-1', requestId: 'qa-hidden-request' },
+  });
+  assert.equal(response.statusCode, 404);
+  assert.deepEqual(response.json(), { error: '接口不存在。' });
+});
+
+test('验收接口开启后推进真实会话，并返回统一 state.updated 事件', async (t) => {
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const role = course.roles.find((item) => item.id === 'dragon-counter');
+  const session = createSessionRecord({
+    id: 'ses_qa_api',
+    courseId: course.id,
+    roleId: role.id,
+    studentId: 'qa-api-student',
+    groupId: 'qa-api-group',
+    phaseId: course.lesson.roleSystem.phaseId,
+  });
+  ensureSessionRuntime(session, role.tasks[0]);
+  let saved = structuredClone(session);
+  const qaStore = {
+    async create() { throw new Error('not used'); },
+    async get(id) { return id === saved.id ? structuredClone(saved) : null; },
+    async save(next) { saved = structuredClone(next); return next; },
+  };
+  const app = await testApp({
+    env: env({ APP_ENV: 'test', QA_FORCE_COMPLETE_ENABLED: true }),
+    sessionStore: qaStore,
+    getCourse: async () => course,
+  });
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: 'POST',
+    url: `/api/qa/sessions/${session.id}/complete-current-task`,
+    payload: { taskId: role.tasks[0].id, requestId: 'qa-api-request-1' },
+  });
+  assert.equal(response.statusCode, 200);
+  const body = response.json();
+  assert.equal(body.advanced, true);
+  assert.equal(body.allTasksCompleted, false);
+  assert.equal(body.events.at(-1).type, 'state.updated');
+  assert.equal(body.events.at(-1).data.currentTaskIndex, 1);
+  assert.equal(saved.currentTaskIndex, 1);
+  assert.equal(saved.qaOverrides[0].requestId, 'qa-api-request-1');
 });

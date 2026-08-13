@@ -106,6 +106,7 @@ export function toAgentContext({ course, session, role, guidanceStepIndex = 0 })
 
     phase,
     phasePrompt: String(course.phasePrompts?.[session?.phaseId] || ''),
+    phasePolicy: course.phasePolicies?.[session?.phaseId] || null,
 
     role,
     task,

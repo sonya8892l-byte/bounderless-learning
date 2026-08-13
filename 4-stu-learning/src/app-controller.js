@@ -10,13 +10,13 @@ import {
   Clock3,
   createIcons,
   Flag,
+  FastForward,
   Eraser,
   HandHelping,
   Info,
   Lightbulb,
   ListChecks,
-  LockKeyhole,
-  Map,
+  Map as MapIcon,
   MapPin,
   MapPinCheck,
   MessageCircleMore,
@@ -37,12 +37,16 @@ import {
   X,
 } from 'lucide';
 import {
+  activateAgentSession,
   answerTimeBank as answerTimeBankRequest,
+  claimAgentRole,
   createAgentSession,
+  forceCompleteCurrentTask as forceCompleteCurrentTaskRequest,
   giftTime as giftTimeRequest,
   getTeacherCommands,
   requestTeacherHelp,
   reportStudentPresence,
+  resumeAgentSession,
   sendAgentTurn,
   sendTeacherCommandReceipt,
   uploadEvidence,
@@ -51,6 +55,7 @@ import { getLesson } from './services/course-service.js';
 import { mountAmapNavigation, openAmapNavigation } from './services/amap-service.js';
 import { resolveStudentRuntime } from './services/runtime-mode.js';
 import { PLATFORM_COMPANION } from './engine/platform-config.js';
+import { createClientStudentFacingPolicy } from './engine/student-facing-policy.js';
 import {
   challengeSubmissionPassed,
   challengeTaskAccess,
@@ -59,8 +64,25 @@ import {
   nextLearningView,
 } from './engine/learning-view.js';
 import { resetShellScrollOffsets } from './engine/shell-scroll.js';
+import { entryPhaseForLesson } from './engine/entry-phase.js';
+import { DEFAULT_TASK_FINALIZATION_MODE } from './engine/task-finalization.js';
+import { isPosterOnlyMedia } from './engine/tool-registry.js';
+import { canonicalGradeLevel, DEFAULT_GRADE_LEVEL } from './engine/grade-level.js';
 import {
+  completeLocalTaskProgress,
+  resolveLocalPendingAdvance,
+  studentCanCompleteStep,
+} from './engine/local-task-progress.js';
+import { hasActiveEvidenceProcessing, hasCurrentTaskDraft } from './engine/draft-state.js';
+import { consumeJoinCredential } from './engine/join-credential.js';
+import { qaForceCompleteEnabled } from './engine/qa-mode.js';
+import { dispatchTeacherCommand } from './engine/teacher-command-dispatch.js';
+import { courseRunGateFromError } from './engine/course-run-gate.js';
+import { mergeRoleClaimProjection, roleClaimChoice } from './engine/role-claim.js';
+import {
+  isAuditOnlyTransportEvent,
   PHASE_TRANSITION_DELAY_MS,
+  shouldSuppressPassivePresentation,
   visibleEventDelay,
 } from './engine/presentation-timing.js';
 import {
@@ -71,18 +93,40 @@ import {
 } from './engine/photo-evidence.js';
 import {
   renderActivityTools,
+  renderCompletedPhotoEditors,
   serializableToolValues,
   validateActivityStep,
+  validateCompletedTaskSteps,
 } from './components/activity-tools.js';
 
 const pageParams = new URLSearchParams(window.location.search);
+const pageFragmentParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
 const lesson = getLesson(pageParams.get('lesson') || undefined);
+const studentFacingPolicy = createClientStudentFacingPolicy();
+const learnerJoinCredential = consumeJoinCredential(pageParams, {
+  courseId: lesson.id,
+  storage: window.sessionStorage,
+  fragmentParams: pageFragmentParams,
+  replaceLocation: ({ searchParams, fragmentParams }) => {
+    const search = searchParams.toString();
+    const fragment = fragmentParams.toString();
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${search ? `?${search}` : ''}${fragment ? `#${fragment}` : ''}`,
+    );
+  },
+});
 const app = document.querySelector('#studentApp');
 const studentRuntime = resolveStudentRuntime(pageParams);
 const standaloneMode = studentRuntime.standalone;
-const rolePhaseIndex = lesson.phases.findIndex((phase) => phase.id === lesson.roleSystem.phaseId);
-const entryPhase = (rolePhaseIndex > 0 ? lesson.phases.slice(0, rolePhaseIndex) : [])
-  .find((phase) => phase.tasks?.length) || null;
+// 当前无学生数据库的直接体验不引入「领取／占位」产品语义。
+// 真实教师场次仍保留服务端身份绑定与安全校验。
+const prototypeFreeRoleSelection = standaloneMode || !pageParams.get('runId');
+const qaProgressControlEnabled = qaForceCompleteEnabled(import.meta.env);
+const entryPhase = entryPhaseForLesson(lesson);
+const gradeFromUrl = canonicalGradeLevel(pageParams.get('grade'));
+const initialGradeLevel = gradeFromUrl || DEFAULT_GRADE_LEVEL;
 const phaseTrack = entryPhase ? {
   id: entryPhase.id,
   phaseId: entryPhase.id,
@@ -114,6 +158,7 @@ function makeLearningTrackState() {
     evidence: {},
     guidanceStepIndices: {},
     entryStarted: false,
+    entryReady: false,
     agentSessionId: null,
     teacherCommandSequence: 0,
     streamingMessageId: null,
@@ -122,6 +167,7 @@ function makeLearningTrackState() {
     challengePageIndex: 0,
     challengeFeedback: {},
     pendingAdvance: null,
+    taskFinalizations: {},
     locationStatus: {
       permission: 'unknown',
       insideFence: null,
@@ -143,13 +189,13 @@ const iconSet = {
   CircleCheckBig,
   Clock3,
   Flag,
+  FastForward,
   Eraser,
   HandHelping,
   Info,
   Lightbulb,
   ListChecks,
-  LockKeyhole,
-  Map,
+  Map: MapIcon,
   MapPin,
   MapPinCheck,
   MessageCircleMore,
@@ -184,7 +230,6 @@ const state = {
   roleStates: Object.fromEntries(
     lesson.roles.map((role) => [role.id, makeLearningTrackState()]),
   ),
-  mockTeamProgress: lesson.roles.map((role, index) => Math.min(index % 4, role.tasks.length)),
   timeBalance: lesson.timeBank.initialBalance,
   timeEarned: 0,
   completedBankTasks: new Set(),
@@ -193,14 +238,143 @@ const state = {
   phaseEndTime: null,
   toastTimer: null,
   agentBusy: false,
+  evidenceUploadCount: 0,
+  navigationBusy: false,
+  qaForceBusy: false,
   agentQueue: [],
   activeTeacherCommand: null,
+  teacherRolesLocked: false,
+  teacherClaimedRoleId: null,
+  teacherTakenRoleIds: null,
+  teacherAvailableRoleIds: null,
+  teacherRunStatus: null,
+  teacherRunPaused: false,
+  teacherEmergencyRally: false,
+  teacherSessionInactive: false,
+  teacherCommandApplications: new Map(),
+  selectedGradeLevel: initialGradeLevel,
+  gradeSource: gradeFromUrl ? 'url' : 'participant_profile',
+  phaseStartBusy: false,
+  roleSelectionBusy: false,
 };
 
 let navigationMapInstances = [];
 let mapHydrationVersion = 0;
 let externalFilePickerOpen = false;
 let filePickerRestoreTimer = null;
+let teacherPollInFlight = false;
+
+const TEACHER_AGENT_COMMAND_ACTIONS = new Set([
+  'set_scaffold',
+  'advance_phase',
+  'approve_evidence',
+  'reject_evidence',
+  'skip_step',
+  'advance_task',
+  'confirm_arrival',
+]);
+
+const RUN_GATE_ALLOWED_ACTIONS = new Set([
+  'confirm-teacher-command',
+  'call-teacher',
+  'open-progress',
+  'close-sheet',
+  'set-learning-view',
+  'challenge-previous',
+  'challenge-forward',
+]);
+
+function teacherRunBlocksLearning() {
+  return state.teacherSessionInactive
+    || state.teacherRunPaused
+    || state.teacherEmergencyRally
+    || (state.teacherRunStatus && state.teacherRunStatus !== 'active');
+}
+
+function explainTeacherRunGate() {
+  if (state.teacherSessionInactive) return '当前学习会话已切换或失效，请刷新页面恢复最新会话。';
+  if (state.teacherRunStatus === 'completed') return '本次课程已结束，学习记录已转为只读。';
+  if (state.teacherRunStatus && state.teacherRunStatus !== 'active') return '课程尚未开始，请等待老师发出开始指令。';
+  if (state.teacherEmergencyRally) return '请先按老师要求前往集合点。';
+  return '课程已暂停，请留在安全位置等待老师恢复。';
+}
+
+function applyCourseRunGateError(error, input) {
+  const gate = courseRunGateFromError(error, {
+    status: state.teacherRunStatus,
+    paused: state.teacherRunPaused,
+    rallyActive: state.teacherEmergencyRally,
+    rolesReleased: state.teacherReleasedRoles,
+    rolesLocked: state.teacherRolesLocked,
+    sessionInactive: state.teacherSessionInactive,
+  });
+  if (!gate) return false;
+
+  if (gate.code === 'COURSE_ROLES_LOCKED') {
+    lockRoleAssignment();
+  } else if (gate.sessionInactive) {
+    state.teacherSessionInactive = true;
+    suspendActiveLearningMedia();
+    showTeacherDirective({
+      id: '',
+      action: 'pause',
+      confirmed: true,
+      payload: { message: gate.message },
+    });
+  } else {
+    synchronizeTeacherRunState({
+      status: gate.status,
+      paused: gate.paused,
+      rallyActive: gate.rallyActive,
+      rolesReleased: gate.rolesReleased,
+      rolesLocked: gate.rolesLocked,
+    });
+  }
+
+  if (input?.type === 'user_text') {
+    const chatInput = document.querySelector('#chatInput');
+    if (chatInput && !chatInput.value.trim()) chatInput.value = input.text || '';
+  }
+  showToast(gate.message);
+  return true;
+}
+
+function blockLearningAction(action = '') {
+  if (!teacherRunBlocksLearning() || RUN_GATE_ALLOWED_ACTIONS.has(action)) return false;
+  showToast(explainTeacherRunGate());
+  return true;
+}
+
+function roleChoice(roleId) {
+  return roleClaimChoice({
+    roleId,
+    standalone: prototypeFreeRoleSelection,
+    currentRoleId: state.currentRoleId,
+    claimedRoleId: state.teacherClaimedRoleId,
+    takenRoleIds: state.teacherTakenRoleIds,
+    availableRoleIds: state.teacherAvailableRoleIds,
+    rolesReleased: state.teacherReleasedRoles,
+    rolesLocked: state.teacherRolesLocked,
+  });
+}
+
+function suspendActiveLearningMedia() {
+  document.querySelectorAll('[data-activity-media]').forEach((media) => media.pause?.());
+  const tracks = [state.phaseState, ...Object.values(state.roleStates || {})].filter(Boolean);
+  for (const track of tracks) {
+    for (const evidence of Object.values(track.evidence || {})) {
+      for (const stepValues of Object.values(evidence.toolValues || {})) {
+        for (const value of Object.values(stepValues || {})) {
+          if (value?.recording && value.recorder?.state === 'recording') {
+            window.clearTimeout(value.autoStopTimer);
+            value.recognition?.stop?.();
+            value.recorder.stop();
+          }
+        }
+      }
+    }
+  }
+}
 
 function escapeHtml(value = '') {
   return String(value)
@@ -209,6 +383,14 @@ function escapeHtml(value = '') {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function studentFacingText(value, { channel = 'ui', fallback = '' } = {}) {
+  return studentFacingPolicy.processText(value, { channel, fallback }).text;
+}
+
+function studentFacingError(error, fallback = '这项操作暂未完成，请稍后重试。') {
+  return studentFacingPolicy.processError(error, { fallback }).text;
 }
 
 function companionAvatar({ motion = 'idle', variant = 'message' } = {}) {
@@ -337,7 +519,10 @@ function showScreen(screenId) {
 function showToast(message) {
   const toast = document.querySelector('#toast');
   window.clearTimeout(state.toastTimer);
-  toast.textContent = message;
+  toast.textContent = studentFacingText(message, {
+    channel: 'toast',
+    fallback: '这项操作暂未完成，请稍后重试。',
+  });
   toast.classList.add('is-visible');
   state.toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 2400);
 }
@@ -394,46 +579,136 @@ function renderLaunch() {
     <span><i data-lucide="users"></i>${escapeHtml(lesson.groupRule)}</span>
     ${lesson.level ? `<span><i data-lucide="layers-3"></i>${escapeHtml(lesson.level)}</span>` : ''}
   `;
+  const previewNotice = document.querySelector('#standalonePreviewNotice');
+  previewNotice.hidden = !standaloneMode && !studentRuntime.standaloneDenied;
+  previewNotice.textContent = studentRuntime.standaloneDenied
+    ? '当前发布环境未开放本地预览，已连接正式课程流程。'
+    : '当前为本地预览：可查看界面与课程结构，AI 验收、教师确认和正式学习进度不会作为发布证据。';
+  document.querySelector('#standaloneLearningBadge').hidden = !standaloneMode;
   if (phaseTrack) {
     document.querySelector('[data-action="start-course"] span').textContent = '进入课程导入';
-    document.querySelector('.launch-note').textContent = `先完成“${phaseTrack.name}”的 ${phaseTrack.tasks.length} 项任务，再领取角色`;
+    document.querySelector('.launch-note').textContent = `先完成“${phaseTrack.name}”的 ${phaseTrack.tasks.length} 项任务，再选择角色`;
   } else if (!state.teacherReleasedRoles) {
     document.querySelector('[data-action="start-course"] span').textContent = '进入课程导入';
-    document.querySelector('.launch-note').textContent = '导入期间请观看现场内容，身份领取由老师统一开启';
+    document.querySelector('.launch-note').textContent = '导入期间请观看现场内容，角色选择由老师统一开放';
   }
   document.querySelector('#groupCode').textContent = demoSession.groupName;
   document.querySelector('#rolePickerEyebrow').textContent = courseTemplate(lesson.roleSystem.pickerEyebrow);
-  document.querySelector('#rolePickerHeader').textContent = `领取${lesson.roleSystem.itemName}卡`;
+  document.querySelector('#rolePickerHeader').textContent = `选择${lesson.roleSystem.itemName}`;
   document.querySelector('#roleScreenTitle').textContent = courseTemplate(lesson.roleSystem.pickerTitle);
   document.querySelector('#rolePickerDescription').textContent = courseTemplate(lesson.roleSystem.pickerDescription);
   document.querySelector('#collectionPanelName').textContent = lesson.roleSystem.collectionPanelName;
-  document.querySelector('#teamSessionStatus').innerHTML = `<i data-lucide="navigation"></i> ${escapeHtml(demoSession.groupName)} · ${demoSession.members.filter((member) => member.online).length} 人在线`;
-  document.querySelector('#roleSwitchDescription').textContent = `当前入口用于预览 ${lesson.roles.length} 个${lesson.roleSystem.itemName}的课程任务配置。`;
+  document.querySelector('#teamSessionStatus').innerHTML = '<i data-lucide="navigation"></i> 个人进度 · 小组汇合由老师组织';
+  document.querySelector('#roleSwitchDescription').textContent = prototypeFreeRoleSelection
+    ? `可在 ${lesson.roles.length} 个${lesson.roleSystem.itemName}之间切换；每个${lesson.roleSystem.itemName}的任务进度独立保留。`
+    : `同组一人领取一个${lesson.roleSystem.itemName}；已领取的角色不能重复选择。`;
   document.querySelector('#chatDayLabel').textContent = `今天 · ${lesson.venue || '课程现场'}`;
   document.querySelector('#chatInputLabel').textContent = `给${PLATFORM_COMPANION.name}发送消息`;
   document.querySelector('#chatInput').placeholder = `和${PLATFORM_COMPANION.name}说说你的发现…`;
 }
 
 function renderRoles() {
-  const markup = lesson.roles.map((role, index) => `
-    <button class="role-option" type="button" data-role-id="${role.id}" data-action="select-role">
+  const markup = lesson.roles.map((role, index) => {
+    const choice = roleChoice(role.id);
+    const disabled = !choice.selectable || state.roleSelectionBusy;
+    return `
+    <button class="role-option role-option--${choice.state}" type="button" data-role-id="${role.id}" data-action="select-role" ${disabled ? 'disabled' : ''} aria-label="${escapeHtml(`${role.name}，${choice.label}`)}">
       <img src="${role.cardImage}" alt="${escapeHtml(role.name)}${escapeHtml(lesson.roleSystem.itemName)}卡" />
       <span class="role-option__shade"></span>
       <span class="role-option__number">${String(index + 1).padStart(2, '0')}</span>
+      ${choice.state === 'taken' ? '<span class="role-option__claim-status">已领取</span>' : ''}
       <span class="role-option__copy">
         <h3>${escapeHtml(role.name)}</h3>
         <p>${escapeHtml(role.selectionDescription)}</p>
         <span class="role-option__meta">
           <span><i data-lucide="map-pin"></i>${escapeHtml(role.location)}</span>
-          <strong>领取${escapeHtml(lesson.roleSystem.itemName)} <i data-lucide="arrow-right"></i></strong>
+          <strong>${escapeHtml(choice.label)} ${choice.selectable ? '<i data-lucide="arrow-right"></i>' : ''}</strong>
         </span>
       </span>
     </button>
-  `).join('');
+  `;
+  }).join('');
   document.querySelector('#roleList').innerHTML = markup;
 }
 
+function restoreTrackFromAgentSession(track, owner, session) {
+  track.agentSessionId = session.id;
+  state.selectedGradeLevel = canonicalGradeLevel(session.grade) || state.selectedGradeLevel;
+  state.gradeSource = session.gradeSource || state.gradeSource;
+  state.timeBalance = Number(session.timeBalance ?? state.timeBalance);
+  track.progress = Math.max(0, Number(session.currentTaskIndex || 0));
+  track.completed = (session.completedTaskIds || []).length >= owner.tasks.length;
+  const taskId = session.runtime?.task?.taskId || owner.tasks[track.progress]?.id || '';
+  if (taskId) {
+    track.guidanceStepIndices[taskId] = Number(session.runtime?.task?.guidanceStepIndex || 0);
+    if (session.runtime?.task?.finalization) {
+      track.taskFinalizations[taskId] = session.runtime.task.finalization;
+    }
+  }
+  const location = session.runtime?.location;
+  track.evidenceCount = Array.isArray(session.runtime?.learning?.evidenceIds)
+    ? session.runtime.learning.evidenceIds.length
+    : Number(track.evidenceCount || 0);
+  if (location) {
+    track.arrived = ['arrived', 'not_required'].includes(location.status);
+    track.locationStatus = {
+      ...track.locationStatus,
+      permission: location.permission,
+      insideFence: location.insideFence,
+      accuracyMeters: location.accuracyMeters,
+      verifiedBy: location.verifiedBy,
+      arrivedAt: location.enteredAt,
+    };
+  }
+  track.entryStarted = session.resumeState?.entryStarted === true;
+  track.entryReady = track.entryStarted;
+  if (track.entryStarted) {
+    track.messages = [
+      {
+        id: crypto.randomUUID(),
+        type: 'assistant',
+        text: `已恢复你在“${owner.name}”的学习进度。`,
+        source: '本次课程记录',
+      },
+      ...currentTaskRecoveryMessages(owner, track),
+    ];
+  }
+}
+
+async function resumeConnectedLearningSession() {
+  const runId = pageParams.get('runId');
+  const participantId = pageParams.get('participantId');
+  if (standaloneMode || !runId || !participantId) return null;
+  try {
+    return await resumeAgentSession({
+      runId,
+      participantId,
+      courseId: lesson.id,
+      joinCredential: learnerJoinCredential || undefined,
+      grade: state.selectedGradeLevel,
+      gradeSource: state.gradeSource,
+    });
+  } catch (error) {
+    if (error.code === 'SESSION_RESUME_NOT_FOUND' || error.status === 404) return null;
+    throw error;
+  }
+}
+
 async function startPhaseLearning() {
+  if (state.phaseStartBusy) {
+    showToast('课程正在进入，请稍等。');
+    return;
+  }
+  if (teacherRunBlocksLearning()) return;
+  state.phaseStartBusy = true;
+  try {
+    return await performStartPhaseLearning();
+  } finally {
+    state.phaseStartBusy = false;
+  }
+}
+
+async function performStartPhaseLearning() {
   if (!phaseTrack || !state.phaseState) return;
   state.currentRoleId = null;
   state.currentPhaseId = phaseTrack.phaseId;
@@ -446,16 +721,18 @@ async function startPhaseLearning() {
   if (standaloneMode) {
     if (!phaseState.entryStarted) {
       phaseState.entryStarted = true;
+      phaseState.entryReady = false;
       phaseState.messages = [];
       await revealLocalMessages(phaseState, [
         {
           id: crypto.randomUUID(),
           type: 'assistant',
-          text: `先从“${phaseTrack.name}”开始。完成这 ${phaseTrack.tasks.length} 项课程任务后，再领取角色。`,
+          text: `先从“${phaseTrack.name}”开始。完成这 ${phaseTrack.tasks.length} 项课程任务后，再选择角色。`,
           source: '本地课程包',
         },
         ...currentTaskRecoveryMessages(phaseTrack, phaseState),
       ], { initialEmpty: true });
+      phaseState.entryReady = true;
     }
     renderLearningShell();
     window.setTimeout(scrollChatToBottom, 30);
@@ -464,27 +741,72 @@ async function startPhaseLearning() {
 
   if (!phaseState.agentSessionId) {
     try {
-      const session = await createAgentSession({
-        courseId: lesson.id,
-        studentId: pageParams.get('studentId') || 'demo-pre-role',
-        groupId: pageParams.get('groupId') || 'group-3',
-        runId: pageParams.get('runId') || undefined,
-        participantId: pageParams.get('participantId') || undefined,
-        grade: pageParams.get('grade') || lesson.grades,
-      });
-      phaseState.agentSessionId = session.id;
-      void pollTeacherCommands();
+      const resumed = await resumeConnectedLearningSession();
+      if (resumed?.roleId) {
+        const resumedRole = lesson.roles.find((item) => item.id === resumed.roleId);
+        if (!resumedRole) throw new Error('已保存的角色已不在当前课程中。');
+        const resumedTrack = state.roleStates[resumedRole.id];
+        restoreTrackFromAgentSession(resumedTrack, resumedRole, resumed);
+        state.currentRoleId = resumedRole.id;
+        state.currentPhaseId = resumed.phaseId || lesson.roleSystem.phaseId;
+        synchronizeTeacherRunState(resumed.teacherRunState);
+        beginCurrentPhase();
+        showScreen('learningShell');
+        renderLearningShell();
+        void reportCurrentPresence({ owner: resumedRole, track: resumedTrack }).catch(() => undefined);
+        if (!resumedTrack.entryStarted && !teacherRunBlocksLearning()) {
+          resumedTrack.entryStarted = true;
+          await runAgentTurn(
+            { type: 'lifecycle_event', event: 'role_assigned', data: { roleId: resumedRole.id } },
+            { initialEmpty: true, showLoading: false },
+          );
+          resumedTrack.entryReady = !resumedTrack.lastAgentRequestError;
+          if (!resumedTrack.entryReady) resumedTrack.entryStarted = false;
+        }
+        void pollTeacherCommands();
+        renderLearningShell();
+        return;
+      }
+      if (resumed) {
+        restoreTrackFromAgentSession(phaseState, phaseTrack, resumed);
+        state.currentPhaseId = resumed.phaseId || phaseTrack.phaseId;
+        synchronizeTeacherRunState(resumed.teacherRunState);
+      }
+      if (resumed) {
+        void pollTeacherCommands();
+      } else {
+        const session = await createAgentSession({
+          courseId: lesson.id,
+          studentId: pageParams.get('studentId') || 'demo-pre-role',
+          groupId: pageParams.get('groupId') || 'group-3',
+          runId: pageParams.get('runId') || undefined,
+          participantId: pageParams.get('participantId') || undefined,
+          joinCredential: learnerJoinCredential || undefined,
+          grade: state.selectedGradeLevel,
+          gradeSource: state.gradeSource,
+        });
+        phaseState.agentSessionId = session.id;
+        synchronizeTeacherRunState(session.teacherRunState);
+        void pollTeacherCommands();
+      }
     } catch (error) {
-      showToast(error.message);
+      showToast(studentFacingError(error, '课程进入暂未完成，请重试。'));
       return;
     }
   }
+  // 新建或恢复会话后立即触发一次服务端投影，不等定时心跳。
+  void reportCurrentPresence({ owner: phaseTrack, track: phaseState }).catch(() => undefined);
+  if (teacherRunBlocksLearning()) return;
   if (!phaseState.entryStarted) {
     phaseState.entryStarted = true;
+    phaseState.entryReady = false;
     await runAgentTurn(
       { type: 'lifecycle_event', event: 'phase_started', data: { phaseId: phaseTrack.phaseId } },
       { initialEmpty: true, showLoading: false },
     );
+    phaseState.entryReady = !phaseState.lastAgentRequestError;
+    if (!phaseState.entryReady) phaseState.entryStarted = false;
+    renderLearningShell();
   }
 }
 
@@ -498,87 +820,176 @@ function finishPhaseLearning() {
   if (!isPhaseTrackActive() || !state.phaseState?.completed || state.phaseTransitionShown) return;
   state.phaseTransitionShown = true;
   showScreen(state.teacherReleasedRoles ? 'roleScreen' : 'immersiveScreen');
-  showToast(state.teacherReleasedRoles ? '课程导入已完成，现在领取角色。' : '课程导入已完成，请等待老师开启角色领取。');
+  showToast(state.teacherReleasedRoles
+    ? '课程导入已完成，现在选择角色。'
+    : '课程导入已完成，请等待老师开放角色领取。');
 }
 
 async function selectRole(roleId) {
-  if (!state.teacherReleasedRoles) {
+  if (state.agentBusy || state.qaForceBusy || state.roleSelectionBusy) {
+    showToast('上一项操作还在处理中，请稍等。');
+    return;
+  }
+  if (teacherRunBlocksLearning()) return;
+  const choice = roleChoice(roleId);
+  if (!choice.selectable) {
+    showToast(choice.reason);
+    return;
+  }
+  if (state.currentRoleId === roleId && currentRoleState()?.entryReady) {
+    closeSheet();
+    showToast('你正在使用这个角色。');
+    return;
+  }
+  state.roleSelectionBusy = true;
+  document.querySelectorAll('[data-action="select-role"], [data-action="switch-role"]')
+    .forEach((button) => { button.disabled = true; });
+  try {
+    return await performRoleSelection(roleId);
+  } finally {
+    state.roleSelectionBusy = false;
+    renderRoles();
+    renderRoleSwitch();
+  }
+}
+
+async function performRoleSelection(roleId) {
+  const choice = roleChoice(roleId);
+  if (!choice.selectable) {
+    if (!state.teacherReleasedRoles && !state.teacherClaimedRoleId) {
+      showScreen('immersiveScreen');
+    }
+    showToast(choice.reason);
+    return;
+  }
+  if (!prototypeFreeRoleSelection && !state.teacherReleasedRoles && roleId !== state.teacherClaimedRoleId) {
     showScreen('immersiveScreen');
-    showToast('请等待老师开启身份领取。');
+    showToast('请等待老师开放角色领取。');
+    return;
+  }
+  if (!standaloneMode && phaseTrack && state.phaseState && !state.phaseState.completed) {
+    showToast(`请先完成“${phaseTrack.name}”，再领取角色。`);
     return;
   }
   const role = lesson.roles.find((item) => item.id === roleId);
   if (!role) return;
-  const reusablePhaseSessionId = !state.phaseSessionBoundRoleId
-    ? state.phaseState?.agentSessionId
-    : '';
-  state.currentRoleId = role.id;
-  state.currentPhaseId = lesson.roleSystem.phaseId;
-  state.activeTab = 'task';
-  beginCurrentPhase();
   const roleState = state.roleStates[role.id];
-  renderLearningShell();
-  showScreen('learningShell');
-  closeSheet();
   if (standaloneMode) {
+    state.currentRoleId = role.id;
+    state.currentPhaseId = lesson.roleSystem.phaseId;
+    state.activeTab = 'task';
+    beginCurrentPhase();
+    renderLearningShell();
+    showScreen('learningShell');
+    closeSheet();
     if (!roleState.entryStarted) {
       roleState.entryStarted = true;
+      roleState.entryReady = false;
       roleState.messages = phaseHistoryForRole();
       await revealLocalMessages(roleState, [
         {
           id: crypto.randomUUID(),
           type: 'assistant',
-          text: `欢迎领取“${role.name}”角色。当前为本地体验模式，你可以直接完成任务小步并记录学习过程。`,
+          text: `你已选择“${role.name}”。当前为本地体验模式，可以直接完成任务小步并记录学习过程。`,
           source: '本地课程包',
         },
         ...currentTaskRecoveryMessages(role, roleState),
       ]);
+      roleState.entryReady = true;
     }
     renderLearningShell();
     window.setTimeout(scrollChatToBottom, 40);
     return;
   }
-  if (!roleState.agentSessionId && reusablePhaseSessionId) {
-    roleState.agentSessionId = reusablePhaseSessionId;
-    roleState.messages = phaseHistoryForRole();
-    state.phaseSessionBoundRoleId = role.id;
-  }
-  if (!roleState.agentSessionId) {
-    try {
-      const session = await createAgentSession({
+
+  // 正式场次先让服务端原子确认角色领取，再切换当前轨道和页面。
+  // 这样同组并发领取发生冲突时，学生仍完整停留在原角色与原草稿中。
+  const reusablePhaseSessionId = !state.phaseSessionBoundRoleId
+    && state.phaseState?.completed
+    && state.phaseState?.agentSessionId
+    && !roleState.agentSessionId
+    ? state.phaseState.agentSessionId
+    : '';
+  let reusedPhaseSession = false;
+  let confirmedSessionId = roleState.agentSessionId || '';
+  try {
+    if (reusablePhaseSessionId) {
+      const claimed = await claimAgentRole(reusablePhaseSessionId, role.id);
+      confirmedSessionId = claimed.sessionId;
+      reusedPhaseSession = true;
+      synchronizeTeacherRunState(claimed.teacherRunState);
+    } else if (!roleState.agentSessionId) {
+      const created = await createAgentSession({
         courseId: lesson.id,
         roleId: role.id,
         studentId: pageParams.get('studentId') || `demo-${role.id}`,
         groupId: pageParams.get('groupId') || 'group-3',
         runId: pageParams.get('runId') || undefined,
         participantId: pageParams.get('participantId') || undefined,
-        grade: pageParams.get('grade') || lesson.grades,
+        joinCredential: learnerJoinCredential || undefined,
+        grade: state.selectedGradeLevel,
+        gradeSource: state.gradeSource,
       });
-      roleState.agentSessionId = session.id;
-      void pollTeacherCommands();
-    } catch (error) {
-      showToast(error.message);
-      return;
+      confirmedSessionId = created.id;
+      synchronizeTeacherRunState(created.teacherRunState);
+    } else if (!prototypeFreeRoleSelection) {
+      const activated = await activateAgentSession(roleState.agentSessionId);
+      synchronizeTeacherRunState(activated.teacherRunState);
     }
+    if (!prototypeFreeRoleSelection && state.teacherClaimedRoleId !== role.id) {
+      const error = new Error('角色领取尚未得到服务端确认，请根据最新可领取角色重试。');
+      error.code = 'COURSE_ROLE_CLAIM_UNCONFIRMED';
+      throw error;
+    }
+  } catch (error) {
+    const authoritativeRunState = error?.details?.runState;
+    if (authoritativeRunState) {
+      synchronizeTeacherRunState(authoritativeRunState);
+    } else if (currentRoleState()?.agentSessionId) {
+      try {
+        const latest = await getTeacherCommands(currentRoleState().agentSessionId, 0);
+        synchronizeTeacherRunState(latest.runState);
+      } catch {
+        // 保留原轨道；下一个三秒轮询会再次同步可领取角色。
+      }
+    }
+    const refreshedChoice = roleChoice(role.id);
+    if (error.code === 'COURSE_ROLE_TAKEN' || refreshedChoice.state === 'taken') {
+      showToast('这个角色刚刚被同组成员领取，请选择其他角色。');
+    } else {
+      showToast(studentFacingError(error, '这个角色暂时无法领取，请重试。'));
+    }
+    return;
   }
+
+  roleState.agentSessionId = confirmedSessionId;
+  if (reusedPhaseSession) state.phaseSessionBoundRoleId = role.id;
+  if (!roleState.messages.length) roleState.messages = phaseHistoryForRole();
+  state.currentRoleId = role.id;
+  state.currentPhaseId = lesson.roleSystem.phaseId;
+  state.activeTab = 'task';
+  beginCurrentPhase();
+  renderLearningShell();
+  showScreen('learningShell');
+  closeSheet();
+  void pollTeacherCommands();
+  // bind / activate 的服务端会话已经确定，立即同步当前权威学习投影。
+  void reportCurrentPresence({ owner: role, track: roleState }).catch(() => undefined);
+  if (teacherRunBlocksLearning()) return;
   renderLearningShell();
   window.setTimeout(scrollChatToBottom, 40);
   // 阶段任务的对话历史会被带进角色视图，所以这里不能再用 messages.length 判断
   // 是否首次入场；entryStarted 才是角色任务轨道是否真正启动的权威标记。
   if (!roleState.entryStarted) {
     roleState.entryStarted = true;
+    roleState.entryReady = false;
     await runAgentTurn(
       { type: 'lifecycle_event', event: 'role_assigned', data: { roleId: role.id } },
       { initialEmpty: true, showLoading: false },
     );
-    if (roleState.lastAgentRequestError && reusablePhaseSessionId) {
-      roleState.entryStarted = false;
-      roleState.agentSessionId = null;
-      state.phaseSessionBoundRoleId = '';
-      state.currentRoleId = null;
-      showScreen('roleScreen');
-      showToast('角色领取暂未完成，请重新选择一次。');
-    }
+    roleState.entryReady = !roleState.lastAgentRequestError;
+    if (!roleState.entryReady) roleState.entryStarted = false;
+    renderLearningShell();
   }
 }
 
@@ -588,10 +999,13 @@ function renderHeader() {
   const phaseMode = role.scope === 'phase';
   const progress = Math.round((roleState.progress / role.tasks.length) * 100);
   document.querySelector('#headerRoleBadge').src = role.badgeImage;
-  document.querySelector('.role-switch-button').disabled = phaseMode;
-  document.querySelector('.role-switch-button').setAttribute('aria-label', phaseMode ? '课程导入阶段' : '切换演示角色');
+  const roleSwitchDisabled = phaseMode || state.agentBusy || state.qaForceBusy || (!prototypeFreeRoleSelection && state.teacherRolesLocked);
+  document.querySelector('.role-switch-button').disabled = roleSwitchDisabled;
+  document.querySelector('.role-switch-button').setAttribute('aria-label', phaseMode
+    ? '课程导入阶段'
+    : state.teacherRolesLocked ? '老师已锁定角色' : '切换角色');
   document.querySelector('#headerRoleName').textContent = phaseMode
-    ? `${role.name} · ${roleState.completed ? '课程导入完成' : '领取角色前'}`
+    ? `${role.name} · ${roleState.completed ? '课程导入完成' : '选择角色前'}`
     : `${role.name} · ${roleState.completed ? `${lesson.roleSystem.itemName}任务完成` : (currentPhase()?.name || '课程任务')}`;
   document.querySelector('#headerPhase').textContent = roleState.completed
     ? (phaseMode ? '前置阶段已完成' : '角色任务已完成')
@@ -626,14 +1040,19 @@ function renderTabs() {
 }
 
 function assistantMessage(message) {
+  const text = studentFacingText(message.text, {
+    channel: 'assistant',
+    fallback: '这条提示暂时没有完整显示，请再试一次。',
+  });
+  const source = studentFacingText(message.source, { channel: 'source' });
   return `
     <div class="message-row" data-message-id="${escapeHtml(message.id || '')}">
       ${companionAvatar()}
       <div class="message-content">
         <p class="message-name">${escapeHtml(PLATFORM_COMPANION.name)} · AI 学习同伴</p>
         <div class="message-bubble">
-          <span data-message-text>${escapeHtml(message.text)}</span>
-          ${message.source ? `<span class="source-label"><i data-lucide="book-open-check"></i>${escapeHtml(message.source)}</span>` : ''}
+          <span data-message-text>${escapeHtml(text)}</span>
+          ${source ? `<span class="source-label"><i data-lucide="book-open-check"></i>${escapeHtml(source)}</span>` : ''}
         </div>
       </div>
     </div>
@@ -654,15 +1073,23 @@ function userMessage(message) {
 function quickRepliesMessage(message) {
   return `
     <div class="quick-replies" role="group" aria-label="快捷回复">
-      ${message.options.map((option) => `
+      ${message.options.map((option) => {
+    const label = studentFacingText(option.label, {
+      channel: 'quick-reply', fallback: '继续',
+    });
+    const value = studentFacingText(option.value || label, {
+      channel: 'quick-reply-value', fallback: label,
+    });
+    return `
         <button type="button" data-action="send-quick-reply"
           data-question-id="${escapeHtml(message.questionId || '')}"
           data-act="${escapeHtml(option.act || 'affirm')}"
-          data-value="${escapeHtml(option.value || option.label)}"
-          data-label="${escapeHtml(option.label)}">
-          ${escapeHtml(option.label)}
+          data-value="${escapeHtml(value)}"
+          data-label="${escapeHtml(label)}">
+          ${escapeHtml(label)}
         </button>
-      `).join('')}
+      `;
+  }).join('')}
     </div>
   `;
 }
@@ -676,19 +1103,21 @@ function phaseMessage(message) {
       <article class="stage-message">
         <span class="stage-message__index">第 ${escapeHtml(message.stageNumber)} 阶段</span>
         <div>
-          <h3>${escapeHtml(message.stageName)}</h3>
-          <p>${message.location ? `地点：${escapeHtml(message.location)} · ` : ''}${minutes ? `预计：${minutes} 分钟 · ` : ''}主要任务：${escapeHtml(message.mainTask)}</p>
+          <h3>${escapeHtml(studentFacingText(message.stageName, { channel: 'stage-name', fallback: '当前阶段' }))}</h3>
+          <p>${message.location ? `地点：${escapeHtml(studentFacingText(message.location, { channel: 'stage-location' }))} · ` : ''}${minutes ? `预计：${minutes} 分钟 · ` : ''}主要任务：${escapeHtml(studentFacingText(message.mainTask, { channel: 'stage-task', fallback: '完成当前课程任务' }))}</p>
         </div>
       </article>
     `;
   }
-  return `<div class="phase-message"><i data-lucide="flag"></i><span>${escapeHtml(message.text)}</span></div>`;
+  return `<div class="phase-message"><i data-lucide="flag"></i><span>${escapeHtml(studentFacingText(message.text, { channel: 'phase', fallback: '课程状态已更新。' }))}</span></div>`;
 }
 
 function navigationCard(message) {
   const role = currentRole();
   const roleState = currentRoleState();
-  const location = message.payload?.location || role.location;
+  const location = studentFacingText(message.payload?.location || role.location, {
+    channel: 'navigation-location', fallback: '当前任务点',
+  });
   const automatic = message.payload?.verification === 'geofence';
   const coordinates = message.payload?.coordinates || null;
   return `
@@ -751,10 +1180,18 @@ function renderTaskWorkspace({
   callId = '',
   view = 'dialogue',
   readOnly = false,
-  lockedBrowse = false,
 }) {
   const evidence = taskEvidence(task.id);
+  const visibleTaskName = studentFacingText(task.name, {
+    channel: 'task-title', fallback: '当前任务',
+  });
+  const visibleRequirement = studentFacingText(task.requirement, {
+    channel: 'task-requirement', fallback: '请按当前小步完成观察和记录。',
+  });
+  const evidenceUploadBusy = state.evidenceUploadCount > 0;
   const isComplete = status === 'complete' || readOnly;
+  const qaOverrideCompleted = roleState.qaOverrides?.some((item) => item.taskId === task.id)
+    || roleState.challengeFeedback?.[task.id]?.kind === 'qa_override';
   // 0 表示视频／文字／扫码等任务不要求照片；使用 ?? 保留这个有效值。
   const minimumEvidence = Number(payload?.config?.minEvidenceCount ?? 1);
   const actionIcon = payload?.config?.tools?.[0]?.icon || task.tools?.[0]?.icon || 'notebook-pen';
@@ -765,16 +1202,40 @@ function renderTaskWorkspace({
       studentAction,
       completionMode: 'user_confirm',
     }));
-  const steps = stepDefinitions.map((step) => step.studentAction || step.objective);
+  const steps = stepDefinitions.map((step) => studentFacingText(
+    step.studentAction || step.objective,
+    { channel: 'task-step', fallback: '完成当前小步。' },
+  ));
   const stepIndex = Math.min(Number(roleState.guidanceStepIndices[task.id] || 0), steps.length);
   const stepsComplete = stepIndex >= steps.length;
+  const finalizationMode = task.finalizationMode || DEFAULT_TASK_FINALIZATION_MODE;
+  const taskFinalization = roleState.taskFinalizations?.[task.id] || {
+    taskId: task.id,
+    mode: finalizationMode,
+    status: stepsComplete
+      ? (finalizationMode === 'teacher_confirm'
+        ? 'awaiting_teacher_confirm'
+        : finalizationMode === 'auto_on_last_step' ? 'completed' : 'awaiting_bundle_submit')
+      : 'collecting_steps',
+  };
+  const awaitingTeacherFinalization = taskFinalization.status === 'awaiting_teacher_confirm';
   const activeStep = stepDefinitions[stepIndex];
   const activeTools = activeStep?.tools?.length
     ? activeStep.tools
     : (payload?.config?.tools?.length ? payload.config.tools : (task.tools || []));
+  const selfCompletingMedia = activeStep?.completionMode === 'tool_result'
+    && activeTools.some((tool) => tool.id === 'media');
   const stepId = activeStep?.id || `${task.id}-complete`;
-  const canCompleteStep = !lockedBrowse && (standaloneMode || !['teacher_confirm', 'location_event'].includes(activeStep?.completionMode));
-  const toolCallReady = !lockedBrowse && (standaloneMode || Boolean(callId));
+  const canCompleteStep = studentCanCompleteStep(activeStep);
+  const toolCallReady = standaloneMode || Boolean(callId);
+  const completedPhotoEditors = stepsComplete
+    ? renderCompletedPhotoEditors({
+      steps: stepDefinitions,
+      evidence,
+      allEvidence: roleState.evidence,
+      taskId: task.id,
+    })
+    : '';
   // 这个任务已经做完、但在等推进（`推进方式：teacher`／`ai_suggest`）。
   // 等待期间服务端不开新工具卡也不动 currentTaskIndex，所以卡片还是这一张——
   // 必须换掉提交区，否则学生看到的是一个点了没反应的「提交给絮絮分析」。
@@ -783,15 +1244,15 @@ function renderTaskWorkspace({
   return `
     <article class="tool-card task-workspace" data-task-card="${task.id}" data-learning-workspace="${escapeHtml(view)}">
       <div class="tool-card__visual">
-        <img src="${taskVisual(role, task)}" alt="${escapeHtml(task.name)}任务素材" />
+        <img src="${taskVisual(role, task)}" alt="${escapeHtml(visibleTaskName)}任务素材" />
         <span class="tool-card__visual-badge"><i data-lucide="${actionIcon}"></i>${escapeHtml(task.modules || '任务工具')}</span>
       </div>
       <div class="tool-card__body">
-        <div class="tool-card__kicker"><span>任务 ${taskIndex + 1} / ${role.tasks.length}</span><span>${isComplete ? '已提交' : lockedBrowse ? '待解锁' : '进行中'}</span></div>
-        <h3>${escapeHtml(task.name)}</h3>
-        <p>${escapeHtml(task.requirement)}</p>
+        <div class="tool-card__kicker"><span>任务 ${taskIndex + 1} / ${role.tasks.length}</span><span>${isComplete ? '已提交' : '进行中'}</span></div>
+        <h3>${escapeHtml(visibleTaskName)}</h3>
+        <p>${escapeHtml(visibleRequirement)}</p>
         <div class="module-tags">
-          ${moduleLabels(task.modules).map((module) => `<span class="module-tag">${escapeHtml(module)}</span>`).join('')}
+          ${moduleLabels(task.modules).map((module) => `<span class="module-tag">${escapeHtml(studentFacingText(module, { channel: 'task-module' }))}</span>`).join('')}
         </div>
         ${!isComplete && !waiting ? `
           <section class="task-step-guide ${stepsComplete ? 'is-complete' : ''}">
@@ -799,14 +1260,20 @@ function renderTaskWorkspace({
               <span>${stepsComplete ? '小步已完成' : `当前小步 ${stepIndex + 1} / ${steps.length}`}</span>
               <strong>${stepsComplete ? `${steps.length} / ${steps.length}` : `${stepIndex + 1} / ${steps.length}`}</strong>
             </div>
-            <p>${escapeHtml(stepsComplete ? '可以整理照片或记录，提交给絮絮检查。' : steps[stepIndex])}</p>
+            <p>${escapeHtml(stepsComplete
+    ? (taskFinalization.mode === 'teacher_confirm'
+      ? '小步都已通过，正在等待老师终审。'
+      : taskFinalization.mode === 'auto_on_last_step'
+        ? '最后一步已通过，任务正在自动完成。'
+        : '可以整理照片或记录，提交给絮絮检查。')
+    : steps[stepIndex])}</p>
             ${stepsComplete ? '' : renderActivityTools({ tools: activeTools, evidence, allEvidence: roleState.evidence, taskId: task.id, stepId })}
-            ${stepsComplete || !canCompleteStep ? '' : `
+            ${stepsComplete || !canCompleteStep || selfCompletingMedia ? '' : `
               <button class="task-step-button" type="button" data-action="complete-activity-step" data-task-id="${task.id}" data-step-index="${stepIndex}" data-step-id="${escapeHtml(stepId)}">
                 <i data-lucide="check"></i>${activeStep?.completionMode === 'user_confirm' ? '这一步完成了' : '保存并检查这一步'}
               </button>
             `}
-            ${!stepsComplete && activeStep?.completionMode === 'teacher_confirm' ? '<span class="task-step-guide__validation">提交后需要老师确认，确认前会停留在本小步。</span>' : ''}
+            ${!stepsComplete && activeStep?.completionMode === 'teacher_confirm' ? `<span class="task-step-guide__validation">${standaloneMode ? '本地体验没有连接教师端，这一步会停留等待；正式上课时由老师确认。' : '提交后需要老师确认，确认前会停留在本小步。'}</span>` : ''}
             ${!stepsComplete && activeStep?.completionMode === 'location_event' ? '<span class="task-step-guide__validation">到达课程配置地点并验证后，系统会完成本小步。</span>' : ''}
           </section>
         ` : ''}
@@ -822,15 +1289,22 @@ function renderTaskWorkspace({
               </button>
             ` : ''}
           </div>
+        ` : awaitingTeacherFinalization ? `
+          <div class="evidence-form">
+            <div class="activity-submit-summary">
+              <i data-lucide="hand"></i>
+              <div><strong>所有小步已完成，等待老师终审</strong><span>老师确认后，系统才会把这项任务记为完成。</span></div>
+            </div>
+          </div>
         ` : isComplete ? `
-          <div class="source-label"><i data-lucide="circle-check-big"></i>证据已进入个人学习档案</div>
+          <div class="source-label"><i data-lucide="circle-check-big"></i>${qaOverrideCompleted ? '验收模式已标记完成，未生成学习证据' : '证据已进入个人学习档案'}</div>
         ` : `
           <div class="evidence-form ${stepsComplete ? '' : 'is-locked'}">
-            ${evidence.validationError ? `<p class="evidence-error"><i data-lucide="info"></i>${escapeHtml(evidence.validationError)}</p>` : ''}
-            ${stepsComplete ? `<div class="activity-submit-summary"><i data-lucide="circle-check-big"></i><div><strong>所有小步已完成</strong><span>${evidence.imageUrls.length ? `已采集 ${evidence.imageUrls.length} 个文件；` : ''}工具结果将与补充说明一起提交。</span></div></div><textarea class="task-textarea" data-task-text="${task.id}" placeholder="可补充说明你的判断依据…">${escapeHtml(evidence.text)}</textarea>` : ''}
-            ${view === 'challenge' && !toolCallReady && !lockedBrowse ? '<div class="challenge-tool-waiting"><i data-lucide="sparkles"></i>智能体正在准备本任务的提交通道，小步操作可以先继续。</div>' : ''}
-            <button class="tool-primary" type="button" data-action="submit-task" data-task-id="${task.id}" data-tool-call-id="${escapeHtml(callId)}" data-min-evidence="${minimumEvidence}" ${stepsComplete && toolCallReady ? '' : 'disabled'}>
-              <i data-lucide="sparkles"></i>${stepsComplete ? (toolCallReady ? `提交给${escapeHtml(PLATFORM_COMPANION.name)}分析` : '等待任务通道') : '完成当前小步后提交'}
+            ${evidence.validationError ? `<p class="evidence-error"><i data-lucide="info"></i>${escapeHtml(studentFacingText(evidence.validationError, { channel: 'validation', fallback: '请检查当前小步后重试。' }))}</p>` : ''}
+            ${stepsComplete ? `<div class="activity-submit-summary"><i data-lucide="circle-check-big"></i><div><strong>所有小步已完成</strong><span>${evidence.imageUrls.length ? `已采集 ${evidence.imageUrls.length} 个文件；` : ''}提交前仍可删除、重拍或补拍照片。</span></div></div>${completedPhotoEditors}<textarea class="task-textarea" data-task-text="${task.id}" placeholder="可补充说明你的判断依据…">${escapeHtml(evidence.text)}</textarea>` : ''}
+            ${view === 'challenge' && !toolCallReady ? '<div class="challenge-tool-waiting"><i data-lucide="sparkles"></i>智能体正在准备本任务的提交通道，小步操作可以先继续。</div>' : ''}
+            <button class="tool-primary" type="button" data-action="submit-task" data-task-id="${task.id}" data-tool-call-id="${escapeHtml(callId)}" data-min-evidence="${minimumEvidence}" ${stepsComplete && toolCallReady && !evidenceUploadBusy ? '' : 'disabled'}>
+              <i data-lucide="${evidenceUploadBusy ? 'loader-circle' : 'sparkles'}"></i>${evidenceUploadBusy ? '正在上传证据…' : stepsComplete ? (toolCallReady ? `提交给${escapeHtml(PLATFORM_COMPANION.name)}分析` : '等待任务通道') : '完成当前小步后提交'}
             </button>
           </div>
         `}
@@ -873,14 +1347,16 @@ function challengeFeedbackMarkup(taskId) {
     revision: '请继续修改',
     failed: '检查暂未完成',
   };
-  const label = labels[feedback.status] || '任务反馈';
+  const label = feedback.kind === 'qa_override'
+    ? '平台验收标记已完成'
+    : (labels[feedback.status] || '任务反馈');
   const text = feedback.text || (feedback.status === 'checking'
     ? '正在核对当前 Step 的证据和完成条件…'
     : '结果已记录。');
   return `
     <section class="challenge-feedback is-${escapeHtml(feedback.status || 'checking')}" data-challenge-feedback="${escapeHtml(taskId)}" aria-live="polite">
       <strong>${escapeHtml(label)}</strong>
-      <p>${escapeHtml(text)}</p>
+      <p>${escapeHtml(studentFacingText(text, { channel: 'challenge-feedback', fallback: '检查结果暂未完整显示，请再试一次。' }))}</p>
     </section>
   `;
 }
@@ -915,13 +1391,11 @@ function renderChallenge() {
   }
   const role = currentRole();
   const roleState = currentRoleState();
-  const allowFutureTaskBrowse = Boolean(lesson.learningView?.allowFutureTaskBrowse);
   roleState.challengePageIndex = clampChallengePageIndex({
     requestedIndex: roleState.challengePageIndex,
     progress: roleState.progress,
     taskCount: role.tasks.length,
     roleCompleted: roleState.completed,
-    allowAll: allowFutureTaskBrowse,
   });
   const pageIndex = roleState.challengePageIndex;
   const task = role.tasks[pageIndex];
@@ -933,45 +1407,48 @@ function renderChallenge() {
   });
   const payload = roleState.taskPayloads?.[task.id] || defaultTaskPayload(task, pageIndex);
   const callId = roleState.taskCallIds?.[task.id] || (standaloneMode ? `local-${role.id}-${task.id}` : '');
-  const highestUnlocked = allowFutureTaskBrowse || roleState.completed
+  const currentPageIndex = roleState.completed
     ? role.tasks.length - 1
     : Math.min(roleState.progress, role.tasks.length - 1);
+  const qaControlVisible = qaProgressControlEnabled
+    && access === 'current'
+    && !roleState.completed
+    && roleState.entryReady;
   container.innerHTML = `
     <header class="challenge-hero">
       <span>${escapeHtml(role.name)} · 任务闯关</span>
       <strong>${escapeHtml(task.name)}</strong>
       <p>一页完成一项任务；每个 Step 通过后自动进入下一步。</p>
     </header>
-    <nav class="challenge-pages" aria-label="角色任务分页">
-      ${role.tasks.map((item, index) => {
-        const itemAccess = challengeTaskAccess({
-          taskIndex: index,
-          progress: roleState.progress,
-          taskCount: role.tasks.length,
-          roleCompleted: roleState.completed,
-        });
-        return `<button class="challenge-page-button ${index === pageIndex ? 'is-active' : ''} ${itemAccess === 'completed' ? 'is-completed' : ''}" type="button" data-action="select-challenge-page" data-page-index="${index}" ${itemAccess === 'locked' && !allowFutureTaskBrowse ? 'disabled' : ''}><span>${itemAccess === 'completed' ? '已完成' : itemAccess === 'current' ? '当前任务' : '待解锁'}</span><strong>${index + 1}. ${escapeHtml(item.name)}</strong></button>`;
-      }).join('')}
-    </nav>
     ${challengeFeedbackMarkup(task.id)}
-    ${access === 'locked' && !allowFutureTaskBrowse
-      ? '<div class="challenge-task-summary"><i data-lucide="lock-keyhole"></i><div><strong>任务尚未解锁</strong><span>完成当前任务后再来查看。</span></div></div>'
-      : renderTaskWorkspace({
-        role,
-        roleState,
-        task,
-        taskIndex: pageIndex,
-        status: access === 'completed' ? 'complete' : 'active',
-        payload,
-        callId,
-        view: 'challenge',
-        readOnly: access === 'completed',
-        lockedBrowse: access === 'locked',
-      })}
-    <nav class="challenge-page-nav" aria-label="上一项或下一项任务">
-      <button type="button" data-action="challenge-previous" ${pageIndex <= 0 ? 'disabled' : ''}><i data-lucide="chevron-left"></i>上一关</button>
-      <span>${pageIndex + 1} / ${role.tasks.length}</span>
-      <button type="button" data-action="challenge-next" ${pageIndex >= highestUnlocked ? 'disabled' : ''}>下一关<i data-lucide="arrow-right"></i></button>
+    ${renderTaskWorkspace({
+      role,
+      roleState,
+      task,
+      taskIndex: pageIndex,
+      status: access === 'completed' ? 'complete' : 'active',
+      payload,
+      callId,
+      view: 'challenge',
+      readOnly: access === 'completed',
+    })}
+    ${qaControlVisible ? `
+      <aside class="qa-progress-control" aria-label="平台验收控制">
+        <div class="qa-progress-control__copy">
+          <span><i data-lucide="flag"></i>平台验收模式</span>
+          <p>仅用于走查完整课程。执行后会绕过本关的证据、定位、教师确认和 AI 检查，并真实更新当前测试会话。</p>
+        </div>
+        <button type="button" data-action="qa-force-complete" data-task-id="${escapeHtml(task.id)}" ${state.agentBusy || state.qaForceBusy ? 'disabled' : ''}>
+          <i data-lucide="fast-forward"></i>${state.qaForceBusy ? '正在推进…' : pageIndex >= role.tasks.length - 1 ? '强制完成最后一关' : '强制完成本关并进入下一关'}
+        </button>
+      </aside>
+    ` : ''}
+    <nav class="challenge-page-nav" aria-label="已完成任务回看">
+      <button type="button" data-action="challenge-previous" ${pageIndex <= 0 ? 'disabled' : ''}><i data-lucide="chevron-left"></i>上一任务</button>
+      <span>${pageIndex + 1} / ${role.tasks.length} · ${access === 'completed' ? '已完成回看' : '当前任务'}</span>
+      ${pageIndex < currentPageIndex
+        ? '<button type="button" data-action="challenge-forward">下一任务<i data-lucide="arrow-right"></i></button>'
+        : `<span class="challenge-page-nav__hint">${roleState.completed ? '角色任务已完成' : '完成后自动进入下一项'}</span>`}
     </nav>
   `;
 }
@@ -987,7 +1464,6 @@ function setLearningView(targetView) {
     progress: roleState.progress,
     taskCount: currentRole().tasks.length,
     roleCompleted: roleState.completed,
-    allowAll: Boolean(lesson.learningView?.allowFutureTaskBrowse),
   });
   renderLearningShell();
   if (resolvedView === 'dialogue') window.setTimeout(scrollChatToBottom, 20);
@@ -1002,16 +1478,95 @@ function selectChallengePage(requestedIndex) {
     progress: roleState.progress,
     taskCount: role.tasks.length,
     roleCompleted: roleState.completed,
-    allowAll: Boolean(lesson.learningView?.allowFutureTaskBrowse),
   });
   roleState.challengePageIndex = nextIndex;
   renderChat();
   document.querySelector('#challengeScroll')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+async function forceCompleteChallengeTask(taskId) {
+  if (!qaProgressControlEnabled) return;
+  const role = currentRole();
+  const roleState = currentRoleState();
+  if (!roleState.entryReady) {
+    showToast('当前任务还在准备中，请稍后再进行验收推进。');
+    return;
+  }
+  const taskIndex = Math.min(roleState.progress, role.tasks.length - 1);
+  const task = role.tasks[taskIndex];
+  if (!task || roleState.completed || task.id !== taskId) {
+    showToast('当前任务已经变化，请按最新关卡继续。');
+    renderLearningShell();
+    return;
+  }
+  if (state.agentBusy || state.qaForceBusy) {
+    showToast('上一项操作还在处理中，请稍等。');
+    return;
+  }
+  const confirmed = window.confirm(
+    `确认强制完成“${task.name}”吗？\n\n这会绕过本关的证据、定位、教师确认和 AI 检查，并真实更新当前测试会话。`,
+  );
+  if (!confirmed) return;
+
+  state.qaForceBusy = true;
+  state.agentBusy = true;
+  renderLearningShell();
+  try {
+    if (standaloneMode) {
+      const result = completeLocalTaskProgress({
+        role,
+        roleState,
+        taskId,
+        qaOverride: true,
+      });
+      if (!result.ok) throw new Error('当前任务已经变化，请按最新关卡继续。');
+      roleState.challengeFeedback[taskId] = {
+        status: 'passed',
+        text: '平台验收模式已强制完成本关；未生成学习证据。',
+        kind: 'qa_override',
+      };
+      if (result.roleCompleted) {
+        if (role.scope === 'phase') window.setTimeout(finishPhaseLearning, PHASE_TRANSITION_DELAY_MS);
+        else if (!roleState.messages.some((message) => message.type === 'token')) {
+          roleState.messages.push({ id: crypto.randomUUID(), type: 'token' });
+        }
+      } else {
+        roleState.messages.push(...currentTaskRecoveryMessages(role, roleState));
+      }
+      showToast(result.roleCompleted ? '验收推进完成：角色任务已全部完成。' : '验收推进完成：已进入下一关。');
+    } else {
+      if (!roleState.agentSessionId) throw new Error('当前会话尚未建立，请稍后重试。');
+      const result = await forceCompleteCurrentTaskRequest({
+        sessionId: roleState.agentSessionId,
+        taskId,
+        requestId: crypto.randomUUID(),
+      });
+      for (const event of result.events || []) applyAgentEvent(event, null, { role, roleState });
+      roleState.challengeFeedback[taskId] = {
+        status: 'passed',
+        text: '平台验收模式已强制完成本关；未生成学习证据。',
+        kind: 'qa_override',
+      };
+      showToast(result.allTasksCompleted ? '验收推进完成：角色任务已全部完成。' : '验收推进完成：已进入下一关。');
+    }
+  } catch (error) {
+    const visibleError = studentFacingError(error, '验收推进失败，请重试。');
+    roleState.challengeFeedback[taskId] = {
+      status: 'failed',
+      text: visibleError,
+      kind: 'qa_override',
+    };
+    showToast(visibleError);
+  } finally {
+    state.qaForceBusy = false;
+    finishAgentActivity();
+    renderLearningShell();
+    document.querySelector('#challengeScroll')?.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
 function tokenReveal() {
   const role = currentRole();
-  const roleCount = lesson.roles.length;
   const itemName = lesson.roleSystem.collectionItemName;
   return `
     <article class="token-reveal">
@@ -1019,7 +1574,7 @@ function tokenReveal() {
       <div>
         <p class="eyebrow">${escapeHtml(lesson.roleSystem.itemName)}任务完成</p>
         <h3>获得${escapeHtml(itemName)} ${escapeHtml(role.collectionItem)}</h3>
-        <p>这份${escapeHtml(itemName)}已同步到小组。${roleCount}位${escapeHtml(lesson.roleSystem.collectionName)}全部完成后，将解锁“${escapeHtml(lesson.roleSystem.unlockTarget)}”。</p>
+        <p>这是你完成本角色任务获得的个人${escapeHtml(itemName)}。请带着它参加小组汇合；老师会核对全组进度并组织进入“${escapeHtml(lesson.roleSystem.unlockTarget)}”。</p>
       </div>
     </article>
   `;
@@ -1058,11 +1613,14 @@ function currentTaskRecoveryMessages(role, roleState) {
   if (!task) return [];
   const callId = roleState.taskCallIds?.[task.id] || (standaloneMode ? `local-${role.id}-${task.id}` : '');
   const payload = roleState.taskPayloads?.[task.id] || defaultTaskPayload(task, taskIndex);
+  const recoveryText = studentFacingText(`界面已恢复 · 继续完成「${task.name}」`, {
+    channel: 'recovery', fallback: '界面已恢复 · 请继续当前任务',
+  });
   return [
     {
       id: crypto.randomUUID(),
       type: 'phase',
-      text: `界面已恢复 · 继续完成「${task.name}」`,
+      text: recoveryText,
     },
     {
       id: crypto.randomUUID(),
@@ -1259,9 +1817,9 @@ function applyChallengeFeedbackEvent(event, target) {
   refreshChallengeFeedback(target.taskId);
 }
 
-function applyAgentEvent(event, feedbackTarget = null) {
-  const role = currentRole();
-  const roleState = currentRoleState();
+function applyAgentEvent(event, feedbackTarget = null, targetContext = null) {
+  const role = targetContext?.role || currentRole();
+  const roleState = targetContext?.roleState || currentRoleState();
   if (event.type === 'stage.started') {
     roleState.messages = roleState.messages.filter((message) => message.type !== 'quick-replies');
     const stageMessageId = `stage-${event.data.stageNumber}-${event.data.stageName}`;
@@ -1293,7 +1851,10 @@ function applyAgentEvent(event, feedbackTarget = null) {
       .find((item) => item.dataset.messageId === message.id);
     const textNode = row?.querySelector('[data-message-text]');
     if (created || !textNode) renderChat();
-    else textNode.textContent = message.text;
+    else textNode.textContent = studentFacingText(message.text, {
+      channel: 'assistant-stream',
+      fallback: '这条提示暂时没有完整显示，请再试一次。',
+    });
     window.requestAnimationFrame(scrollChatToBottom);
   }
   if (event.type === 'assistant.completed') {
@@ -1391,10 +1952,34 @@ function applyAgentEvent(event, feedbackTarget = null) {
     // 做完 `推进方式：teacher`／`ai_suggest` 的任务后进度不动，界面必须说清为什么停住。
     // 没有这一行，学生看到的是一个提交完就没反应的任务卡。
     roleState.pendingAdvance = event.data.pendingAdvance || null;
+    const taskFinalization = event.data.taskFinalization || event.data.runtime?.taskFinalization;
+    if (taskFinalization?.taskId) {
+      roleState.taskFinalizations ||= {};
+      roleState.taskFinalizations[taskFinalization.taskId] = taskFinalization;
+    }
+    for (const message of roleState.messages.filter((item) => item.type === 'task')) {
+      const messageTaskId = message.payload?.taskId || role.tasks[message.taskIndex]?.id;
+      if (event.data.completedTaskIds.includes(`${role.id}:${messageTaskId}`)) message.status = 'complete';
+    }
+    if (event.data.qaOverride) {
+      roleState.qaOverrides ||= [];
+      if (!roleState.qaOverrides.some((item) => item.requestId === event.data.qaOverride.requestId)) {
+        roleState.qaOverrides.push(event.data.qaOverride);
+      }
+    }
     const location = event.data.runtime?.location;
     const runtime = event.data.runtime;
     if (runtime?.taskId) {
       roleState.guidanceStepIndices[runtime.taskId] = Number(runtime.guidanceStepIndex || 0);
+    }
+    if (runtime?.lastStepRevision) {
+      roleState.lastStepRevision = runtime.lastStepRevision;
+      roleState.stepRevisionHistory ||= [];
+      if (!roleState.stepRevisionHistory.some(
+        (entry) => entry.revisionId === runtime.lastStepRevision.revisionId,
+      )) {
+        roleState.stepRevisionHistory.push(runtime.lastStepRevision);
+      }
     }
     // 服务端累计的证据条数是权威值（本地 roleState.evidence 只有当前任务那一份）。
     // 教师端要靠 presence 上报它来判断"这个学生到底交了几项"。
@@ -1415,11 +2000,20 @@ function applyAgentEvent(event, feedbackTarget = null) {
         arrivedAt: location.enteredAt,
       };
     }
+    // 教师端的任务投影应跟随权威 state.updated 立即刷新，
+    // 不能再等下一个 30 秒心跳。此上报不携带缓存坐标。
+    void reportCurrentPresence({ owner: role, track: roleState }).catch(() => undefined);
     if (role.scope === 'phase' && roleState.completed) {
       window.setTimeout(finishPhaseLearning, PHASE_TRANSITION_DELAY_MS);
     }
   }
   applyChallengeFeedbackEvent(event, feedbackTarget);
+}
+
+function finishAgentActivity() {
+  state.agentBusy = false;
+  const queued = state.agentQueue.shift();
+  if (queued) window.setTimeout(() => runAgentTurn(queued.input, queued.options), 0);
 }
 
 async function runAgentTurn(input, options = {}) {
@@ -1432,6 +2026,13 @@ async function runAgentTurn(input, options = {}) {
   } = options;
   const roleState = currentRoleState();
   if (!roleState.agentSessionId) return;
+  // 暂停、紧急集合和结束都是教师场次的权威门禁。
+  // 队列中早于门禁产生的回合也不能在恢复前补执行。
+  if (teacherRunBlocksLearning()) {
+    if (!passive) showToast(explainTeacherRunGate());
+    return;
+  }
+  const requestLastLocalActionAt = roleState.lastLocalActionAt;
   if (state.agentBusy) {
     if (!passive) {
       state.agentQueue.push({
@@ -1463,15 +2064,24 @@ async function runAgentTurn(input, options = {}) {
       requestId,
       input,
     }, (event) => {
-      if (event.type === 'assistant.delta') {
-        shouldRender = true;
-        applyAgentEvent(event, feedbackTarget);
+      if (isAuditOnlyTransportEvent(event)) {
+        // delta 在服务端完成安全、剧透和完整性审查后才会到达。
+        // 学生端仍等 assistant.completed + TurnPlan 逐泡显示，避免全文
+        // 先闪现、再缩回第一泡的视觉回退。
         return;
       }
       bufferedEvents.push(event);
     });
     let visibleEventCount = 0;
     for (const event of bufferedEvents) {
+      if (shouldSuppressPassivePresentation(event, {
+        passive,
+        requestLastLocalActionAt,
+        currentLastLocalActionAt: roleState.lastLocalActionAt,
+        pageHidden: document.hidden,
+      })) {
+        continue;
+      }
       const completesStream = event.type === 'assistant.completed' && Boolean(roleState.streamingMessageId);
       const visuallyAddsMessage = event.type === 'stage.started'
         || event.type === 'tool.requested'
@@ -1483,6 +2093,14 @@ async function runAgentTurn(input, options = {}) {
           completesStream,
         });
         if (delay) await waitFor(delay);
+        if (shouldSuppressPassivePresentation(event, {
+          passive,
+          requestLastLocalActionAt,
+          currentLastLocalActionAt: roleState.lastLocalActionAt,
+          pageHidden: document.hidden,
+        })) {
+          continue;
+        }
         if (loadingId) roleState.messages = roleState.messages.filter((message) => message.id !== loadingId);
         roleState.activeLoadingId = null;
       }
@@ -1499,26 +2117,32 @@ async function runAgentTurn(input, options = {}) {
     }
     roleState.lastAgentRequestError = null;
   } catch (error) {
+    const visibleError = studentFacingError(error, '检查暂未完成，请稍后重试。');
     roleState.lastAgentRequestError = {
       requestId,
       status: error.status ?? error.statusCode ?? null,
       code: error.code || null,
+      message: visibleError,
       retryable: Boolean(error.retryable),
       leaseExpiresAt: error.leaseExpiresAt || null,
     };
+    if (error?.details?.runState) synchronizeTeacherRunState(error.details.runState);
+    const isCourseRunGate = applyCourseRunGateError(error, input);
     const isToolSubmission = input.type === 'tool_result';
-    const isValidation = error.kind === 'validation' || /^(?:STEP_|EVIDENCE_|TASK_)/.test(error.code || '');
-    if (isToolSubmission || isValidation) {
-      showToast(error.message);
+    const isValidation = isCourseRunGate
+      || error.kind === 'validation'
+      || /^(?:STEP_|EVIDENCE_|TASK_)/.test(error.code || '');
+    if ((isToolSubmission || isValidation) && !isCourseRunGate) {
+      showToast(visibleError);
       const task = currentTask();
-      taskEvidence(task.id).validationError = error.message;
+      taskEvidence(task.id).validationError = visibleError;
       shouldRender = true;
     }
     if (feedbackTarget) {
       const feedback = roleState.challengeFeedback?.[feedbackTarget.taskId];
       if (feedback) {
         feedback.status = 'failed';
-        feedback.text = error.message || '检查暂未完成，请稍后重试。';
+        feedback.text = visibleError;
         refreshChallengeFeedback(feedbackTarget.taskId);
       }
     }
@@ -1538,28 +2162,157 @@ async function runAgentTurn(input, options = {}) {
   } finally {
     if (loadingId) roleState.messages = roleState.messages.filter((message) => message.id !== loadingId);
     roleState.activeLoadingId = null;
-    state.agentBusy = false;
+    finishAgentActivity();
     if (shouldRender) {
       renderLearningShell();
       window.setTimeout(scrollChatToBottom, 30);
     }
-    const queued = state.agentQueue.shift();
-    if (queued) window.setTimeout(() => runAgentTurn(queued.input, queued.options), 0);
   }
 }
 
 function hasActiveDraft(roleState) {
   const chatDraft = document.querySelector('#chatInput')?.value?.trim();
-  const taskDraft = Object.values(roleState.evidence).some((item) => item.text?.trim() || item.files?.length);
-  return Boolean(chatDraft || taskDraft);
+  return hasCurrentTaskDraft({
+    evidenceByTask: roleState.evidence,
+    taskId: currentTask()?.id,
+    chatDraft,
+  });
+}
+
+function learningBusyState(roleState) {
+  const toolValues = Object.values(roleState.evidence || {})
+    .flatMap((evidence) => Object.values(evidence.toolValues || {}))
+    .flatMap((step) => Object.values(step || {}));
+  const mediaPlaying = [...document.querySelectorAll('[data-activity-media]')]
+    .some((media) => media.paused === false && media.ended === false);
+  return {
+    mediaPlaying,
+    cameraOrFilePicker: externalFilePickerOpen,
+    recording: toolValues.some((value) => value?.recording === true),
+    uploadOrProcessing: hasActiveEvidenceProcessing({
+      uploadCount: state.evidenceUploadCount,
+      toolValues,
+    }),
+    evaluation: state.agentBusy,
+    navigation: state.navigationBusy,
+  };
+}
+
+function taskForTrack(owner, track) {
+  return owner.tasks[Math.min(Number(track.progress || 0), Math.max(0, owner.tasks.length - 1))];
+}
+
+function locationSampleFromPosition(owner, track, position) {
+  const task = taskForTrack(owner, track);
+  const lng = Number(position?.coords?.longitude);
+  const lat = Number(position?.coords?.latitude);
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+  const sample = {
+    permission: 'granted',
+    lng,
+    lat,
+    accuracyMeters: Number.isFinite(Number(position.coords.accuracy))
+      ? Math.max(0, Number(position.coords.accuracy))
+      : undefined,
+  };
+  const coordinates = task?.location?.coordinates;
+  if (Array.isArray(coordinates) && coordinates.length >= 2
+    && coordinates.every((value) => Number.isFinite(Number(value)))) {
+    const [targetLng, targetLat] = coordinates.map(Number);
+    const radians = (degrees) => degrees * (Math.PI / 180);
+    const dLat = radians(lat - targetLat);
+    const dLng = radians(lng - targetLng);
+    const value = Math.sin(dLat / 2) ** 2
+      + Math.cos(radians(targetLat)) * Math.cos(radians(lat)) * Math.sin(dLng / 2) ** 2;
+    const distance = 6_371_000 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+    sample.insideFence = distance <= Number(task.location.radiusMeters || 50);
+  }
+  return sample;
+}
+
+async function sampleGrantedGeolocation(owner, track) {
+  if (!navigator.geolocation) return { permission: 'unavailable' };
+  // 后台心跳只在浏览器确认已授权时取样。`prompt` 状态绝不调用
+  // getCurrentPosition，避免学生没有主动操作时突然弹出权限请求。
+  if (!navigator.permissions?.query) {
+    return { permission: track.locationStatus.permission || 'unknown' };
+  }
+  let permission;
+  try {
+    permission = await navigator.permissions.query({ name: 'geolocation' });
+  } catch {
+    return { permission: track.locationStatus.permission || 'unknown' };
+  }
+  if (permission.state !== 'granted') return { permission: permission.state || 'unknown' };
+  try {
+    const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 8_000,
+      maximumAge: 0,
+    }));
+    return locationSampleFromPosition(owner, track, position) || { permission: 'granted' };
+  } catch (error) {
+    return { permission: Number(error?.code) === 1 ? 'denied' : 'granted' };
+  }
+}
+
+async function sampleCameraPermission() {
+  if (!navigator.mediaDevices) return { permission: 'unavailable' };
+  if (!navigator.permissions?.query) return { permission: 'unknown' };
+  try {
+    const permission = await navigator.permissions.query({ name: 'camera' });
+    return { permission: permission.state || 'unknown' };
+  } catch {
+    return { permission: 'unknown' };
+  }
+}
+
+function hasLocationCoordinates(location) {
+  return Number.isFinite(location?.lng) && Number.isFinite(location?.lat);
+}
+
+async function reportCurrentPresence({
+  owner = currentRole(),
+  track = currentRoleState(),
+  refreshLocation = false,
+  locationSample,
+} = {}) {
+  if (!track?.agentSessionId) return undefined;
+  const [location, camera] = await Promise.all([
+    locationSample === undefined && refreshLocation
+      ? sampleGrantedGeolocation(owner, track)
+      : locationSample,
+    sampleCameraPermission(),
+  ]);
+  // 任务、Step、进度和证据数由 presence 接口从服务端 Agent session
+  // 现场投影；客户端只发设备心跳和这一轮的原始定位样本。
+  return reportStudentPresence(track.agentSessionId, {
+    online: navigator.onLine,
+    network: navigator.onLine ? (navigator.connection?.effectiveType === '2g' ? 'weak' : 'ready') : 'offline',
+    camera,
+    ...(location ? { location } : {}),
+  });
 }
 
 async function sendContextTick() {
-  if ((!state.currentRoleId && !isPhaseTrackActive()) || state.screen !== 'learningShell' || state.agentBusy || document.hidden) return;
+  if ((!state.currentRoleId && !isPhaseTrackActive()) || state.screen !== 'learningShell') return;
+  const owner = currentRole();
   const roleState = currentRoleState();
   if (!roleState.agentSessionId) return;
+  const locationSample = await sampleGrantedGeolocation(owner, roleState);
   const remaining = state.phaseEndTime ? Math.max(0, Math.floor((state.phaseEndTime - Date.now()) / 1000)) : null;
-  await runAgentTurn({
+  // presence 与 AI 提醒分开：即使模型回合正在处理，教师端也要
+  // 持续收到学生在线、位置和进度快照。坐标只能来自这一轮的新采样。
+  const presence = reportCurrentPresence({
+    owner,
+    track: roleState,
+    locationSample,
+  }).catch(() => undefined);
+  if (state.agentBusy || document.hidden || teacherRunBlocksLearning()) {
+    await presence;
+    return;
+  }
+  const tick = runAgentTurn({
     type: 'lifecycle_event',
     event: 'context_tick',
     data: {
@@ -1569,28 +2322,13 @@ async function sendContextTick() {
       activeTab: state.activeTab,
       learningView: state.learningView,
       hasDraft: hasActiveDraft(roleState),
+      busy: learningBusyState(roleState),
       phaseRemainingSeconds: remaining,
       arrived: roleState.arrived,
-      location: {
-        permission: roleState.locationStatus.permission,
-        insideFence: roleState.locationStatus.insideFence,
-        accuracyMeters: roleState.locationStatus.accuracyMeters,
-      },
+      ...(hasLocationCoordinates(locationSample) ? { location: locationSample } : {}),
     },
   }, { passive: true });
-  await reportStudentPresence(roleState.agentSessionId, {
-    online: navigator.onLine,
-    network: navigator.onLine ? (navigator.connection?.effectiveType === '2g' ? 'weak' : 'ready') : 'offline',
-    progress: Math.round((roleState.progress / Math.max(1, currentRole().tasks.length)) * 100),
-    currentTask: currentTask()?.name,
-    evidenceCount: Number(roleState.evidenceCount || 0),
-    idleSeconds: Math.max(0, Math.floor((Date.now() - roleState.lastLocalActionAt) / 1000)),
-    location: {
-      permission: roleState.locationStatus.permission,
-      insideFence: roleState.locationStatus.insideFence,
-      accuracyMeters: roleState.locationStatus.accuracyMeters ?? undefined,
-    },
-  }).catch(() => undefined);
+  await Promise.all([presence, tick]);
 }
 
 async function arriveRoleLocation(toolCallId) {
@@ -1605,26 +2343,24 @@ async function arriveRoleLocation(toolCallId) {
   const automatic = /geofence|gps|auto/.test(task.location?.verification || '');
   if (automatic && task.location?.coordinates?.length >= 2) {
     if (!navigator.geolocation) return showToast('当前设备无法定位，请呼叫老师人工确认。');
+    state.navigationBusy = true;
     try {
       showToast('正在验证你是否进入任务范围…');
       const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {
         enableHighAccuracy: true, timeout: 10_000, maximumAge: 10_000,
       }));
-      const [targetLng, targetLat] = task.location.coordinates;
-      const radians = (degrees) => degrees * (Math.PI / 180);
-      const dLat = radians(position.coords.latitude - targetLat);
-      const dLng = radians(position.coords.longitude - targetLng);
-      const value = Math.sin(dLat / 2) ** 2
-        + Math.cos(radians(targetLat)) * Math.cos(radians(position.coords.latitude)) * Math.sin(dLng / 2) ** 2;
-      const distance = 6_371_000 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
-      const insideFence = distance <= Number(task.location.radiusMeters || 50);
+      const locationSample = locationSampleFromPosition(role, roleState, position);
+      const insideFence = locationSample?.insideFence === true;
       await runAgentTurn({
         type: 'lifecycle_event', event: 'location_updated',
         data: { permission: 'granted', insideFence, accuracyMeters: position.coords.accuracy, lng: position.coords.longitude, lat: position.coords.latitude },
       }, { passive: true, showLoading: false });
-      if (!currentRoleState().arrived) return showToast(insideFence ? '定位精度或停留时间还未达到要求，请稍后再试。' : `你距离任务范围约 ${Math.round(distance)} 米。`);
+      await reportCurrentPresence({ owner: role, track: roleState, locationSample }).catch(() => undefined);
+      if (!currentRoleState().arrived) return showToast(insideFence ? '定位精度或停留时间还未达到要求，请稍后再试。' : '你还没有进入当前任务范围。');
     } catch {
       return showToast('没有取得定位权限，请允许定位或呼叫老师人工确认。');
+    } finally {
+      state.navigationBusy = false;
     }
   }
   roleState.arrived = true;
@@ -1655,34 +2391,74 @@ function activeStepContext(taskId, requestedStepId = '') {
   };
 }
 
-async function completeActivityStep(taskId, stepId) {
-  if (state.agentBusy) return showToast(`${PLATFORM_COMPANION.name}正在回应，请稍等一下。`);
-  const context = activeStepContext(taskId, stepId);
-  if (!context.task || context.expired || !context.step) return showToast('当前小步已经切换，请按新提示继续。');
-  const evidence = taskEvidence(taskId);
-  const error = context.step.completionMode === 'user_confirm'
-    ? ''
-    : validateActivityStep({ tools: context.tools, evidence, stepId });
-  if (error) {
-    evidence.validationError = error;
-    renderChat();
-    return showToast(error);
-  }
-  evidence.validationError = '';
-  const feedbackTarget = beginChallengeFeedback({
+function completedStepContext(taskId, requestedStepId = '') {
+  const task = currentRole().tasks.find((item) => item.id === taskId);
+  if (!task?.steps?.length || !requestedStepId) return {};
+  const index = task.steps.findIndex((step) => step.id === requestedStepId);
+  const completedThrough = Math.min(
+    Number(currentRoleState().guidanceStepIndices[taskId] || 0),
+    task.steps.length,
+  );
+  if (index < 0 || index >= completedThrough) return { task, index, expired: true };
+  const step = task.steps[index];
+  return {
+    task,
+    index,
+    step,
+    revision: true,
+    tools: step.tools?.length ? step.tools : (task.tools || []),
+  };
+}
+
+function editableStepContext(taskId, requestedStepId = '') {
+  const active = activeStepContext(taskId, requestedStepId);
+  return active.expired
+    ? completedStepContext(taskId, requestedStepId)
+    : active;
+}
+
+function markPhotoRevisionAccepted(context, taskId, stepId, acceptedRevision = null) {
+  if (!context.tools?.some((tool) => tool.id === 'photo')) return;
+  const photo = activityValue(taskId, stepId, 'photo');
+  photo.acceptedRevision = Number(acceptedRevision ?? photo.revision ?? 0);
+}
+
+function completeStandaloneActivityStep({ context, taskId, stepId, feedbackTarget }) {
+  const role = currentRole();
+  const roleState = currentRoleState();
+  const nextStepIndex = context.index + 1;
+  const steps = context.task.steps?.length
+    ? context.task.steps
+    : [{ id: stepId }];
+  const allStepsCompleted = nextStepIndex >= steps.length;
+  const mode = context.task.finalizationMode || DEFAULT_TASK_FINALIZATION_MODE;
+  roleState.guidanceStepIndices[taskId] = nextStepIndex;
+  roleState.taskFinalizations ||= {};
+  roleState.taskFinalizations[taskId] = {
     taskId,
-    stepId,
-    beforeStepIndex: context.index,
-    taskIndex: currentRole().tasks.findIndex((task) => task.id === taskId),
-    kind: 'step',
-  });
-  if (standaloneMode) {
-    const roleState = currentRoleState();
-    roleState.guidanceStepIndices[taskId] = context.index + 1;
+    mode,
+    status: allStepsCompleted
+      ? (mode === 'auto_on_last_step'
+        ? 'completed'
+        : mode === 'teacher_confirm' ? 'awaiting_teacher_confirm' : 'awaiting_bundle_submit')
+      : 'collecting_steps',
+    completedStepIds: steps.slice(0, nextStepIndex).map((step, index) => (
+      step.id || `${taskId}-step-${index + 1}`
+    )),
+    revision: null,
+  };
+
+  if (allStepsCompleted && mode === 'auto_on_last_step') {
+    const completion = completeLocalTaskProgress({ role, roleState, taskId });
+    if (!completion.ok) {
+      showToast('当前任务已经变化，请按最新关卡继续。');
+      return false;
+    }
+    roleState.taskFinalizations[taskId].status = 'completed';
     if (feedbackTarget) {
       roleState.challengeFeedback[taskId] = {
         status: 'passed',
-        text: `第 ${context.index + 1} 个任务小步已记录，可以继续下一步。`,
+        text: `“${context.task.name}”已完成。`,
         stepId,
         kind: 'step',
       };
@@ -1690,12 +2466,100 @@ async function completeActivityStep(taskId, stepId) {
     roleState.messages.push({
       id: crypto.randomUUID(),
       type: 'assistant',
-      text: `第 ${context.index + 1} 个任务小步已记录，可以继续下一步。`,
+      text: `“${context.task.name}”已完成。`,
       source: '本地课程包',
     });
-    renderLearningShell();
-    window.setTimeout(scrollChatToBottom, 20);
-    return;
+    if (!completion.advanced) {
+      roleState.messages.push({
+        id: crypto.randomUUID(),
+        type: 'assistant',
+        text: completion.waitingMode === 'teacher'
+          ? '这项任务已完成，正在等待老师推进。'
+          : '这项任务已完成，准备好后点击“继续下一个任务”。',
+        source: '本地课程包',
+      });
+    } else if (completion.roleCompleted) {
+      if (role.scope === 'phase') window.setTimeout(finishPhaseLearning, PHASE_TRANSITION_DELAY_MS);
+      else if (!roleState.messages.some((message) => message.type === 'token')) {
+        roleState.messages.push({ id: crypto.randomUUID(), type: 'token' });
+      }
+    } else {
+      roleState.messages.push(...currentTaskRecoveryMessages(role, roleState));
+    }
+  } else {
+    const text = allStepsCompleted && mode === 'teacher_confirm'
+      ? '所有小步都已记录，正在等待老师终审。'
+      : allStepsCompleted
+        ? '所有小步都已记录，可以整理本任务证据后提交。'
+        : `第 ${nextStepIndex} 个任务小步已记录，可以继续下一步。`;
+    if (feedbackTarget) {
+      roleState.challengeFeedback[taskId] = {
+        status: 'passed', text, stepId, kind: 'step',
+      };
+    }
+    roleState.messages.push({
+      id: crypto.randomUUID(), type: 'assistant', text, source: '本地课程包',
+    });
+  }
+  renderLearningShell();
+  window.setTimeout(scrollChatToBottom, 20);
+  return true;
+}
+
+async function completeActivityStep(taskId, stepId) {
+  if (state.agentBusy) {
+    showToast(`${PLATFORM_COMPANION.name}正在回应，请稍等一下。`);
+    return false;
+  }
+  const context = editableStepContext(taskId, stepId);
+  if (!context.task || context.expired || !context.step) {
+    showToast('当前小步已经切换，请按新提示继续。');
+    return false;
+  }
+  const evidence = taskEvidence(taskId);
+  const error = context.step.completionMode === 'user_confirm' && !context.revision
+    ? ''
+    : validateActivityStep({ tools: context.tools, evidence, stepId });
+  if (error) {
+    evidence.validationError = error;
+    renderChat();
+    showToast(error);
+    return false;
+  }
+  evidence.validationError = '';
+  const feedbackTarget = beginChallengeFeedback({
+    taskId,
+    stepId,
+    beforeStepIndex: context.index,
+    taskIndex: currentRole().tasks.findIndex((task) => task.id === taskId),
+    kind: context.revision ? 'revision' : 'step',
+  });
+  if (standaloneMode) {
+    if (context.revision) {
+      markPhotoRevisionAccepted(context, taskId, stepId);
+      const roleState = currentRoleState();
+      roleState.stepRevisionHistory ||= [];
+      roleState.stepRevisionHistory.push({
+        revisionId: crypto.randomUUID(),
+        taskId,
+        stepId,
+        passed: true,
+        revisedAt: new Date().toISOString(),
+      });
+      if (feedbackTarget) {
+        roleState.challengeFeedback[taskId] = {
+          status: 'passed',
+          text: '这一步修改后的照片已重新检查并记录。',
+          stepId,
+          kind: 'revision',
+        };
+      }
+      renderLearningShell();
+      return true;
+    }
+    const completed = completeStandaloneActivityStep({ context, taskId, stepId, feedbackTarget });
+    if (completed) markPhotoRevisionAccepted(context, taskId, stepId);
+    return completed;
   }
   const stepImages = context.step.completionMode === 'ai_evaluation'
     ? context.tools.flatMap((tool) => {
@@ -1705,20 +2569,84 @@ async function completeActivityStep(taskId, stepId) {
       return [];
     }).filter(Boolean)
     : [];
-  await runAgentTurn({
-    type: 'lifecycle_event',
-    event: 'task_step_completed',
-    data: {
-      taskId,
-      stepId,
-      stepIndex: context.index,
-      stepText: context.step.studentAction || context.step.objective,
-      completionMode: context.step.completionMode,
-      localEvidenceCount: evidence.imageUrls.length,
-      toolValues: serializableToolValues(evidence),
-      stepImages,
-    },
-  }, { feedbackTarget });
+  const photoValue = context.tools.some((tool) => tool.id === 'photo')
+    ? activityValue(taskId, stepId, 'photo')
+    : null;
+  const submittedPhotoRevision = Number(photoValue?.revision || 0);
+  const revisionId = context.revision ? crypto.randomUUID() : '';
+  if (photoValue) photoValue.revisionSubmitting = true;
+  try {
+    await runAgentTurn({
+      type: 'lifecycle_event',
+      event: context.revision ? 'task_step_revised' : 'task_step_completed',
+      data: {
+        taskId,
+        stepId,
+        stepIndex: context.index,
+        revisionId,
+        stepText: context.step.studentAction || context.step.objective,
+        completionMode: context.step.completionMode,
+        localEvidenceCount: evidence.imageUrls.length,
+        toolValues: serializableToolValues(evidence),
+        stepImages,
+      },
+    }, { feedbackTarget });
+  } finally {
+    if (photoValue) photoValue.revisionSubmitting = false;
+  }
+  if (photoValue) renderLearningShell();
+  if (context.revision) {
+    const revision = currentRoleState().lastStepRevision;
+    const passed = revision?.revisionId === revisionId && revision.passed === true;
+    const feedback = currentRoleState().challengeFeedback?.[taskId];
+    if (feedbackTarget && feedback) {
+      feedback.status = passed ? 'passed' : 'revision';
+      feedback.text = revision?.revisionId === revisionId
+        ? (revision.feedback || (passed
+          ? '这一步修改后的照片已重新检查并记录。'
+          : '修改后的照片还需要补充，请继续调整。'))
+        : (feedback.text || '这次重新检查没有完整返回，请再试一次。');
+    }
+    if (passed) {
+      markPhotoRevisionAccepted(context, taskId, stepId, submittedPhotoRevision);
+      taskEvidence(taskId).validationError = '';
+    }
+    renderLearningShell();
+    return passed;
+  }
+  const nextContext = activeStepContext(taskId, stepId);
+  const completed = Boolean(nextContext.expired || !nextContext.step);
+  if (completed) {
+    markPhotoRevisionAccepted(context, taskId, stepId, submittedPhotoRevision);
+    renderLearningShell();
+  }
+  return completed;
+}
+
+async function completeMediaActivity(taskId, stepId) {
+  const context = activeStepContext(taskId, stepId);
+  const mediaTool = context.tools?.find((tool) => tool.id === 'media');
+  if (mediaTool?.config?.requireCompletion !== false
+    && !mediaTool?.config?.url
+    && !isPosterOnlyMedia(mediaTool?.config)) {
+    showToast('课程素材尚未配置，请联系老师。');
+    return;
+  }
+  const value = activityValue(taskId, stepId, 'media');
+  value.completed = true;
+  if (context.expired || !context.step || context.step.completionMode !== 'tool_result') {
+    renderChat();
+    return;
+  }
+  if (value.submitting || value.submitted) return;
+  value.submitting = true;
+  renderChat();
+  try {
+    value.submitted = await completeActivityStep(taskId, stepId);
+  } finally {
+    value.submitting = false;
+    renderLearningShell();
+  }
 }
 
 async function toggleActivityRecording(taskId, stepId) {
@@ -1862,7 +2790,7 @@ function confirmScan(taskId, stepId, result = '') {
 function removeActivityPhoto(taskId, stepId, index) {
   const evidence = taskEvidence(taskId);
   const value = activityValue(taskId, stepId, 'photo');
-  if (value.processing) return showToast('照片还在处理中，请稍等一下再修改。');
+  if (value.processing || value.revisionSubmitting) return showToast('照片正在准备或检查，请稍等一下再修改。');
   const removed = removePhotoAt(evidence, value, index, {
     revokeObjectUrl: (url) => URL.revokeObjectURL(url),
   });
@@ -2040,11 +2968,31 @@ async function appendGeneratedEvidence(evidence, taskId) {
 }
 
 async function submitTask(taskId, toolCallId, minimumEvidence = 1) {
+  if (state.agentBusy || state.qaForceBusy || state.evidenceUploadCount > 0) {
+    showToast('上一项操作还在处理中，请稍等。');
+    return;
+  }
   const role = currentRole();
   const roleState = currentRoleState();
   const taskIndex = role.tasks.findIndex((task) => task.id === taskId);
   const task = role.tasks[taskIndex];
   const evidence = taskEvidence(taskId);
+
+  if ((task.finalizationMode || DEFAULT_TASK_FINALIZATION_MODE) !== 'explicit_bundle_submit') {
+    showToast(task.finalizationMode === 'teacher_confirm'
+      ? '这项任务的小步完成后由老师终审，不需要再次提交。'
+      : '这项任务会在最后一步通过后自动完成，不需要再次提交。');
+    return;
+  }
+
+  const stepValidation = validateCompletedTaskSteps({ task, evidence });
+  if (stepValidation) {
+    evidence.validationError = stepValidation.message;
+    renderChat();
+    window.setTimeout(scrollChatToBottom, 20);
+    showToast(stepValidation.message);
+    return;
+  }
 
   if (task.toolType === 'capture' && evidence.imageUrls.length < minimumEvidence) {
     const remaining = minimumEvidence - evidence.imageUrls.length;
@@ -2075,11 +3023,12 @@ async function submitTask(taskId, toolCallId, minimumEvidence = 1) {
     text: evidence.text?.trim() || (evidence.imageUrls.length ? `我提交了 ${evidence.imageUrls.length} 张现场照片。` : '我已经完成并提交了这一阶段的工具结果。'),
   });
   if (standaloneMode) {
-    roleState.progress = taskIndex + 1;
-    roleState.challengePageIndex = Math.min(roleState.progress, role.tasks.length - 1);
-    roleState.messages
-      .filter((message) => message.type === 'task' && message.payload?.taskId === taskId)
-      .forEach((message) => { message.status = 'complete'; });
+    const completion = completeLocalTaskProgress({ role, roleState, taskId });
+    if (!completion.ok) {
+      showToast('当前任务已经变化，请按最新关卡继续。');
+      renderLearningShell();
+      return;
+    }
     if (feedbackTarget) {
       roleState.challengeFeedback[taskId] = {
         status: 'passed',
@@ -2093,8 +3042,16 @@ async function submitTask(taskId, toolCallId, minimumEvidence = 1) {
       text: `“${task.name}”已记录在本次体验进度中。`,
       source: '本地课程包',
     });
-    if (roleState.progress >= role.tasks.length) {
-      roleState.completed = true;
+    if (!completion.advanced) {
+      roleState.messages.push({
+        id: crypto.randomUUID(),
+        type: 'assistant',
+        text: completion.waitingMode === 'teacher'
+          ? '任务证据已记录，正在等待老师推进。'
+          : '任务证据已记录，准备好后点击“继续下一个任务”。',
+        source: '本地课程包',
+      });
+    } else if (completion.roleCompleted) {
       if (role.scope === 'phase') window.setTimeout(finishPhaseLearning, PHASE_TRANSITION_DELAY_MS);
       else roleState.messages.push({ id: crypto.randomUUID(), type: 'token' });
     } else {
@@ -2104,24 +3061,33 @@ async function submitTask(taskId, toolCallId, minimumEvidence = 1) {
     window.setTimeout(scrollChatToBottom, 30);
     return;
   }
+  state.evidenceUploadCount += 1;
+  renderLearningShell();
   try {
     await appendGeneratedEvidence(evidence, taskId);
-    const uploaded = evidence.files.length ? await Promise.all(evidence.files.map(uploadEvidence)) : [];
+    if (!roleState.agentSessionId) throw new Error('当前学习会话尚未建立，请稍后重试。');
+    const uploaded = evidence.files.length
+      ? await Promise.all(evidence.files.map((file) => uploadEvidence(file, roleState.agentSessionId)))
+      : [];
     await runAgentTurn({
       type: 'tool_result',
       toolCallId,
       result: { status: 'completed', values: { text: evidence.text || '', toolValues, photoEvidenceCount: evidence.imageUrls.length }, evidence: uploaded },
     }, { feedbackTarget });
   } catch (error) {
+    const visibleError = studentFacingError(error, '提交暂未完成，请稍后重试。');
     if (feedbackTarget) {
       roleState.challengeFeedback[taskId] = {
         status: 'failed',
-        text: error.message || '提交暂未完成，请稍后重试。',
+        text: visibleError,
         kind: 'task',
       };
       renderChat();
     }
-    showToast(error.message);
+    showToast(visibleError);
+  } finally {
+    state.evidenceUploadCount = Math.max(0, state.evidenceUploadCount - 1);
+    renderLearningShell();
   }
 }
 
@@ -2129,6 +3095,7 @@ async function sendMessage() {
   const input = document.querySelector('#chatInput');
   const text = input.value.trim();
   if (!text || (!state.currentRoleId && !isPhaseTrackActive())) return;
+  if (blockLearningAction('send-message')) return;
   input.value = '';
 
   const roleState = currentRoleState();
@@ -2152,6 +3119,7 @@ async function sendMessage() {
 }
 
 async function sendQuickReply({ questionId, act, value, label }) {
+  if (blockLearningAction('send-quick-reply')) return;
   const text = String(value || label || '').trim();
   if (!text || (!state.currentRoleId && !isPhaseTrackActive()) || state.agentBusy) return;
   const roleState = currentRoleState();
@@ -2165,34 +3133,28 @@ async function sendQuickReply({ questionId, act, value, label }) {
 
 function renderTeam() {
   if (!state.currentRoleId) return;
-  const completedRoles = lesson.roles.filter((role, index) => {
-    const actual = state.roleStates[role.id].progress;
-    return state.roleStates[role.id].completed || Math.max(actual, state.mockTeamProgress[index]) >= role.tasks.length;
-  });
+  const role = currentRole();
+  const roleState = currentRoleState();
+  const completed = roleState.completed || roleState.progress >= role.tasks.length;
+  const itemName = lesson.roleSystem.collectionItemName;
   document.querySelector('#teamMap').src = lesson.assets.navigationMap;
-  document.querySelector('#tokenProgress').textContent = `${completedRoles.length} / ${lesson.roles.length}`;
-  document.querySelector('#teamTokens').innerHTML = lesson.roles.map((role) => {
-    const unlocked = completedRoles.some((item) => item.id === role.id);
-    const itemName = lesson.roleSystem.collectionItemName;
-    return `<div class="team-token ${unlocked ? '' : 'is-locked'}" title="${escapeHtml(role.name)}${escapeHtml(itemName)}"><img src="${role.collectionItemImage}" alt="${escapeHtml(role.collectionItem)}${escapeHtml(itemName)}${unlocked ? '已获得' : '未获得'}" /></div>`;
-  }).join('');
-
-  document.querySelector('#memberList').innerHTML = lesson.roles.map((role, index) => {
-    const roleState = state.roleStates[role.id];
-    const member = sessionMember(role.id);
-    const progress = Math.max(roleState.progress, state.mockTeamProgress[index]);
-    const done = roleState.completed || progress >= role.tasks.length;
-    return `
-      <div class="member-row">
-        <img src="${role.badgeImage}" alt="${escapeHtml(role.name)}徽章" />
-        <div class="member-copy">
-          <strong>${escapeHtml(member?.name || '学习者')} · ${escapeHtml(role.name)}</strong>
-          <span>${done ? `${escapeHtml(lesson.roleSystem.itemName)}任务完成，等待汇合` : `正在进行：${escapeHtml(role.tasks[Math.min(progress, role.tasks.length - 1)].name)}`}</span>
-        </div>
-        <span class="member-progress ${done ? '' : 'is-waiting'}">${done ? `已获${escapeHtml(lesson.roleSystem.collectionItemName)}` : `${progress} / ${role.tasks.length}`}</span>
+  document.querySelector('#tokenProgress').textContent = completed ? '已获得' : '完成后获得';
+  document.querySelector('#teamTokens').innerHTML = `
+    <div class="team-token ${completed ? '' : 'is-locked'}" title="${escapeHtml(role.name)}${escapeHtml(itemName)}">
+      <img src="${role.collectionItemImage}" alt="${escapeHtml(role.collectionItem)}${escapeHtml(itemName)}${completed ? '已获得' : '未获得'}" />
+    </div>
+  `;
+  const taskIndex = Math.min(roleState.progress, role.tasks.length - 1);
+  document.querySelector('#memberList').innerHTML = `
+    <div class="member-row">
+      <img src="${role.badgeImage}" alt="${escapeHtml(role.name)}徽章" />
+      <div class="member-copy">
+        <strong>${escapeHtml(role.name)} · 我的进度</strong>
+        <span>${completed ? `本角色任务已完成，请等待老师组织小组汇合` : `正在进行：${escapeHtml(role.tasks[taskIndex].name)}`}</span>
       </div>
-    `;
-  }).join('');
+      <span class="member-progress ${completed ? '' : 'is-waiting'}">${completed ? `已获${escapeHtml(itemName)}` : `${roleState.progress} / ${role.tasks.length}`}</span>
+    </div>
+  `;
 }
 
 function renderProgressSheet() {
@@ -2210,7 +3172,7 @@ function renderProgressSheet() {
             <span class="progress-item__index">${done ? '<i data-lucide="check"></i>' : index + 1}</span>
             <div class="progress-item__copy">
               <strong>${escapeHtml(task.name)}</strong>
-              <span>${escapeHtml(task.passCondition)}</span>
+              <span>${escapeHtml(done || current ? task.passCondition : '完成前一任务后解锁')}</span>
             </div>
             <span>${done ? '已完成' : current ? '进行中' : '待解锁'}</span>
           </div>
@@ -2323,27 +3285,37 @@ function renderTimeBank() {
 
 function renderRoleSwitch() {
   if (!state.currentRoleId) return;
-  document.querySelector('#compactRoleList').innerHTML = lesson.roles.map((role) => `
-    <div class="compact-role ${role.id === state.currentRoleId ? 'is-current' : ''}">
+  document.querySelector('#compactRoleList').innerHTML = lesson.roles.map((role) => {
+    const choice = roleChoice(role.id);
+    const current = role.id === state.currentRoleId;
+    const disabled = current || !choice.selectable || state.agentBusy || state.qaForceBusy || state.roleSelectionBusy;
+    return `
+    <div class="compact-role ${current ? 'is-current' : ''} ${choice.state === 'taken' ? 'is-taken' : ''}">
       <img src="${role.badgeImage}" alt="${escapeHtml(role.name)}徽章" />
       <div><strong>${escapeHtml(role.name)}</strong><span>${escapeHtml(role.tasks[0].name)} · ${role.tasks.length}项任务</span></div>
-      <button type="button" data-action="switch-role" data-role-id="${role.id}">${role.id === state.currentRoleId ? '当前角色' : '体验'}</button>
+      <button type="button" data-action="switch-role" data-role-id="${role.id}" ${disabled ? 'disabled' : ''}>${escapeHtml(current ? '当前角色' : standaloneMode ? '切换' : choice.label)}</button>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function answerBankTask(taskId, answer) {
   const task = lesson.timeBank.tasks.find((item) => item.id === taskId);
   if (!task || state.completedBankTasks.has(taskId)) return;
   const sessionId = currentRoleState()?.agentSessionId;
-  if (!sessionId) return showToast('请先领取角色，再使用时间银行。');
+  if (!sessionId) return showToast('请先选择角色，再使用时间银行。');
   try {
     const draft = state.bankDrafts[taskId] || {};
     let evidence = [];
     let location;
     if (task.type === 'photo_checkpoint') {
       if (!draft.file) return showToast('请先拍摄一张打卡照片。');
-      evidence = [await uploadEvidence(draft.file)];
+      state.evidenceUploadCount += 1;
+      try {
+        evidence = [await uploadEvidence(draft.file, sessionId)];
+      } finally {
+        state.evidenceUploadCount = Math.max(0, state.evidenceUploadCount - 1);
+      }
       answer = draft.text || answer;
     }
     if (task.type === 'location_checkin') {
@@ -2363,7 +3335,7 @@ async function answerBankTask(taskId, answer) {
     renderTimeBank();
     showToast(`完成小任务，时间银行到账 ${result.reward} ${lesson.timeBank.currencyUnit}。`);
   } catch (error) {
-    showToast(error.message);
+    showToast(studentFacingError(error, '时间银行任务暂未提交，请稍后重试。'));
   }
 }
 
@@ -2376,14 +3348,14 @@ async function giftTime(roleId, requestedAmount) {
     renderTimeBank();
     showToast(`已向${member?.name || '组员'}赠送 ${amount} ${lesson.timeBank.currencyUnit}。`);
   } catch (error) {
-    showToast(error.message);
+    showToast(studentFacingError(error, '时间赠送暂未完成，请稍后重试。'));
   }
 }
 
 async function callTeacher(addMessage = true) {
   if (standaloneMode) return showToast('当前为本地体验模式，暂未连接教师端。');
   const sessionId = currentRoleState()?.agentSessionId;
-  if (!sessionId) return showToast('请先领取角色，再呼叫老师。');
+  if (!sessionId) return showToast('请先选择角色，再呼叫老师。');
   try {
     await requestTeacherHelp({
       sessionId,
@@ -2392,7 +3364,7 @@ async function callTeacher(addMessage = true) {
     });
     showToast('老师端已接收，并附带你的位置和当前任务。');
   } catch (error) {
-    showToast(error.message);
+    showToast(studentFacingError(error, '求助暂未发送，请稍后重试。'));
     return;
   }
   if (!addMessage || (!state.currentRoleId && !isPhaseTrackActive())) return;
@@ -2407,10 +3379,13 @@ async function callTeacher(addMessage = true) {
 
 function teacherNotice(text) {
   if (!state.currentRoleId && !isPhaseTrackActive()) return;
+  const notice = studentFacingText(text, {
+    channel: 'teacher-notice', fallback: '请关注老师的最新提示。',
+  });
   currentRoleState().messages.push({
     id: crypto.randomUUID(),
     type: 'phase',
-    text: `教师提示 · ${text}`,
+    text: `教师提示 · ${notice}`,
   });
   renderChat();
   window.setTimeout(scrollChatToBottom, 30);
@@ -2422,118 +3397,364 @@ function showTeacherDirective(command) {
   const text = overlay.querySelector('#teacherDirectiveText');
   const confirm = overlay.querySelector('#teacherDirectiveConfirm');
   const isRally = command.action === 'emergency_rally';
-  title.textContent = isRally ? '紧急集合' : command.action === 'pause' ? '课程已暂停' : '教师指令';
-  text.textContent = command.payload.message || (command.action === 'pause' ? '请停留在安全位置，等待老师恢复课程。' : '请按照老师的最新指令行动。');
-  confirm.textContent = isRally ? '已收到，开始前往集合点' : '我已知道';
+  const isEnded = command.action === 'end_run';
+  const isPersistent = isRally || isEnded || command.action === 'pause';
+  title.textContent = isRally ? '紧急集合' : isEnded ? '本次课程已结束' : command.action === 'pause' ? '课程已暂停' : '教师指令';
+  const fallback = command.action === 'pause'
+    ? '请停留在安全位置，等待老师恢复课程。'
+    : isEnded ? '请停止当前任务，按老师安排完成集合或离场。' : '请按照老师的最新指令行动。';
+  text.textContent = studentFacingText(command.payload?.message || command.payload?.text, {
+    channel: 'teacher-overlay', fallback,
+  });
+  confirm.textContent = isRally ? '已收到，开始前往集合点' : isEnded ? '我已知道' : '我已知道';
+  confirm.disabled = Boolean(isPersistent && (command.confirmed || !command.id));
+  if (confirm.disabled) {
+    confirm.textContent = isEnded ? '本次课程已结束' : isRally ? '已确认，正在集合' : '已确认，等待老师恢复';
+  }
   overlay.hidden = false;
   state.activeTeacherCommand = command;
+  document.activeElement?.blur();
 }
 
-async function applyTeacherCommand(command) {
+function teacherCommandError(message, code = 'TEACHER_COMMAND_NOT_APPLIED') {
+  return Object.assign(new Error(message), { code });
+}
+
+async function runRequiredTeacherAgentTurn(input) {
   const roleState = currentRoleState();
-  if (!roleState) return;
-  if (command.action === 'send_notice' || command.action === 'push_knowledge') {
-    teacherNotice(command.payload.text || command.payload.message || '请关注老师的最新提示。');
-  } else if (command.action === 'add_time') {
-    const minutes = Number(command.payload.amount || 3);
-    state.phaseEndTime = (state.phaseEndTime || Date.now()) + (minutes * 60_000);
-    teacherNotice(`老师为当前课程阶段追加了 ${minutes} 分钟。`);
-  } else if (command.action === 'remove_time') {
-    const minutes = Number(command.payload.amount || 1);
-    state.phaseEndTime = Math.max(Date.now(), (state.phaseEndTime || Date.now()) - (minutes * 60_000));
-    teacherNotice(`老师将当前课程阶段调整了 ${minutes} 分钟。`);
-  } else if (command.action === 'set_scaffold') {
-    // 把档位真正送到会话上：服务端 participant.learning.scaffoldLevel 只是场次记录里的
-    // 展示字段，决定取哪一档提示的是会话上的 scaffoldLevel。
-    await runAgentTurn({
-      type: 'lifecycle_event',
-      event: 'teacher_directive',
-      data: { scaffoldLevel: Number(command.payload.level ?? 0), teacherCommandId: command.id },
+  if (!roleState?.agentSessionId) {
+    throw teacherCommandError('学生智能体会话尚未建立。', 'TEACHER_COMMAND_SESSION_MISSING');
+  }
+  if (state.agentBusy || teacherRunBlocksLearning()) {
+    throw teacherCommandError(
+      '学生端当前正忙或已被课程场次锁定，请稍后重新发送这条指令。',
+      'TEACHER_COMMAND_RETRY_LATER',
+    );
+  }
+  const requestId = crypto.randomUUID();
+  await runAgentTurn(input, { requestId, showLoading: false });
+  if (roleState.lastAgentRequestError?.requestId === requestId) {
+    throw teacherCommandError(
+      roleState.lastAgentRequestError.message || '学生智能体未能应用这条教师指令。',
+      roleState.lastAgentRequestError.code || 'TEACHER_COMMAND_AGENT_FAILED',
+    );
+  }
+}
+
+function synchronizeTeacherRunState(runState) {
+  if (!runState || standaloneMode) return;
+  const wasBlocked = teacherRunBlocksLearning();
+  const claimProjection = mergeRoleClaimProjection({
+    claimedRoleId: state.teacherClaimedRoleId,
+    takenRoleIds: state.teacherTakenRoleIds,
+    availableRoleIds: state.teacherAvailableRoleIds,
+  }, runState);
+  state.teacherClaimedRoleId = claimProjection.claimedRoleId;
+  state.teacherTakenRoleIds = claimProjection.takenRoleIds;
+  state.teacherAvailableRoleIds = claimProjection.availableRoleIds;
+  const rolesReleased = runState.rolesReleased === true && runState.rolesLocked !== true;
+  state.teacherReleasedRoles = rolesReleased;
+  state.teacherRolesLocked = runState.rolesLocked === true;
+  state.teacherRunStatus = runState.status || state.teacherRunStatus;
+  state.teacherRunPaused = runState.paused === true;
+  state.teacherEmergencyRally = runState.rallyActive === true;
+  state.teacherSessionInactive = false;
+  if (!wasBlocked && teacherRunBlocksLearning()) suspendActiveLearningMedia();
+  const activeAction = state.activeTeacherCommand?.action;
+  if (state.teacherRunStatus === 'completed' && activeAction !== 'end_run') {
+    showTeacherDirective({
+      id: '',
+      action: 'end_run',
+      confirmed: true,
+      payload: { message: '本次课程已结束，请停止当前任务，按老师安排完成集合或离场。' },
     });
-    teacherNotice('老师已调整后续提示深度。');
-  } else if (command.action === 'advance_phase') {
-    const phaseId = command.payload.phaseId;
-    if (phaseId && lesson.phases.some((phase) => phase.id === phaseId)) {
-      await runAgentTurn({
-        type: 'lifecycle_event',
-        event: 'teacher_directive',
+  } else if (state.teacherRunStatus && state.teacherRunStatus !== 'active' && activeAction !== 'pause') {
+    showTeacherDirective({
+      id: '',
+      action: 'pause',
+      confirmed: true,
+      payload: { message: '课程尚未开始。请留在当前页面，等待老师发出开始指令。' },
+    });
+  } else if (state.teacherEmergencyRally && activeAction !== 'emergency_rally') {
+    showTeacherDirective({
+      id: '',
+      action: 'emergency_rally',
+      confirmed: true,
+      payload: { message: '请停止当前任务，按老师要求前往集合点。' },
+    });
+  } else if (state.teacherRunPaused && !['pause', 'emergency_rally', 'end_run'].includes(activeAction)) {
+    showTeacherDirective({
+      id: '',
+      action: 'pause',
+      confirmed: true,
+      payload: { message: '课程已暂停。请停留在安全位置，等待老师恢复课程。' },
+    });
+  } else if (
+    !state.teacherRunPaused
+    && !state.teacherEmergencyRally
+    && (!state.teacherRunStatus || state.teacherRunStatus === 'active')
+    && ['pause', 'emergency_rally'].includes(activeAction)
+  ) {
+    document.querySelector('#teacherDirectiveOverlay').hidden = true;
+    state.activeTeacherCommand = null;
+  }
+  const roleSwitchDescription = document.querySelector('#roleSwitchDescription');
+  if (roleSwitchDescription) {
+    roleSwitchDescription.textContent = state.teacherRolesLocked
+      ? '老师已锁定角色。你可以继续当前角色，暂时不能换领其他角色。'
+      : `同组一人领取一个${lesson.roleSystem.itemName}；已领取的角色不能重复选择。`;
+  }
+  if (!state.currentRoleId && !isPhaseTrackActive() && state.screen === 'roleScreen' && !rolesReleased) {
+    showScreen('immersiveScreen');
+  }
+  if (
+    rolesReleased
+    && !state.currentRoleId
+    && state.phaseState?.completed
+    && state.screen === 'immersiveScreen'
+  ) {
+    showScreen('roleScreen');
+  }
+  let refreshedRoleUi = false;
+  if (state.screen === 'roleScreen' && document.querySelector('#roleList')) {
+    renderRoles();
+    refreshedRoleUi = true;
+  }
+  if (state.currentRoleId && state.openSheetId === 'roleSwitchSheet') {
+    renderRoleSwitch();
+    refreshedRoleUi = true;
+  }
+  if (refreshedRoleUi) refreshIcons();
+}
+
+function lockRoleAssignment() {
+  state.teacherReleasedRoles = false;
+  state.teacherRolesLocked = true;
+  if (!state.currentRoleId && (!isPhaseTrackActive() || state.phaseState?.completed)) {
+    showScreen('immersiveScreen');
+  } else if (state.screen === 'learningShell') {
+    renderLearningShell();
+  }
+  showToast('老师已锁定角色，暂时不能换领。');
+}
+
+function positiveCommandAmount(command, fallback) {
+  const amount = Number(command.payload?.amount ?? fallback);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw teacherCommandError('教师指令中的时间数值无效。', 'TEACHER_COMMAND_INVALID_PAYLOAD');
+  }
+  return amount;
+}
+
+function teacherCommandHandlers(roleState) {
+  return {
+    send_notice: (command) => teacherNotice(command.payload.text || command.payload.message || '请关注老师的最新提示。'),
+    push_knowledge: (command) => teacherNotice(command.payload.text || command.payload.message || '老师已推送一条补充资料。'),
+    add_time: (command) => {
+      const minutes = positiveCommandAmount(command, 3);
+      teacherNotice(`教师加时功能暂未开放（本次请求为 ${minutes} 分钟）。`);
+    },
+    remove_time: (command) => {
+      const minutes = positiveCommandAmount(command, 1);
+      teacherNotice(`教师减时功能暂未开放（本次请求为 ${minutes} 分钟）。`);
+    },
+    release_roles: () => releaseRoleAssignment(),
+    lock_roles: () => lockRoleAssignment(),
+    start_phase: (command) => {
+      const requestedPhaseId = String(command.payload?.phaseId || '').trim();
+      if (requestedPhaseId && requestedPhaseId !== state.currentPhaseId) {
+        throw teacherCommandError('「开始阶段」只能开始学生当前阶段；跨阶段请使用「推进阶段」。', 'TEACHER_COMMAND_PHASE_MISMATCH');
+      }
+      state.teacherRunStatus = 'active';
+      document.querySelector('#teacherDirectiveOverlay').hidden = true;
+      teacherNotice(`老师已开始${currentPhase()?.name || '当前课程阶段'}。`);
+    },
+    set_scaffold: async (command) => {
+      const level = Number(command.payload.level ?? 0);
+      if (!Number.isInteger(level) || level < 0 || level > 4) {
+        throw teacherCommandError('教师指令中的脚手架等级无效。', 'TEACHER_COMMAND_INVALID_PAYLOAD');
+      }
+      await runRequiredTeacherAgentTurn({
+        type: 'lifecycle_event', event: 'teacher_directive',
+        data: { scaffoldLevel: level, teacherCommandId: command.id },
+      });
+      teacherNotice('老师已调整后续提示深度。');
+    },
+    advance_phase: async (command) => {
+      const phaseId = String(command.payload.phaseId || '').trim();
+      if (!phaseId || !lesson.phases.some((phase) => phase.id === phaseId)) {
+        throw teacherCommandError('教师指令中的目标阶段无效。', 'TEACHER_COMMAND_INVALID_PHASE');
+      }
+      await runRequiredTeacherAgentTurn({
+        type: 'lifecycle_event', event: 'teacher_directive',
         data: { phaseId, teacherCommandId: command.id },
       });
       state.currentPhaseId = phaseId;
-      // 阶段换了，倒计时要按新阶段的时长重开，顶栏也要跟着变。
       beginCurrentPhase();
       renderLearningShell();
-    }
-    teacherNotice(`老师已推进到${currentPhase()?.name || '下一课程阶段'}。`);
-  } else if (command.action === 'approve_evidence') {
-    teacherNotice('老师已人工确认当前证据。');
-    const task = currentTask();
-    const stepIndex = Number(roleState.guidanceStepIndices[task.id] || 0);
-    const step = task.steps?.[stepIndex];
-    if (step?.completionMode === 'teacher_confirm') {
-      await runAgentTurn({
-        type: 'lifecycle_event', event: 'task_step_completed',
-        data: { taskId: task.id, stepId: step.id, stepIndex, teacherApproved: true, teacherCommandId: command.id },
+      teacherNotice(`老师已推进到${currentPhase()?.name || '下一课程阶段'}。`);
+    },
+    approve_evidence: async (command) => {
+      const task = currentTask();
+      if (!task) throw teacherCommandError('当前没有可确认的任务。', 'TEACHER_COMMAND_TASK_MISSING');
+      const stepIndex = Number(roleState.guidanceStepIndices[task.id] || 0);
+      const step = task.steps?.[stepIndex];
+      if (step?.completionMode === 'teacher_confirm') {
+        await runRequiredTeacherAgentTurn({
+          type: 'lifecycle_event', event: 'task_step_completed',
+          data: { taskId: task.id, stepId: step.id, stepIndex, teacherApproved: true, teacherCommandId: command.id },
+        });
+      } else if (
+        task.finalizationMode === 'teacher_confirm'
+        && roleState.taskFinalizations?.[task.id]?.status === 'awaiting_teacher_confirm'
+      ) {
+        await runRequiredTeacherAgentTurn({
+          type: 'lifecycle_event', event: 'teacher_finalize_task',
+          data: { taskId: task.id, teacherCommandId: command.id },
+        });
+      } else {
+        throw teacherCommandError('当前任务未处于等待教师确认的状态。', 'TEACHER_COMMAND_TASK_STATE_MISMATCH');
+      }
+      teacherNotice('老师已人工确认当前证据。');
+    },
+    reject_evidence: async (command) => {
+      const task = currentTask();
+      if (!task || task.finalizationMode !== 'teacher_confirm'
+        || roleState.taskFinalizations?.[task.id]?.status !== 'awaiting_teacher_confirm') {
+        throw teacherCommandError('当前任务未处于等待教师审核的状态。', 'TEACHER_COMMAND_TASK_STATE_MISMATCH');
+      }
+      await runRequiredTeacherAgentTurn({
+        type: 'lifecycle_event', event: 'teacher_reject_task',
+        data: {
+          taskId: task.id,
+          reason: command.payload.reason || command.payload.message || '老师请你修改最后一步后再次提交确认。',
+          teacherCommandId: command.id,
+        },
       });
-    }
-  } else if (command.action === 'reject_evidence') {
-    teacherNotice('老师请你补充或重新提交当前证据。');
-  } else if (command.action === 'skip_step') {
-    const task = currentTask();
-    const stepIndex = Number(roleState.guidanceStepIndices[task.id] || 0);
-    const step = task.steps?.[stepIndex];
-    if (step) {
-      await runAgentTurn({
+      teacherNotice('老师请你补充或重新提交当前证据。');
+    },
+    skip_step: async (command) => {
+      const task = currentTask();
+      const stepIndex = Number(roleState.guidanceStepIndices[task?.id] || 0);
+      const step = task?.steps?.[stepIndex];
+      if (!task || !step) throw teacherCommandError('当前没有可跳过的任务小步。', 'TEACHER_COMMAND_STEP_MISSING');
+      await runRequiredTeacherAgentTurn({
         type: 'lifecycle_event', event: 'task_step_completed',
         data: { taskId: task.id, stepId: step.id, stepIndex, teacherOverride: true, teacherCommandId: command.id },
       });
       teacherNotice('老师已允许跳过当前小步，系统保留了本次人工干预记录。');
-    }
-  } else if (command.action === 'advance_task') {
-    // 解开 `推进方式：teacher` 的任务。学生做完这类任务后服务端只记 pendingAdvance
-    // 不动进度，必须靠这条指令走「学生端作为桥」才能推进（见 server/agent/task-advance.js）。
-    // 服务端会校验是否真的在等教师，没等就报错——所以这里不做本地判断，让服务端说话。
-    await runAgentTurn({
-      type: 'lifecycle_event',
-      event: 'teacher_advance_task',
-      data: { taskId: roleState.pendingAdvance?.taskId || currentTask()?.id || '', teacherCommandId: command.id },
-    });
-    teacherNotice('老师已确认，可以进入下一个任务。');
-  } else if (['pause', 'emergency_rally'].includes(command.action)) {
-    showTeacherDirective(command);
-  } else if (command.action === 'resume') {
-    document.querySelector('#teacherDirectiveOverlay').hidden = true;
-    teacherNotice('老师已恢复课程，可以继续当前任务。');
-  } else if (command.action === 'switch_alternative') {
-    teacherNotice('现场任务已切换为同目标替代方案，请按新提示继续。');
+    },
+    advance_task: async (command) => {
+      await runRequiredTeacherAgentTurn({
+        type: 'lifecycle_event', event: 'teacher_advance_task',
+        data: { taskId: roleState.pendingAdvance?.taskId || currentTask()?.id || '', teacherCommandId: command.id },
+      });
+      teacherNotice('老师已确认，可以进入下一个任务。');
+    },
+    pause: (command) => {
+      state.teacherRunPaused = true;
+      suspendActiveLearningMedia();
+      showTeacherDirective(command);
+    },
+    emergency_rally: (command) => {
+      state.teacherEmergencyRally = true;
+      suspendActiveLearningMedia();
+      showTeacherDirective(command);
+    },
+    resume: () => {
+      if (state.teacherRunStatus === 'completed') {
+        throw teacherCommandError('已结束的课程不能在学生端重新恢复。', 'TEACHER_RUN_COMPLETED');
+      }
+      state.teacherRunPaused = false;
+      state.teacherEmergencyRally = false;
+      document.querySelector('#teacherDirectiveOverlay').hidden = true;
+      state.activeTeacherCommand = null;
+      teacherNotice('老师已恢复课程，可以继续当前任务。');
+      renderLearningShell();
+    },
+    end_run: (command) => {
+      state.teacherRunStatus = 'completed';
+      state.teacherRunPaused = false;
+      state.teacherEmergencyRally = false;
+      state.agentQueue.length = 0;
+      suspendActiveLearningMedia();
+      showTeacherDirective(command);
+    },
+    confirm_arrival: async (command) => {
+      await runRequiredTeacherAgentTurn({
+        type: 'lifecycle_event', event: 'teacher_confirm_arrival',
+        data: { teacherCommandId: command.id },
+      });
+      teacherNotice('老师已人工确认你到达当前任务点。');
+    },
+    switch_alternative: () => ({
+      handled: false,
+      code: 'TEACHER_COMMAND_NOT_IMPLEMENTED',
+      message: '当前课程没有可应用的替代任务配置。',
+    }),
+  };
+}
+
+async function applyTeacherCommand(command) {
+  const roleState = currentRoleState();
+  if (!roleState?.agentSessionId) return { handled: false, code: 'TEACHER_COMMAND_SESSION_MISSING' };
+  let result = state.teacherCommandApplications.get(command.id);
+  if (!result) {
+    result = await dispatchTeacherCommand(command, teacherCommandHandlers(roleState));
+    // Retrying only the receipt must not apply add_time or another local side
+    // effect twice when the first receipt request lost its connection.
+    state.teacherCommandApplications.set(command.id, result);
   }
-  await sendTeacherCommandReceipt(roleState.agentSessionId, command.id, 'delivered').catch(() => undefined);
+  await sendTeacherCommandReceipt(
+    roleState.agentSessionId,
+    command.id,
+    result.handled ? 'delivered' : 'failed',
+  );
+  if (!result.handled) {
+    showToast(studentFacingError(result.error || result, '这条教师指令未能应用。'));
+  }
+  return result;
 }
 
 async function pollTeacherCommands() {
   const roleState = currentRoleState();
   const sessionId = roleState?.agentSessionId;
-  if (!sessionId || document.hidden) return;
+  // 忙碌时先不领取命令。命令继续保持 accepted，下次轮询才实际应用并回执；
+  // 避免入内存队列后立刻标 delivered，刷新页面时永久丢失。
+  if (!sessionId || document.hidden || teacherPollInFlight) return;
+  teacherPollInFlight = true;
   try {
-    const result = await getTeacherCommands(sessionId, roleState.teacherCommandSequence);
+    const result = await getTeacherCommands(sessionId, 0);
+    synchronizeTeacherRunState(result.runState);
+    if (
+      document.hidden
+      || currentRoleState() !== roleState
+      || roleState.agentSessionId !== sessionId
+    ) return;
     for (const command of result.commands) {
+      if (
+        TEACHER_AGENT_COMMAND_ACTIONS.has(command.action)
+        && (state.agentBusy || teacherRunBlocksLearning())
+      ) continue;
       await applyTeacherCommand(command);
       roleState.teacherCommandSequence = Math.max(roleState.teacherCommandSequence, command.sequence || 0);
     }
-    roleState.teacherCommandSequence = Math.max(roleState.teacherCommandSequence, result.sequence || 0);
   } catch {
     // Polling is best-effort and resumes when connectivity returns.
+  } finally {
+    teacherPollInFlight = false;
   }
 }
 
 function releaseRoleAssignment() {
   state.teacherReleasedRoles = true;
+  state.teacherRolesLocked = false;
   if (isPhaseTrackActive() && !state.phaseState?.completed) {
-    showToast('老师已开启角色领取，完成当前导入任务后即可进入。');
+    showToast('老师已开放角色领取，完成当前导入任务后即可进入。');
     return;
   }
   showScreen('roleScreen');
-  showToast('老师已开启身份领取。');
+  showToast('老师已开放角色领取。');
 }
 
 function startVoiceInput() {
@@ -2557,18 +3778,26 @@ function startVoiceInput() {
   recognition.start();
 }
 
-const actions = {
-  'start-course': () => (phaseTrack
+function startCourseFromLaunch() {
+  return phaseTrack
     ? startPhaseLearning()
-    : showScreen(standaloneMode || state.teacherReleasedRoles ? 'roleScreen' : 'immersiveScreen')),
+    : showScreen(standaloneMode || state.teacherReleasedRoles ? 'roleScreen' : 'immersiveScreen');
+}
+
+const actions = {
+  'start-course': startCourseFromLaunch,
   'show-course-info': () => showToast(`${lesson.grades} · ${lesson.duration} · ${lesson.groupRule}`),
   'select-role': (target) => selectRole(target.dataset.roleId),
   'switch-role': (target) => selectRole(target.dataset.roleId),
   'set-learning-view': (target) => setLearningView(target.dataset.learningView),
-  'select-challenge-page': (target) => selectChallengePage(Number(target.dataset.pageIndex)),
   'challenge-previous': () => selectChallengePage(currentRoleState().challengePageIndex - 1),
-  'challenge-next': () => selectChallengePage(currentRoleState().challengePageIndex + 1),
-  'open-role-switch': () => openSheet('roleSwitchSheet'),
+  'challenge-forward': () => selectChallengePage(currentRoleState().challengePageIndex + 1),
+  'qa-force-complete': (target) => forceCompleteChallengeTask(target.dataset.taskId),
+  'open-role-switch': () => {
+    renderRoleSwitch();
+    openSheet('roleSwitchSheet');
+    refreshIcons();
+  },
   'close-sheet': closeSheet,
   'arrive-role-location': (target) => arriveRoleLocation(target.dataset.toolCallId),
   'preview-route': (target) => {
@@ -2598,10 +3827,7 @@ const actions = {
   },
   'run-simulation': (target) => runSimulation(target.dataset.taskId, target.dataset.stepId),
   'add-team-entry': (target) => addTeamEntry(target.dataset.taskId, target.dataset.stepId),
-  'complete-media': (target) => {
-    activityValue(target.dataset.taskId, target.dataset.stepId, 'media').completed = true;
-    renderChat();
-  },
+  'complete-media': (target) => completeMediaActivity(target.dataset.taskId, target.dataset.stepId),
   'confirm-scan': (target) => confirmScan(target.dataset.taskId, target.dataset.stepId),
   'select-builder-item': (target) => {
     draggedBuilderItem = target.dataset.builderItem;
@@ -2621,11 +3847,31 @@ const actions = {
   'send-message': sendMessage,
   // 学生自己确认进入下一任务（`推进方式：ai_suggest`）。教师侧的对应入口是
   // 教师端 advance_task 指令，两条路在服务端汇到同一个 resolvePendingAdvance。
-  'advance-task': (target) => runAgentTurn({
-    type: 'lifecycle_event',
-    event: 'student_advance_task',
-    data: { taskId: target.dataset.taskId || '' },
-  }),
+  'advance-task': (target) => {
+    const taskId = target.dataset.taskId || '';
+    if (!standaloneMode) {
+      return runAgentTurn({
+        type: 'lifecycle_event',
+        event: 'student_advance_task',
+        data: { taskId },
+      });
+    }
+    const role = currentRole();
+    const roleState = currentRoleState();
+    const result = resolveLocalPendingAdvance({ role, roleState, taskId, actor: 'student' });
+    if (!result.ok) return showToast('当前任务不能由学生直接推进。');
+    if (result.roleCompleted) {
+      if (role.scope === 'phase') window.setTimeout(finishPhaseLearning, PHASE_TRANSITION_DELAY_MS);
+      else if (!roleState.messages.some((message) => message.type === 'token')) {
+        roleState.messages.push({ id: crypto.randomUUID(), type: 'token' });
+      }
+    } else {
+      roleState.messages.push(...currentTaskRecoveryMessages(role, roleState));
+    }
+    renderLearningShell();
+    window.setTimeout(scrollChatToBottom, 20);
+    return result;
+  },
   'send-quick-reply': (target) => sendQuickReply({
     questionId: target.dataset.questionId,
     act: target.dataset.act,
@@ -2644,14 +3890,19 @@ const actions = {
   'call-teacher': () => callTeacher(true),
   'confirm-teacher-command': async () => {
     const command = state.activeTeacherCommand;
-    document.querySelector('#teacherDirectiveOverlay').hidden = true;
-    state.activeTeacherCommand = null;
-    if (command && currentRoleState()?.agentSessionId) {
+    const persistent = ['pause', 'emergency_rally', 'end_run'].includes(command?.action);
+    if (command?.id && !command.confirmed && currentRoleState()?.agentSessionId) {
       await sendTeacherCommandReceipt(currentRoleState().agentSessionId, command.id, 'confirmed').catch(() => undefined);
+      command.confirmed = true;
       showToast('已向老师确认收到。');
     }
+    if (persistent) {
+      showTeacherDirective(command);
+    } else {
+      document.querySelector('#teacherDirectiveOverlay').hidden = true;
+      state.activeTeacherCommand = null;
+    }
   },
-  'send-rally': () => showToast('集合点已发送给全组，等待其他成员确认。'),
   'open-quick-tools': () => showToast(`工具会根据当前任务由${PLATFORM_COMPANION.name}主动调用。`),
   'voice-input': startVoiceInput,
 };
@@ -2659,6 +3910,11 @@ const actions = {
 app.addEventListener('click', (event) => {
   if (state.currentRoleId || isPhaseTrackActive()) currentRoleState().lastLocalActionAt = Date.now();
   if (isLearningFilePicker(event.target)) {
+    if (teacherRunBlocksLearning()) {
+      event.preventDefault();
+      showToast(explainTeacherRunGate());
+      return;
+    }
     externalFilePickerOpen = true;
     scheduleFilePickerLayoutRestore();
   }
@@ -2680,12 +3936,19 @@ app.addEventListener('click', (event) => {
 
   const actionTarget = event.target.closest('[data-action]');
   if (!actionTarget) return;
+  if (blockLearningAction(actionTarget.dataset.action)) return;
   const action = actions[actionTarget.dataset.action];
   if (action) action(actionTarget);
 });
 
 app.addEventListener('input', (event) => {
   if (state.currentRoleId || isPhaseTrackActive()) currentRoleState().lastLocalActionAt = Date.now();
+  if (
+    teacherRunBlocksLearning()
+    && (event.target.dataset.bankTaskId
+      || event.target.hasAttribute('data-activity-field')
+      || event.target.dataset.taskText)
+  ) return;
   if (event.target.dataset.bankTaskId) {
     state.bankDrafts[event.target.dataset.bankTaskId] ||= {};
     state.bankDrafts[event.target.dataset.bankTaskId].text = event.target.value;
@@ -2714,6 +3977,11 @@ app.addEventListener('input', (event) => {
 
 app.addEventListener('change', async (event) => {
   if (state.currentRoleId || isPhaseTrackActive()) currentRoleState().lastLocalActionAt = Date.now();
+  if (teacherRunBlocksLearning() && isLearningFilePicker(event.target)) {
+    event.target.value = '';
+    showToast(explainTeacherRunGate());
+    return;
+  }
   if (isLearningFilePicker(event.target)) {
     externalFilePickerOpen = false;
     scheduleFilePickerLayoutRestore();
@@ -2750,8 +4018,8 @@ app.addEventListener('change', async (event) => {
   try {
     if (toolStepId) {
       value = activityValue(taskId, toolStepId, 'photo');
-      if (value.processing) return showToast('上一批照片还在处理中，请稍等一下。');
-      const { tools } = activeStepContext(taskId, toolStepId);
+      if (value.processing || value.revisionSubmitting) return showToast('照片正在准备或检查，请稍等一下。');
+      const { tools } = editableStepContext(taskId, toolStepId);
       const maximum = Number(tools?.find((tool) => tool.id === 'photo')?.config?.maxCount || 6);
       const remaining = Math.max(0, maximum - Number(value.count || 0));
       if (!remaining) return showToast(`本小步最多提交 ${maximum} 张照片。`);
@@ -2794,7 +4062,7 @@ app.addEventListener('change', async (event) => {
     }
     evidence.validationError = '这批照片没有处理完整，已撤回。请重新选择照片。';
     renderLearningShell();
-    showToast(error?.message || '照片处理遇到问题，请再试一次。');
+    showToast(studentFacingError(error, '照片处理遇到问题，请再试一次。'));
   } finally {
     event.target.value = '';
   }
@@ -2823,10 +4091,12 @@ document.addEventListener('visibilitychange', () => {
 
 app.addEventListener('ended', (event) => {
   if (!event.target.hasAttribute('data-activity-media')) return;
-  activityValue(event.target.dataset.taskId, event.target.dataset.stepId, 'media').completed = true;
+  if (teacherRunBlocksLearning()) return;
+  void completeMediaActivity(event.target.dataset.taskId, event.target.dataset.stepId);
 }, true);
 
 app.addEventListener('dragstart', (event) => {
+  if (teacherRunBlocksLearning()) return;
   const item = event.target.closest('[data-builder-item]');
   if (!item) return;
   draggedBuilderItem = item.dataset.builderItem;
@@ -2841,6 +4111,10 @@ app.addEventListener('drop', (event) => {
   const zone = event.target.closest('[data-builder-zone]');
   if (!zone) return;
   event.preventDefault();
+  if (teacherRunBlocksLearning()) {
+    showToast(explainTeacherRunGate());
+    return;
+  }
   const itemId = event.dataTransfer?.getData('text/plain') || draggedBuilderItem;
   placeBuilderItem(zone.dataset.taskId, zone.dataset.stepId, zone.dataset.builderZone, itemId);
   draggedBuilderItem = null;
@@ -2849,6 +4123,7 @@ app.addEventListener('drop', (event) => {
 document.querySelector('#chatInput').addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.isComposing) {
     event.preventDefault();
+    if (blockLearningAction('send-message')) return;
     sendMessage();
   }
 });

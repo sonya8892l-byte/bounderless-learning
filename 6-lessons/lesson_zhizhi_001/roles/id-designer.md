@@ -148,6 +148,7 @@
 
 ### 任务3：发布前审查
 - id：designer-preflight-review
+- 收口方式：teacher_confirm
 - 阶段：Phase 5 居民证制作
 - 地点：教育空间
 - 位置模式：none

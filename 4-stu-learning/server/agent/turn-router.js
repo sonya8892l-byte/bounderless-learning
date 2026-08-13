@@ -218,7 +218,26 @@ export function classifyTurn({ input, session, nudge }) {
         sourceMode: 'course-config',
       });
     }
-    if (input.event === 'task_step_completed') {
+    if (input.event === 'teacher_confirm_arrival') {
+      return base('navigation_completed', {
+        fastWorkflow: true,
+        includeTaskContext: true,
+        includePhasePrompt: true,
+        includeRestrictions: true,
+        allowedTools: [],
+        sourceMode: 'course-config',
+      });
+    }
+    if (['task_step_completed', 'task_step_revised'].includes(input.event)) {
+      return base('task_step_completed', {
+        fastWorkflow: true,
+        includeTaskContext: true,
+        includePhasePrompt: true,
+        includeRestrictions: true,
+        sourceMode: 'course-config',
+      });
+    }
+    if (['teacher_finalize_task', 'teacher_reject_task'].includes(input.event)) {
       return base('task_step_completed', {
         fastWorkflow: true,
         includeTaskContext: true,

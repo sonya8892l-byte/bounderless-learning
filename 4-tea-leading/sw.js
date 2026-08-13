@@ -1,5 +1,5 @@
-const CACHE = 'teacher-pwa-v6';
-const CORE = ['./', './index.html', './styles.css', './app.js', './amap-service.js', './manifest.webmanifest', './icons/app-icon.svg'];
+const CACHE = 'teacher-pwa-v8';
+const CORE = ['./', './index.html', './styles.css', './app.js', './teacher-auth.js', './teacher-session-data.js', './qr-code.js', './amap-service.js', './manifest.webmanifest', './icons/app-icon.svg'];
 self.addEventListener('install', (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (event) => event.waitUntil(caches.keys()
   .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))

@@ -105,10 +105,12 @@ async function enterFirstStage(agent, session, prefix = 'entry') {
 }
 
 async function completeCurrentTaskSteps(agent, session, task, prefix = 'step') {
+  const toolValues = {};
   for (let stepIndex = 0; stepIndex < task.steps.length; stepIndex += 1) {
     const step = task.steps[stepIndex];
     const photo = step.tools.find((tool) => tool.id === 'photo');
     const photoCount = Number(photo?.config?.minCount || 0);
+    toolValues[step.id] = photo ? { photo: { count: photoCount } } : {};
     await agent.runTurn({
       sessionId: session.id,
       requestId: `${prefix}-${stepIndex}`,
@@ -121,17 +123,22 @@ async function completeCurrentTaskSteps(agent, session, task, prefix = 'step') {
           stepIndex,
           stepText: step.studentAction,
           localEvidenceCount: photoCount,
-          toolValues: photo ? { [step.id]: { photo: { count: photoCount } } } : {},
+          toolValues: { [step.id]: toolValues[step.id] },
           stepImages: photo ? ['data:image/jpeg;base64,AA=='] : [],
         },
       },
     });
   }
+  return toolValues;
 }
 
 test('状态机只接受当前工具调用，并在证据提交后推进任务', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  // 本用例专门验证任务级整包证据提交，因此显式使用该收口模式。
+  // 真课程的默认 auto_on_last_step 由其他回归用例覆盖。
+  const task = course.roles.find((role) => role.id === 'dragon-counter').tasks[0];
+  task.finalizationMode = 'explicit_bundle_submit';
   const outputs = [
     { text: '证据已记录，继续下一项。', toolCalls: [{ id: 'task-2-call', name: 'open_task_tool', arguments: { toolInstanceId: 'dragon-counter:task-2:primary', reason: '继续采证' } }] },
   ];
@@ -153,13 +160,13 @@ test('状态机只接受当前工具调用，并在证据提交后推进任务',
   assert.equal(arrived.events.some((event) => event.type === 'stage.started'), true);
   assert.equal(arrived.session.locationState.status, 'arrived');
   assert.equal(arrived.session.locationState.verifiedBy, 'manual');
-  await completeCurrentTaskSteps(agent, session, course.roles.find((role) => role.id === 'dragon-counter').tasks[0], 'r2-step');
+  const toolValues = await completeCurrentTaskSteps(agent, session, task, 'r2-step');
   const submitted = await agent.runTurn({
     sessionId: session.id, requestId: 'r3',
     input: {
       type: 'tool_result', toolCallId: taskRequest.data.callId,
       result: {
-        status: 'completed', values: { text: '拍到了五张不同角度的照片' },
+        status: 'completed', values: { text: '拍到了五张不同角度的照片', toolValues },
         evidence: Array.from({ length: 5 }, (_, index) => ({ id: `ev-${index}`, url: `/uploads/${index}.jpg` })),
       },
     },
@@ -172,6 +179,9 @@ test('状态机只接受当前工具调用，并在证据提交后推进任务',
 test('照片数量不足返回课程校验原因，不伪装成模型连接失败', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  // EVIDENCE_MINIMUM 是任务级整包提交的校验，夹具必须显式选用该模式。
+  const task = course.roles.find((role) => role.id === 'dragon-counter').tasks[0];
+  task.finalizationMode = 'explicit_bundle_submit';
   const llm = {
     capabilities: () => ({ nativeTools: true, vision: true }),
     generate: async (request) => request.jsonMode
@@ -187,7 +197,7 @@ test('照片数量不足返回课程校验原因，不伪装成模型连接失�
   });
   assert.equal(assigned.events.some((event) => event.type === 'tool.requested'), false);
   const { taskRequest: taskCall } = await enterFirstStage(agent, session, 'photo-min-2');
-  await completeCurrentTaskSteps(agent, session, course.roles.find((role) => role.id === 'dragon-counter').tasks[0], 'photo-step');
+  const toolValues = await completeCurrentTaskSteps(agent, session, task, 'photo-step');
   await assert.rejects(
     agent.runTurn({
       sessionId: session.id,
@@ -197,7 +207,7 @@ test('照片数量不足返回课程校验原因，不伪装成模型连接失�
         toolCallId: taskCall.data.callId,
         result: {
           status: 'completed',
-          values: { text: '' },
+          values: { text: '', toolValues },
           evidence: [{ id: 'ev-one', url: '/uploads/one.png' }],
         },
       },
@@ -215,7 +225,7 @@ test('照片数量不足返回课程校验原因，不伪装成模型连接失�
       toolCallId: taskCall.data.callId,
       result: {
         status: 'completed',
-        values: { text: '' },
+        values: { text: '', toolValues },
         evidence: Array.from({ length: 5 }, (_, index) => ({ id: `ev-${index}`, url: `/uploads/${index}.png` })),
       },
     },
@@ -276,7 +286,7 @@ test('静默状态心跳不打扰学生，达到课程阈值后由规则层生�
   assert.equal(quiet.events.some((event) => event.type === 'assistant.completed'), false);
   assert.equal(modelCalls, 0);
 
-  session.taskState.lastMeaningfulActionAt = new Date(Date.now() - 4 * 60_000).toISOString();
+  session.taskState.lastMeaningfulActionAt = new Date(Date.now() - 9 * 60_000).toISOString();
   await store.save(session);
   const nudged = await agent.runTurn({
     sessionId: session.id,
@@ -363,7 +373,7 @@ test('模型连接失败时返回同伴式降级消息，不抛出整轮错误',
   });
   const message = result.events.find((event) => event.type === 'assistant.completed');
   assert.equal(message.data.degraded, true);
-  assert.match(message.data.text, /我在|连接/);
+  assert.match(message.data.text, /确认|我在|连接/);
   assert.deepEqual(warnings, [{
     fields: {
       modelError: {
@@ -441,10 +451,16 @@ test('受保护内容在流式分片中被拦截，整轮只调用一次模型',
 test('时间银行拍照任务必须上传真实证据，不能再用完成按钮直接通过', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhuhun_001' });
+  const store = memoryStore();
+  const mutationGuards = [];
   const agent = createAgentService({
     llm: { capabilities: () => ({ nativeTools: true }), generate: async () => ({ text: '', toolCalls: [] }) },
-    store: memoryStore(),
+    store,
     getCourse: async () => course,
+    async persistLearnerMutation(session, runtimeGuard) {
+      mutationGuards.push(structuredClone(runtimeGuard));
+      return store.save(session);
+    },
   });
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'map-strategist', studentId: 's-bank-photo', groupId: 'g1' });
   const missing = await agent.answerTimeBank({ sessionId: session.id, taskId: 'tb-05', evidence: [] });
@@ -456,6 +472,12 @@ test('时间银行拍照任务必须上传真实证据，不能再用完成按�
   });
   assert.equal(passed.correct, true);
   assert.equal(session.learningState.evidenceIds.includes('ev-bank-photo'), true);
+  session.timeBalance = 5;
+  await agent.giftTime({ sessionId: session.id, roleId: 'signaler', amount: 1 });
+  assert.deepEqual(mutationGuards, [
+    { required: true, operation: 'time_bank_answer' },
+    { required: true, operation: 'time_bank_gift' },
+  ]);
 });
 
 test('时间银行定位签到按课程坐标和半径校验', async () => {
@@ -569,6 +591,21 @@ test('ai_evaluation 小步只有模型验收通过后才推进，并接收画板
       },
     },
   });
+  await assert.rejects(
+    agent.runTurn({
+      sessionId: session.id,
+      requestId: 'ai-step-scanner-stale',
+      input: {
+        type: 'lifecycle_event', event: 'task_step_completed',
+        data: {
+          taskId: 'task-1', stepIndex: 0,
+          toolValues: { 'map-locate-exhibit': { scanner: { result: '重复的旧结果' } } },
+        },
+      },
+    }),
+    (error) => error.code === 'TASK_STEP_EXPIRED',
+  );
+  assert.equal(session.taskState.guidanceStepIndex, 1);
   await agent.runTurn({
     sessionId: session.id,
     requestId: 'ai-step-photo',
@@ -609,7 +646,14 @@ test('ai_evaluation 小步只有模型验收通过后才推进，并接收画板
       },
     },
   });
-  assert.equal(passed.session.taskState.guidanceStepIndex, 3);
+  assert.equal(passed.session.currentTaskIndex, 1, '最后一个 Step 验收通过后应自动完成并推进任务');
+  assert.deepEqual(passed.session.completedTaskIds, ['map-strategist:task-1']);
+  assert.equal(passed.session.taskState.guidanceStepIndex, 0, '推进后的小步索引属于下一任务');
+  assert.equal(
+    passed.events.find((event) => event.type === 'tool.requested')?.data.payload.taskIndex,
+    1,
+    '同一轮应打开下一任务卡',
+  );
   assert.equal(evaluationCalls.length, 4);
   assert.deepEqual(evaluationCalls[2].images, [image]);
   assert.equal(evaluationCalls[2].jsonMode, true);

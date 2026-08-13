@@ -1,11 +1,24 @@
 import { fitTeacherMap, mountTeacherMap, resizeTeacherMap } from './amap-service.js';
+import {
+  clearTeacherCredential,
+  hasTeacherCredential,
+  storeTeacherCredential,
+  teacherAccessStateForStatus,
+  teacherAuthenticatedFetch,
+  TEACHER_ACCESS_EVENT,
+} from './teacher-auth.js';
+import {
+  clearTeacherSnapshots,
+  loadTeacherSnapshot,
+  saveTeacherSnapshot,
+} from './teacher-session-data.js';
 
 const API = '/api';
 const TEACHER_ID = 'teacher-demo';
 const configuredRealtimeMode = String(globalThis.__TEACHER_APP_CONFIG__?.REALTIME_MODE || 'polling').trim().toLowerCase();
 const REALTIME_MODE = configuredRealtimeMode === 'websocket' ? 'websocket' : 'polling';
 // advance_task 真会推进学生进度（解开 `推进方式：teacher` 的任务），与 skip_step 同级需要二次确认。
-const HIGH_IMPACT = new Set(['pause', 'advance_phase', 'end_run', 'approve_evidence', 'skip_step', 'advance_task', 'emergency_rally']);
+const HIGH_IMPACT = new Set(['pause', 'start_phase', 'advance_phase', 'end_run', 'approve_evidence', 'skip_step', 'advance_task', 'emergency_rally']);
 const ACTION_LABELS = {
   send_notice: '发送教师提示', push_knowledge: '推送知识卡', add_time: '追加时间',
   remove_time: '减少时间', pause: '暂停课程', resume: '恢复课程', release_roles: '开启角色领取',
@@ -22,6 +35,7 @@ const state = {
   mapUnavailable: false, locationListVisible: false,
   connected: true, eventSequence: 0, commandLedger: {},
   lastReceiptAnnouncement: '',
+  accessState: 'connecting', bootstrapInFlight: false,
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -29,6 +43,33 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+}
+
+function participantClaimedRole(participant = {}) {
+  const claimedRoleId = String(participant.claimedRoleId || '').trim();
+  const roleId = String(participant.roleId || '').trim();
+  const roleClaimed = claimedRoleId
+    ? true
+    : participant.device && Object.hasOwn(participant.device, 'roleClaimed')
+      ? participant.device.roleClaimed === true
+      : Boolean(roleId);
+  if (!roleClaimed) return null;
+  return {
+    id: claimedRoleId || roleId,
+    name: String(participant.roleName || '').trim() || claimedRoleId || roleId,
+  };
+}
+
+function participantRoleLabel(participant) {
+  return participantClaimedRole(participant)?.name || '待领取';
+}
+
+function participantRoleSeal(participant) {
+  return participantClaimedRole(participant)?.name.slice(0, 1) || '待';
+}
+
+function participantGroupLabel(participant = {}) {
+  return String(participant.groupName || participant.groupId || '未分组').trim();
 }
 
 function formatTime(seconds) {
@@ -269,16 +310,63 @@ function renderCommandDrawer(commandId) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API}${path}`, {
+  const response = await teacherAuthenticatedFetch(`${API}${path}`, {
     ...options,
     headers: { 'content-type': 'application/json', 'x-teacher-id': TEACHER_ID, ...(options.headers || {}) },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = Object.assign(new Error(body.error || `请求失败（${response.status}）`), { status: response.status, details: body.details });
+    const accessState = teacherAccessStateForStatus(response.status);
+    const error = Object.assign(new Error(accessState?.message || body.error || `请求失败（${response.status}）`), {
+      status: response.status,
+      details: body.details,
+      accessState,
+    });
     throw error;
   }
   return body;
+}
+
+function stopTeacherRuntime() {
+  clearInterval(state.pollTimer);
+  clearTimeout(state.refreshTimer);
+  state.pollTimer = null;
+  state.refreshTimer = null;
+  state.socket?.close();
+  state.socket = null;
+}
+
+function showTeacherAccessState(accessState = {}) {
+  const kind = accessState.kind || 'credential-required';
+  state.accessState = kind;
+  stopTeacherRuntime();
+  clearTeacherSnapshots();
+  state.snapshot = null;
+  state.review = null;
+  const gate = $('#teacherAccessGate');
+  const form = $('#teacherAccessForm');
+  const configActions = $('#teacherConfigActions');
+  const isConfigurationIssue = kind === 'server-configuration';
+  $('#teacherAccessEyebrow').textContent = isConfigurationIssue ? '服务器配置' : '教师安全会话';
+  $('#teacherAccessTitle').textContent = isConfigurationIssue ? '教师端认证尚未就绪' : '输入教师访问凭证';
+  $('#teacherAccessDescription').textContent = accessState.message
+    || (isConfigurationIssue
+      ? '请联系管理员完成服务器认证配置。'
+      : '预览和正式环境需要教师访问凭证。');
+  form.hidden = isConfigurationIssue;
+  configActions.hidden = !isConfigurationIssue;
+  gate.hidden = false;
+  $('.app-main')?.setAttribute('inert', '');
+  $('.bottom-nav')?.setAttribute('inert', '');
+  if (!isConfigurationIssue) window.setTimeout(() => $('#teacherCredential')?.focus(), 0);
+}
+
+function hideTeacherAccessState() {
+  state.accessState = 'ready';
+  $('#teacherAccessGate').hidden = true;
+  $('.app-main')?.removeAttribute('inert');
+  $('.bottom-nav')?.removeAttribute('inert');
+  $('#endTeacherSession').hidden = !hasTeacherCredential();
 }
 
 function showToast(message) {
@@ -318,22 +406,44 @@ function closeLayer() {
 }
 
 async function bootstrap() {
+  if (state.bootstrapInFlight) return;
+  state.bootstrapInFlight = true;
   try {
     state.runs = await request('/teacher/runs');
     if (!state.runs.length) {
-      const demo = await request('/teacher/demo', { method: 'POST', body: '{}' });
-      state.runs = [demo];
+      try {
+        const demo = await request('/teacher/demo', { method: 'POST', body: '{}' });
+        state.runs = [demo];
+      } catch (error) {
+        // Preview / Production 不注册 demo 路由。合法的空账号应进入场次中心创建第一课，
+        // 不把预期的 404 误报为鉴权或服务故障。
+        if (error.status !== 404) throw error;
+      }
+    }
+    if (!state.runs.length) {
+      state.runId = null;
+      state.snapshot = null;
+      hideTeacherAccessState();
+      $('#runSummary').textContent = '还没有课程场次。创建后先完成课前检查，再手动开始场次。';
+      $('#runList').innerHTML = '<div class="empty-state"><strong>创建第一个课程场次</strong><p>名单、分组、设备和地图检查通过后，教师可以在遥控器中正式开始。</p><button class="primary-button" type="button" data-action="new-run">创建场次</button></div>';
+      showView('runs');
+      return;
     }
     state.runId = state.runs.find((run) => run.status === 'active')?.id || state.runs[0].id;
     state.commandLedger = loadCommandLedger(state.runId);
     state.eventSequence = 0;
     await hydrateCommandLedgerFromReview();
     await refreshSnapshot();
+    hideTeacherAccessState();
     connectRealtime();
+    clearInterval(state.pollTimer);
     state.pollTimer = window.setInterval(refreshSnapshot, 5000);
   } catch (error) {
+    if (error.accessState) return;
     showToast(error.message);
     renderFatal(error.message);
+  } finally {
+    state.bootstrapInFlight = false;
   }
 }
 
@@ -345,10 +455,10 @@ async function refreshSnapshot() {
     await syncCommandEvents();
     renderAll();
     if (REALTIME_MODE === 'polling') setConnection(true);
-    localStorage.setItem(`teacher-snapshot:${state.runId}`, JSON.stringify(state.snapshot));
+    saveTeacherSnapshot(state.runId, state.snapshot);
   } catch (error) {
-    const cached = localStorage.getItem(`teacher-snapshot:${state.runId}`);
-    if (cached && !state.snapshot) state.snapshot = JSON.parse(cached);
+    const cached = loadTeacherSnapshot(state.runId);
+    if (cached && !state.snapshot) state.snapshot = cached;
     setConnection(false);
     if (state.snapshot) renderAll();
   }
@@ -362,7 +472,9 @@ function scheduleRefresh() {
 function connectRealtime() {
   state.socket?.close();
   state.socket = null;
-  if (REALTIME_MODE !== 'websocket' || !state.runId) return;
+  // Browser WebSocket 无法设置 Authorization header。有 Bearer 会话时保留安全的 5 秒轮询，
+  // 不将凭证放进 URL query 或 WebSocket subprotocol。
+  if (REALTIME_MODE !== 'websocket' || !state.runId || hasTeacherCredential()) return;
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(`${protocol}//${location.host}${API}/teacher/runs/${encodeURIComponent(state.runId)}/live`);
   state.socket = socket;
@@ -428,10 +540,10 @@ function renderLive() {
     <div class="status-item"><span>平均进度</span><strong>${summary.averageProgress}%</strong></div>`;
   renderMarkers(groups, participants, alerts);
   $('#groupList').innerHTML = groups.map((group, index) => `
-    <button class="group-card" type="button" data-action="open-group" data-group-id="${group.id}">
+    <button class="group-card ${group.collectionReady ? 'is-collection-ready' : ''}" type="button" data-action="open-group" data-group-id="${group.id}">
       <span class="group-index">${index + 1}</span>
-      <span class="group-copy"><strong>${escapeHtml(group.name)}</strong><p>${group.onlineCount}/${group.members.length}人在线 · 小组密符 ${group.collectionCount}/${group.members.length}</p></span>
-      <span class="group-meta"><strong class="${group.highestSeverity === 'P0' ? 'is-danger' : ''}">${group.alertCount ? `${group.highestSeverity} · ${group.alertCount}` : `${group.progress}%`}</strong><span>${formatTime(group.timeRemainingSeconds)}</span></span>
+      <span class="group-copy"><strong>${escapeHtml(group.name)}</strong><p>${group.onlineCount}/${group.members.length}人在线 · 角色任务 ${group.collectionCount}/${group.collectionTotal}${group.collectionReady ? ' · 密符已集齐' : ''}</p></span>
+      <span class="group-meta"><strong class="${group.highestSeverity === 'P0' ? 'is-danger' : ''}">${group.alertCount ? `${group.highestSeverity} · ${group.alertCount}` : group.collectionReady ? '待教师核对' : `${group.progress}%`}</strong><span>${formatTime(group.timeRemainingSeconds)}</span></span>
     </button>`).join('');
   const fallback = $('#locationFallback');
   fallback.innerHTML = groups.map((group) => `
@@ -444,7 +556,10 @@ async function renderMarkers(groups, participants, alerts) {
   const ready = await mountTeacherMap($('#teacherMap'), {
     runId: renderedRunId,
     groups,
-    participants,
+    participants: participants.map((participant) => ({
+      ...participant,
+      roleName: participantRoleLabel(participant),
+    })),
     alerts,
     onOpenGroup: renderGroupDrawer,
     onOpenParticipant: renderStudentDrawer,
@@ -477,31 +592,34 @@ function renderGroupDrawer(groupId) {
   openDrawer({ eyebrow: '小组详情', title: group.name, html: `
     <div class="detail-block"><div class="metric-grid">
       <div class="metric"><span>小组进度</span><strong>${group.progress}%</strong></div>
+      <div class="metric"><span>密符进度</span><strong>${group.collectionCount}/${group.collectionTotal}</strong></div>
       <div class="metric"><span>剩余时间</span><strong>${formatTime(group.timeRemainingSeconds)}</strong></div>
       <div class="metric"><span>时间银行</span><strong>${group.bankBalance} min</strong></div>
       <div class="metric"><span>阻断项</span><strong>${blockers.length}</strong></div>
     </div></div>
+    <div class="detail-block"><h3>${group.collectionReady ? '密符已集齐' : '密符尚未集齐'}</h3><p>${group.collectionReady ? '请核对小组当前阶段的证据与拼合结果，再使用教学遥控器手动推进。阶段不会自动改变。' : `已有 ${group.collectionCount} 个角色完成全部任务；请继续关注未完成成员。`}</p></div>
     <div class="detail-block"><h3>六名组员与角色</h3><div class="member-list">${group.members.map(memberRow).join('')}</div></div>
     <div class="detail-block"><h3>小组干预</h3><div class="action-grid">
       ${actionButton('send_notice', '发送提示', '进入全组学生对话', { scope: 'group', id: group.id }, { text: '请回到当前任务，检查小组是否还缺一项关键证据。' })}
-      ${actionButton('add_time', '全组加时', '默认追加3分钟', { scope: 'group', id: group.id }, { amount: 3 })}
       ${actionButton('switch_alternative', '替代任务', '切换同目标离线方案', { scope: 'group', id: group.id }, { alternative: 'offline-equivalent' })}
       ${actionButton('pause', '暂停课程', '暂停全班任务计时', { scope: 'all' }, {}, true)}
     </div></div>` });
 }
 
 function memberRow(participant) {
+  const roleLabel = participantRoleLabel(participant);
   return `<button class="member-row" type="button" data-action="open-student" data-participant-id="${participant.id}">
-    <span class="role-seal">${escapeHtml(participant.roleName.slice(0, 1))}</span>
-    <span><strong>${escapeHtml(participant.name)}</strong><span>${escapeHtml(participant.roleName)} · ${escapeHtml(participant.learning.currentTask)}</span></span>
+    <span class="role-seal">${escapeHtml(participantRoleSeal(participant))}</span>
+    <span><strong>${escapeHtml(participant.name)}</strong><span>${escapeHtml(roleLabel)} · ${escapeHtml(participant.learning.currentTask)}</span></span>
     <strong>${participant.learning.progress}%</strong></button>`;
 }
 
 function renderStudentDrawer(participantId) {
   const participant = state.snapshot.participants.find((item) => item.id === participantId);
   if (!participant) return;
+  const roleLabel = participantRoleLabel(participant);
   const ageLabel = participant.positionStatus === 'fresh' ? `${participant.positionAgeSeconds}秒前更新` : `位置可能过期 · ${Math.floor(participant.positionAgeSeconds / 60)}分钟前`;
-  openDrawer({ eyebrow: `${participant.roleName} · ${state.snapshot.groups.find((item) => item.id === participant.groupId)?.name}`, title: participant.name, html: `
+  openDrawer({ eyebrow: `${roleLabel} · ${state.snapshot.groups.find((item) => item.id === participant.groupId)?.name}`, title: participant.name, html: `
     <div class="detail-block"><div class="metric-grid">
       <div class="metric"><span>当前任务</span><strong>${escapeHtml(participant.learning.currentTask)}</strong></div>
       <div class="metric"><span>学习进度</span><strong>${participant.learning.progress}%</strong></div>
@@ -512,7 +630,6 @@ function renderStudentDrawer(participantId) {
     <div class="detail-block"><h3>任务与证据</h3><p>${escapeHtml(participant.learning.stepName)} · 已提交 ${participant.learning.evidenceCount} 项证据</p></div>
     <div class="detail-block"><h3>学生干预</h3><div class="action-grid">
       ${actionButton('send_notice', '教师提示', '明确标注教师来源', { scope: 'participant', id: participant.id }, { text: '我看到你的尝试了，请先选择一条最有把握的证据继续。' })}
-      ${actionButton('add_time', '追加时间', '追加3分钟', { scope: 'participant', id: participant.id }, { amount: 3 })}
       ${actionButton('set_scaffold', '增强提示', '调整为L2', { scope: 'participant', id: participant.id }, { level: 2 })}
       ${actionButton('confirm_arrival', '确认到达', '教师人工确认位置', { scope: 'participant', id: participant.id })}
       ${actionButton('approve_evidence', '人工通过', '保留AI原判断记录', { scope: 'participant', id: participant.id }, {}, true)}
@@ -532,7 +649,7 @@ function renderAlertDrawer(alertId) {
   openDrawer({ eyebrow: `${alert.severity} · ${alert.status === 'open' ? '待处理' : '处理中'}`, title: alert.title, html: `
     <div class="detail-block"><p>${escapeHtml(alert.context?.message || '')}</p><div class="metric-grid">
       <div class="metric"><span>学生</span><strong>${escapeHtml(participant?.name || '系统事件')}</strong></div>
-      <div class="metric"><span>角色</span><strong>${escapeHtml(participant?.roleName || '全班')}</strong></div>
+      <div class="metric"><span>角色</span><strong>${escapeHtml(participant ? participantRoleLabel(participant) : '全班')}</strong></div>
       <div class="metric"><span>发生时间</span><strong>${relativeTime(alert.createdAt)}</strong></div>
       <div class="metric"><span>网络</span><strong>${escapeHtml(alert.context?.network || participant?.device.network || '正常')}</strong></div>
     </div></div>
@@ -548,19 +665,20 @@ function renderAlertDrawer(alertId) {
 
 function renderControls() {
   const run = state.snapshot.run;
+  const readyGroups = state.snapshot.groups.filter((group) => group.collectionReady).length;
   openDrawer({ eyebrow: '确定性运行控制', title: '教学遥控器', html: `
     <div class="detail-block"><div class="metric-grid"><div class="metric"><span>当前阶段</span><strong>${escapeHtml(run.phaseName)}</strong></div><div class="metric"><span>场次版本</span><strong>v${run.version}</strong></div></div></div>
-    <div class="detail-block"><h3>开课与角色</h3><div class="action-grid">${actionButton('release_roles', '开启领取', '学生可以领取角色', { scope: 'all' })}${actionButton('lock_roles', '锁定角色', '停止调换角色', { scope: 'all' })}</div></div>
-    <div class="detail-block"><h3>课程节奏</h3><div class="action-grid">${actionButton(run.paused ? 'resume' : 'pause', run.paused ? '恢复课程' : '暂停全班', run.paused ? '恢复任务与计时' : '冻结任务与计时', { scope: 'all' }, {}, !run.paused)}${actionButton('advance_phase', '推进阶段', '核对阻断项后进入下一阶段', { scope: 'all' }, {}, true)}${actionButton('send_notice', '全班广播', '显示为教师消息', { scope: 'all' }, { text: '请各小组确认当前任务与组员位置。' })}${actionButton('emergency_rally', '紧急集合', '覆盖学生当前页面并要求确认', { scope: 'all' }, { rallyPoint: '太和门广场', message: '请立即停止任务，前往太和门广场集合。' }, true)}</div></div>
+    <div class="detail-block"><h3>开课与角色</h3><p class="field-hint">场次创建后即可开始；学生在课程前置任务完成后进入角色选择页。</p></div>
+    <div class="detail-block"><h3>课程节奏</h3><p class="field-hint">${readyGroups ? `${readyGroups}/${state.snapshot.groups.length} 组密符已集齐。请先核对当前阶段要求，再手动推进。` : '尚无小组集齐密符；教师仍可根据现场情况决定节奏。'}</p><div class="action-grid">${actionButton(run.paused ? 'resume' : 'pause', run.paused ? '恢复课程' : '暂停全班', run.paused ? '恢复任务与计时' : '冻结任务与计时', { scope: 'all' }, {}, !run.paused)}${actionButton('advance_phase', '推进阶段', '核对阻断项后进入下一阶段', { scope: 'all' }, {}, true)}${actionButton('send_notice', '全班广播', '显示为教师消息', { scope: 'all' }, { text: '请各小组确认当前任务与组员位置。' })}${actionButton('emergency_rally', '紧急集合', '覆盖学生当前页面并要求确认', { scope: 'all' }, { rallyPoint: '太和门广场', message: '请立即停止任务，前往太和门广场集合。' }, true)}</div></div>
     <div class="detail-block"><h3>场次结束</h3>${actionButton('end_run', '结束并进入回看', '停止接收新任务，保留完整记录', { scope: 'all' }, {}, true)}</div>` });
 }
 
 async function renderPreflight(runId) {
   const result = await request(`/teacher/runs/${encodeURIComponent(runId)}/preflight`);
   openDrawer({ eyebrow: '开课控制台', title: result.ready ? '已具备开课条件' : '还有项目需要处理', html: `
-    <div class="detail-block"><div class="preflight-list">${result.checks.map((check) => `<div class="preflight-row ${check.passed ? '' : 'is-failed'}"><span class="preflight-icon">${check.passed ? '✓' : '!'}</span><div><strong>${escapeHtml(check.label)}</strong><span>${check.passed ? '已通过' : `${check.failures.length}名学生需要处理`}</span></div><strong>${check.required ? '必需' : '可选'}</strong></div>${check.failures.map((student) => `<button class="member-row" type="button" data-action="recheck-device" data-participant-id="${student.id}" data-run-id="${runId}"><span class="role-seal">${escapeHtml(student.roleName.slice(0, 1))}</span><span><strong>${escapeHtml(student.name)}</strong><span>定位或设备状态需要重检</span></span><strong>重新检测</strong></button>`).join('')}`).join('')}</div></div>
-    <div class="detail-block"><h3>导入学生名单</h3><p>支持第一列为姓名的 CSV，按现有小组和角色顺序分配。</p><input id="rosterFile" type="file" accept=".csv,text/csv" data-run-id="${runId}" /></div>
-    ${result.ready ? `<button class="primary-button" type="button" data-action="switch-run" data-run-id="${runId}">进入课中带队</button>` : '<p>处理所有必需项后，系统会开放课程阶段指令。</p>'}` });
+    <div class="detail-block"><div class="preflight-list">${result.checks.map((check) => `<div class="preflight-row ${check.passed ? '' : 'is-failed'}"><span class="preflight-icon">${check.passed ? '✓' : '!'}</span><div><strong>${escapeHtml(check.label)}</strong><span>${check.passed ? '已通过' : `${check.failures.length}名学生需要处理`}</span></div><strong>提示</strong></div>${check.failures.map((student) => `<button class="member-row" type="button" data-action="recheck-device" data-participant-id="${student.id}" data-run-id="${runId}"><span class="role-seal">${escapeHtml(participantRoleSeal(student))}</span><span><strong>${escapeHtml(student.name)}</strong><span>定位或设备状态需要重检</span></span><strong>重新检测</strong></button>`).join('')}`).join('')}</div><p class="field-hint">课前检查用于提示风险，当前原型不阻断开课。</p></div>
+    <div class="detail-block"><h3>导入学生名单</h3><p>支持第一列为姓名的 CSV，按现有小组顺序加入；角色由学生领取。</p><input id="rosterFile" type="file" accept=".csv,text/csv" data-run-id="${runId}" /></div>
+    <button class="primary-button" type="button" data-action="switch-run" data-run-id="${runId}">进入课中带队</button>` });
 }
 
 function prepareCommand(input) {
@@ -758,8 +876,24 @@ document.addEventListener('click', async (event) => {
 });
 
 document.addEventListener('submit', (event) => {
-  if (event.target.id !== 'newRunForm') return;
-  event.preventDefault(); createRun(event.target);
+  if (event.target.id === 'teacherAccessForm') {
+    event.preventDefault();
+    const input = $('#teacherCredential');
+    const credential = input.value.trim();
+    input.value = '';
+    if (!credential) {
+      $('#teacherAccessDescription').textContent = '请输入教师访问凭证。';
+      input.focus();
+      return;
+    }
+    storeTeacherCredential(credential);
+    $('#teacherAccessDescription').textContent = '正在验证并连接教师工作台……';
+    bootstrap();
+    return;
+  }
+  if (event.target.id === 'newRunForm') {
+    event.preventDefault(); createRun(event.target);
+  }
 });
 
 document.addEventListener('change', async (event) => {
@@ -777,6 +911,22 @@ window.addEventListener('online', () => {
 });
 window.addEventListener('offline', () => setConnection(false));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSnapshot(); });
+window.addEventListener(TEACHER_ACCESS_EVENT, (event) => showTeacherAccessState(event.detail));
+
+document.addEventListener('click', (event) => {
+  const action = event.target.closest('[data-action]')?.dataset.action;
+  if (action === 'retry-teacher-access') bootstrap();
+  if (action === 'end-teacher-session') {
+    clearTeacherCredential();
+    clearTeacherSnapshots();
+    state.snapshot = null;
+    state.runs = [];
+    showTeacherAccessState({
+      kind: 'credential-required',
+      message: '安全会话已结束。如需继续，请重新输入教师访问凭证。',
+    });
+  }
+});
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => undefined);
 bootstrap();

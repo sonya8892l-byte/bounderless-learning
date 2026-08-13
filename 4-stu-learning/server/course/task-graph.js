@@ -1,8 +1,8 @@
 /**
  * 任务图装配（D2：`前置` 为进度语义权威，`通过后` 是线性课程的语法糖）。
  *
- * 本模块**只装配、不执行**。运行时的推进仍是 service.js 的 currentTaskIndex += 1，
- * 换成读图是 R3 的事——先把图立住，R3 才有东西可读。
+ * 本模块只负责装配图。运行时由 `server/agent/task-advance.js` 读取节点、
+ * 拓扑顺序和前置门禁；编译 warning 则交给 strict lint 阻止静默丢边。
  *
  * ## 为什么节点键是 `roleId/taskId` 而不是 taskId
  *
@@ -16,7 +16,7 @@
  * 角色任务的键是 `roleId/taskId`，阶段任务（非角色任务：全班看短片、小组拼合、个人反思）
  * 的键是 `phaseId/taskId`。两者同处一个 Map 但撞不上——角色 slug 不会等于 `phase-N`。
  * 阶段节点刻意 `roleId: ''`，因此 traversalOrder 过滤角色时自动把它们排除在外。
- * 跨作用域的边本轮不支持：阶段任务与角色任务之间的依赖要等执行器（R3）定清语义。
+ * 跨作用域的边当前不支持：阶段任务与角色任务之间尚未定义依赖语义。
  *
  * ## `通过后` 的三种前缀
  *
@@ -72,7 +72,14 @@ export function buildTaskGraph(roles = [], phases = []) {
   for (const role of roles) {
     for (const [taskIndex, task] of (role.tasks || []).entries()) {
       const key = nodeKey(role.id, task.id);
-      if (nodes.has(key)) warnings.push({ code: 'duplicate_task', message: `任务节点重复：${key}` });
+      if (nodes.has(key)) warnings.push({
+        code: 'duplicate_task',
+        source: `roles/${role.id}.md`,
+        field: 'id',
+        roleId: role.id,
+        taskId: task.id,
+        message: `任务节点重复：${key}`,
+      });
       nodes.set(key, {
         key,
         scope: 'role',
@@ -88,11 +95,19 @@ export function buildTaskGraph(roles = [], phases = []) {
 
   // 阶段任务（非角色任务）。刻意**不带 roleId**：它们不属于任何角色，
   // traversalOrder 按 roleId 过滤，因此这些节点自动不进角色遍历——
-  // 87 个角色节点、29 个终止节点的既有口径不受影响。执行是 R3 的事。
+  // 87 个角色节点、29 个终止节点的既有口径不受影响。
+  // 阶段任务的学生运行轨由 course.phaseTracks 提供，这里的节点用于编译检查与可观测性。
   for (const phase of phases) {
     for (const [taskIndex, task] of (phase.tasks || []).entries()) {
       const key = phaseNodeKey(phase.id, task.id);
-      if (nodes.has(key)) warnings.push({ code: 'duplicate_task', message: `任务节点重复：${key}` });
+      if (nodes.has(key)) warnings.push({
+        code: 'duplicate_task',
+        source: 'phases.md',
+        field: 'id',
+        phaseId: phase.id,
+        taskId: task.id,
+        message: `任务节点重复：${key}`,
+      });
       nodes.set(key, {
         key,
         scope: 'phase',
@@ -115,8 +130,8 @@ export function buildTaskGraph(roles = [], phases = []) {
 
   // 角色任务与阶段任务的边解析规则完全一样，只差作用域前缀（角色 slug / 阶段 id）。
   // 所以把这段抽出来共用：写两遍必然会漂。跨作用域的边本轮不支持——
-  // 阶段任务与角色任务之间的依赖要等执行器（R3）定清语义再开。
-  const linkEdges = (scopeId, tasks) => {
+  // 阶段任务与角色任务之间尚未定义依赖语义。
+  const linkEdges = (scopeId, tasks, warningContext = {}) => {
     for (const task of tasks || []) {
       const node = nodes.get(nodeKey(scopeId, task.id));
       if (!node) continue;
@@ -130,7 +145,16 @@ export function buildTaskGraph(roles = [], phases = []) {
         for (const value of declared) {
           const target = resolveTarget(scopeId, value);
           if (target) node.prerequisites.push(target);
-          else warnings.push({ code: 'unknown_prerequisite', message: `${node.key} 的前置 ${value} 不存在` });
+          else warnings.push({
+            code: 'unknown_prerequisite',
+            source: warningContext.source || '',
+            field: '前置',
+            roleId: warningContext.roleId || '',
+            phaseId: warningContext.phaseId || '',
+            taskId: task.id,
+            target: value,
+            message: `${node.key} 的前置 ${value} 不存在`,
+          });
         }
       }
 
@@ -145,22 +169,48 @@ export function buildTaskGraph(roles = [], phases = []) {
         if (kind === 'task') {
           const targetKey = resolveTarget(scopeId, target);
           if (!targetKey) {
-            warnings.push({ code: 'unknown_next', message: `${node.key} 的小步 ${step.id} 指向不存在的任务 ${target}` });
+            warnings.push({
+              code: 'unknown_next',
+              source: warningContext.source || '',
+              field: '通过后',
+              roleId: warningContext.roleId || '',
+              phaseId: warningContext.phaseId || '',
+              taskId: task.id,
+              stepId: step.id,
+              target,
+              message: `${node.key} 的小步 ${step.id} 指向不存在的任务 ${target}`,
+            });
             continue;
           }
           if (!node.next.includes(targetKey)) node.next.push(targetKey);
           continue;
         }
         if (kind === 'unknown') {
-          warnings.push({ code: 'unparsable_next', message: `${node.key} 的小步 ${step.id} 的通过后无法解析：${step.next}` });
+          warnings.push({
+            code: 'unparsable_next',
+            source: warningContext.source || '',
+            field: '通过后',
+            roleId: warningContext.roleId || '',
+            phaseId: warningContext.phaseId || '',
+            taskId: task.id,
+            stepId: step.id,
+            target: step.next,
+            message: `${node.key} 的小步 ${step.id} 的通过后无法解析：${step.next}`,
+          });
         }
         // kind === 'step'：小步层线性推进，不构成任务图的边。
       }
     }
   };
 
-  for (const role of roles) linkEdges(role.id, role.tasks);
-  for (const phase of phases) linkEdges(phase.id, phase.tasks);
+  for (const role of roles) linkEdges(role.id, role.tasks, {
+    source: `roles/${role.id}.md`,
+    roleId: role.id,
+  });
+  for (const phase of phases) linkEdges(phase.id, phase.tasks, {
+    source: 'phases.md',
+    phaseId: phase.id,
+  });
 
   // 出边确定后回填入边，得到 `前置` 语义。
   // 显式声明过 `前置` 的节点跳过回填：作者写的入边是权威，语法糖不能往里加。
@@ -178,8 +228,8 @@ export function buildTaskGraph(roles = [], phases = []) {
 /**
  * 按拓扑顺序给出每个角色的任务序列。
  *
- * 入度为 0 的节点按课程书写顺序（taskIndex）起步，因此线性课程的结果与
- * 今天 `currentTaskIndex += 1` 的遍历完全一致——这是 R3 切换的等价性保证。
+ * 入度为 0 的节点按课程书写顺序（taskIndex）起步，因此没有分支的线性课程
+ * 与原数组顺序保持等价，同时真正执行显式前置门禁。
  */
 export function traversalOrder(graph, roleId) {
   const nodes = [...graph.nodes.values()]

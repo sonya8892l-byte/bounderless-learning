@@ -5,7 +5,12 @@ function time(value) {
 
 export function evaluateNudge({ session, task, input, now = Date.now() }) {
   if (input.type !== 'lifecycle_event' || input.event !== 'context_tick') return { due: false, reason: 'not_tick' };
-  if (input.data?.pageVisible === false || input.data?.hasDraft) return { due: false, reason: 'student_busy' };
+  const busy = input.data?.busy && typeof input.data.busy === 'object'
+    ? Object.entries(input.data.busy).find(([, active]) => active === true)?.[0]
+    : '';
+  if (input.data?.pageVisible === false || input.data?.hasDraft || busy) {
+    return { due: false, reason: 'student_busy', busy: busy || (input.data?.hasDraft ? 'draft' : 'hidden') };
+  }
   if (session.learningState?.teacherLock || session.dialogueState?.lifecycle === 'PAUSED_BY_TEACHER') {
     return { due: false, reason: 'teacher_paused' };
   }

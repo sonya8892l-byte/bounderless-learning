@@ -13,7 +13,8 @@ const lessonsRoot = path.resolve(projectRoot, '../6-lessons');
 
 // 教师端详情抽屉的「已提交 N 项证据」是老师点「人工通过」前唯一能看到的数字。
 // 它此前是 `index % 4` 的演示种子，永不更新——老师照着一个假数字盲签。
-// 这一组锁的是：数字只能来自学生端 presence 上报的真实条数。
+// 这一组锁的是：数字只能来自服务端 Agent session 的权威证据投影，
+// 客户端 presence 本身不能指定这个数字。
 
 async function fixture(t) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'teacher-evidence-'));
@@ -25,6 +26,20 @@ async function fixture(t) {
   });
   const run = await service.ensureDemoRun();
   return { service, run };
+}
+
+function trustedProjection(run, participant, sessionId, evidenceCount) {
+  return {
+    sessionId,
+    runId: run.id,
+    participantId: participant.id,
+    progress: participant.learning.progress,
+    currentTask: participant.learning.currentTask,
+    currentTaskId: participant.learning.currentTaskId,
+    currentStepId: participant.learning.currentStepId,
+    idleSeconds: participant.learning.idleSeconds,
+    evidenceCount,
+  };
 }
 
 test('新建场次的证据条数一律从 0 起，不再有演示种子', async (t) => {
@@ -46,8 +61,10 @@ test('presence 上报的证据条数写进场次记录，教师 snapshot 读到�
   const target = (await service.getSnapshot(run.id)).participants[3];
   await service.bindLearnerSession({ runId: run.id, participantId: target.id, sessionId: 'ses_evidence' });
 
-  // 学生提交第一项证据后，学生端把 session.learningState.evidenceIds.length 带在 presence 里。
-  await service.reportPresence('ses_evidence', { online: true, evidenceCount: 1 });
+  // 学生提交第一项证据后，presence 路由从服务端 session 构造这份投影。
+  await service.reportPresence('ses_evidence', { online: true }, {
+    trustedLearningProjection: trustedProjection(run, target, 'ses_evidence', 1),
+  });
 
   const after = (await service.getSnapshot(run.id)).participants.find((item) => item.id === target.id);
   assert.equal(after.learning.evidenceCount, 1);
@@ -60,14 +77,20 @@ test('证据条数按上报值覆盖，且不接受负数', async (t) => {
   const read = async () => (await service.getSnapshot(run.id))
     .participants.find((item) => item.id === target.id).learning.evidenceCount;
 
-  await service.reportPresence('ses_evidence_2', { evidenceCount: 3 });
+  await service.reportPresence('ses_evidence_2', {}, {
+    trustedLearningProjection: trustedProjection(run, target, 'ses_evidence_2', 3),
+  });
   assert.equal(await read(), 3);
 
   // 服务端不推断增量：学生端报的是累计条数，重连后重报同一个值不该翻倍。
-  await service.reportPresence('ses_evidence_2', { evidenceCount: 3 });
+  await service.reportPresence('ses_evidence_2', {}, {
+    trustedLearningProjection: trustedProjection(run, target, 'ses_evidence_2', 3),
+  });
   assert.equal(await read(), 3);
 
-  await service.reportPresence('ses_evidence_2', { evidenceCount: -2 });
+  await service.reportPresence('ses_evidence_2', {}, {
+    trustedLearningProjection: trustedProjection(run, target, 'ses_evidence_2', -2),
+  });
   assert.equal(await read(), 0);
 });
 
@@ -76,7 +99,9 @@ test('不带 evidenceCount 的心跳不清零已有条数', async (t) => {
   const target = (await service.getSnapshot(run.id)).participants[1];
   await service.bindLearnerSession({ runId: run.id, participantId: target.id, sessionId: 'ses_evidence_3' });
 
-  await service.reportPresence('ses_evidence_3', { evidenceCount: 2 });
+  await service.reportPresence('ses_evidence_3', {}, {
+    trustedLearningProjection: trustedProjection(run, target, 'ses_evidence_3', 2),
+  });
   // 弱网下的纯心跳（只报 online/network）很常见，不能让它把证据数抹掉。
   await service.reportPresence('ses_evidence_3', { online: true, network: 'weak' });
 

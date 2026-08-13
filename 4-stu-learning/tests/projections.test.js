@@ -58,6 +58,35 @@ test('toPublic 产物里没有课程答案：1142 一次都不出现', async () 
   assert.equal(serialized.includes('1142'), false, '公开投影绝不能含答案');
 });
 
+test('toPublic 也会清理受保护结论的高置信等价改写', async () => {
+  clearCourseCache();
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const lesson = structuredClone(course.lesson);
+  lesson.roles[0].tasks[0].requirement = '螭首承担把雨水导出屋面的功能。';
+
+  const publicLesson = toPublic(lesson, course.restrictionMarkdown);
+  assert.equal(publicLesson.roles[0].tasks[0].requirement, '[待学生探索]');
+});
+
+test('正式课程的公开文案不依赖脱敏占位符补句子', async () => {
+  for (const courseId of [
+    'lesson_gewu_001',
+    'lesson_zhizhi_001',
+    'lesson_zhizhi_002',
+    'lesson_zhizhi_003',
+    'lesson_zhuhun_001',
+  ]) {
+    clearCourseCache();
+    const course = await compileCourse({ lessonsRoot, courseId });
+    const serialized = JSON.stringify(toPublic(course.lesson, course.restrictionMarkdown));
+    assert.equal(
+      serialized.includes('[待学生探索]'),
+      false,
+      `${courseId}：应把源文案改成可读的探索问题，不能让学生看到拼接占位符`,
+    );
+  }
+});
+
 test('构建脚本与服务端共用同一个 toPublic：产物逐字段相同', async () => {
   const { default: publicLessons } = await import('../src/generated/lesson-public.js');
   clearCourseCache();

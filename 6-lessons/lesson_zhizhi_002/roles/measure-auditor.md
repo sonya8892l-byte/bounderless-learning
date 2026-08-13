@@ -17,7 +17,7 @@
 
 ### 任务1：定义审计问题
 - id：auditor-frame-questions
-- 阶段：Phase 1 调查开题
+- 阶段：Phase 2 展厅多源取证（角色取证准备）
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -54,6 +54,8 @@
 - 教师介入：无
 - 通过后：step:auditor-plan-evidence
 
+##### 验收标准
+至少5条描述完成分类，且包含一条待核项
 
 #### Step 2：制定审计清单
 - id：auditor-plan-evidence
@@ -115,6 +117,8 @@
 - 教师介入：材料方法或指标无法理解
 - 通过后：step:auditor-find-gaps
 
+##### 验收标准
+至少3项措施分别记录对应威胁、责任主体和来源编号
 
 #### Step 2：识别保护缺口
 - id：auditor-find-gaps
@@ -133,6 +137,8 @@
 - 教师介入：无
 - 通过后：role-stage:auditor-report-findings
 
+##### 验收标准
+至少两条缺口均说明缺失内容、受影响链段，并引用矩阵或威胁链
 
 ### 任务3：报告审计结果
 - id：auditor-report-findings
@@ -173,6 +179,8 @@
 - 教师介入：无
 - 通过后：step:auditor-review-action
 
+##### 验收标准
+保留、改进、缺口和所需指标四栏均有一项，并附来源或矩阵编号
 
 #### Step 2：复核行动书对应关系
 - id：auditor-review-action
@@ -190,3 +198,6 @@
 - 失败处理：随机选择一项行动追溯到风险链
 - 教师介入：方案含高风险或不适宜行动
 - 通过后：role:complete
+
+##### 验收标准
+至少3项行动完成威胁、缺口和指标核对，并记录一条修改意见

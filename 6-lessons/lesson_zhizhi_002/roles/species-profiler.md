@@ -17,7 +17,7 @@
 
 ### 任务1：建立档案骨架
 - id：profiler-baseline
-- 阶段：Phase 1 调查开题
+- 阶段：Phase 2 展厅多源取证（角色取证准备）
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -75,6 +75,8 @@
 - 教师介入：指定数据库或网络不可用
 - 通过后：role-stage:profiler-field-evidence
 
+##### 验收标准
+至少4条字段—来源配对，且一条动态信息含日期与人工核验计划
 
 ### 任务2：现场建档
 - id：profiler-field-evidence
@@ -116,6 +118,8 @@
 - 教师介入：展项闭展、禁止拍摄或身份冲突
 - 通过后：step:profiler-register-limit
 
+##### 验收标准
+至少1张合规照片对应3条现场事实，且每条事实附来源编号
 
 #### Step 2：登记范围与局限
 - id：profiler-register-limit
@@ -134,6 +138,8 @@
 - 教师介入：动态数据需要专家解释
 - 通过后：role-stage:profiler-publish-file
 
+##### 验收标准
+动态主张的日期或版本、空间范围、局限和待核办法均已填写
 
 ### 任务3：发布物种档案
 - id：profiler-publish-file
@@ -174,6 +180,8 @@
 - 教师介入：无
 - 通过后：step:profiler-peer-check
 
+##### 验收标准
+至少5个档案字段完整，关键事实附来源编号，并保留一个未知项
 
 #### Step 2：交叉复核
 - id：profiler-peer-check
@@ -191,3 +199,6 @@
 - 失败处理：提醒补写核对的字段与证据编号
 - 教师介入：复核产生无法解释的来源冲突
 - 通过后：role:complete
+
+##### 验收标准
+名录核验员和威胁链分析员各留一条复核记录，含处理结果与理由

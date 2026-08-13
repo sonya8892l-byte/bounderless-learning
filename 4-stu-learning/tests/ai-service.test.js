@@ -3,9 +3,12 @@ import test from 'node:test';
 import {
   AGENT_TURN_TIMEOUT_MS,
   AgentRequestError,
+  activateAgentSession,
   agentEventReplayKey,
   resolvePublicApiBase,
+  resumeAgentSession,
   sendAgentTurn,
+  uploadEvidence,
 } from '../src/services/ai-service.js';
 
 const turnPayload = {
@@ -24,6 +27,15 @@ function completedEvent() {
     },
   };
 }
+
+function stateEvent() {
+  return {
+    type: 'state.updated',
+    data: { phaseId: 'phase-2', currentTaskIndex: 0, completedTaskIds: [] },
+  };
+}
+
+const completedTurnEvents = () => [completedEvent(), stateEvent()];
 
 function sseResponse(events) {
   const body = events
@@ -44,6 +56,68 @@ test('公开 API 基地址在敏感变量被 Vercel 脱敏时回退到同源 /ap
   assert.equal(resolvePublicApiBase(''), '/api');
   assert.equal(resolvePublicApiBase('/api/'), '/api');
   assert.equal(resolvePublicApiBase('https://api.example.test/'), 'https://api.example.test');
+});
+
+test('activateAgentSession 只按会话 id 请求服务端可信绑定', async (t) => {
+  const originalFetch = globalThis.fetch;
+  let request = null;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (url, options) => {
+    request = { url, options };
+    return new Response(JSON.stringify({
+      id: 'session/role-a',
+      runId: 'run-trusted',
+      participantId: 'participant-trusted',
+      teacherRunState: { status: 'active' },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+
+  const result = await activateAgentSession('session/role-a');
+  assert.equal(request.url, '/api/sessions/session%2Frole-a/activate');
+  assert.equal(request.options.method, 'POST');
+  assert.equal(request.options.body, '{}');
+  assert.equal(result.participantId, 'participant-trusted');
+});
+
+test('resumeAgentSession 按场次、学生和课程身份恢复服务端当前会话', async (t) => {
+  const originalFetch = globalThis.fetch;
+  let request = null;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (url, options) => {
+    request = { url, options };
+    return new Response(JSON.stringify({
+      id: 'session-current',
+      roleId: '',
+      runtime: { task: { taskId: 'phase-task-1' } },
+      resumed: true,
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+
+  const result = await resumeAgentSession({
+    runId: 'run-1',
+    participantId: 'student-1',
+    courseId: 'lesson_gewu_001',
+    joinCredential: 'join-credential-with-at-least-32-characters',
+    grade: '初中',
+    gradeSource: 'student_selected',
+  });
+  assert.equal(request.url, '/api/sessions/resume');
+  assert.equal(request.options.method, 'POST');
+  assert.deepEqual(JSON.parse(request.options.body), {
+    runId: 'run-1',
+    participantId: 'student-1',
+    courseId: 'lesson_gewu_001',
+    joinCredential: 'join-credential-with-at-least-32-characters',
+    grade: '初中',
+    gradeSource: 'student_selected',
+  });
+  assert.equal(result.runtime.task.taskId, 'phase-task-1');
 });
 
 test('409 错误保留 HTTP 状态、业务码和租约恢复元数据', async (t) => {
@@ -76,6 +150,36 @@ test('409 错误保留 HTTP 状态、业务码和租约恢复元数据', async (
   );
 });
 
+test('原始 API 内部错误不会成为学生可见 message，业务校验文案完整保留', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const validationMessage = '第 2 步还需要一张包含主体和周围位置关系的全景照片，请补拍后再次提交。'.repeat(10);
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    if (calls === 1) {
+      return new Response(JSON.stringify({
+        error: 'PostgreSQL password=secret at query (/Users/example/server/store.js:18:4)',
+        code: 'INTERNAL_FAILURE',
+      }), { status: 500, headers: { 'content-type': 'application/json' } });
+    }
+    return new Response(JSON.stringify({
+      error: validationMessage,
+      code: 'STEP_EVIDENCE_MISSING',
+    }), { status: 422, headers: { 'content-type': 'application/json' } });
+  };
+
+  await assert.rejects(
+    activateAgentSession('session-internal-error'),
+    (error) => error.message === '服务暂时没有响应，请稍后重试。'
+      && !/PostgreSQL|password|\/Users\//i.test(error.message),
+  );
+  await assert.rejects(
+    activateAgentSession('session-validation-error'),
+    (error) => error.message === validationMessage && !error.message.endsWith('…'),
+  );
+});
+
 test('网络中断后自动重试沿用同一个 requestId', async (t) => {
   const originalFetch = globalThis.fetch;
   const bodies = [];
@@ -87,7 +191,7 @@ test('网络中断后自动重试沿用同一个 requestId', async (t) => {
     if (calls === 1) {
       throw new TypeError('模拟网络中断');
     }
-    return sseResponse([completedEvent()]);
+    return sseResponse(completedTurnEvents());
   };
 
   const received = [];
@@ -104,8 +208,8 @@ test('网络中断后自动重试沿用同一个 requestId', async (t) => {
     bodies.map((body) => body.requestId),
     ['request_same_logical_action', 'request_same_logical_action'],
   );
-  assert.equal(events.length, 1);
-  assert.equal(received.length, 1);
+  assert.equal(events.length, 2);
+  assert.equal(received.length, 2);
   assert.equal(received[0].data.id, 'msg_stable_replay');
 });
 
@@ -154,7 +258,7 @@ test('租约占用的 409 会用原 requestId 轮询并接收服务端回放', a
         headers: { 'content-type': 'application/json' },
       });
     }
-    return sseResponse([completedEvent()]);
+    return sseResponse(completedTurnEvents());
   };
 
   const received = [];
@@ -170,7 +274,7 @@ test('租约占用的 409 会用原 requestId 轮询并接收服务端回放', a
     bodies.map((body) => body.requestId),
     ['request_same_logical_action', 'request_same_logical_action'],
   );
-  assert.equal(received.length, 1);
+  assert.equal(received.length, 2);
   assert.equal(received[0].data.id, 'msg_stable_replay');
 });
 
@@ -183,7 +287,7 @@ test('流中断后的回放会抑制重复终态事件，delta 仍允许相同�
   t.after(() => { globalThis.fetch = originalFetch; });
   globalThis.fetch = async () => {
     calls += 1;
-    if (calls > 1) return sseResponse([completedEvent()]);
+    if (calls > 1) return sseResponse(completedTurnEvents());
     let reads = 0;
     return {
       ok: true,
@@ -211,7 +315,7 @@ test('流中断后的回放会抑制重复终态事件，delta 仍允许相同�
   });
 
   assert.equal(calls, 2);
-  assert.equal(received.length, 1);
+  assert.equal(received.length, 2);
   assert.equal(received[0].data.id, 'msg_stable_replay');
   assert.equal(agentEventReplayKey({ type: 'assistant.delta', data: { text: '的' } }), null);
   assert.equal(
@@ -234,4 +338,89 @@ test('收到 delta 却没有 completed 时按不完整回复报错', async (t) =
     }),
     (error) => error.code === 'AGENT_STREAM_INCOMPLETE' && error.retryable === true,
   );
+});
+
+test('只收到 assistant.completed、没有权威 state.updated 也按截流失败', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => sseResponse([completedEvent()]);
+
+  await assert.rejects(
+    sendAgentTurn(turnPayload, () => {}, {
+      maxTransportRetries: 0,
+      maxPendingRetries: 0,
+    }),
+    (error) => error.code === 'AGENT_STREAM_INCOMPLETE' && error.retryable === true,
+  );
+});
+
+test('同一个本地证据文件重复提交只上传一次', async (t) => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  let sessionHeader = '';
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (url, options) => {
+    calls += 1;
+    sessionHeader = options.headers['x-agent-session-id'];
+    return new Response(JSON.stringify({ id: 'upload-once', url: '/uploads/upload-once.jpg' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const file = new File(['same evidence'], 'evidence.txt', { type: 'text/plain' });
+  const [first, second] = await Promise.all([
+    uploadEvidence(file, 'ses_upload_owner'),
+    uploadEvidence(file, 'ses_upload_owner'),
+  ]);
+  assert.equal(calls, 1);
+  assert.equal(sessionHeader, 'ses_upload_owner');
+  assert.deepEqual(second, first);
+});
+
+test('同一文件跨学习会话不共用上传缓存', async (t) => {
+  const originalFetch = globalThis.fetch;
+  const owners = [];
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (url, options) => {
+    owners.push(options.headers['x-agent-session-id']);
+    return new Response(JSON.stringify({ id: `upload-${owners.length}`, url: `/uploads/upload-${owners.length}.jpg` }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const file = new File(['shared device evidence'], 'shared.txt', { type: 'text/plain' });
+  await uploadEvidence(file, 'ses_owner_a');
+  await uploadEvidence(file, 'ses_owner_b');
+  assert.deepEqual(owners, ['ses_owner_a', 'ses_owner_b']);
+});
+
+test('证据上传缺少学习会话时在客户端直接拒绝', async () => {
+  const file = new File(['orphan evidence'], 'orphan.txt', { type: 'text/plain' });
+  await assert.rejects(
+    uploadEvidence(file),
+    (error) => error.code === 'EVIDENCE_SESSION_REQUIRED' && error.retryable === false,
+  );
+});
+
+test('证据上传失败不会缓存错误，原文件可以重试', async (t) => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => {
+    calls += 1;
+    if (calls === 1) {
+      return new Response(JSON.stringify({ error: '临时失败' }), {
+        status: 503,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({ id: 'upload-retry', url: '/uploads/upload-retry.jpg' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const file = new File(['retry evidence'], 'retry.txt', { type: 'text/plain' });
+  await assert.rejects(uploadEvidence(file, 'ses_upload_retry'), /服务暂时没有响应/);
+  assert.equal((await uploadEvidence(file, 'ses_upload_retry')).id, 'upload-retry');
+  assert.equal(calls, 2);
 });

@@ -23,7 +23,7 @@
 - itemName：证据
 - 选择眉题：6种调查分工 · 共写1份行动书
 - 选择标题：选择你的{collectionName}身份
-- 选择说明：每位成员负责一条证据线。集齐6枚{collectionItemName}，才能解锁{unlockTarget}。
+- 选择说明：每位成员负责一条证据线。教师核对小组6条证据线后，组织进入{unlockTarget}。
 - collectionItemName：调查章
 - collectionPanelName：小组调查章
 - unlockTarget：守护方案听证会
@@ -39,6 +39,9 @@
 - 推演占位图：assets/placeholders/simulation.svg
 
 ## 调查边界
+
+> 教研说明：本节记录全课调查与核验边界；具体运行时限制仍以 `restrictions.md`、Phase Prompt 与 Step 引用为准。
+
 - 默认从馆方确认的代表物种中选择；每组记录主点、替代点和展签照片编号。
 - 法律保护身份、IUCN受威胁等级、种群趋势和措施成效分别核验，不互相替代。
 - 所有动态信息记录材料发布日期、学生访问日期和人工核验人。

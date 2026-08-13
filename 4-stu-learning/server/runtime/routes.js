@@ -1,6 +1,18 @@
 import { z } from 'zod';
+import { timingSafeEqual } from 'node:crypto';
 
-const actor = (request) => request.headers['x-teacher-id'] || 'teacher-demo';
+const actor = (request) => request.teacherActorId || request.headers['x-teacher-id'] || 'teacher-demo';
+
+function bearerToken(request) {
+  const authorization = String(request.headers.authorization || '');
+  return authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+}
+
+function secureEqual(expected = '', actual = '') {
+  const left = Buffer.from(String(expected));
+  const right = Buffer.from(String(actual));
+  return left.length === right.length && left.length > 0 && timingSafeEqual(left, right);
+}
 
 const targetSchema = z.object({
   scope: z.enum(['all', 'group', 'role', 'participant']),
@@ -27,7 +39,26 @@ export async function registerRuntimeRoutes(app, {
   runtime,
   enableWebsocket = true,
   enableDemo = true,
+  teacherAccess = {},
+  resolveLearnerProjection = async () => null,
 }) {
+  app.addHook('onRequest', async (request, reply) => {
+    const requestPath = String(request.url || '').split('?', 1)[0];
+    if (!requestPath.startsWith('/api/teacher')) return;
+    // Demo bootstrap is intentionally absent in production.  Let Fastify
+    // return the truthful 404 instead of letting a prefix-wide auth hook turn
+    // an unregistered endpoint into a misleading configuration error.
+    if (!enableDemo && requestPath === '/api/teacher/demo') return;
+    if (teacherAccess.required !== true) return;
+    if (!String(teacherAccess.token || '')) {
+      return reply.code(503).send({ error: '教师端认证尚未配置。' });
+    }
+    if (!secureEqual(teacherAccess.token, bearerToken(request))) {
+      reply.header('www-authenticate', 'Bearer');
+      return reply.code(401).send({ error: '教师端认证失败。' });
+    }
+    request.teacherActorId = String(teacherAccess.teacherId || 'teacher-primary');
+  });
   const authorize = (request) => runtime.assertTeacherAccess(request.params.runId, actor(request));
   if (enableDemo) {
     app.post('/api/teacher/demo', async () => runtime.ensureDemoRun());
@@ -120,16 +151,18 @@ export async function registerRuntimeRoutes(app, {
   app.post('/api/student/sessions/:sessionId/presence', async (request) => {
     const body = z.object({
       online: z.boolean().optional(), network: z.enum(['ready', 'weak', 'offline']).optional(),
-      progress: z.coerce.number().min(0).max(100).optional(), currentTask: z.string().max(200).optional(),
-      idleSeconds: z.coerce.number().min(0).optional(),
-      // 学生累计提交的证据条数。教师端的「已提交 N 项证据」读它，此前是演示种子。
-      evidenceCount: z.coerce.number().int().min(0).optional(),
+      camera: z.object({
+        permission: z.enum(['unknown', 'prompt', 'granted', 'denied', 'unavailable']),
+      }).strict().optional(),
       location: z.object({
-        lng: z.coerce.number().optional(), lat: z.coerce.number().optional(), accuracyMeters: z.coerce.number().min(0).optional(),
-        insideFence: z.boolean().nullable().optional(), permission: z.enum(['unknown', 'granted', 'denied', 'unavailable']).optional(),
-      }).optional(),
-    }).parse(request.body);
-    return runtime.reportPresence(request.params.sessionId, body);
+        lng: z.coerce.number().min(-180).max(180).optional(),
+        lat: z.coerce.number().min(-90).max(90).optional(),
+        accuracyMeters: z.coerce.number().min(0).optional(),
+        permission: z.enum(['unknown', 'prompt', 'granted', 'denied', 'unavailable']).optional(),
+      }).strict().optional(),
+    }).strict().parse(request.body);
+    const trustedLearningProjection = await resolveLearnerProjection(request.params.sessionId);
+    return runtime.reportPresence(request.params.sessionId, body, { trustedLearningProjection });
   });
 
   app.get('/api/student/sessions/:sessionId/commands', async (request) => (

@@ -19,6 +19,9 @@
 
     <div class="launch-action-panel">
       <div class="launch-meta" id="launchMeta"></div>
+      <p class="standalone-preview-notice" id="standalonePreviewNotice" hidden>
+        当前为本地预览：可查看界面与课程结构，AI 验收、教师确认和正式学习进度不会作为发布证据。
+      </p>
       <button class="primary-button primary-button--wide" type="button" data-action="start-course">
         <span>选择角色，开始课程</span>
         <i data-lucide="arrow-right"></i>
@@ -37,7 +40,7 @@
       <div class="immersive-caption">
         <span class="media-duration">全班共同学习</span>
         <h2 id="immersiveTitle">课程导入</h2>
-        <p>请观看现场导入内容，学生端将在老师发出指令后进入身份领取。</p>
+        <p>请观看现场导入内容，学生端将在老师发出指令后进入角色选择。</p>
       </div>
     </div>
     <div class="teacher-wait-panel" aria-live="polite">
@@ -45,7 +48,7 @@
       <div>
         <p class="eyebrow">等待教师指令</p>
         <h3>导入进行中</h3>
-        <p>当前页面无需操作。老师开启身份领取后，系统会自动进入下一步。</p>
+        <p>当前页面无需操作。老师开放角色选择后，系统会自动进入下一步。</p>
       </div>
     </div>
   </section>
@@ -53,7 +56,7 @@
   <section class="role-screen app-screen" id="roleScreen" aria-labelledby="roleScreenTitle">
     <header class="simple-header">
       <span aria-hidden="true"></span>
-      <span id="rolePickerHeader">领取角色卡</span>
+      <span id="rolePickerHeader">选择角色</span>
       <span class="group-code" id="groupCode">当前小组</span>
     </header>
     <div class="role-intro">
@@ -65,9 +68,10 @@
   </section>
 
   <section class="learning-shell app-screen" id="learningShell" aria-label="学生学习主界面">
+    <div class="standalone-learning-badge" id="standaloneLearningBadge" hidden>本地预览 · 不计入正式进度</div>
     <header class="learning-header">
       <div class="learning-header__top">
-        <button class="role-switch-button" type="button" data-action="open-role-switch" aria-label="切换演示角色">
+        <button class="role-switch-button" type="button" data-action="open-role-switch" aria-label="切换角色">
           <img id="headerRoleBadge" alt="当前角色徽章" />
         </button>
         <div class="header-course-copy">
@@ -133,18 +137,17 @@
         <div class="team-map-card">
           <img id="teamMap" alt="课程任务导航地图" />
           <div class="team-map-overlay">
-            <span id="teamSessionStatus"><i data-lucide="navigation"></i> 当前小组</span>
-            <button type="button" data-action="send-rally">发起集合</button>
+            <span id="teamSessionStatus"><i data-lucide="navigation"></i> 个人进度 · 小组汇合由老师组织</span>
           </div>
         </div>
 
         <section class="team-section">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">最终任务解锁条件</p>
-              <h2 id="collectionPanelName">小组成果</h2>
+              <p class="eyebrow">个人收藏</p>
+              <h2 id="collectionPanelName">我的收集物</h2>
             </div>
-            <span id="tokenProgress">0 / 6</span>
+            <span id="tokenProgress">完成后获得</span>
           </div>
           <div class="token-row" id="teamTokens"></div>
         </section>
@@ -152,8 +155,8 @@
         <section class="team-section">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">实时状态</p>
-              <h2>组员进度</h2>
+              <p class="eyebrow">任务状态</p>
+              <h2>我的进度</h2>
             </div>
             <button class="text-button time-bank-entry" type="button" data-action="open-time-bank">时间银行</button>
           </div>
@@ -229,7 +232,7 @@
     <div class="sheet-handle"></div>
     <div class="sheet-header">
       <div>
-        <p class="eyebrow">课程内容渲染预览</p>
+        <p class="eyebrow">课程身份</p>
         <h2 id="roleSwitchTitle">切换角色</h2>
       </div>
       <button class="icon-button" type="button" data-action="close-sheet" aria-label="关闭角色切换">

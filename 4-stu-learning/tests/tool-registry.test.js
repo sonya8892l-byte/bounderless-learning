@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ACTIVITY_TOOL_CATALOG,
+  isPosterOnlyMedia,
   parseToolParameters,
   resolveActivityTools,
 } from '../src/engine/tool-registry.js';
@@ -31,6 +32,24 @@ test('课程可以用 JSON 为每种工具注入内容和参数', () => {
   const tools = resolveActivityTools('A01(拍照/文字)', parameters);
   assert.equal(tools.find((tool) => tool.id === 'photo').config.minCount, 2);
   assert.equal(tools.find((tool) => tool.id === 'text').config.fields[0].id, 'source');
+});
+
+test('静态视频占位必须显式声明 posterOnly 并提供 poster', () => {
+  assert.equal(isPosterOnlyMedia({
+    type: 'video', url: '', poster: 'opening.png', posterOnly: true,
+  }), true);
+  assert.equal(isPosterOnlyMedia({
+    type: 'video', url: '', poster: '', posterOnly: true,
+  }), false);
+  assert.equal(isPosterOnlyMedia({
+    type: 'audio', url: '', poster: 'opening.png', posterOnly: true,
+  }), false);
+  assert.equal(isPosterOnlyMedia({
+    type: 'video', url: '', poster: 'opening.png', posterOnly: 'true',
+  }), false);
+  assert.equal(isPosterOnlyMedia({
+    type: 'video', url: 'opening.mp4', poster: 'opening.png', posterOnly: true,
+  }), false);
 });
 
 test('语音记录只生成录音工具，不附加默认文字必填项', () => {

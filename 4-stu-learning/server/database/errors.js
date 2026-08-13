@@ -35,3 +35,13 @@ export class LearnerRequestLeaseConflictError extends Error {
     this.requestId = requestId;
   }
 }
+
+export class CourseRunMutationConflictError extends Error {
+  constructor(code, message, details = {}) {
+    super(message);
+    this.name = 'CourseRunMutationConflictError';
+    this.statusCode = 409;
+    this.code = code;
+    this.details = details;
+  }
+}

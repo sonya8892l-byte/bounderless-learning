@@ -64,6 +64,8 @@ h3 { margin: 0; font-size: 16px; }
 .live-header { position: relative; z-index: 11; padding: max(18px, env(safe-area-inset-top)) 18px 12px; background: var(--brand); color: #fff; }
 .live-header .eyebrow { color: #f0d49c; }
 .live-header__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.live-header__actions { display: grid; justify-items: end; gap: 7px; }
+.session-button { padding: 4px 8px; border: 1px solid rgb(255 255 255 / 30%); border-radius: 999px; background: transparent; color: #fff; font-size: 10px; }
 .live-header h1 { font-size: 25px; }
 .sync-button { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid rgb(255 255 255 / 26%); border-radius: 999px; background: rgb(0 0 0 / 12%); color: #fff; font-size: 11px; }
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #84d6aa; box-shadow: 0 0 0 4px rgb(132 214 170 / 16%); }
@@ -111,6 +113,7 @@ h3 { margin: 0; font-size: 16px; }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 13px; }
 .group-list { display: grid; gap: 10px; }
 .group-card { display: grid; grid-template-columns: 48px 1fr auto; gap: 11px; align-items: center; width: 100%; padding: 13px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); text-align: left; }
+.group-card.is-collection-ready { border-color: #8fb59a; background: #f1f7f2; }
 .group-index { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: var(--surface-2); color: var(--brand); font-family: serif; font-size: 19px; font-weight: 900; }
 .group-copy { min-width: 0; }
 .group-copy p { margin: 4px 0 0; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
@@ -209,6 +212,34 @@ h3 { margin: 0; font-size: 16px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .toast { position: fixed; z-index: 90; right: 16px; bottom: calc(86px + env(safe-area-inset-bottom)); left: 16px; width: min(calc(100% - 32px), 448px); margin: auto; padding: 12px 15px; border-radius: 13px; background: #2b2623; color: #fff; text-align: center; font-size: 12px; opacity: 0; pointer-events: none; transform: translateY(14px); transition: .2s ease; }
 .toast.is-visible { opacity: 1; transform: translateY(0); }
+
+.teacher-access-gate {
+  position: fixed; z-index: 110; inset: 0; display: grid; width: min(100%, 480px); margin: auto;
+  place-items: center; padding: 24px; background: #e9e0d5;
+}
+.teacher-access-card {
+  width: 100%; padding: 28px; border: 1px solid var(--line); border-radius: 24px;
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.teacher-access-mark {
+  display: grid; width: 52px; height: 52px; margin-bottom: 18px; place-items: center;
+  border-radius: 16px; background: var(--brand); color: #fff; font-family: serif; font-size: 25px; font-weight: 900;
+}
+.teacher-access-description { margin: 11px 0 20px; color: var(--ink-2); font-size: 13px; line-height: 1.65; }
+.teacher-access-card input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
+.teacher-access-submit { width: 100%; margin-top: 18px; }
+.teacher-config-actions { margin-top: 18px; }
+.join-share-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.join-roster { display: grid; gap: 8px; margin-top: 14px; }
+.join-roster-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.join-roster-row span:first-child { min-width: 0; }
+.join-roster-row strong, .join-roster-row small { display: block; }
+.join-roster-row small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.join-roster-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+.join-roster-actions button { min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-size: 11px; font-weight: 750; }
+.join-qr-panel { display: grid; justify-items: center; gap: 14px; padding: 8px 0 20px; text-align: center; }
+.join-qr-panel img { width: min(100%, 360px); height: auto; border: 10px solid #fff; border-radius: 16px; box-shadow: 0 8px 28px rgb(35 25 18 / 12%); }
+.join-qr-panel p { max-width: 34em; margin: 0; color: var(--ink-2); font-size: 12px; line-height: 1.65; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;

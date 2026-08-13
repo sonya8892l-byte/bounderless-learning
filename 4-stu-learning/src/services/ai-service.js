@@ -1,3 +1,5 @@
+import { studentFacingApiErrorMessage } from '../engine/student-facing-policy.js';
+
 export function resolvePublicApiBase(value) {
   const configured = String(value || '').trim();
   const redactedPlaceholder = /^\[[A-Z][A-Z0-9_-]*\]$/.test(configured);
@@ -23,16 +25,21 @@ export class AgentRequestError extends Error {
 
 function errorFromResponse(response, body, fallbackMessage) {
   const status = response.status;
-  return new AgentRequestError(body.error || fallbackMessage, {
+  const metadata = {
     status,
-    code: body.code || `HTTP_${status}`,
-    retryable: body.retryable ?? (
+    code: body?.code || `HTTP_${status}`,
+    retryable: body?.retryable ?? (
       status === 408 || status === 425 || status === 429 || status >= 500
     ),
-    leaseExpiresAt: body.leaseExpiresAt,
-    kind: body.kind,
-    details: body.details,
-  });
+    leaseExpiresAt: body?.leaseExpiresAt,
+    kind: body?.kind,
+    details: body?.details,
+  };
+  const message = studentFacingApiErrorMessage({
+    ...metadata,
+    message: body?.error,
+  }, fallbackMessage);
+  return new AgentRequestError(message, metadata);
 }
 
 async function jsonRequest(path, options = {}) {
@@ -49,8 +56,50 @@ export function createAgentSession(payload) {
   return jsonRequest('/sessions', { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export function resumeAgentSession({
+  runId,
+  participantId,
+  courseId,
+  joinCredential,
+  grade,
+  gradeSource,
+}) {
+  return jsonRequest('/sessions/resume', {
+    method: 'POST',
+    body: JSON.stringify({
+      runId,
+      participantId,
+      courseId,
+      joinCredential,
+      grade,
+      gradeSource,
+    }),
+  });
+}
+
 export function getAgentSession(sessionId) {
   return jsonRequest(`/sessions/${encodeURIComponent(sessionId)}`);
+}
+
+export function activateAgentSession(sessionId) {
+  return jsonRequest(`/sessions/${encodeURIComponent(sessionId)}/activate`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export function claimAgentRole(sessionId, roleId) {
+  return jsonRequest(`/sessions/${encodeURIComponent(sessionId)}/claim-role`, {
+    method: 'POST',
+    body: JSON.stringify({ roleId }),
+  });
+}
+
+export function forceCompleteCurrentTask({ sessionId, taskId, requestId }) {
+  return jsonRequest(`/qa/sessions/${encodeURIComponent(sessionId)}/complete-current-task`, {
+    method: 'POST',
+    body: JSON.stringify({ taskId, requestId }),
+  });
 }
 
 export function parseEventBlock(block) {
@@ -83,7 +132,11 @@ function normalizeTransportError(error, timedOut) {
       cause: error,
     });
   }
-  return new AgentRequestError(error?.message || '网络连接中断，请再试一次。', {
+  return new AgentRequestError(studentFacingApiErrorMessage({
+    code: 'AGENT_NETWORK_ERROR',
+    kind: 'connection',
+    message: error?.message,
+  }, '网络连接中断，请再试一次。'), {
     code: 'AGENT_NETWORK_ERROR',
     retryable: true,
     kind: 'connection',
@@ -131,10 +184,11 @@ async function sendAgentTurnAttempt(payload, onEvent, { timeoutMs }) {
         events.push(event);
         onEvent(event);
         if (event.type === 'agent.error') {
-          agentError = new AgentRequestError(event.data?.message || '絮絮这次没有连接成功。', {
-            ...(event.data || {}),
-            status: event.data?.status ?? null,
-          });
+          const metadata = { ...(event.data || {}), status: event.data?.status ?? null };
+          agentError = new AgentRequestError(
+            studentFacingApiErrorMessage(event.data, '絮絮这次没有连接成功。'),
+            metadata,
+          );
         }
       }
       if (done) break;
@@ -145,10 +199,11 @@ async function sendAgentTurnAttempt(payload, onEvent, { timeoutMs }) {
         events.push(event);
         onEvent(event);
         if (event.type === 'agent.error') {
-          agentError = new AgentRequestError(event.data?.message || '絮絮这次没有连接成功。', {
-            ...(event.data || {}),
-            status: event.data?.status ?? null,
-          });
+          const metadata = { ...(event.data || {}), status: event.data?.status ?? null };
+          agentError = new AgentRequestError(
+            studentFacingApiErrorMessage(event.data, '絮絮这次没有连接成功。'),
+            metadata,
+          );
         }
       }
     }
@@ -158,6 +213,12 @@ async function sendAgentTurnAttempt(payload, onEvent, { timeoutMs }) {
       && !events.some((event) => event.type === 'assistant.completed')
     ) {
       throw new AgentRequestError('絮絮的回复没有完整传到，请重试。', {
+        code: 'AGENT_STREAM_INCOMPLETE',
+        retryable: true,
+      });
+    }
+    if (!events.some((event) => event.type === 'state.updated')) {
+      throw new AgentRequestError('本轮学习状态没有完整传到，请重试。', {
         code: 'AGENT_STREAM_INCOMPLETE',
         retryable: true,
       });
@@ -230,6 +291,9 @@ export async function sendAgentTurn(payload, onEvent = () => {}, options = {}) {
     try {
       return await sendAgentTurnAttempt(payload, deliverEvent, { timeoutMs: remainingMs });
     } catch (error) {
+      // 每次 attempt 都拿到整轮的全部剩余预算；它自身超时就表示总预算已经耗尽。
+      // 不再依赖毫秒时钟恰好跨过 deadline，避免定时器边界上多发一次请求。
+      if (error.code === 'AGENT_REQUEST_TIMEOUT') throw totalTurnTimeoutError();
       const pending = error.retryable && error.status === 409;
       let delayMs = null;
       if (pending && pendingRetries < maxPendingRetries) {
@@ -279,14 +343,49 @@ async function compressEvidenceImage(file) {
   }
 }
 
-export async function uploadEvidence(file) {
-  const uploadFile = await compressEvidenceImage(file);
-  const form = new FormData();
-  form.append('file', uploadFile, uploadFile.name);
-  const response = await fetch(`${API_BASE}/uploads`, { method: 'POST', body: form });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || '证据上传失败。');
-  return body;
+const evidenceUploadCache = new WeakMap();
+
+export async function uploadEvidence(file, sessionId) {
+  const ownerSessionId = String(sessionId || '').trim();
+  if (!ownerSessionId) {
+    throw new AgentRequestError('当前学习会话尚未建立，无法上传证据。', {
+      code: 'EVIDENCE_SESSION_REQUIRED',
+      retryable: false,
+    });
+  }
+  const cachedBySession = file && typeof file === 'object'
+    ? evidenceUploadCache.get(file)
+    : null;
+  if (cachedBySession?.has(ownerSessionId)) return cachedBySession.get(ownerSessionId);
+  const pending = (async () => {
+    const uploadFile = await compressEvidenceImage(file);
+    const form = new FormData();
+    form.append('file', uploadFile, uploadFile.name);
+    const response = await fetch(`${API_BASE}/uploads`, {
+      method: 'POST',
+      headers: { 'x-agent-session-id': ownerSessionId },
+      body: form,
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw errorFromResponse(response, body, '证据上传失败。');
+    return body;
+  })();
+  if (file && typeof file === 'object') {
+    const nextCache = cachedBySession || new Map();
+    nextCache.set(ownerSessionId, pending);
+    evidenceUploadCache.set(file, nextCache);
+  }
+  try {
+    return await pending;
+  } catch (error) {
+    // A transient upload failure must be retryable with the same File object.
+    const currentCache = file && typeof file === 'object' ? evidenceUploadCache.get(file) : null;
+    if (currentCache?.get(ownerSessionId) === pending) {
+      currentCache.delete(ownerSessionId);
+      if (!currentCache.size) evidenceUploadCache.delete(file);
+    }
+    throw error;
+  }
 }
 
 export function answerTimeBank(payload) {

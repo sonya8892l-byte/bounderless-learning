@@ -143,6 +143,7 @@ test('lesson_gewu_001 的 Phase 1 有两个领角色前任务，其余阶段仍�
   assert.equal(first.tasks.length, 2);
   assert.deepEqual(first.tasks.map((task) => task.executor), ['全班', '个人']);
   assert.equal(first.tasks[0].tools[0].id, 'media');
+  assert.equal(first.tasks[0].tools[0].config.url, '', '正式短片素材仍缺失，lint 必须保持发布红灯');
   assert.equal(first.tasks[1].completionMode, 'ai_evaluation');
   assert.equal(first.flow.length, 6, '原有流程叙述保留');
   assert.equal(first.duration, '20min');
@@ -164,31 +165,38 @@ test('阶段任务的就地教学内容与能力标签不进浏览器包', async
   }
 });
 
-test('另外四门课零改动：只多一个空 tasks 数组，别的一字未变', async () => {
+test('其他课程只在有真实入场活动时配置 Phase 1 可执行任务', async () => {
   clearCourseCache();
-  // 只有 gewu_001 迁移了。剩下四门的 phases.md 里没有 `### 阶段任务`，
-  // 编译产物应当只多出"每个 Phase 一个空数组"这一处——这是新字段本身，不是内容变化。
-  for (const courseId of ['lesson_zhizhi_001', 'lesson_zhizhi_002', 'lesson_zhizhi_003', 'lesson_zhuhun_001']) {
+  const expectedCounts = {
+    lesson_zhizhi_001: 1,
+    lesson_zhizhi_002: 1,
+    lesson_zhizhi_003: 1,
+    lesson_zhuhun_001: 1,
+  };
+  for (const [courseId, expected] of Object.entries(expectedCounts)) {
     const course = await compileCourse({ lessonsRoot, courseId });
-    assert.equal(course.files['phases.md'].includes('### 阶段任务'), false, `${courseId} 本轮不该被迁移`);
-    for (const phase of course.lesson.phases) {
-      assert.deepEqual(phase.tasks, [], `${courseId}/${phase.id} 应当是空数组而不是 undefined`);
-    }
+    const phaseTasks = course.lesson.phases.flatMap((phase) => phase.tasks || []);
+    assert.equal(phaseTasks.length, expected, `${courseId} 入口任务数量不符合迁移结果`);
+    assert.ok(phaseTasks.every((task) => task.phaseId === 'phase-1'));
+    assert.ok(phaseTasks.every((task) => task.finalizationMode === 'auto_on_last_step'));
     assert.equal(
       [...course.taskGraph.nodes.values()].filter((node) => node.scope === 'phase').length,
-      0,
-      `${courseId} 不该有阶段任务节点`,
+      expected,
+      `${courseId} 的阶段任务必须与图节点一致`,
     );
   }
 });
 
-test('lint 报到 phases.md 的正确行号，而不是笼统的第 1 行', async () => {
+test('lint 在阶段任务缺验收时仍报到 phases.md 的正确行号', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
-  const { issues } = lintCourse(lintFixture(course), { lessonsRoot, courseId: course.id });
+  const fixture = lintFixture(course);
+  fixture.lesson.phases[0].tasks[0].acceptance = '';
+  fixture.lesson.phases[0].tasks[0].inlineAcceptance = '';
+  const { issues } = lintCourse(fixture, { lessonsRoot, courseId: course.id });
   const missing = issues.filter((item) => item.code === 'missing_acceptance' && item.file.endsWith('phases.md'));
 
-  assert.equal(missing.length, 1, '阶段任务 1 没写就地验收标准');
+  assert.equal(missing.length, 1);
   const phasesMarkdown = course.files['phases.md'].split('\n');
   for (const issue of missing) {
     assert.match(phasesMarkdown[issue.line - 1], /^###\s*阶段任务\d+[：:]/, `第 ${issue.line} 行不是阶段任务标题`);

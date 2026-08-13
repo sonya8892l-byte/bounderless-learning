@@ -53,5 +53,6 @@ test('闯关分页只开放已完成任务和当前任务', () => {
   assert.equal(challengeTaskAccess({ ...context, taskIndex: 2 }), 'locked');
   assert.equal(clampChallengePageIndex({ ...context, requestedIndex: 2 }), 1);
   assert.equal(clampChallengePageIndex({ ...context, requestedIndex: 0 }), 0);
-  assert.equal(clampChallengePageIndex({ ...context, requestedIndex: 2, allowAll: true }), 2);
+  assert.equal(clampChallengePageIndex({ ...context, requestedIndex: 99 }), 1);
+  assert.equal(clampChallengePageIndex({ ...context, requestedIndex: 2, roleCompleted: true }), 2);
 });

@@ -10,8 +10,8 @@ import { parsePlatformDefaultDocument } from '../src/engine/platform-defaults.js
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
-// 期望值是从搬运前的 service.js 里逐条抄下来的。这张表是 M2-4「只搬文案不改字」的凭据：
-// 任何一条对不上，说明搬运过程中改了学生看到的话。
+// 期望值是学生可见平台话术的受控基线。产品主动调整话术时必须同步更新这里，
+// 让平台文件与代码回落保持逐 key 一致，避免只改一条路径。
 const ORIGINAL = Object.freeze([
   ['role_assigned.欢迎', { roleName: '数龙官', companionName: '絮絮', next: '你到三台了吗？' },
     '欢迎你，数龙官！我是絮絮。你到三台了吗？'],
@@ -68,12 +68,13 @@ const ORIGINAL = Object.freeze([
   ['degraded.情绪', {}, '我在听。你可以慢一点说，我会陪你一起理清。'],
   ['degraded.任务线索', { taskName: '观其形' },
     '我收到啦。先从“观其形”里最确定的一条现场线索开始，把它告诉我，我继续陪你分析。'],
-  ['degraded.没接住', {}, '我听见了，不过这句话我还没完全接住。你愿意再多说一点吗？'],
+  ['degraded.没接住', {}, '我想确认一下：你是在问当前任务，还是需要别的帮助？'],
   ['prelude.求助', { hint: '先看嘴巴形状' }, '我在。先试一个小步骤：先看嘴巴形状'],
   ['prelude.情绪', {}, '我在听，你慢慢说。'],
   ['prelude.收到提交', {}, '我收到你的提交了，正在看这条证据。'],
   ['prelude.核对材料', {}, '我先按课程材料帮你核对。'],
   ['prelude.寒暄', {}, '嗯嗯，我在听～'],
+  ['prelude.澄清', {}, '我想确认一下你的意思。'],
   ['tool.show_navigation', { location: '三大殿三台' }, '我把前往“三大殿三台”的高德地图打开了。'],
   ['tool.open_task_tool', { taskName: '观其形' }, '我把“观其形”任务工具打开了，我们继续。'],
   ['tool.call_teacher', {}, '我现在帮你呼叫老师，请先停在安全的位置。'],
@@ -98,8 +99,8 @@ const ORIGINAL = Object.freeze([
   ['avoid_repeat.safety', {}, '老师已经收到求助。请继续停在安全、显眼的位置，不要独自移动；如果身体更不舒服，马上告诉身边的成年人。'],
   ['avoid_repeat.emotion', {}, '我还在，先照顾好自己。你可以慢慢说，现在不需要赶任务。'],
   ['avoid_repeat.social', {}, '嗯嗯，我还在听～你可以接着说，想回到学习时告诉我“继续”。'],
-  ['avoid_repeat.有待答', {}, '这件事我已经问过了，你可以直接点下面的选项，我会按你的回答继续。'],
-  ['avoid_repeat.默认', {}, '这句话我刚才说过了。我们接着你现在的想法往下聊。'],
+  ['avoid_repeat.有待答', {}, '这个选项还在等你确认，点一下就能继续。'],
+  ['avoid_repeat.默认', {}, '我们接着往下：你现在最想确认哪一点？'],
 ]);
 
 // 验收反馈由三段拼成，拼装规则在 service.js 里。这里锁住拼出来的成品与搬运前一致。
@@ -119,7 +120,7 @@ test('验收反馈的三段拼装结果与搬运前一致', async () => {
   assert.equal(compose('照片有点糊。', '', false), '照片有点糊。');
 });
 
-test('voice.md 逐 key 渲染的结果与搬运前的硬编码逐字相同', async () => {
+test('voice.md 逐 key 渲染结果与受控学生话术基线一致', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const { voice } = course.platformDefaults;

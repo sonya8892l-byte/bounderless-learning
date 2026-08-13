@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
 import { createAgentService } from '../server/agent/service.js';
+import {
+  actionForTeacherLifecycleEvent,
+  createTeacherCommandAuthority,
+} from './helpers/teacher-command-authority.js';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
@@ -53,23 +57,40 @@ async function directiveAgent() {
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const llm = silentLlm();
   const store = memoryStore();
-  const agent = createAgentService({ llm, store, getCourse: async () => course });
+  const authority = createTeacherCommandAuthority();
+  const agent = createAgentService({
+    llm,
+    store,
+    getCourse: async () => course,
+    consumeTeacherCommand: authority.consume,
+  });
   const { session } = await agent.createSession({
     courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1',
   });
-  return { agent, course, llm, session, store };
+  return { agent, authority, course, llm, session, store };
 }
 
-function sendDirective(agent, session, data, requestId) {
+function sendDirective(agent, session, authority, data, requestId) {
+  const action = actionForTeacherLifecycleEvent('teacher_directive', data);
+  const teacherCommandId = authority.issue({
+    sessionId: session.id,
+    action,
+    payload: data,
+    commandId: data.teacherCommandId,
+  });
   return agent.runTurn({
     sessionId: session.id,
     requestId,
-    input: { type: 'lifecycle_event', event: 'teacher_directive', data },
+    input: {
+      type: 'lifecycle_event',
+      event: 'teacher_directive',
+      data: { ...data, teacherCommandId },
+    },
   });
 }
 
 test('教师推进阶段写回 session.phaseId，阶段提示词随之换成新阶段那一份', async () => {
-  const { agent, course, session, store } = await directiveAgent();
+  const { agent, authority, course, session, store } = await directiveAgent();
 
   // 建会话时的阶段来自 course.md 的「任务阶段」，gewu_001 写的是 phase-2。
   assert.equal(session.phaseId, 'phase-2');
@@ -77,7 +98,7 @@ test('教师推进阶段写回 session.phaseId，阶段提示词随之换成新�
   const after = course.phasePrompts['phase-3'];
   assert.ok(before && after && before !== after, '前置条件：两个阶段各有一份不同的提示词');
 
-  await sendDirective(agent, session, { phaseId: 'phase-3', teacherCommandId: 'cmd-1' }, 'd-1');
+  await sendDirective(agent, session, authority, { phaseId: 'phase-3', teacherCommandId: 'cmd-1' }, 'd-1');
 
   const saved = await store.get(session.id);
   assert.equal(saved.phaseId, 'phase-3', '会话阶段必须真的变了，否则六份提示词只有一份能生效');
@@ -85,32 +106,32 @@ test('教师推进阶段写回 session.phaseId，阶段提示词随之换成新�
 });
 
 test('教师调档写回 session.scaffoldLevel，且可升可降', async () => {
-  const { agent, session, store } = await directiveAgent();
+  const { agent, authority, session, store } = await directiveAgent();
   assert.equal(session.scaffoldLevel, 0);
 
-  await sendDirective(agent, session, { scaffoldLevel: 3, teacherCommandId: 'cmd-2' }, 'd-2');
+  await sendDirective(agent, session, authority, { scaffoldLevel: 3, teacherCommandId: 'cmd-2' }, 'd-2');
   assert.equal((await store.get(session.id)).scaffoldLevel, 3);
 
   // tutorPolicy 的自动升档只升不降；老师看得到学生真实状态，必须能调回去。
-  await sendDirective(agent, session, { scaffoldLevel: 1, teacherCommandId: 'cmd-3' }, 'd-3');
+  await sendDirective(agent, session, authority, { scaffoldLevel: 1, teacherCommandId: 'cmd-3' }, 'd-3');
   assert.equal((await store.get(session.id)).scaffoldLevel, 1, '教师调档必须可降');
 });
 
 test('档位越界被夹到平台上限与 0，不写进非法值', async () => {
-  const { agent, course, session, store } = await directiveAgent();
+  const { agent, authority, course, session, store } = await directiveAgent();
   const maxLevel = Number(course?.platformDefaults?.scaffolding?.maxLevel ?? 4);
 
-  await sendDirective(agent, session, { scaffoldLevel: 99 }, 'd-4');
+  await sendDirective(agent, session, authority, { scaffoldLevel: 99 }, 'd-4');
   assert.equal((await store.get(session.id)).scaffoldLevel, maxLevel);
 
-  await sendDirective(agent, session, { scaffoldLevel: -5 }, 'd-5');
+  await sendDirective(agent, session, authority, { scaffoldLevel: -5 }, 'd-5');
   assert.equal((await store.get(session.id)).scaffoldLevel, 0);
 });
 
 test('课程里不存在的阶段被忽略，不让「阶段规则」段凭空变空', async () => {
-  const { agent, session, store } = await directiveAgent();
+  const { agent, authority, session, store } = await directiveAgent();
 
-  await sendDirective(agent, session, { phaseId: 'phase-99' }, 'd-6');
+  await sendDirective(agent, session, authority, { phaseId: 'phase-99' }, 'd-6');
 
   const saved = await store.get(session.id);
   assert.equal(saved.phaseId, 'phase-2', '写错阶段号时保持原样：宁可不改，也不要让课程作者写的阶段约束消失');
@@ -118,22 +139,157 @@ test('课程里不存在的阶段被忽略，不让「阶段规则」段凭空�
 });
 
 test('教师指令不让絮絮开口，也不调模型', async () => {
-  const { agent, llm, session } = await directiveAgent();
+  const { agent, authority, llm, session } = await directiveAgent();
 
-  const result = await sendDirective(agent, session, { phaseId: 'phase-3' }, 'd-7');
+  const result = await sendDirective(
+    agent,
+    session,
+    authority,
+    { phaseId: 'phase-3', teacherCommandId: 'cmd-trace-7' },
+    'd-7-林同学',
+  );
 
   assert.equal(llm.calls, 0, '状态变更不需要模型参与');
   const spoke = result.events.find((event) => event.type === 'assistant.completed');
   assert.equal(spoke, undefined, '学生端已经自己弹了提示，模型再说一句就是重复');
+  assert.deepEqual(result.trace.teacherCommand, {
+    teacherCommandId: 'cmd-trace-7',
+    action: 'advance_phase',
+  });
+  assert.doesNotMatch(JSON.stringify(result.trace), /林同学/u);
+});
+
+test('教师确认到达经一次性授权写入 Agent 到达状态并解除到达提问', async () => {
+  const { agent, authority, session, store } = await directiveAgent();
+  const commandId = authority.issue({
+    sessionId: session.id,
+    action: 'confirm_arrival',
+  });
+  const result = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'teacher-confirm-arrival',
+    input: {
+      type: 'lifecycle_event',
+      event: 'teacher_confirm_arrival',
+      data: { teacherCommandId: commandId, locationObservedAt: new Date().toISOString() },
+    },
+  });
+
+  const saved = await store.get(session.id);
+  assert.equal(saved.locationState.status, 'arrived');
+  assert.equal(saved.locationState.verifiedBy, 'teacher');
+  assert.equal(saved.dialogueState.confirmedSlots.arrival, true);
+  assert.notEqual(saved.dialogueState.pendingQuestion?.kind, 'arrival');
+  assert.ok(result.events.some((event) => event.type === 'state.updated'));
+});
+
+test('教师确认到达拒绝缺失或过期的定位快照', async () => {
+  const { agent, authority, session, store } = await directiveAgent();
+  for (const [requestId, locationObservedAt] of [
+    ['teacher-arrival-missing-location', undefined],
+    ['teacher-arrival-stale-location', new Date(Date.now() - 61_000).toISOString()],
+  ]) {
+    const commandId = authority.issue({ sessionId: session.id, action: 'confirm_arrival' });
+    await assert.rejects(agent.runTurn({
+      sessionId: session.id,
+      requestId,
+      input: {
+        type: 'lifecycle_event',
+        event: 'teacher_confirm_arrival',
+        data: { teacherCommandId: commandId, locationObservedAt },
+      },
+    }), (error) => error.code === 'TEACHER_LOCATION_SNAPSHOT_STALE');
+  }
+  assert.notEqual((await store.get(session.id)).locationState?.status, 'arrived');
+});
+
+test('伪造或错类型的到达确认不能改变 Agent 位置状态', async () => {
+  const { agent, authority, session, store } = await directiveAgent();
+  await assert.rejects(agent.runTurn({
+    sessionId: session.id,
+    requestId: 'teacher-confirm-arrival-forged',
+    input: {
+      type: 'lifecycle_event',
+      event: 'teacher_confirm_arrival',
+      data: { teacherCommandId: 'cmd_not_issued' },
+    },
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+
+  const wrongActionId = authority.issue({ sessionId: session.id, action: 'approve_evidence' });
+  await assert.rejects(agent.runTurn({
+    sessionId: session.id,
+    requestId: 'teacher-confirm-arrival-wrong-action',
+    input: {
+      type: 'lifecycle_event',
+      event: 'teacher_confirm_arrival',
+      data: { teacherCommandId: wrongActionId },
+    },
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+
+  assert.notEqual((await store.get(session.id)).locationState?.status, 'arrived');
 });
 
 test('一条指令可以同时改阶段与档位', async () => {
-  const { agent, session, store } = await directiveAgent();
+  const { agent, authority, session, store } = await directiveAgent();
 
-  await sendDirective(agent, session, { phaseId: 'phase-4', scaffoldLevel: 2 }, 'd-8');
+  await sendDirective(agent, session, authority, { phaseId: 'phase-4', scaffoldLevel: 2 }, 'd-8');
 
   const saved = await store.get(session.id);
   assert.equal(saved.phaseId, 'phase-4');
   assert.equal(saved.phaseNumber, 4);
   assert.equal(saved.scaffoldLevel, 2);
+});
+
+test('客户端伪造、串会话和重复消费的教师命令都不改会话状态', async () => {
+  const { agent, authority, session, store } = await directiveAgent();
+  const forgedInput = (teacherCommandId, scaffoldLevel = 2) => ({
+    type: 'lifecycle_event',
+    event: 'teacher_directive',
+    data: { scaffoldLevel, teacherCommandId },
+  });
+
+  await assert.rejects(agent.runTurn({
+    sessionId: session.id,
+    requestId: 'forged-command',
+    input: forgedInput('cmd_not_issued'),
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+
+  const foreignId = authority.issue({
+    sessionId: 'ses_someone_else',
+    action: 'set_scaffold',
+  });
+  await assert.rejects(agent.runTurn({
+    sessionId: session.id,
+    requestId: 'foreign-command',
+    input: forgedInput(foreignId),
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+
+  const wrongActionId = authority.issue({
+    sessionId: session.id,
+    action: 'advance_phase',
+  });
+  await assert.rejects(agent.runTurn({
+    sessionId: session.id,
+    requestId: 'wrong-action-command',
+    input: forgedInput(wrongActionId),
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+
+  const oneShotId = authority.issue({
+    sessionId: session.id,
+    action: 'set_scaffold',
+  });
+  await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'one-shot-first',
+    input: forgedInput(oneShotId, 3),
+  });
+  await assert.rejects(agent.runTurn({
+    sessionId: session.id,
+    requestId: 'one-shot-second',
+    input: forgedInput(oneShotId, 1),
+  }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+
+  const saved = await store.get(session.id);
+  assert.equal(saved.scaffoldLevel, 3);
+  assert.equal(saved.phaseId, 'phase-2');
 });

@@ -26,9 +26,9 @@
 - 到达验证：manual
 - 最短停留：0min
 - 建议时长：15min
-- 无操作提醒：3min
-- 提醒冷却：2min
-- 最大主动提醒：2
+- 无操作提醒：8min
+- 提醒冷却：8min
+- 最大主动提醒：1
 - 推进方式：auto_after_validation
 - 功能模块：A01(拍照采集), A07(扫码)
 - 任务图：assets/tasks/intelligence-matrix.svg
@@ -139,9 +139,9 @@
 - 到达验证：manual
 - 最短停留：0min
 - 建议时长：15min
-- 无操作提醒：3min
-- 提醒冷却：2min
-- 最大主动提醒：2
+- 无操作提醒：8min
+- 提醒冷却：8min
+- 最大主动提醒：1
 - 推进方式：auto_after_validation
 - 功能模块：A02(表单), A01(画板标注)
 - 任务图：assets/tasks/intelligence-matrix.svg
@@ -254,9 +254,9 @@
 - 到达验证：manual
 - 最短停留：0min
 - 建议时长：15min
-- 无操作提醒：3min
-- 提醒冷却：2min
-- 最大主动提醒：2
+- 无操作提醒：8min
+- 提醒冷却：8min
+- 最大主动提醒：1
 - 推进方式：auto_after_validation
 - 功能模块：A02(表单), A01(文字输入)
 - 任务图：assets/tasks/intelligence-matrix.svg

@@ -1,4 +1,23 @@
 import crypto from 'node:crypto';
+import {
+  DEFAULT_GRADE_LEVEL,
+  isGradeLevel,
+  resolveGradeLevel,
+} from '../../src/engine/grade-level.js';
+
+const GRADE_SOURCES = new Set([
+  'student_selected',
+  'participant_profile',
+  'url',
+  'evaluation',
+  'platform_default',
+  'legacy_migrated',
+]);
+
+function normalizedGradeSource(value, fallback) {
+  const source = String(value || '').trim();
+  return GRADE_SOURCES.has(source) ? source : fallback;
+}
 
 export function phaseNumber(phaseId) {
   return Number.parseInt(String(phaseId || 'phase-2').match(/\d+/)?.[0], 10) || 2;
@@ -7,6 +26,8 @@ export function phaseNumber(phaseId) {
 export function createSessionRecord(values = {}) {
   const phaseId = values.phaseId || 'phase-2';
   const createdAt = values.createdAt || new Date().toISOString();
+  const hasExplicitGrade = isGradeLevel(values.grade);
+  const grade = hasExplicitGrade ? values.grade : DEFAULT_GRADE_LEVEL;
   return {
     schemaVersion: 2,
     id: values.id || `ses_${crypto.randomUUID().replaceAll('-', '')}`,
@@ -15,22 +36,38 @@ export function createSessionRecord(values = {}) {
     groupId: values.groupId,
     runId: values.runId || null,
     participantId: values.participantId || null,
-    // 领取角色前也有一段正式学习过程；空字符串表示当前正在跑阶段任务轨道。
+    // 选择角色前也有一段正式学习过程；空字符串表示当前正在跑阶段任务轨道。
     roleId: values.roleId || '',
     // 课程 md＋平台包的联合内容指纹。主体未产出时存空串，不阻塞建会话。
     contentVersion: values.contentVersion || '',
-    grade: values.grade || '初中',
+    grade,
+    gradeSource: hasExplicitGrade
+      ? normalizedGradeSource(values.gradeSource, 'student_selected')
+      : 'platform_default',
     phaseId,
     phaseNumber: phaseNumber(phaseId),
     currentTaskIndex: 0,
     scaffoldLevel: 0,
+    scaffoldState: {
+      schemaVersion: 1,
+      byContext: {},
+      stepOverrides: {},
+      activeKey: '',
+      activeStepKey: '',
+    },
     completedTaskIds: [],
     // 角色补绑后把前置阶段的完成快照归档到这里，当前角色进度仍使用 completedTaskIds。
     phaseTaskState: values.phaseTaskState || null,
     events: [],
+    // 平台验收跳关记录与普通学习证据分开，便于测试数据识别和清理。
+    qaOverrides: [],
     messages: [],
     pendingTools: {},
     handledRequestIds: [],
+    handledRequestResults: [],
+    consumedTeacherCommandIds: [],
+    // 逐回合最小审计记录：只存决策、版本、状态投影与哈希，不复制学生原话或 Prompt。
+    turnTraces: [],
     timeBalance: Number(values.timeBalance || 0),
     timeEarned: 0,
     completedBankTaskIds: [],
@@ -75,7 +112,7 @@ export function createSessionRecord(values = {}) {
       lastRepairAt: null,
     },
     learnerState: {
-      grade: values.grade || '初中',
+      grade,
       engagement: 'unknown',
       emotion: 'neutral',
       preferredInput: 'unknown',
@@ -87,6 +124,7 @@ export function createSessionRecord(values = {}) {
       activeTab: 'task',
       learningView: 'dialogue',
       hasDraft: false,
+      busy: {},
       phaseRemainingSeconds: null,
       teacherCommand: null,
       groupStatus: null,
@@ -110,18 +148,28 @@ export function normalizeSessionRecord(value) {
   if (!value || typeof value !== 'object' || !value.id) return null;
   const source = structuredClone(value);
   const defaults = createSessionRecord(source);
+  const sourceGrade = source.learnerState?.grade || source.grade || '';
+  const normalizedGrade = resolveGradeLevel(sourceGrade, DEFAULT_GRADE_LEVEL);
   const normalized = {
     ...defaults,
     ...source,
     schemaVersion: Math.max(2, Number(source.schemaVersion || 0)),
     phaseNumber: Number(source.phaseNumber || phaseNumber(source.phaseId)),
+    grade: normalizedGrade,
+    gradeSource: isGradeLevel(sourceGrade)
+      ? normalizedGradeSource(source.gradeSource, 'legacy_migrated')
+      : (String(sourceGrade).trim() ? 'legacy_migrated' : 'platform_default'),
   };
 
   for (const key of [
     'completedTaskIds',
     'events',
+    'qaOverrides',
     'messages',
     'handledRequestIds',
+    'handledRequestResults',
+    'consumedTeacherCommandIds',
+    'turnTraces',
     'completedBankTaskIds',
     'gifts',
   ]) {
@@ -130,6 +178,12 @@ export function normalizeSessionRecord(value) {
 
   normalized.pendingTools = objectOrDefault(source.pendingTools, defaults.pendingTools);
   normalized.taskState = objectOrDefault(source.taskState, defaults.taskState);
+  normalized.scaffoldState = {
+    ...defaults.scaffoldState,
+    ...objectOrDefault(source.scaffoldState, {}),
+    byContext: objectOrDefault(source.scaffoldState?.byContext, {}),
+    stepOverrides: objectOrDefault(source.scaffoldState?.stepOverrides, {}),
+  };
   for (const key of [
     'learningState',
     'onboardingState',
@@ -143,6 +197,7 @@ export function normalizeSessionRecord(value) {
       ...objectOrDefault(source[key], {}),
     };
   }
+  normalized.learnerState.grade = normalizedGrade;
   normalized.dialogueState.confirmedSlots = {
     ...defaults.dialogueState.confirmedSlots,
     ...objectOrDefault(source.dialogueState?.confirmedSlots, {}),

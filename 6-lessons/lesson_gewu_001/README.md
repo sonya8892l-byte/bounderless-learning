@@ -14,7 +14,7 @@
 
 ### 1.1 平台统一提供
 
-- 学生端小程序式页面壳、角色领取页、我的任务、小组页和时间银行入口；
+- 学生端小程序式页面壳、角色选择页、我的任务、小组页和时间银行入口；
 - 默认关闭的“对话 / 闯关”双视图 Gate，以及两种视图共用的任务工作区；
 - AI 学习同伴“絮絮”的名称、基础形象、待机动画和对话动画；
 - 对话状态、流式输出、意图判断、待回答问题、主动提醒和异常恢复；
@@ -50,16 +50,15 @@
 | `course.md`、`phases.md`、`roles/*.md` | 已解析并用于学生端和服务端 | 可按本文语法维护 |
 | 学习视图 Gate | 本课已开启，默认进入对话模式并允许学生切换闯关模式 | 在 `course.md / ## 学习视图` 维护；不改变服务端任务进度 |
 | A01–A07 工具注册表 | 已接入解析器、十种前端 renderer 和服务端基础 validator | 使用 `功能模块` 与 JSON `工具参数` |
-| 结构化 Step | 已解析并进入状态机 | 本课 18 个任务均已迁移，共 54 个显式 Step |
-| 本课现有 18 个任务 | 已完成结构化迁移 | 每个任务包含 3 个 Step，并显式配置 ID、位置、完成方式、证据、工具、引用和失败处理 |
+| 结构化 Step | 已解析并进入状态机 | 本课 18 个角色任务共 54 个 Step，Phase 1 两个阶段任务各有 1 个 Step，共 56 个显式 Step |
+| 本课现有 18 个角色任务 | 已完成结构化迁移 | 每个任务包含 3 个 Step，并显式配置 ID、位置、完成方式、证据、工具、引用和失败处理；每步均已独立验收，任务采用平台默认 `auto_on_last_step` 收口 |
 | `knowledge/*.md` | 已进入服务端检索 | 必须填写来源、角色和揭示时机 |
-| `guidance/*.md` | 已按角色和任务序号装配 | 当前主要提取任务段中的简短引导语 |
-| `scaffolds/*.md` | 已按角色和任务序号装配 | 当前自动使用 L1–L3；L0、L4保留为课程设计内容 |
+| `roles/*.md` 内的引导与脚手架 | 已按角色和任务装配 | 本课没有单独提交 `guidance/` 或 `scaffolds/`；具体话术直接维护在各任务的 `##### 引导`、`##### 脚手架` 中 |
 | `restrictions.md` | 已用于输出防剧透和公开包脱敏 | 解除条件只使用本文列出的格式 |
-| `prompts/*.md` | 已按 Phase 装配 | 当前每轮只取阶段文件前部的有限内容 |
-| `evaluation.md` | 已作为 `ai_evaluation` 验收上下文 | 开放观察、计算说明、图像和报告小步已逐步绑定评估引用 |
+| `prompts/*.md` | 已按 Phase 装配 | 按阶段目标、工作方式、角色差异、禁止行为和转场条件结构化读取；不依赖字符截断 |
+| `evaluation.md` | 已作为 `ai_evaluation` 的课程级共享验收上下文 | Step 专属标准写在该 Step 的 `##### 验收标准`；不再使用 `评估引用` |
 | `objectives.md` | 课程资料已保留 | 尚未进入运行时解析；`目标关联`目前是记录字段 |
-| Step 中的知识/引导/限制/评估/脚手架引用 | 部分接入 | 知识引用用于定向检索，角色 guidance/scaffold 按任务装配；精确标题定位仍待完善 |
+| Step 中的跨文件引用 | 已接入两类 | `知识引用`用于定向检索，`限制引用`按标题精确解析；`引导引用`、`脚手架引用`、`评估引用`已废止 |
 | photo/audio/text/sketch/quiz/builder/simulation/team/media/scanner | 已有前端操作与基础结果校验 | 上线前仍需逐任务验证参数和失败恢复 |
 | `ai_evaluation`、`teacher_confirm`、`location_event`、`compound` | 已进入平台状态机 | AI 通过/重试已可用；本课迁移后仍需教师确认、位置与复合规则专项验收 |
 | 时间银行选择题、开放题、照片打卡、定位签到、余额与赠时 | 已接入 | 照片已接相机选择与上传；定位已接设备 GPS 和半径校验；目标物视觉识别、停留时长仍需补充 |
@@ -79,20 +78,6 @@ lesson_gewu_001/
 ├── time-bank.md                # 时间银行规则、题目、答案和奖励
 ├── assets-checklist.md         # 素材来源、完成度、授权和占位状态
 ├── roles/                      # 角色、角色阶段、Step、位置、工具和通过条件
-│   ├── dragon-counter.md
-│   ├── slope-surveyor.md
-│   ├── ditch-finder.md
-│   ├── river-guide.md
-│   ├── moat-guard.md
-│   └── truth-seeker.md
-├── guidance/                   # 各角色、各任务的 AI 引导目标和禁止行为
-│   ├── dragon-counter.md
-│   ├── slope-surveyor.md
-│   ├── ditch-finder.md
-│   ├── river-guide.md
-│   ├── moat-guard.md
-│   └── truth-seeker.md
-├── scaffolds/                  # 各角色、各任务的 L0–L4 分层帮助
 │   ├── dragon-counter.md
 │   ├── slope-surveyor.md
 │   ├── ditch-finder.md
@@ -123,7 +108,7 @@ lesson_gewu_001/
     └── videos/                 # 导入和推演媒体或占位图
 ```
 
-`guidance/` 和 `scaffolds/` 中的文件名必须与 `roles/` 的角色 slug 完全一致。上面的树列出全部 Markdown 配置文件；二进制素材逐项见第 17 节和 `assets-checklist.md`。
+上面的树列出全部 Markdown 配置文件；任务引导和脚手架已就地写在`roles/*.md`。二进制素材逐项见第 17 节和`assets-checklist.md`。
 
 ## 4. ID 与绑定规则
 
@@ -150,8 +135,6 @@ lesson_gewu_001/
 
 ```text
 roles/dragon-counter.md
-guidance/dragon-counter.md
-scaffolds/dragon-counter.md
 knowledge 条目中的 roles: 数龙官
 restrictions.md 中的“数龙官完成任务2后”
 ```
@@ -160,16 +143,15 @@ restrictions.md 中的“数龙官完成任务2后”
 
 ### 4.3 任务序号绑定
 
-当前 guidance、scaffolds 和角色限制均依赖任务序号：
+当前任务引导、脚手架与结构化 Step 就地绑定在同一个任务段；限制解除条件仍可按角色和任务序号表达：
 
 ```text
 roles/dragon-counter.md       ### 任务2：算其数
-guidance/dragon-counter.md    ## 任务2：算其数
-scaffolds/dragon-counter.md   ## 或 ### 任务2：算其数
+roles/dragon-counter.md       该任务内的 ##### 引导／##### 脚手架
 restrictions.md               数龙官完成任务2后
 ```
 
-因此本课角色阶段 ID 保持 `task-1`、`task-2`、`task-3`。调整任务顺序时，四处内容必须一起检查。
+因此本课角色阶段 ID 保持`task-1`、`task-2`、`task-3`。调整任务顺序时，必须同步检查角色文件和`restrictions.md`的解除条件。
 
 ### 4.4 Phase 绑定
 
@@ -206,7 +188,7 @@ time-bank.md                  unlock_after: phase2-start
 - itemName：身份
 - 选择眉题：{roleCount}种身份 · {roleCount}段证据
 - 选择标题：选择你的{collectionName}身份
-- 选择说明：每位成员负责一个系统环节。集齐{roleCount}枚{collectionItemName}，才能解锁{unlockTarget}。
+- 选择说明：每位成员负责一个系统环节。集齐{roleCount}枚{collectionItemName}后，由老师组织进入{unlockTarget}。
 - collectionItemName：密符
 - collectionPanelName：小组密符
 - unlockTarget：璇玑时刻
@@ -216,7 +198,6 @@ time-bank.md                  unlock_after: phase2-start
 - enabled：true
 - default：dialogue
 - allowStudentSwitch：true
-- allowFutureTaskBrowse：true
 ```
 
 `collectionName` 等英文键区分大小写。角色选择文案支持 `{roleCount}`、`{collectionName}`、`{itemName}`、`{collectionItemName}`、`{unlockTarget}`。
@@ -230,12 +211,9 @@ learningView:
   enabled: true
   default: dialogue
   allowStudentSwitch: true
-  allowFutureTaskBrowse: false
 ```
 
-平台默认开启双视图。本课在 `course.md` 中显式保留配置，并额外开启验收用的未来关卡浏览。`default` 只接受 `dialogue` 或 `challenge`；非法值会导致课程编译失败。`enabled: false` 的课程始终回到纯对话模式；只有 `enabled` 与 `allowStudentSwitch` 同时为 `true` 时，平台才在“我的任务”右下角显示絮絮悬浮切换按钮。对话页按钮文案为“切换为闯关模式”，闯关页按钮文案为“切换为智能 AI 模式”。
-
-`allowFutureTaskBrowse` 是课程验收期的临时浏览开关。本课当前设为 `true`，因此“下一关”和未来任务页可以直接查看，但未来任务仍不能提交或推进正式进度。上线前必须将它改为 `false`，恢复按进度逐关解锁。
+平台默认开启双视图。本课在 `course.md` 中显式保留配置。`default` 只接受 `dialogue` 或 `challenge`；非法值会导致课程编译失败。`enabled: false` 的课程始终回到纯对话模式；只有 `enabled` 与 `allowStudentSwitch` 同时为 `true` 时，平台才在“我的任务”右下角显示絮絮悬浮切换按钮。对话页按钮文案为“切换为闯关模式”，闯关页按钮文案为“切换为智能 AI 模式”。闯关模式严格按照正式进度逐项解锁；未来任务名称只在进度面板中展示，不开放任务页。
 
 切换只改变当前页面的任务呈现方式。对话历史、任务证据、工具草稿、当前任务和 Step 均沿用同一份状态；已完成任务在闯关页只读。刷新后的本地照片与录音草稿恢复不属于当前版本能力。
 
@@ -258,7 +236,11 @@ learningView:
 
 ### 5.4 当前未读取字段
 
-`编号`、`坐标中心`、`最大并行组数`、叙事框架和密符机制可以作为课程说明保留，当前解析器不会用它们直接控制运行状态。
+`编号`、`坐标中心`和`最大并行组数`仍是课程说明字段，当前解析器不会用它们直接控制运行状态。
+
+本课的叙事设计为：开场用“暴雨将至”建立 600 年古建筑面对暴雨的情境；中段由不同角色分别探索排水系统环节；高潮在“璇玑时刻”拼合水系图并检验系统；结局用推演和证据说明系统能力、成立条件与局限。
+
+密符是教研叙事机制：各角色完成任务后取得一个字母，六个字母按角色顺序组成线索码`Y-I-N-S-H-U`，线索码不直接等于最终概念。全组拼合和阶段解锁目前仍由教师组织，不能把这段说明写进`course.md`假定平台会自动执行。
 
 ## 6. `phases.md` 与阶段提示词
 
@@ -271,7 +253,7 @@ learningView:
 - 地点：故宫各区域（由角色决定）
 - 功能模块：A01(多模态采集), A02(答题评测), A07(扫码识别)
 - 触发条件：Phase 1 结束 + 教师确认
-- 结束条件：教师手动推进 或 时间耗尽
+- 结束条件：教师手动推进
 
 ### 流程
 1. AI根据角色显示目标区域
@@ -287,14 +269,14 @@ learningView:
 
 不属于任何角色的集体／小组／个人任务写成阶段任务，挂在对应 Phase 下。本课 Phase 1 是全仓第一个真样本：
 
-| 阶段任务 | 执行单位 | 功能模块 | 完成方式 |
+| 阶段任务 | 执行单位 | 唯一 Step 完成方式 | 收口方式 |
 |---|---|---|---|
-| 看"暴雨将至"短片 | 全班 | A06(沉浸媒体) | `tool_result` |
-| 写下你最初的猜想 | 个人 | A01(文字输入) | `ai_evaluation` |
+| 查看"暴雨将至"情境图 | 全班 | `tool_result` | `auto_on_last_step` |
+| 写下你最初的猜想 | 个人 | `ai_evaluation` | `auto_on_last_step` |
 
 字段表与角色任务完全一致，只多一个 `执行单位`（`全班`/`小组`/`个人`，默认 `全班`）。完整写法见 [`../COURSE-SUBMISSION-SPEC.md`](../COURSE-SUBMISSION-SPEC.md) §4.1。
 
-**当前状态：领取角色前的阶段任务已可运行。** 学生端以无角色会话依次完成短片和初始猜想；两项完成后进入角色选择页，并沿用同一个会话继续角色任务。Phase 1 原有的 `### 流程` 六条叙述仍作为教师组织说明保留。
+**当前状态：选择角色前的阶段任务已可运行。** 学生端以无角色会话依次完成情境图查看和初始猜想；情境图用 `posterOnly: true` 明确声明为静态呈现，不需要视频 URL。每项的唯一 Step 通过后自动收口，两项完成后进入角色选择页，并沿用同一个会话继续角色任务。Phase 1 原有的 `### 流程` 六条叙述仍作为教师组织说明保留。
 
 ### 6.2 本课阶段对照
 
@@ -309,7 +291,7 @@ learningView:
 
 提示词文件名必须符合 `prompts/phase数字-名称.md`。编译器根据文件名中的数字绑定 Phase。
 
-阶段提示词当前按需进入模型上下文，且只截取文件前部的有限内容。最重要的阶段目标、泄题边界和絮絮行为放在文件开头；详细教案仍可保留在后文供课程团队查看。
+阶段提示词按语义段进入模型上下文。至少维护 `## 阶段目标`、`## 絮絮行为`、`## 角色行为差异`、`## 禁止行为` 和 `## 转场条件`；开场模板与关键话术只在对应时机使用，不作为每轮固定前缀。转场条件描述课程内容是否就绪，实际推进仍由教师操作。
 
 ## 7. `roles/*.md` 配置
 
@@ -342,7 +324,7 @@ learningView:
 ### 角色阶段1：观其形
 - id：task-1
 - 阶段：Phase 2 现场采证
-- 配置：识别螭首的位置、形态和出水口
+- 配置：记录螭首的位置、形态、开口与台基连接
 - 位置模式：inherit_role
 - 地点：
 - 坐标：
@@ -350,17 +332,18 @@ learningView:
 - 到达验证：manual
 - 最短停留：0min
 - 建议时长：15min
-- 无操作提醒：3min
-- 提醒冷却：2min
-- 最大主动提醒：2
+- 无操作提醒：8min
+- 提醒冷却：8min
+- 最大主动提醒：1
 - 推进方式：auto_after_validation
+- 收口方式：auto_on_last_step
 - 完成方式：tool_result
 - 功能模块：A01(拍照采集)
 - 工具参数：{"photo":{"minCount":5,"maxCount":8,"recognition":"course-evidence"}}
-- 证据要求：5张照片覆盖全景、侧面和出水口细节
+- 证据要求：5张照片覆盖全景、侧面、开口和连接细节
 - 通过条件：至少5张有效照片 + 观察说明
 - 目标关联：K3, S4, C1
-- AI引导方向：引导学生注意材质、出水口和排列规律
+- AI引导方向：引导学生分开记录观察事实与功能假设，不直接说出工程关系
 ```
 
 位置模式：
@@ -400,15 +383,24 @@ learningView:
 - 工具参数：{"minCount":1,"maxCount":2,"recognition":"course-evidence"}
 - 证据要求：照片同时包含螭首、出水口和台基边缘
 - 知识引用：K-03
-- 引导引用：guidance/dragon-counter.md#任务1
 - 限制引用：restrictions.md#核心数据限制
-- 评估引用：evaluation.md#S4
-- 脚手架引用：scaffolds/dragon-counter.md#任务1
 - 常见误区：只拍花纹局部，无法判断螭首所在位置
 - 最大尝试：3
 - 失败处理：升一级脚手架后重新拍摄
 - 教师介入：连续3次无法获得有效照片
 - 通过后：step:dragon-photo-detail
+
+##### 引导
+只先追问当前证据的首要缺口。
+
+##### 脚手架
+| 等级 | AI 回应 |
+|---|---|
+| L0 | 肯定已经记录的观察，不增加新线索。 |
+| L1 | 先看看开口和台基边缘是怎样连在一起的。 |
+
+##### 验收标准
+照片能够同时确认螭首、出水口和台基边缘的位置关系；画面清楚且不含可识别游客正脸。
 ```
 
 ### 8.2 必填约定
@@ -420,9 +412,9 @@ learningView:
 - `通过后` 指向 `step:{nextStepId}`、`role-stage:task-N` 或 `role-stage:complete`；
 - Step ID 不随文案调整而改变。
 
-当前运行时按 Step 数组顺序推进，`通过后` 已保留但尚未作为通用分支图执行。知识、引导、限制、评估和脚手架引用也尚未自动解析对应文件条目。
+当前运行时按 Step 数组顺序推进；`通过后：step:<id>`保留为图记录，不改变 Step 游标，跨任务边进入角色任务图。`知识引用`会定向检索知识条目，`限制引用`会按标题解析最小限制片段；引导、脚手架与 Step 验收标准直接写在当前任务单元中。
 
-除知识条目的 `K-NN` 外，引用建议统一写成 `相对文件路径#标题或量规编号`，并与目标文件的标题保持一致。当前解析器把引用当作元数据保存，未来接入解析器时可以直接定位。
+v2 只保留两类跨文件引用：知识条目的 `K-NN`，以及 `restrictions.md#精确标题`。旧的`引导引用`、`脚手架引用`、`评估引用`仍可被解析器读取，但没有运行行为，迁移时应删除。
 
 ## 9. A01–A07 活动工具与 `工具参数`
 
@@ -501,7 +493,7 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 | 5 | `moat-guard` | 护城官 | H | `role-card-moat-guard.png` / `badge-moat-guard.png` / `mifu-H.png` |
 | 6 | `truth-seeker` | 真相官 | U | `role-card-truth-seeker.png` / `badge-truth-seeker.png` / `mifu-U.png` |
 
-六枚密符按角色排序组成 `Y-I-N-S-H-U`。显示名称、密符名称和解锁目标均来自课程配置。
+六枚密符按角色排序组成线索码 `Y-I-N-S-H-U`。它用于提示学生继续结合证据归纳，不直接拼成“因势利导”或其他最终概念。显示名称、密符名称和解锁目标均来自课程配置。
 
 ### 10.2 当前任务工具
 
@@ -568,38 +560,36 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 
 精确数值可以保留在服务端知识正文，但必须同时在 `restrictions.md` 中建立保护项和解除条件。
 
-## 12. `guidance/*.md`
+## 12. 任务引导
 
-每个角色一个同 slug 文件，并按任务序号分段：
+本课的引导直接写在`roles/*.md`对应任务的`##### 引导`中；没有单独的`guidance/`目录。推荐结构：
 
 ```md
-# 数龙官 · 引导规则
+##### 引导
 
-## 任务1：观其形
-
-### 引导目标
+**引导目标**
 帮助学生从无目的观看转为带着问题观察。
 
-### 引导策略
+**引导策略**
 - 先问：“你能看到螭首和台基怎样连接吗？”
 - 学生只拍局部时，提醒补一张环境全景。
 
-### 绝对禁止
+**绝对禁止**
 - 不提前透露螭首总数。
 ```
 
-当前编译器按第 N 个任务段绑定，标题文字不会参与自动校验。任务顺序调整后要人工核对。
+任务级引导进入当前任务的 Prompt 切片；Step 级引导优先。关键防剧透边界仍必须写入`restrictions.md`，不能只靠引导话术表达。
 
-运行时目前会从当前任务 guidance 中抽取简短引导，完整规则尚未逐条编译进每轮 Prompt。关键防剧透仍应写入 `restrictions.md`。
+## 13. 任务脚手架
 
-## 13. `scaffolds/*.md`
+本课将具体脚手架直接写在 `roles/*.md` 的对应任务中；没有单独的 `scaffolds/*.md`。正式维护继续使用就地写法，避免跨文件序号错位。
 
 推荐结构：
 
 ```md
-## 任务1：观其形
+##### 脚手架
 
-| 等级 | AI回应 |
+| 等级 | AI 回应 |
 |---|---|
 | L0 | 肯定具体观察，不增加提示。 |
 | L1 | “先看看嘴部和台基边缘有什么连接。” |
@@ -608,7 +598,7 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 | L4 | 打开半成品记录模板，由学生完成关键判断。 |
 ```
 
-当前自动提示主要读取 L1–L3 表格行。L0 和 L4仍应保留，供后续运行时和教师调节使用。
+L0–L4 均需形成从肯定观察、开放追问到验证方法的连续梯度。运行时按当前任务、Step 和求助类型取对应档位，Step 级话术优先于任务级；缺档时向下取最近档。
 
 脚手架不能突破 restrictions 的揭示时机。L4也只帮助完成当前操作，不直接给出受保护答案。
 
@@ -664,7 +654,7 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 | K3 螭首功能 | 任务证据与解释 | 照片 + 表单 | 能用证据说明结构和作用 |
 ```
 
-当前状态：服务端会在结构化 `ai_evaluation` 中携带 `evaluation.md` 原文与 Step 的评估引用，返回 `passed/retry`。本课 54 个 Step 已全部配置完成方式，其中开放观察、解释、图像和报告产出会使用对应 AI 验收小步。
+当前状态：服务端会在结构化 `ai_evaluation` 中携带 `evaluation.md` 的课程级原文、当前 Step 的就地验收标准、证据要求、知识与限制，返回 `passed/retry`。本课 54 个 Step 已全部配置完成方式，其中开放观察、解释、图像和报告产出会使用对应 AI 验收小步。
 
 客观题答案、数值容差、builder 映射和 scanner 预期结果由课程团队写入已登记的私有 `工具参数`，平台内置 validator 会执行基础校验。开放成果可以通过 `ai_evaluation` 获得 B5 通过/重试和图像语义反馈；教师终审、分维度分数和复杂组合条件仍需专项验收。
 
@@ -793,7 +783,7 @@ gift_target: same_group_only
 ### 18.2 保留在服务端
 
 - `knowledge/*.md` 正文和来源；
-- `guidance/*.md`、`scaffolds/*.md`、`prompts/*.md`；
+- `roles/*.md`中的私有引导、脚手架与验收标准，以及`prompts/*.md`；
 - `restrictions.md`、`evaluation.md`；
 - 时间银行答案和验证字段；
 - 角色关键数据和内部引导方向。
@@ -839,7 +829,7 @@ npm run dev
 http://127.0.0.1:5173/?lesson=lesson_gewu_001&teacherStart=1
 ```
 
-`teacherStart=1` 只用于本地模拟教师已开放角色领取。
+`teacherStart=1` 只用于本地模拟教师已开放角色选择。
 
 ### 19.4 验证
 

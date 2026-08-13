@@ -14,12 +14,56 @@
 3. 学生写下三个真正想查明的问题。
 4. 絮絮说明四类信息：观察、资料、推断、期待。
 
+### 阶段任务1：确认物种并提交三个研究问题
+- id：phase-1-task-1
+- 执行单位：个人
+- 配置：记录教师分配的物种与候选点位，提交三个真正想查明的问题
+- 通过条件：物种、候选点位和三个可调查问题齐全
+- 收口方式：auto_on_last_step
+- 推进方式：auto_after_validation
+- 位置模式：none
+- 地点：入口集合区
+- 建议时长：5min
+- 无操作提醒：8min
+- 提醒冷却：8min
+- 最大主动提醒：1
+- 功能模块：A01(文字表单)
+- 工具参数：{"text":{"fields":[{"id":"species","label":"教师分配的物种","type":"short_text","required":true,"minLength":2,"maxLength":30},{"id":"point","label":"候选展品点位","type":"short_text","required":true,"minLength":2,"maxLength":50},{"id":"questions","label":"三个真正想查明的问题","type":"long_text","required":true,"minLength":30,"maxLength":300}]}}
+- 完成方式：ai_evaluation
+- 证据要求：物种与点位明确；三个问题可通过观察或资料继续调查
+- 能力标签：CC-1.2, CQ-1
+- AI引导方向：只检查问题是否可调查，不提前补充物种事实或标准答案
+
+##### 引导
+先确认教师已经分配物种与候选点位；一次只帮助学生把一个宽泛好奇改成可观察、可查资料的问题。
+
+##### 验收标准
+物种和候选点位已记录；恰有三个问题；每个问题都能由后续现场观察或资料求证推进，观点正确与否不影响通过。
+
+#### Step 1：提交居民招募问题卡
+- id：phase-1-task-1-step-1
+- 小步目标：留下角色选择前共同使用的物种、点位和问题起点
+- 学生行动：填写教师分配的物种、候选点位和三个想查明的问题
+- 位置：none
+- 完成方式：ai_evaluation
+- 证据要求：物种、点位和三个可调查问题齐全
+- 功能模块：A01(文字表单)
+- 工具参数：{"text":{"fields":[{"id":"species","label":"教师分配的物种","type":"short_text","required":true,"minLength":2,"maxLength":30},{"id":"point","label":"候选展品点位","type":"short_text","required":true,"minLength":2,"maxLength":50},{"id":"questions","label":"三个真正想查明的问题","type":"long_text","required":true,"minLength":30,"maxLength":300}]}}
+- 常见误区：把“它是什么”重复写三遍，或直接写成没有证据来源的结论
+- 最大尝试：3
+- 失败处理：只指出缺少物种、点位、问题数量或可调查性中的首要一项
+- 教师介入：物种或点位尚未分配，或现场展项临时关闭
+- 通过后：role-stage:complete
+
+##### 验收标准
+物种和候选点位已记录；恰有三个问题；每个问题都能由后续现场观察或资料求证推进。
+
 ## Phase 2：身份与生活取证
 - 时长：27min
 - 模式：角色分工 + 小组汇合
 - 地点：经踏勘确认的展品主点或替代点
 - 功能模块：A07(实物识别), A01(拍照/文字)
-- 触发条件：Phase 1结束 + 教师开放角色领取
+- 触发条件：Phase 1结束 + 教师开放角色选择页
 - 结束条件：身份、家园和生活事实完成初审
 
 ### 流程

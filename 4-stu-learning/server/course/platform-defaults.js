@@ -3,6 +3,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { mergeDefaults, parsePlatformDefaultDocument } from '../../src/engine/platform-defaults.js';
 import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
+import {
+  DEFAULT_GRADE_LEVEL,
+  resolveGradeLevel,
+} from '../../src/engine/grade-level.js';
 
 // 平台默认层文件清单。与三份底线规则不同，默认层文件缺失不报错：运行时回落到 JS 里的
 // 现有常量，行为与建立默认层之前完全一致（双轨期）。
@@ -169,16 +173,7 @@ export const LANGUAGE_LEVEL_DEFAULTS = Object.freeze({
   高中: Object.freeze({ words: '80–120', limit: 140, style: '可以使用开放问题并要求说明证据' }),
 });
 
-export const DEFAULT_LANGUAGE_LEVEL = '初中';
-
-// 年级文本 → 学段的匹配留在代码里。混合学段课程不能冒充某一个学生的真实年级；
-// 同时命中多档时回落初中，等学生档案或 URL 的 grade 提供唯一值。
-const GRADE_MATCHERS = Object.freeze([
-  Object.freeze({ id: '小学低年级', pattern: /小学[一二三](?:年级)?|低年级|(?:^|[\s/、，,])[一二三]年级/ }),
-  Object.freeze({ id: '小学高年级', pattern: /小学[四五六](?:年级)?|小学高年级|(?:^|[\s/、，,])[四五六]年级/ }),
-  Object.freeze({ id: '初中', pattern: /初中|初[一二三]/ }),
-  Object.freeze({ id: '高中', pattern: /高中|高一|高二|高三/ }),
-]);
+export const DEFAULT_LANGUAGE_LEVEL = DEFAULT_GRADE_LEVEL;
 
 function positiveInteger(value, fallback) {
   const parsed = Math.round(Number.parseFloat(String(value ?? '').match(/\d+(?:\.\d+)?/)?.[0]));
@@ -209,11 +204,7 @@ export function languageLevelFor(languageLevels, grade = '') {
   const levels = languageLevels && Object.keys(languageLevels).length
     ? languageLevels
     : resolveLanguageLevels(null);
-  const value = String(grade || '');
-  const matches = GRADE_MATCHERS.filter((matcher) => matcher.pattern.test(value));
-  const matched = matches.length === 1
-    ? matches[0].id
-    : (!matches.length && /小学/.test(value) ? '小学高年级' : DEFAULT_LANGUAGE_LEVEL);
+  const matched = resolveGradeLevel(grade, DEFAULT_LANGUAGE_LEVEL);
   return levels[matched] || levels[DEFAULT_LANGUAGE_LEVEL];
 }
 

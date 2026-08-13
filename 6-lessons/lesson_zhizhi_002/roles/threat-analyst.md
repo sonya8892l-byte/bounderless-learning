@@ -17,7 +17,7 @@
 
 ### 任务1：提出风险假设
 - id：threat-frame-hypotheses
-- 阶段：Phase 1 调查开题
+- 阶段：Phase 2 展厅多源取证（角色取证准备）
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -75,6 +75,8 @@
 - 教师介入：无
 - 通过后：role-stage:threat-build-chain
 
+##### 验收标准
+两条假设均列出支持证据和可能削弱该假设的反证
 
 ### 任务2：搭建威胁链
 - id：threat-build-chain
@@ -115,6 +117,8 @@
 - 教师介入：因果主张涉及复杂专业争议
 - 通过后：step:threat-score-uncertainty
 
+##### 验收标准
+至少4个节点与3条连接完整，且每条连接标注证据编号或推断
 
 #### Step 2：双轴评分
 - id：threat-score-uncertainty
@@ -133,6 +137,8 @@
 - 教师介入：小组争议无法通过证据讨论解决
 - 通过后：role-stage:threat-deliver-diagnosis
 
+##### 验收标准
+至少3个威胁完成潜在影响和证据强度评分并说明理由，另列一项替代解释
 
 ### 任务3：交付风险诊断
 - id：threat-deliver-diagnosis
@@ -173,6 +179,8 @@
 - 教师介入：无
 - 通过后：step:threat-answer-challenge
 
+##### 验收标准
+两条关键链均说明链条、来源编号、双轴评分和局限
 
 #### Step 2：回应反方质询
 - id：threat-answer-challenge
@@ -190,3 +198,6 @@
 - 失败处理：允许记录“现有证据无法判断”
 - 教师介入：讨论转向人身评价
 - 通过后：role:complete
+
+##### 验收标准
+记录一条反例或质询及其处理结果，并说明依据

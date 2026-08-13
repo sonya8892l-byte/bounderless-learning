@@ -14,5 +14,4 @@ export const PLATFORM_LEARNING_VIEW = Object.freeze({
   enabled: true,
   default: 'dialogue',
   allowStudentSwitch: true,
-  allowFutureTaskBrowse: false,
 });

@@ -13,6 +13,10 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { clearCourseCache, compileCourse } from '../server/course/compiler.js';
 import { createAgentService } from '../server/agent/service.js';
+import {
+  actionForTeacherLifecycleEvent,
+  createTeacherCommandAuthority,
+} from './helpers/teacher-command-authority.js';
 
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 
@@ -62,12 +66,18 @@ async function runUpToSubmission({ courseId, roleId, advanceModes = {} }) {
   for (const [index, mode] of Object.entries(advanceModes)) role.tasks[Number(index)].advanceMode = mode;
   const llm = countingLlm();
   const store = memoryStore();
-  const agent = createAgentService({ llm, store, getCourse: async () => course });
+  const authority = createTeacherCommandAuthority();
+  const agent = createAgentService({
+    llm,
+    store,
+    getCourse: async () => course,
+    consumeTeacherCommand: authority.consume,
+  });
   const { session } = await agent.createSession({ courseId: course.id, roleId, studentId: 'advance-student', groupId: 'advance-group' });
   await agent.runTurn({ sessionId: session.id, requestId: 'assign', input: { type: 'lifecycle_event', event: 'role_assigned' } });
   const ready = await agent.runTurn({ sessionId: session.id, requestId: 'ready', input: { type: 'user_text', text: '我已经到位，也准备好了' } });
   const taskRequest = ready.events.find((event) => event.type === 'tool.requested' && event.data.payload.renderer !== 'navigation');
-  return { agent, session, role, llm, store, taskRequest };
+  return { agent, authority, session, role, llm, store, taskRequest };
 }
 
 /**
@@ -84,7 +94,7 @@ function satisfyStepTools(step) {
     if (tool.id === 'text') {
       values.text = { fields: Object.fromEntries((config.fields || []).map((field) => [field.id, `${field.label}的测试内容`])) };
     }
-    if (tool.id === 'audio') values.audio = { seconds: Number(config.minSeconds || 1), transcript: '发布内容的测试转写' };
+    if (tool.id === 'audio') values.audio = { durationSeconds: Number(config.minSeconds || 1), transcript: '发布内容的测试转写' };
     if (tool.id === 'team') {
       const types = config.requiredRecordTypes?.length ? config.requiredRecordTypes : (config.recordTypes || ['记录']);
       const minimum = Math.max(Number(config.minimumEntries || 1), types.length);
@@ -100,50 +110,119 @@ function satisfyStepTools(step) {
   return values;
 }
 
-/** 走完一个任务的所有小步，再提交工具结果。返回提交那一轮的结果。 */
-async function completeAndSubmit({ agent, session, task, callId, prefix }) {
+/**
+ * 走完一个任务的所有小步，返回使任务进入当前收口态的那一轮。
+ *
+ * 默认 `auto_on_last_step` 在最后一步就完成，没有第二次“整包提交”；
+ * 只有显式 `explicit_bundle_submit` 的夹具才继续发 `tool_result`。
+ */
+async function completeAndSubmit({ agent, authority, session, task, callId, prefix }) {
+  const toolValues = {};
+  let completed = null;
   for (let stepIndex = 0; stepIndex < task.steps.length; stepIndex += 1) {
     const step = task.steps[stepIndex];
     const photo = step.tools.find((tool) => tool.id === 'photo');
     const photoCount = Number(photo?.config?.minCount || 0);
-    await agent.runTurn({
+    const teacherApproved = step.completionMode === 'teacher_confirm';
+    const teacherCommandId = teacherApproved
+      ? authority.issue({ sessionId: session.id, action: 'approve_evidence' })
+      : undefined;
+    toolValues[step.id] = satisfyStepTools(step);
+    completed = await agent.runTurn({
       sessionId: session.id, requestId: `${prefix}-step-${stepIndex}`,
       input: {
         type: 'lifecycle_event', event: 'task_step_completed',
         data: {
           taskId: task.id, stepId: step.id, stepIndex, stepText: step.studentAction,
           localEvidenceCount: photoCount,
-          toolValues: { [step.id]: satisfyStepTools(step) },
+          toolValues: { [step.id]: toolValues[step.id] },
           stepImages: photoCount ? ['data:image/jpeg;base64,AA=='] : [],
           // `完成方式：teacher_confirm` 的小步要带教师确认标记，与教师端 approve_evidence
           // 经学生端桥回发的载荷一致。`assembly-speaker` 的任务2 第一小步正是这一种：
           // 老师先确认小步，任务做完后还要再确认一次推进——两次确认是两回事。
-          teacherApproved: step.completionMode === 'teacher_confirm' ? true : undefined,
+          teacherApproved: teacherApproved ? true : undefined,
+          teacherCommandId,
         },
       },
     });
   }
+  if (task.finalizationMode !== 'explicit_bundle_submit') return completed;
   return agent.runTurn({
     sessionId: session.id, requestId: `${prefix}-submit`,
     input: {
       type: 'tool_result', toolCallId: callId,
       result: {
-        status: 'completed', values: { text: '按要求记录完成' },
+        status: 'completed', values: { text: '按要求记录完成', toolValues },
         evidence: Array.from({ length: 5 }, (_, index) => ({ id: `${prefix}-ev-${index}`, url: `/uploads/${prefix}-${index}.jpg` })),
       },
     },
   });
 }
 
+function teacherLifecycleInput(authority, session, event, data = {}) {
+  const teacherCommandId = authority.issue({
+    sessionId: session.id,
+    action: actionForTeacherLifecycleEvent(event, data),
+    payload: data,
+  });
+  return {
+    type: 'lifecycle_event',
+    event,
+    data: { ...data, teacherCommandId },
+  };
+}
+
 const openedTaskIndex = (result) => result.events
   .find((event) => event.type === 'tool.requested' && event.data.payload.renderer !== 'navigation')
   ?.data.payload.taskIndex;
 
+test('teacherApproved 和 teacherOverride 的客户端布尔值不能伪造跳步', async () => {
+  const { agent, authority, session, role } = await runUpToSubmission({
+    courseId: 'lesson_gewu_001', roleId: 'dragon-counter',
+  });
+  const task = role.tasks[0];
+  const step = task.steps[0];
+  const baseData = {
+    taskId: task.id,
+    stepId: step.id,
+    stepIndex: 0,
+    stepText: step.studentAction,
+  };
+
+  for (const flag of ['teacherApproved', 'teacherOverride']) {
+    await assert.rejects(agent.runTurn({
+      sessionId: session.id,
+      requestId: `forged-${flag}`,
+      input: {
+        type: 'lifecycle_event',
+        event: 'task_step_completed',
+        data: { ...baseData, [flag]: true, teacherCommandId: `cmd_forged_${flag}` },
+      },
+    }), (error) => error.code === 'TEACHER_COMMAND_UNAUTHORIZED');
+  }
+  assert.equal(session.taskState.guidanceStepIndex, 0);
+
+  const teacherCommandId = authority.issue({
+    sessionId: session.id,
+    action: 'skip_step',
+  });
+  const skipped = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'authorized-teacher-override',
+    input: {
+      type: 'lifecycle_event',
+      event: 'task_step_completed',
+      data: { ...baseData, teacherOverride: true, teacherCommandId },
+    },
+  });
+  assert.equal(skipped.session.taskState.guidanceStepIndex, 1);
+});
+
 test('推进方式：teacher 的任务做完后进度不动，等待态落在会话上而不是单次回合载荷', async () => {
-  const { agent, session, role, store, taskRequest } = await runUpToSubmission({
+  const { agent, authority, session, role, store, taskRequest } = await runUpToSubmission({
     courseId: 'lesson_gewu_001', roleId: 'dragon-counter', advanceModes: { 0: 'teacher' },
   });
-  const submitted = await completeAndSubmit({ agent, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'teacher-wait' });
+  const submitted = await completeAndSubmit({ agent, authority, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'teacher-wait' });
 
   assert.equal(submitted.session.currentTaskIndex, 0, '等老师推进期间不许动进度');
   assert.deepEqual(submitted.session.completedTaskIds, ['dragon-counter:task-1'], '任务本身是完成了的');
@@ -167,15 +246,15 @@ test('推进方式：teacher 的任务做完后进度不动，等待态落在会
 });
 
 test('teacher_advance_task 推进一格，并打开下一任务的工具卡（不让絮絮多说一句）', async () => {
-  const { agent, session, role, llm, taskRequest } = await runUpToSubmission({
+  const { agent, authority, session, role, llm, taskRequest } = await runUpToSubmission({
     courseId: 'lesson_gewu_001', roleId: 'dragon-counter', advanceModes: { 0: 'teacher' },
   });
-  await completeAndSubmit({ agent, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'teacher-go' });
+  await completeAndSubmit({ agent, authority, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'teacher-go' });
   const before = llm.mainCalls;
 
   const advanced = await agent.runTurn({
     sessionId: session.id, requestId: 'teacher-advance',
-    input: { type: 'lifecycle_event', event: 'teacher_advance_task', data: { taskId: 'task-1' } },
+    input: teacherLifecycleInput(authority, session, 'teacher_advance_task', { taskId: 'task-1' }),
   });
 
   assert.equal(advanced.session.currentTaskIndex, 1);
@@ -191,14 +270,14 @@ test('teacher_advance_task 推进一格，并打开下一任务的工具卡（�
 });
 
 test('没在等待就发 teacher_advance_task：报错且进度、完成记录都不变', async () => {
-  const { agent, session, role, taskRequest } = await runUpToSubmission({
+  const { agent, authority, session, role, taskRequest } = await runUpToSubmission({
     courseId: 'lesson_gewu_001', roleId: 'dragon-counter',
   });
   // 任务还没做完就按推进。
   await assert.rejects(
     agent.runTurn({
       sessionId: session.id, requestId: 'premature',
-      input: { type: 'lifecycle_event', event: 'teacher_advance_task', data: { taskId: 'task-1' } },
+      input: teacherLifecycleInput(authority, session, 'teacher_advance_task', { taskId: 'task-1' }),
     }),
     (error) => error.code === 'ADVANCE_NOT_WAITING',
   );
@@ -206,12 +285,12 @@ test('没在等待就发 teacher_advance_task：报错且进度、完成记录�
   assert.deepEqual(session.completedTaskIds, []);
 
   // 做完之后走的是 auto 主路径（已经自己推进过了），此时再按推进同样不该生效。
-  await completeAndSubmit({ agent, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'auto-then-push' });
+  await completeAndSubmit({ agent, authority, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'auto-then-push' });
   assert.equal(session.currentTaskIndex, 1);
   await assert.rejects(
     agent.runTurn({
       sessionId: session.id, requestId: 'premature-2',
-      input: { type: 'lifecycle_event', event: 'teacher_advance_task', data: { taskId: 'task-2' } },
+      input: teacherLifecycleInput(authority, session, 'teacher_advance_task', { taskId: 'task-2' }),
     }),
     (error) => error.code === 'ADVANCE_NOT_WAITING',
   );
@@ -219,10 +298,10 @@ test('没在等待就发 teacher_advance_task：报错且进度、完成记录�
 });
 
 test('推进方式：ai_suggest 由学生自己确认；教师按了不算（认人不认权限）', async () => {
-  const { agent, session, role, taskRequest } = await runUpToSubmission({
+  const { agent, authority, session, role, taskRequest } = await runUpToSubmission({
     courseId: 'lesson_gewu_001', roleId: 'dragon-counter', advanceModes: { 0: 'ai_suggest' },
   });
-  const submitted = await completeAndSubmit({ agent, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'student-wait' });
+  const submitted = await completeAndSubmit({ agent, authority, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'student-wait' });
   assert.equal(submitted.session.currentTaskIndex, 0);
   assert.equal(submitted.session.pendingAdvance.mode, 'student');
 
@@ -230,7 +309,7 @@ test('推进方式：ai_suggest 由学生自己确认；教师按了不算（认
   await assert.rejects(
     agent.runTurn({
       sessionId: session.id, requestId: 'wrong-actor',
-      input: { type: 'lifecycle_event', event: 'teacher_advance_task', data: { taskId: 'task-1' } },
+      input: teacherLifecycleInput(authority, session, 'teacher_advance_task', { taskId: 'task-1' }),
     }),
     (error) => error.code === 'ADVANCE_WRONG_ACTOR',
   );
@@ -246,11 +325,11 @@ test('推进方式：ai_suggest 由学生自己确认；教师按了不算（认
 });
 
 test('auto_after_validation 主路径行为不变：提交即推进、当轮开新卡、不留等待态', async () => {
-  const { agent, session, role, taskRequest } = await runUpToSubmission({
+  const { agent, authority, session, role, taskRequest } = await runUpToSubmission({
     courseId: 'lesson_gewu_001', roleId: 'dragon-counter',
   });
   assert.equal(role.tasks[0].advanceMode, 'auto_after_validation', '这一条钉的是课程原样的主路径');
-  const submitted = await completeAndSubmit({ agent, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'auto' });
+  const submitted = await completeAndSubmit({ agent, authority, session, task: role.tasks[0], callId: taskRequest.data.callId, prefix: 'auto' });
 
   assert.equal(submitted.session.currentTaskIndex, 1, '主路径必须在提交那一轮就推进');
   assert.deepEqual(submitted.session.completedTaskIds, ['dragon-counter:task-1']);
@@ -259,7 +338,7 @@ test('auto_after_validation 主路径行为不变：提交即推进、当轮开�
   assert.equal(submitted.events.find((event) => event.type === 'state.updated').data.pendingAdvance, null);
 });
 
-test('真课程回归：lesson_zhizhi_001 的 assembly-speaker 走到那个 teacher 任务并被解开', async () => {
+test('真课程回归：lesson_zhizhi_001 的 assembly-speaker 经教师终审与教师推进后解开', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_zhizhi_001' });
   const role = course.roles.find((item) => item.id === 'assembly-speaker');
@@ -267,7 +346,13 @@ test('真课程回归：lesson_zhizhi_001 的 assembly-speaker 走到那个 teac
   assert.equal(role.tasks[1].advanceMode, 'teacher', 'assembly-speaker 的任务2 应仍是教师推进');
 
   const llm = countingLlm();
-  const agent = createAgentService({ llm, store: memoryStore(), getCourse: async () => course });
+  const authority = createTeacherCommandAuthority();
+  const agent = createAgentService({
+    llm,
+    store: memoryStore(),
+    getCourse: async () => course,
+    consumeTeacherCommand: authority.consume,
+  });
   const { session } = await agent.createSession({
     courseId: course.id, roleId: 'assembly-speaker', studentId: 'zhizhi-student', groupId: 'zhizhi-group',
   });
@@ -276,24 +361,125 @@ test('真课程回归：lesson_zhizhi_001 的 assembly-speaker 走到那个 teac
   let callId = ready.events.find((event) => event.type === 'tool.requested' && event.data.payload.renderer !== 'navigation')?.data.callId;
   assert.ok(callId, '第一任务的工具卡应已打开');
 
-  // 任务1 是 auto，提交后应直接进任务2 并开卡。
-  const first = await completeAndSubmit({ agent, session, task: role.tasks[0], callId, prefix: 'z-task1' });
+  // 任务1 是 auto，最后一个 Step 通过后应直接进任务2 并开卡。
+  const first = await completeAndSubmit({ agent, authority, session, task: role.tasks[0], callId, prefix: 'z-task1' });
   assert.equal(first.session.currentTaskIndex, 1);
   callId = first.events.find((event) => event.type === 'tool.requested' && event.data.payload.renderer !== 'navigation')?.data.callId;
   assert.ok(callId, '任务2 的工具卡应已打开');
 
-  // 任务2 是 teacher：做完卡住。
-  const second = await completeAndSubmit({ agent, session, task: role.tasks[1], callId, prefix: 'z-task2' });
+  // 任务2 是任务级 teacher_confirm：Step 做完后先等教师终审。
+  const second = await completeAndSubmit({ agent, authority, session, task: role.tasks[1], callId, prefix: 'z-task2' });
   assert.equal(second.session.currentTaskIndex, 1, '教师推进的任务做完后不许自己往前走');
-  assert.equal(second.session.pendingAdvance.mode, 'teacher');
+  assert.equal(second.session.taskState.finalization.status, 'awaiting_teacher_confirm');
+  assert.equal(second.session.pendingAdvance ?? null, null, '终审前还没有进入任务推进等待');
   assert.equal(openedTaskIndex(second), undefined);
 
-  // 教师指令解开 → 进任务3。
+  // 教师终审只完成任务；该任务的推进方式也是 teacher，所以仍要再等教师推进。
+  const finalized = await agent.runTurn({
+    sessionId: session.id, requestId: 'z-finalize',
+    input: teacherLifecycleInput(authority, session, 'teacher_finalize_task', { taskId: role.tasks[1].id }),
+  });
+  assert.equal(finalized.session.currentTaskIndex, 1);
+  assert.equal(finalized.session.taskState.finalization.status, 'completed');
+  assert.equal(finalized.session.pendingAdvance.mode, 'teacher');
+
+  // 教师推进指令解开 → 进任务3。
   const advanced = await agent.runTurn({
     sessionId: session.id, requestId: 'z-advance',
-    input: { type: 'lifecycle_event', event: 'teacher_advance_task', data: { taskId: role.tasks[1].id } },
+    input: teacherLifecycleInput(authority, session, 'teacher_advance_task', { taskId: role.tasks[1].id }),
   });
   assert.equal(advanced.session.currentTaskIndex, 2);
   assert.equal(advanced.session.pendingAdvance, null);
   assert.equal(openedTaskIndex(advanced), 2);
+});
+
+test('平台验收强制完成会补齐 Step、写真实完成记录并复用唯一推进函数', async () => {
+  clearCourseCache();
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const role = course.roles.find((item) => item.id === 'dragon-counter');
+  const store = memoryStore();
+  const agent = createAgentService({ llm: countingLlm(), store, getCourse: async () => course });
+  const { session } = await agent.createSession({
+    courseId: course.id,
+    roleId: role.id,
+    studentId: 'qa-student',
+    groupId: 'qa-group',
+  });
+  session.pendingTools.old = { name: 'open_task_tool' };
+  session.pendingAdvance = { mode: 'teacher', taskId: role.tasks[0].id };
+  session.learningState.evidenceIds = ['ev_real_existing'];
+  await store.save(session);
+
+  const result = await agent.forceCompleteCurrentTask({
+    sessionId: session.id,
+    taskId: role.tasks[0].id,
+    requestId: 'qa-force-1',
+  });
+  const saved = await store.get(session.id);
+  assert.equal(result.advanced, true);
+  assert.equal(result.allTasksCompleted, false);
+  assert.equal(saved.currentTaskIndex, 1);
+  assert.ok(saved.completedTaskIds.includes(`${role.id}:${role.tasks[0].id}`));
+  assert.deepEqual(
+    role.tasks[0].steps.map((step) => step.id).every((stepId) => saved.learningState.completedStepIds.includes(stepId)),
+    true,
+  );
+  assert.deepEqual(saved.learningState.evidenceIds, ['ev_real_existing'], '验收跳关不得伪造或删除学习证据');
+  assert.equal(saved.pendingAdvance, null);
+  assert.equal(Object.hasOwn(saved.pendingTools, 'old'), false);
+  assert.equal(saved.qaOverrides[0].type, 'qa_override');
+  assert.equal(saved.qaOverrides[0].requestId, 'qa-force-1');
+  assert.equal(result.events.at(-1).type, 'state.updated');
+  assert.equal(result.events.at(-1).data.intent, 'qa_override');
+  assert.ok(result.events.some((event) => event.type === 'tool.requested'), '下一任务必须取得可继续使用的工具或导航入口');
+
+  await assert.rejects(
+    agent.forceCompleteCurrentTask({ sessionId: session.id, taskId: role.tasks[0].id, requestId: 'qa-stale' }),
+    (error) => error.code === 'QA_TASK_EXPIRED',
+  );
+});
+
+test('平台验收完成最后一关时 advanced=false 仍返回角色全部完成，且不可重复记账', async () => {
+  clearCourseCache();
+  const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const role = course.roles.find((item) => item.id === 'dragon-counter');
+  const store = memoryStore();
+  const agent = createAgentService({ llm: countingLlm(), store, getCourse: async () => course });
+  const { session } = await agent.createSession({
+    courseId: course.id,
+    roleId: role.id,
+    studentId: 'qa-final-student',
+    groupId: 'qa-final-group',
+  });
+
+  for (let index = 0; index < role.tasks.length - 1; index += 1) {
+    const interim = await agent.forceCompleteCurrentTask({
+      sessionId: session.id,
+      taskId: role.tasks[index].id,
+      requestId: `qa-force-${index}`,
+    });
+    assert.equal(interim.advanced, true);
+  }
+  const lastTask = role.tasks.at(-1);
+  const final = await agent.forceCompleteCurrentTask({
+    sessionId: session.id,
+    taskId: lastTask.id,
+    requestId: 'qa-force-final',
+  });
+  const saved = await store.get(session.id);
+  assert.equal(final.advanced, false, '末关没有下一任务，推进函数按约定返回 false');
+  assert.equal(final.allTasksCompleted, true);
+  assert.equal(saved.currentTaskIndex, role.tasks.length - 1, '末关索引不得越界');
+  assert.equal(saved.completedTaskIds.filter((id) => id.startsWith(`${role.id}:`)).length, role.tasks.length);
+  assert.equal(saved.qaOverrides.length, role.tasks.length);
+  assert.equal(saved.events.filter((event) => event === `${role.id}:all-tasks-completed`).length, 1);
+  assert.equal(final.events.at(-1).data.qaOverride.allTasksCompleted, true);
+
+  await assert.rejects(
+    agent.forceCompleteCurrentTask({ sessionId: session.id, taskId: lastTask.id, requestId: 'qa-force-final-again' }),
+    (error) => error.code === 'QA_TASK_ALREADY_COMPLETED',
+  );
+  const unchanged = await store.get(session.id);
+  assert.equal(unchanged.qaOverrides.length, role.tasks.length);
+  assert.equal(unchanged.events.filter((event) => event === `${role.id}:all-tasks-completed`).length, 1);
 });

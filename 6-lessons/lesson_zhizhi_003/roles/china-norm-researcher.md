@@ -75,6 +75,9 @@
 - 教师介入：指定核验人缺失
 - 通过后：role-stage:china-build-map
 
+##### 验收标准
+登记模板包含名称、制定机关、文号或版本、公布日、施行日、适用范围、强制性和访问日，并明确人工核验人。
+
 
 ### 任务2：核验中国规范与深圳实践
 - id：china-build-map
@@ -105,8 +108,8 @@
 - 位置：none
 - 完成方式：teacher_confirm
 - 证据要求：野生动物保护法与生态环境法典分别登记；截至调查日的状态清楚
-- 功能模块：A01(原文摘录), A08(人工核验)
-- 工具参数：{"text":{"fields":[{"id":"wildlife-law","label":"野生动物保护法原文与效力记录","type":"long_text","required":true,"minLength":100},{"id":"code","label":"生态环境法典原文与时间状态","type":"long_text","required":true,"minLength":100}]},"teacher_confirm":{"prompt":"核对官方原文、条号、公布/施行日期、调查日状态和适用范围。","required":true}}
+- 功能模块：A01(文字记录)
+- 工具参数：{"text":{"fields":[{"id":"wildlife-law","label":"野生动物保护法原文与效力记录","type":"long_text","required":true,"minLength":100},{"id":"code","label":"生态环境法典原文与时间状态","type":"long_text","required":true,"minLength":100}]}}
 - 知识引用：K-08, K-09
 - 限制引用：restrictions.md#法律与公共表达
 - 常见误区：把已公布待施行写成调查日现行
@@ -114,6 +117,9 @@
 - 失败处理：保留“效力待核”，不进入确定性条款依据
 - 教师介入：必须
 - 通过后：step:china-study-shenzhen
+
+##### 验收标准
+两份法律材料分别记录官方原文位置、条文、公布或修订日、施行日、适用范围及调查日状态，并经人工核验。
 
 
 #### Step 2：重建深圳实践链
@@ -132,6 +138,9 @@
 - 失败处理：要求逐项写材料标题、日期和效力
 - 教师介入：标准原文版本不一致
 - 通过后：role-stage:china-deliver-map
+
+##### 验收标准
+时间线至少含5个可追溯节点；地方标准的文号、发布日期、实施日、适用范围和3类措施均来自官方原文。
 
 
 ### 任务3：交付规范地图
@@ -173,6 +182,9 @@
 - 教师介入：存在具体权利义务或责任判断
 - 通过后：step:china-review-clauses
 
+##### 验收标准
+至少5份材料按层级登记，每份均有来源编号及“可支持、不能直接推出、需更新”三类边界说明。
+
 
 #### Step 2：审查条款效力表述
 - id：china-review-clauses
@@ -181,8 +193,8 @@
 - 位置：none
 - 完成方式：teacher_confirm
 - 证据要求：5条以上审查记录，法律与标准结论由人工签注
-- 功能模块：A05(条款审查), A08(教师确认)
-- 工具参数：{"team":{"mode":"clause_review","prompt":"逐条标注现行依据、借鉴依据、课程选择或待核。","minimumEntries":5},"teacher_confirm":{"prompt":"确认条款未冒充现行法律义务或正式法律意见。","required":true}}
+- 功能模块：A05(条款审查)
+- 工具参数：{"team":{"mode":"clause_review","prompt":"逐条标注现行依据、借鉴依据、课程选择或待核；完成后交由教师确认条款未冒充现行法律义务或正式法律意见。","minimumEntries":5}}
 - 知识引用：K-07, K-23
 - 限制引用：restrictions.md#法律与公共表达
 - 常见误区：用“依法必须”描述课程自拟措施

@@ -17,7 +17,7 @@
 
 ### 任务1：建立相关者假设图
 - id：stakeholder-frame-map
-- 阶段：Phase 1 调查开题
+- 阶段：Phase 2 展厅多源取证（角色取证准备）
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -75,6 +75,8 @@
 - 教师介入：计划真实访谈但尚未批准
 - 通过后：role-stage:stakeholder-evidence-map
 
+##### 验收标准
+至少3个开放问题分别指向不同相关者，且不预设其立场
 
 ### 任务2：绘制影响与公平图
 - id：stakeholder-evidence-map
@@ -115,6 +117,8 @@
 - 教师介入：材料涉及敏感个人信息
 - 通过后：step:stakeholder-fairness-check
 
+##### 验收标准
+4类相关者均记录事实、推断或待询问，并清楚区分推断与事实
 
 #### Step 2：检查公平性
 - id：stakeholder-fairness-check
@@ -133,6 +137,8 @@
 - 教师介入：无
 - 通过后：role-stage:stakeholder-hearing
 
+##### 验收标准
+两项措施均完成收益、成本、缺席与参与检查，并提出一项补救或替代
 
 ### 任务3：主持相关者质询
 - id：stakeholder-hearing
@@ -193,3 +199,6 @@
 - 失败处理：追问资源和证据是否允许完整采纳
 - 教师介入：无
 - 通过后：role:complete
+
+##### 验收标准
+至少3条意见均记录处置、理由和对应的方案版本位置

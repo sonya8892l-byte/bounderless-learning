@@ -17,7 +17,7 @@
 
 ### 任务1：拆分保护标签
 - id：verifier-separate-labels
-- 阶段：Phase 1 调查开题
+- 阶段：Phase 2 展厅多源取证（角色取证准备）
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -54,6 +54,8 @@
 - 教师介入：无
 - 通过后：step:verifier-write-boundary
 
+##### 验收标准
+至少4条主张完成分类，无法判断的条目明确标为待核
 
 #### Step 2：写出推理边界
 - id：verifier-write-boundary
@@ -72,6 +74,8 @@
 - 教师介入：连续3次仍混淆法律与科学评估
 - 通过后：role-stage:verifier-check-sources
 
+##### 验收标准
+两条边界句涉及不同概念，且均说明仍需另查的内容
 
 ### 任务2：核验版本与范围
 - id：verifier-check-sources
@@ -112,6 +116,8 @@
 - 教师介入：网页版本或法规效力需要确认
 - 通过后：step:verifier-trend-record
 
+##### 验收标准
+国内与IUCN记录各含来源、发布机构、版本或评估年及访问日期
 
 #### Step 2：核验趋势材料
 - id：verifier-trend-record
@@ -130,6 +136,8 @@
 - 教师介入：数据口径无法由学生判断
 - 通过后：role-stage:verifier-issue-note
 
+##### 验收标准
+趋势记录注明时间范围、空间范围、方法线索和局限；单点数据标为无法判断
 
 ### 任务3：出具核验说明
 - id：verifier-issue-note
@@ -170,6 +178,8 @@
 - 教师介入：法律效力或条目对象存在争议
 - 通过后：step:verifier-human-signoff
 
+##### 验收标准
+四类状态独立成行，每行均有来源编号、日期或版本和适用范围
 
 #### Step 2：完成人工核验签注
 - id：verifier-human-signoff
@@ -178,8 +188,8 @@
 - 位置：none
 - 完成方式：teacher_confirm
 - 证据要求：至少核验国内身份与IUCN条目；未完成项保留待核
-- 功能模块：A08(教师确认)
-- 工具参数：{"teacher_confirm":{"prompt":"核对来源对象、版本/效力日期、适用范围；不能确认的条目标记待核。","required":true}}
+- 功能模块：A01(文字记录)
+- 工具参数：{"text":{"fields":[{"id":"items","label":"待核条目与来源编号","type":"long_text","required":true,"minLength":40},{"id":"reviewer","label":"核验人及核验日期","type":"text","required":true},{"id":"result","label":"处理结果与仍待核内容","type":"long_text","required":true,"minLength":30}]}}
 - 知识引用：K-02, K-03, K-04
 - 限制引用：restrictions.md#动态信息
 - 常见误区：把AI回答写入“人工核验人”

@@ -1,3 +1,5 @@
+import { matchesProtectedMatchers } from './projections.js';
+
 function roleAllows(entry, role) {
   return entry.roles.some((name) => name === role.name || name === '全角色共享' || name === '全部角色');
 }
@@ -182,6 +184,9 @@ export function retrieveKnowledge({ course, session, role, query, references = '
 export function findSpoiler(text, course, session) {
   for (const restriction of course.restrictions) {
     if (restrictionUnlocked(restriction, session, course)) continue;
+    if (matchesProtectedMatchers(text, restriction.protectedMatchers || [])) {
+      return { restriction, term: restriction.name, matcher: 'canonical' };
+    }
     const term = restriction.protectedTerms.find((value) => text.includes(value));
     if (term) return { restriction, term };
   }
