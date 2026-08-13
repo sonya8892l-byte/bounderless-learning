@@ -35,7 +35,10 @@
               <h1 id="liveTitle">教师带队台</h1>
             </div>
             <div class="live-header__actions">
-              <button class="session-button" id="endTeacherSession" type="button" data-action="end-teacher-session" hidden>结束会话</button>
+              <div class="live-header__command-actions">
+                <button class="session-button" id="endTeacherSession" type="button" data-action="end-teacher-session" hidden>结束会话</button>
+                <button class="session-button teacher-controls-button" type="button" data-action="open-controls">教学遥控器</button>
+              </div>
               <button class="sync-button" id="syncButton" type="button" data-action="refresh" aria-label="刷新状态">
                 <span class="sync-dot"></span><span id="syncLabel">连接中</span>
               </button>

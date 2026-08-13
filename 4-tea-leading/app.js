@@ -34,7 +34,7 @@ const state = {
   pendingCommand: null, socket: null, pollTimer: null, refreshTimer: null, toastTimer: null,
   mapUnavailable: false, locationListVisible: false,
   connected: true, eventSequence: 0, commandLedger: {},
-  lastReceiptAnnouncement: '',
+  commandFeedExpanded: false, lastReceiptAnnouncement: '',
   accessState: 'connecting', bootstrapInFlight: false,
 };
 
@@ -262,30 +262,54 @@ function ensureCommandFeedMount() {
   mount.className = 'command-feed';
   mount.setAttribute('aria-labelledby', 'commandFeedTitle');
   mount.innerHTML = `
-    <div class="section-heading command-feed__heading">
+    <div class="command-feed__bar">
       <div>
-        <p class="eyebrow">指令回执</p>
-        <h2 id="commandFeedTitle">教师指令送达</h2>
+        <h2 id="commandFeedTitle">指令回执</h2>
+        <p class="command-feed__summary" id="commandFeedSummary">暂无指令回执</p>
       </div>
-      <button class="outline-button command-feed__controls" type="button" data-action="open-controls">打开遥控器</button>
+      <button class="command-feed__toggle" id="commandFeedToggle" type="button" data-action="toggle-command-feed" aria-expanded="false" aria-controls="commandFeedHistory">
+        <span id="commandFeedToggleLabel">查看历史</span>
+        <span class="command-feed__chevron" aria-hidden="true">⌄</span>
+      </button>
     </div>
-    <div class="command-feed__list" id="commandFeedList" role="list"></div>
+    <div class="command-feed__history" id="commandFeedHistory" hidden>
+      <div class="command-feed__list" id="commandFeedList" role="list"></div>
+    </div>
     <p class="command-feed__announcer visually-hidden" id="commandReceiptAnnouncer" aria-live="polite" aria-atomic="true"></p>`;
   $('#statusStrip')?.insertAdjacentElement('afterend', mount);
 }
 
 function renderCommandFeed() {
   ensureCommandFeedMount();
+  const mount = $('#commandFeed');
   const list = $('#commandFeedList');
-  if (!list) return;
-  const commands = Object.values(state.commandLedger)
-    .sort((a, b) => Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0))
-    .slice(0, 8);
+  const history = $('#commandFeedHistory');
+  const summaryText = $('#commandFeedSummary');
+  const toggle = $('#commandFeedToggle');
+  const toggleLabel = $('#commandFeedToggleLabel');
+  if (!mount || !list || !history || !summaryText || !toggle || !toggleLabel) return;
+  const allCommands = Object.values(state.commandLedger)
+    .sort((a, b) => Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0));
+  const commands = allCommands.slice(0, 8);
+  const expanded = state.commandFeedExpanded && commands.length > 0;
+  mount.classList.toggle('is-expanded', expanded);
+  history.hidden = !expanded;
+  toggle.disabled = commands.length === 0;
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggleLabel.textContent = commands.length === 0
+    ? '暂无历史'
+    : expanded
+      ? '收起'
+      : `历史 ${commands.length}`;
   if (!commands.length) {
-    list.innerHTML = '<div class="command-feed__empty">还没有发出指令。发送后这里会显示已下发、已送达与已确认状态。</div>';
+    summaryText.textContent = '发出指令后，这里会显示送达与确认状态';
+    list.innerHTML = '';
     return;
   }
-  list.innerHTML = commands.map((command) => {
+  const latest = commands[0];
+  const latestSummary = summarizeReceipts(latest);
+  summaryText.textContent = `${ACTION_LABELS[latest.action] || latest.action} · ${latestSummary.text} · ${relativeTime(latest.createdAt)}`;
+  list.innerHTML = expanded ? commands.map((command) => {
     const summary = summarizeReceipts(command);
     const highImpact = HIGH_IMPACT.has(command.action);
     const label = ACTION_LABELS[command.action] || command.action;
@@ -300,9 +324,7 @@ function renderCommandFeed() {
       </div>
       <p class="command-card__summary">${escapeHtml(summary.text)}</p>
     </button>`;
-  }).join('');
-  const latest = commands[0];
-  const latestSummary = summarizeReceipts(latest);
+  }).join('') : '';
   const announcement = `${ACTION_LABELS[latest.action] || latest.action} ${latestSummary.text}`;
   if (announcement !== state.lastReceiptAnnouncement) {
     state.lastReceiptAnnouncement = announcement;
@@ -917,6 +939,10 @@ document.addEventListener('click', async (event) => {
   if (action === 'open-student') return renderStudentDrawer(target.dataset.participantId);
   if (action === 'open-alert') return renderAlertDrawer(target.dataset.alertId);
   if (action === 'open-controls') return renderControls();
+  if (action === 'toggle-command-feed') {
+    state.commandFeedExpanded = !state.commandFeedExpanded;
+    return renderCommandFeed();
+  }
   if (action === 'new-run') return newRunDrawer();
   if (action === 'preflight') return renderPreflight(target.dataset.runId);
   if (action === 'recheck-device') {
@@ -926,6 +952,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'switch-run') {
     state.runId = target.dataset.runId;
     state.commandLedger = loadCommandLedger(state.runId);
+    state.commandFeedExpanded = false;
     state.eventSequence = 0;
     closeLayer();
     await hydrateCommandLedgerFromReview();

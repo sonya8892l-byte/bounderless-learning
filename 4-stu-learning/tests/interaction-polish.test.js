@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   isAuditOnlyTransportEvent,
@@ -328,6 +329,30 @@ test('教师开放角色命令有真实分支，忙碌时不提前领取并回�
   assert.match(source, /if \(!sessionId \|\| document\.hidden \|\| teacherPollInFlight\) return;/u);
   assert.match(source, /synchronizeTeacherRunState\(result\.runState\)/u);
   assert.match(source, /TEACHER_AGENT_COMMAND_ACTIONS\.has\(command\.action\)/u);
+});
+
+test('教师指令回执默认收起、可展开最近历史且保持文字可读', () => {
+  const teacherDirectory = fileURLToPath(new URL('../../4-tea-leading/', import.meta.url));
+  const app = fs.readFileSync(path.join(teacherDirectory, 'app.js'), 'utf8');
+  const html = fs.readFileSync(path.join(teacherDirectory, 'index.html'), 'utf8');
+  const styles = fs.readFileSync(path.join(teacherDirectory, 'styles.css'), 'utf8');
+
+  assert.match(app, /commandFeedExpanded:\s*false/u);
+  assert.match(app, /data-action="toggle-command-feed"/u);
+  assert.match(app, /aria-controls="commandFeedHistory"/u);
+  assert.match(app, /toggle\.setAttribute\('aria-expanded', String\(expanded\)\)/u);
+  assert.match(app, /history\.hidden = !expanded/u);
+  assert.match(app, /const commands = allCommands\.slice\(0, 8\)/u);
+  assert.match(app, /summaryText\.textContent = `\$\{ACTION_LABELS\[latest\.action\]/u);
+  assert.match(app, /if \(action === 'toggle-command-feed'\)/u);
+  assert.match(app, /if \(action === 'open-command'\)/u);
+  assert.match(app, /if \(action === 'reset-learning'\)/u);
+
+  assert.match(html, /data-action="open-controls">教学遥控器</u);
+  assert.match(styles, /\.command-feed\s*\{[^}]*color:\s*var\(--ink\)/su);
+  assert.match(styles, /\.command-card\s*\{[^}]*color:\s*var\(--ink\)/su);
+  assert.match(styles, /\.command-feed__list\s*\{[^}]*max-height:[^}]*overflow-y:\s*auto/su);
+  assert.match(styles, /\.command-card__top\s*\{[^}]*flex-wrap:\s*wrap/su);
 });
 
 test('学生专属入课凭证同时用于会话恢复和两种会话创建路径', () => {
