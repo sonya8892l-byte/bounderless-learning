@@ -340,7 +340,7 @@ test('入场和阶段流程气泡不显示课程配置来源标签', async () =>
   for (const message of messages) assert.equal(message.data.source.label, '');
 });
 
-test('阶段开始只产生一条当前行动气泡和一张阶段卡', async () => {
+test('阶段开始只产生一条任务开场与当前小步方向气泡，并保持脚手架在 L0', async () => {
   const { agent, session } = await harness();
   await assignRole(agent, session, 'stage-role');
 
@@ -358,6 +358,94 @@ test('阶段开始只产生一条当前行动气泡和一张阶段卡', async ()
   assert.ok(stageCards[0].data.mainTask);
   assert.equal(stageCards[0].data.suggestedSeconds, 15 * 60);
   assert.equal(messages[0].data.text.includes(stageCards[0].data.mainTask), false);
+  assert.match(messages[0].data.text, /站在月台上了吗？先别急着数/);
+  assert.match(messages[0].data.text, /检查这张图能不能说清它与台基的位置关系/);
+  assert.doesNotMatch(messages[0].data.text, /画面里除了对象本身.*台基边缘.*周围参照/);
+  assert.equal(result.session.scaffoldLevel, 0, '进入小步只使用 L0 方向，不应改变求助脚手架等级');
+});
+
+test('未声明开场引导的旧任务保持原有阶段开始文案', async () => {
+  const { agent, course, session } = await harness();
+  const task = course.roles.find((role) => role.id === 'dragon-counter').tasks[0];
+  task.guidance = '**当学生不知道看什么时：**\n- “先看看周围。”';
+  await assignRole(agent, session, 'legacy-stage-role');
+
+  const result = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'contract-legacy-stage-started',
+    input: { type: 'user_text', text: '我已经到位，也准备好了' },
+  });
+
+  assert.equal(
+    assistantMessage(result).data.text,
+    `现在从第1小步开始：${task.steps[0].studentAction}`,
+  );
+});
+
+test('小步验收通过后只提示下一小步方向，不重播任务开场或提前使用 L1', async () => {
+  const evaluationLlm = {
+    capabilities: () => ({ nativeTools: true, vision: true }),
+    generate: async ({ jsonMode }) => (jsonMode
+      ? ({ text: '{"passed":true,"feedback":"照片证据达到当前小步要求。","missing":[]}', toolCalls: [] })
+      : ({ text: '我听见了。', toolCalls: [] })),
+  };
+  const { agent, course, session } = await harness(evaluationLlm);
+  await assignRole(agent, session, 'next-step-role');
+  await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'contract-next-step-started',
+    input: { type: 'user_text', text: '我已经到位，也准备好了' },
+  });
+  const task = course.roles.find((role) => role.id === 'dragon-counter').tasks[0];
+  const step = task.steps[0];
+
+  const result = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'contract-next-step-passed',
+    input: {
+      type: 'lifecycle_event',
+      event: 'task_step_completed',
+      data: {
+        taskId: task.id,
+        stepId: step.id,
+        stepIndex: 0,
+        toolValues: { [step.id]: { photo: { count: 1 } } },
+        stepImages: ['data:image/jpeg;base64,AA=='],
+      },
+    },
+  });
+  const message = assistantMessage(result);
+
+  assert.equal(result.session.taskState.guidanceStepIndex, 1);
+  assert.match(message.data.text, /主体与台基之间的连接证据/);
+  assert.doesNotMatch(message.data.text, /站在月台上了吗？先别急着数/);
+  assert.doesNotMatch(message.data.text, /沿着外轮廓看/);
+  const openingCount = result.session.messages
+    .filter((item) => item.role === 'assistant')
+    .reduce((count, item) => count + (item.content.match(/站在月台上了吗？先别急着数/g) || []).length, 0);
+  assert.equal(openingCount, 1, '同一任务的开场引导只应进入会话一次');
+  const pendingToolCount = Object.keys(result.session.pendingTools).length;
+
+  const reassigned = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'contract-next-step-role-reassigned',
+    input: { type: 'lifecycle_event', event: 'role_assigned' },
+  });
+  assert.equal(reassigned.events.some((event) => event.type === 'stage.started'), false);
+  assert.equal(reassigned.events.some((event) => event.type === 'tool.requested'), false);
+  assert.equal(reassigned.session.taskState.guidanceStepIndex, 1, '重复角色事件不能把小步进度重置为 0');
+  assert.equal(
+    Object.keys(reassigned.session.pendingTools).length,
+    pendingToolCount,
+    '重复角色事件不能新建任务工具调用',
+  );
+  assert.equal(
+    reassigned.session.messages
+      .filter((item) => item.role === 'assistant')
+      .reduce((count, item) => count + (item.content.match(/站在月台上了吗？先别急着数/g) || []).length, 0),
+    1,
+    '重复角色事件不能重播任务开场',
+  );
 });
 
 test('自由文本“完成了”不能推进需要证据验收的结构化小步', async () => {

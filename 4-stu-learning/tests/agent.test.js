@@ -410,6 +410,8 @@ test('任务求助直接使用课程脚手架即时回应，不占用模型调�
   assert.equal(modelCalls, 0, '分级提示是课程原文，直接用');
   const message = result.events.find((event) => event.type === 'assistant.completed');
   assert.match(message.data.text, /先试一个小步骤/);
+  assert.match(message.data.text, /画面里除了对象本身.*台基边缘.*周围参照/);
+  assert.doesNotMatch(message.data.text, /检查这张图能不能说清它与台基的位置关系/);
   assert.equal(message.data.source.mode, 'course-config');
   assert.equal(result.session.conversationState.recentTutorActions.at(-1).action, 'give_scaffold');
 });

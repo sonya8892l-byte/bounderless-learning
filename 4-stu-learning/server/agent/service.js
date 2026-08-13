@@ -93,6 +93,7 @@ import {
   resolveReplayEnvelope,
   RequestReplayConflictError,
 } from './request-replay.js';
+import { stepEntryDirection, taskOpeningGuidance } from './guidance-content.js';
 
 export class AgentActionError extends Error {
   constructor(message, code, details = {}) {
@@ -422,6 +423,12 @@ function parseStructuredFallback(text) {
 function guidanceSteps(task) {
   if (task.steps?.length) return task.steps.map((step) => step.studentAction || step.objective);
   return task.guidanceSteps?.length ? task.guidanceSteps : [task.requirement];
+}
+
+function guidedStepText(task, stepIndex) {
+  const action = guidanceSteps(task)[stepIndex] || '';
+  const direction = stepEntryDirection(task, task.steps?.[stepIndex]);
+  return direction ? `${action} 观察方向：${direction}` : action;
 }
 
 function stateUpdatedData(session, intent = '') {
@@ -906,6 +913,8 @@ async function evaluateStepSubmission({
 
 function stageTimeline(task, taskIndex) {
   const steps = guidanceSteps(task);
+  const opening = taskOpeningGuidance(task);
+  const direction = stepEntryDirection(task, task.steps?.[0]);
   const suggestedSeconds = Number(task.timing?.suggestedSeconds || 0);
   return [
     {
@@ -921,12 +930,15 @@ function stageTimeline(task, taskIndex) {
     },
     {
       type: 'assistant',
-      text: `现在从第1小步开始：${steps[0]}`,
+      text: opening
+        ? `${opening} ${direction ? `第1小步先留意：${direction}` : `现在从第1小步开始：${steps[0]}`}`
+        : `现在从第1小步开始：${steps[0]}`,
     },
   ];
 }
 
 function beginStage(session, task, taskIndex) {
+  if (session.taskState.stageAnnounced) return [];
   clearPendingQuestion(session, { outcome: 'flow_advanced' });
   setDialogueLifecycle(session, 'INTRODUCE_ROLE_STAGE');
   session.taskState.stageAnnounced = true;
@@ -965,6 +977,15 @@ function updateDialogueLifecycleForDecision(session, decision) {
 }
 
 function startCurrentRoleStage({ session, task, tool }) {
+  if (session.taskState.stageAnnounced) {
+    return {
+      text: '',
+      timeline: [],
+      toolCalls: [],
+      dialogueMove: 'resume_current_step',
+      quickReplies: [],
+    };
+  }
   session.onboardingState.completed = true;
   setDialogueLifecycle(session, 'INTRODUCE_ROLE_STAGE');
   return {
@@ -1136,7 +1157,7 @@ function workflowResult({ decision, role, session, course, input }) {
       const stepIndex = Math.min(Number(session.taskState.guidanceStepIndex || 0), steps.length);
       return {
         text: stepIndex < steps.length
-          ? say('navigation_completed.继续小步', { stepNumber: stepIndex + 1, stepText: steps[stepIndex] })
+          ? say('navigation_completed.继续小步', { stepNumber: stepIndex + 1, stepText: guidedStepText(task, stepIndex) })
           : say('navigation_completed.小步已完成'),
         toolCalls: [],
         dialogueMove: 'guide_current_step',
@@ -1212,7 +1233,7 @@ function workflowResult({ decision, role, session, course, input }) {
             ? say('task_progress.小步记下', {
               doneNumber: currentIndex + 1,
               nextNumber: currentIndex + 2,
-              stepText: steps[currentIndex + 1],
+              stepText: guidedStepText(task, currentIndex + 1),
             })
             : say('task_progress.小步全记下', { stepCount: steps.length }),
           toolCalls: [],
@@ -1268,7 +1289,7 @@ function workflowResult({ decision, role, session, course, input }) {
           say('task_step_completed.继续小步', {
             doneNumber: stepIndex,
             nextNumber: stepIndex + 1,
-            stepText: steps[stepIndex],
+            stepText: guidedStepText(task, stepIndex),
           }),
         ].filter(Boolean).join(' '),
         toolCalls: [],
