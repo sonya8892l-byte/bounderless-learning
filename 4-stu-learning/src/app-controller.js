@@ -118,7 +118,12 @@ const learnerJoinCredential = consumeJoinCredential(pageParams, {
   },
 });
 const app = document.querySelector('#studentApp');
-const studentRuntime = resolveStudentRuntime(pageParams);
+const localDevelopmentHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+const studentRuntime = resolveStudentRuntime(pageParams, {
+  // 本地联调默认连接 Agent/AI；公开托管页面若没有教师场次身份，
+  // 仍使用无费用、无正式进度的课程包，避免暴露匿名付费 AI 入口。
+  defaultStandalone: !localDevelopmentHost,
+});
 const standaloneMode = studentRuntime.standalone;
 // 当前无学生数据库的直接体验不引入「领取／占位」产品语义。
 // 真实教师场次仍保留服务端身份绑定与安全校验。

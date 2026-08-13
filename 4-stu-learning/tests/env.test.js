@@ -28,6 +28,7 @@ const MANAGED = [
   'AI_TIMEOUT_MS',
   'AI_TURN_TIMEOUT_MS',
   'AI_REQUEST_LEASE_MS',
+  'TEACHER_API_TOKEN',
 ];
 
 function withEnv(values, run) {
@@ -79,6 +80,16 @@ test('托管与手工环境声明按最高安全级别归一', () => {
   for (const [input, expected] of cases) {
     assert.equal(effectiveAppEnvironment(input), expected, JSON.stringify(input));
   }
+});
+
+test('当前原型允许六位易记教师访问凭证', () => {
+  const env = withEnv({ TEACHER_API_TOKEN: 'sonyal' }, () => loadEnv());
+  assert.equal(env.TEACHER_API_TOKEN, 'sonyal');
+
+  assert.throws(
+    () => withEnv({ TEACHER_API_TOKEN: 'short' }, () => loadEnv()),
+    /TEACHER_API_TOKEN/,
+  );
 });
 
 test('配置了轻量理解模型与预算时按配置读出', () => {

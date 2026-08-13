@@ -24,7 +24,9 @@ const schema = z.object({
   // 仅供本地／预览验收真实推进测试会话。生产环境会在运行时强制关闭。
   QA_FORCE_COMPLETE_ENABLED: booleanFromEnv.default(false),
   READINESS_TOKEN: z.string().min(24).optional(),
-  TEACHER_API_TOKEN: z.string().min(24).optional(),
+  // 当前原型允许产品负责人使用 6 位及以上的易记教师凭证。
+  // 正式开放给多人前，应切换为组织账号登录或高强度凭证。
+  TEACHER_API_TOKEN: z.string().min(6).optional(),
   TEACHER_ID: z.string().min(1).max(100).default('teacher-primary'),
   OPENAI_BASE_URL: z.string().url(),
   OPENAI_API_KEY: z.string().min(1),

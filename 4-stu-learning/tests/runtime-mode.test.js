@@ -2,8 +2,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveStudentRuntime } from '../src/services/runtime-mode.js';
 
-test('未提供正式场次身份时，默认直接使用本地课程包', () => {
+test('本地联调未提供 mode 时默认连接 Agent/AI', () => {
   assert.deepEqual(resolveStudentRuntime('lesson=lesson_gewu_001'), {
+    mode: 'connected',
+    standalone: false,
+    standaloneDenied: false,
+    teacherReleasedRoles: true,
+  });
+});
+
+test('公开托管页面无正式场次时可显式默认为课程包体验', () => {
+  assert.deepEqual(resolveStudentRuntime('lesson=lesson_gewu_001', { defaultStandalone: true }), {
     mode: 'standalone',
     standalone: true,
     standaloneDenied: false,
