@@ -18,6 +18,53 @@ const DEMO_NAMES = [
 const nowIso = () => new Date().toISOString();
 const id = (prefix) => `${prefix}_${crypto.randomUUID().replaceAll('-', '')}`;
 const JOIN_CREDENTIAL_BYTES = 32;
+const RETIRED_LEARNER_SESSION_LIMIT = 100;
+const RESET_LEARNING_REASON = '教师一键清零学生学习记录';
+
+function emptyParticipantLearning() {
+  return {
+    progress: 0,
+    currentTask: '待开始',
+    currentTaskId: '',
+    currentStepId: '',
+    currentStepName: '',
+    currentStepCompletionMode: '',
+    currentStepAttempts: 0,
+    currentStepMaxAttempts: 0,
+    taskFinalizationStatus: '',
+    teacherApprovalAllowed: false,
+    teacherApprovalKind: '',
+    pendingAdvanceMode: '',
+    roleStageName: '',
+    stepName: '',
+    idleSeconds: 0,
+    scaffoldLevel: 0,
+    timeBalance: 0,
+    evidenceCount: 0,
+    dialogueSummary: '',
+    lastMeaningfulActionAt: null,
+  };
+}
+
+function retiredLearnerSessionIds(participant) {
+  return Array.isArray(participant?.retiredLearnerSessionIds)
+    ? participant.retiredLearnerSessionIds.filter(Boolean)
+    : [];
+}
+
+function assertLearnerSessionNotReset(run, participant, sessionId) {
+  if (!sessionId || !retiredLearnerSessionIds(participant).includes(sessionId)) return;
+  throw codedHttpError(
+    409,
+    'COURSE_SESSION_RESET',
+    '这条学习会话已被老师重置，请刷新后重新进入课程。',
+    {
+      participantId: participant.id,
+      sessionId,
+      runState: learnerRunState(run, participant),
+    },
+  );
+}
 
 function ensureJoinCredentialSecret(run) {
   if (!run.joinCredentialSecret) {
@@ -39,8 +86,23 @@ function secureCredentialEqual(expected, supplied) {
   return left.length > 0 && left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
+function publicParticipantView(participant) {
+  const {
+    retiredLearnerSessionIds: _retiredLearnerSessionIds,
+    learningResetGeneration: _learningResetGeneration,
+    ...publicParticipant
+  } = participant;
+  return publicParticipant;
+}
+
 function teacherRunView(run) {
-  return { ...run, joinCredentialSecret: undefined };
+  return {
+    ...run,
+    participants: Array.isArray(run.participants)
+      ? run.participants.map(publicParticipantView)
+      : run.participants,
+    joinCredentialSecret: undefined,
+  };
 }
 
 function httpError(statusCode, message, details) {
@@ -118,6 +180,8 @@ function makeParticipants(course, groupCount = 5, { demo = false } = {}) {
         roleId: demo ? role.id : '',
         roleName: demo ? role.name : '',
         learnerSessionId: null,
+        retiredLearnerSessionIds: [],
+        learningResetGeneration: 0,
         online: demo ? !stale : false,
         presenceObservedAt: demo ? observedAt : null,
         device: {
@@ -430,7 +494,7 @@ function snapshot(state, run, { includeJoinCredentials = false } = {}) {
       : null;
     const positionStatus = age === null ? 'unknown' : (age > 180 ? 'lost' : (age > 60 ? 'stale' : 'fresh'));
     return {
-      ...participant,
+      ...publicParticipantView(participant),
       device: {
         ...participant.device,
         roleClaimed: Boolean(participant.roleId),
@@ -478,7 +542,12 @@ function snapshot(state, run, { includeJoinCredentials = false } = {}) {
 }
 
 export function createCourseRunService({
-  store, getCourse, realtime, requireJoinCredential = false,
+  store,
+  getCourse,
+  realtime,
+  requireJoinCredential = false,
+  listLearnerSessionsForParticipant = null,
+  removeLearnerSessionsForParticipant = null,
 }) {
   async function assertTeacherAccess(runId, teacherId) {
     const state = await store.read();
@@ -747,6 +816,204 @@ export function createCourseRunService({
     return result;
   }
 
+  async function resetParticipantLearning(runId, participantId, input = {}) {
+    const listedSessionIds = typeof listLearnerSessionsForParticipant === 'function'
+      && !String(store.kind || '').startsWith('postgres')
+      ? await listLearnerSessionsForParticipant({ runId, participantId })
+      : [];
+    const knownSessionIds = Array.isArray(listedSessionIds) ? listedSessionIds : [];
+    let result;
+    let cleanupAfterCommit = false;
+    let retiredSessionIds = [];
+    const publishedEvents = [];
+
+    await store.transaction(async (state, transactionContext = {}) => {
+      const run = findRun(state, runId);
+      const participant = run.participants.find((item) => item.id === participantId);
+      if (!participant) throw httpError(404, '学生不存在。');
+      if (run.status === 'completed') {
+        throw codedHttpError(
+          409,
+          'COURSE_RUN_COMPLETED',
+          '本次课程已结束，学习记录已转为只读。',
+          { currentVersion: run.version },
+        );
+      }
+      const previousSessionId = String(participant.learnerSessionId || '');
+      retiredSessionIds = [...new Set([
+        ...knownSessionIds,
+        ...(previousSessionId ? [previousSessionId] : []),
+      ].filter(Boolean))];
+      if (typeof transactionContext.deleteLearnerSessionsForParticipant === 'function') {
+        const deletedSessionIds = await transactionContext.deleteLearnerSessionsForParticipant({
+          runId,
+          participantId,
+        });
+        retiredSessionIds = [...new Set([
+          ...retiredSessionIds,
+          ...(Array.isArray(deletedSessionIds) ? deletedSessionIds : []),
+        ].filter(Boolean))];
+      } else {
+        cleanupAfterCommit = true;
+      }
+      const resetAt = nowIso();
+      const runCommandIds = new Set(state.commands
+        .filter((command) => command.runId === runId)
+        .map((command) => command.id));
+      const acceptedReceipts = state.receipts.filter((receipt) => (
+        receipt.participantId === participantId
+        && receipt.status === 'accepted'
+        && runCommandIds.has(receipt.commandId)
+      ));
+      const openAlerts = state.alerts.filter((alert) => (
+        alert.runId === runId
+        && alert.participantId === participantId
+        && !['resolved', 'false_alarm'].includes(alert.status)
+      ));
+      const initialLearning = emptyParticipantLearning();
+      const alreadyReset = retiredSessionIds.length === 0
+        && !participant.roleId
+        && !participant.roleName
+        && !participant.roleClaimedAt
+        && !participant.roleClaimSource
+        && participant.latestDirective == null
+        && participant.online === false
+        && participant.presenceObservedAt == null
+        && participant.device?.loggedIn === false
+        && participant.device?.roleClaimed === false
+        && participant.device?.network === 'offline'
+        && participant.device?.location === 'unknown'
+        && participant.device?.camera === 'unknown'
+        && participant.device?.cameraObservedAt == null
+        && participant.location?.lng == null
+        && participant.location?.lat == null
+        && participant.location?.accuracyMeters == null
+        && participant.location?.insideFence == null
+        && participant.location?.permission === 'unknown'
+        && participant.location?.observedAt == null
+        && canonicalJson(participant.learning || {}) === canonicalJson(initialLearning)
+        && acceptedReceipts.length === 0
+        && openAlerts.length === 0;
+
+      if (alreadyReset) {
+        result = {
+          participantId,
+          previousSessionId: null,
+          sessionId: null,
+          resetAt,
+          runVersion: run.version,
+          alreadyReset: true,
+        };
+        return;
+      }
+
+      participant.learningResetGeneration = Number(participant.learningResetGeneration || 0) + 1;
+      if (retiredSessionIds.length) {
+        participant.retiredLearnerSessionIds = [
+          ...new Set([...retiredLearnerSessionIds(participant), ...retiredSessionIds]),
+        ].slice(-RETIRED_LEARNER_SESSION_LIMIT);
+      }
+      participant.learnerSessionId = null;
+      participant.roleId = '';
+      participant.roleName = '';
+      participant.roleClaimedAt = null;
+      participant.roleClaimSource = '';
+      participant.learning = initialLearning;
+      participant.latestDirective = null;
+      participant.online = false;
+      participant.presenceObservedAt = null;
+      participant.device = {
+        ...participant.device,
+        loggedIn: false,
+        roleClaimed: false,
+        network: 'offline',
+        location: 'unknown',
+        camera: 'unknown',
+        cameraObservedAt: null,
+      };
+      participant.location = {
+        ...participant.location,
+        lng: null,
+        lat: null,
+        accuracyMeters: null,
+        insideFence: null,
+        permission: 'unknown',
+        observedAt: null,
+      };
+
+      for (const receipt of acceptedReceipts) {
+        receipt.status = 'failed';
+        receipt.deliveredAt ||= resetAt;
+        publishedEvents.push(eventFor(state, runId, 'teacher.command.receipt', {
+          commandId: receipt.commandId,
+          participantId,
+          status: 'failed',
+        }));
+      }
+      for (const alert of openAlerts) {
+        alert.status = 'resolved';
+        alert.resolution = RESET_LEARNING_REASON;
+        alert.updatedAt = resetAt;
+        publishedEvents.push(eventFor(state, runId, 'alert.updated', {
+          alertId: alert.id,
+          status: alert.status,
+        }));
+      }
+
+      run.version += 1;
+      run.updatedAt = resetAt;
+      audit(state, runId, input.actorId, 'participant.learning_reset', { participantId }, RESET_LEARNING_REASON, {
+        failedReceiptCount: acceptedReceipts.length,
+        resolvedAlertCount: openAlerts.length,
+      });
+      state.interventions.push({
+        id: id('intervention'),
+        runId,
+        actorId: input.actorId,
+        action: 'reset_learning',
+        target: { scope: 'participant', id: participantId },
+        reason: RESET_LEARNING_REASON,
+        createdAt: resetAt,
+      });
+      publishedEvents.push(eventFor(state, runId, 'participant.learning_reset', {
+        participantId,
+        runVersion: run.version,
+        failedReceiptCount: acceptedReceipts.length,
+        resolvedAlertCount: openAlerts.length,
+      }));
+
+      result = {
+        participantId,
+        previousSessionId: previousSessionId || null,
+        sessionId: null,
+        resetAt,
+        runVersion: run.version,
+        alreadyReset: false,
+      };
+    });
+
+    if (cleanupAfterCommit && typeof removeLearnerSessionsForParticipant === 'function') {
+      const removedSessionIds = await removeLearnerSessionsForParticipant({
+        runId,
+        participantId,
+        sessionIds: retiredSessionIds,
+      });
+      const missingTombstones = (Array.isArray(removedSessionIds) ? removedSessionIds : [])
+        .filter((sessionId) => sessionId && !retiredSessionIds.includes(sessionId));
+      if (missingTombstones.length) {
+        await store.transaction((state) => {
+          const participant = findRun(state, runId).participants.find((item) => item.id === participantId);
+          if (!participant) return;
+          participant.retiredLearnerSessionIds = [
+            ...new Set([...retiredLearnerSessionIds(participant), ...missingTombstones]),
+          ].slice(-RETIRED_LEARNER_SESSION_LIMIT);
+        });
+      }
+    }
+    for (const event of publishedEvents) realtime.publish(runId, event);
+    return result;
+  }
+
   async function updateAlert(runId, alertId, input) {
     let publishedEvent;
     let result;
@@ -901,6 +1168,7 @@ export function createCourseRunService({
       result = {
         runId: located.run.id,
         participantId: located.participant.id,
+        learningResetGeneration: Number(located.participant.learningResetGeneration || 0),
         runState: learnerRunState(located.run, located.participant),
       };
     });
@@ -908,15 +1176,37 @@ export function createCourseRunService({
   }
 
   async function bindLearnerSession({
-    runId, participantId, sessionId, groupId, roleId, courseId, joinCredential, trustedIdentity = false,
+    runId,
+    participantId,
+    sessionId,
+    groupId,
+    roleId,
+    courseId,
+    joinCredential,
+    trustedIdentity = false,
+    expectedLearningResetGeneration,
   }) {
     let found = null;
-    await store.transaction((state) => {
+    await store.transaction(async (state, transactionContext = {}) => {
       const located = resolveLearnerBinding(state, {
         runId, participantId, groupId, roleId, courseId, joinCredential,
       }, { requireJoinCredential, trustedIdentity });
       if (!located) return;
       const { run, participant } = located;
+      if (
+        expectedLearningResetGeneration !== undefined
+        && Number(expectedLearningResetGeneration) !== Number(participant.learningResetGeneration || 0)
+      ) {
+        throw codedHttpError(
+          409,
+          'COURSE_SESSION_RESET',
+          '该学生的学习记录已被老师清零，请刷新后重新进入。',
+        );
+      }
+      if (typeof transactionContext.assertLearnerSessionExists === 'function') {
+        await transactionContext.assertLearnerSessionExists({ sessionId, runId: run.id, participantId: participant.id });
+      }
+      assertLearnerSessionNotReset(run, participant, sessionId);
       if (run.status === 'completed') {
         throw codedHttpError(409, 'COURSE_RUN_COMPLETED', '本次课程已结束，不能新建或激活学习会话。');
       }
@@ -1039,8 +1329,6 @@ export function createCourseRunService({
       const { run, participant } = resolveLearnerBinding(state, {
         runId, participantId, courseId, joinCredential,
       }, { requireJoinCredential });
-      participant.online = true;
-      participant.device.loggedIn = true;
       result = {
         sessionId: participant.learnerSessionId || null,
         runId: run.id,
@@ -1049,6 +1337,8 @@ export function createCourseRunService({
         runState: learnerRunState(run, participant),
       };
       if (result.sessionId) {
+        participant.online = true;
+        participant.device.loggedIn = true;
         eventFor(state, run.id, 'participant.session_resumed', {
           sessionId: result.sessionId,
           participantId: participant.id,
@@ -1381,6 +1671,6 @@ export function createCourseRunService({
     commandsForSession, confirmCommand, createRun,
     ensureDemoRun, getEvents,
     getReview, getSnapshot, importRoster, listRuns, preflight, publishRoleClaimed, realtime, recordAudit, reportPresence, requestHelp, sendCommand,
-    resumeLearnerSession, runStateForSession, updateAlert, updateParticipant, validateLearnerBinding,
+    resetParticipantLearning, resumeLearnerSession, runStateForSession, updateAlert, updateParticipant, validateLearnerBinding,
   };
 }

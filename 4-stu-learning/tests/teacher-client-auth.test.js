@@ -201,6 +201,55 @@ test('二维码完全在本地生成，图像 data URL 不含凭证原文', () =
   assert.equal(image.includes(joinCredential), false);
 });
 
+test('单学生学习记录可一键清零，且等服务端成功后再刷新本地投影', async () => {
+  const directory = path.join(projectRoot, '4-tea-leading');
+  const [app, html] = await Promise.all([
+    fs.readFile(path.join(directory, 'app.js'), 'utf8'),
+    fs.readFile(path.join(directory, 'index.html'), 'utf8'),
+  ]);
+
+  assert.match(
+    app,
+    /function participantHasLearningActivity\(participant = \{\}, alerts = \[\]\)/u,
+  );
+  assert.match(app, /String\(participant\.learnerSessionId \|\| ''\)\.trim\(\)/u);
+  assert.match(app, /participant\.online === true/u);
+  assert.match(app, /Number\(learning\.progress \|\| 0\) > 0/u);
+  assert.match(app, /hasOpenAlert/u);
+  assert.match(
+    app,
+    /data-action="reset-learning"[\s\S]*?\$\{hasLearningActivity \? '' : 'disabled'\}/u,
+  );
+  assert.match(app, /清除会话、角色、进度、对话、证据与到课状态；保留名单、分组和专属链接/u);
+  assert.match(app, /hasLearningActivity \? '一键清零' : '已经是未到课状态'/u);
+
+  const resetRequest = app.slice(
+    app.indexOf('async function resetStudentLearning'),
+    app.indexOf('function renderAlertDrawer'),
+  );
+  assert.match(resetRequest, /if \(!participant \|\| !participantHasLearningActivity\(participant, state\.snapshot\?\.alerts \|\| \[\]\)\)/u);
+  assert.match(resetRequest, /button\.disabled = true/u);
+  assert.match(resetRequest, /button\.setAttribute\('aria-busy', 'true'\)/u);
+  assert.match(resetRequest, /button\.textContent = '正在清零…'/u);
+  assert.match(
+    resetRequest,
+    /\/participants\/\$\{encodeURIComponent\(participantId\)\}\/reset-learning/u,
+  );
+  assert.match(resetRequest, /reset-learning`, \{\s*method: 'POST',\s*\}\)/u);
+  assert.doesNotMatch(resetRequest, /\bbody\s*:/u);
+  assert.ok(
+    resetRequest.indexOf('await request(') < resetRequest.indexOf('await refreshSnapshot()'),
+    '服务端确认前不得乐观清空学生投影',
+  );
+  assert.doesNotMatch(resetRequest, /participant\.(?:learnerSessionId|roleId|learning|device|location)\s*=/u);
+  assert.doesNotMatch(resetRequest, /state\.snapshot\.participants\s*=/u);
+  assert.match(resetRequest, /await refreshSnapshot\(\)[\s\S]*?renderStudentDrawer\(participantId\)/u);
+  assert.match(app, /if \(action === 'reset-learning'\) return resetStudentLearning\(target\.dataset\.participantId, target\)/u);
+
+  assert.doesNotMatch(`${app}\n${html}`, /resetLearningDialog|resetLearningConfirmName|resetLearningReason|pendingLearningReset/u);
+  assert.doesNotMatch(resetRequest, /expectedVersion|expectedSessionId|idempotencyKey|reason/u);
+});
+
 test('教师 PWA 源码保持单一鉴权通道，无持久快照凭证和静态凭证', async () => {
   const directory = path.join(projectRoot, '4-tea-leading');
   const [app, amap, auth, sessionData, qrCode, html, worker] = await Promise.all([

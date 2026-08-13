@@ -46,5 +46,28 @@ export function createSessionStore({ baseDir }) {
     }
   }
 
-  return { create, get, save, remove };
+  async function listForParticipant({ runId, participantId }) {
+    await ensure();
+    const entries = await fs.readdir(baseDir, { withFileTypes: true });
+    const sessionIds = [];
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name === 'course-runs.json') continue;
+      const sessionId = entry.name.slice(0, -'.json'.length);
+      if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) continue;
+      const record = JSON.parse(await fs.readFile(path.join(baseDir, entry.name), 'utf8'));
+      if (record?.runId === runId && record?.participantId === participantId) sessionIds.push(sessionId);
+    }
+    return sessionIds;
+  }
+
+  async function removeForParticipant(identity) {
+    const sessionIds = await listForParticipant(identity);
+    const removed = [];
+    for (const sessionId of sessionIds) {
+      if (await remove(sessionId)) removed.push(sessionId);
+    }
+    return removed;
+  }
+
+  return { create, get, save, remove, listForParticipant, removeForParticipant };
 }

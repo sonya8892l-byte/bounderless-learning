@@ -966,6 +966,125 @@ test('course-run transaction 依次 BEGIN、行锁、UPDATE、COMMIT，且不执
   assert.ok(calls.every(({ sql }) => !/\b(?:create|alter|drop)\b/i.test(sql)));
 });
 
+test('course-run transaction 在同一事务中按场次和学生身份删除全部 learner sessions', async () => {
+  const calls = [];
+  let released = false;
+  const initialState = activeRuntimeState({ version: 8 });
+  const client = {
+    async query(sql, parameters) {
+      const normalized = compactSql(sql);
+      calls.push({ sql: normalized, parameters });
+      if (normalized === 'begin' || normalized === 'commit') {
+        return { rowCount: null, rows: [] };
+      }
+      if (normalized.startsWith('select payload from runtime_state')) {
+        return { rowCount: 1, rows: [{ payload: initialState }] };
+      }
+      if (normalized.startsWith('update command_deliveries')) {
+        return { rowCount: 2, rows: [] };
+      }
+      if (normalized.startsWith('delete from learner_sessions')) {
+        return {
+          rowCount: 2,
+          rows: [{ id: 'ses_historical' }, { id: 'ses_current' }],
+        };
+      }
+      if (normalized.startsWith('update runtime_state')) {
+        return { rowCount: 1, rows: [] };
+      }
+      throw new Error(`未预期的 SQL：${normalized}`);
+    },
+    release() { released = true; },
+  };
+  const store = createPostgresCourseRunStore({
+    pool: {
+      async query() { throw new Error('transaction 不应使用 pool.query。'); },
+      async connect() { return client; },
+    },
+  });
+
+  const result = await store.transaction(async (state, transactionContext) => {
+    assert.equal(transactionContext.kind, 'postgres');
+    const deletedSessionIds = await transactionContext.deleteLearnerSessionsForParticipant({
+      runId: 'run-001',
+      participantId: 'participant-001',
+    });
+    state.events.push({ id: 'reset-event-001' });
+    return deletedSessionIds;
+  });
+
+  assert.deepEqual(result, ['ses_historical', 'ses_current']);
+  assert.deepEqual(calls.map(({ sql }) => sql), [
+    'begin',
+    'select payload from runtime_state where id = $1 for update',
+    'update command_deliveries set learner_session_id = null, updated_at = now() where run_id = $1 and participant_id = $2 and learner_session_id is not null',
+    'delete from learner_sessions where run_id = $1 and participant_id = $2 returning id',
+    'update runtime_state set payload = $1::jsonb, updated_at = now() where id = $2',
+    'commit',
+  ]);
+  assert.deepEqual(calls[2].parameters, ['run-001', 'participant-001']);
+  assert.deepEqual(calls[3].parameters, ['run-001', 'participant-001']);
+  assert.deepEqual(JSON.parse(calls[4].parameters[0]).events, [{ id: 'reset-event-001' }]);
+  assert.equal(released, true);
+});
+
+test('learner session 已不存在时仍提交 runtime stale binding 清理', async () => {
+  const calls = [];
+  let released = false;
+  const client = {
+    async query(sql, parameters) {
+      const normalized = compactSql(sql);
+      calls.push({ sql: normalized, parameters });
+      if (normalized === 'begin' || normalized === 'commit') {
+        return { rowCount: null, rows: [] };
+      }
+      if (normalized.startsWith('select payload from runtime_state')) {
+        return { rowCount: 1, rows: [{ payload: activeRuntimeState() }] };
+      }
+      if (normalized.startsWith('update command_deliveries')) {
+        return { rowCount: 0, rows: [] };
+      }
+      if (normalized.startsWith('delete from learner_sessions')) {
+        return { rowCount: 0, rows: [] };
+      }
+      if (normalized.startsWith('update runtime_state')) {
+        return { rowCount: 1, rows: [] };
+      }
+      throw new Error(`未预期的 SQL：${normalized}`);
+    },
+    release() { released = true; },
+  };
+  const store = createPostgresCourseRunStore({
+    pool: {
+      async query() { throw new Error('transaction 不应使用 pool.query。'); },
+      async connect() { return client; },
+    },
+  });
+
+  const deleted = await store.transaction(async (state, transactionContext) => {
+    const found = await transactionContext.deleteLearnerSessionsForParticipant({
+      runId: 'run-001',
+      participantId: 'participant-001',
+    });
+    state.runs[0].participants[0].learnerSessionId = null;
+    return found;
+  });
+
+  assert.deepEqual(deleted, []);
+  assert.deepEqual(calls.map(({ sql }) => sql), [
+    'begin',
+    'select payload from runtime_state where id = $1 for update',
+    'update command_deliveries set learner_session_id = null, updated_at = now() where run_id = $1 and participant_id = $2 and learner_session_id is not null',
+    'delete from learner_sessions where run_id = $1 and participant_id = $2 returning id',
+    'update runtime_state set payload = $1::jsonb, updated_at = now() where id = $2',
+    'commit',
+  ]);
+  assert.deepEqual(calls[2].parameters, ['run-001', 'participant-001']);
+  assert.deepEqual(calls[3].parameters, ['run-001', 'participant-001']);
+  assert.equal(JSON.parse(calls[4].parameters[0]).runs[0].participants[0].learnerSessionId, null);
+  assert.equal(released, true);
+});
+
 test('course-run 缺少 seed 行时报告 schema error、回滚并释放连接', async () => {
   const calls = [];
   let released = false;

@@ -72,6 +72,41 @@ function participantGroupLabel(participant = {}) {
   return String(participant.groupName || participant.groupId || '未分组').trim();
 }
 
+function participantHasLearningActivity(participant = {}, alerts = []) {
+  const learning = participant.learning || {};
+  const device = participant.device || {};
+  const location = participant.location || {};
+  const hasOpenAlert = alerts.some((alert) => alert.participantId === participant.id);
+  return Boolean(
+    String(participant.learnerSessionId || '').trim()
+    || String(participant.roleId || participant.roleName || '').trim()
+    || device.roleClaimed === true
+    || participant.online === true
+    || participant.presenceObservedAt
+    || participant.locationObservedAt
+    || participant.latestDirective
+    || device.loggedIn === true
+    || !['', 'offline', 'unknown'].includes(String(device.network || ''))
+    || !['', 'unknown'].includes(String(device.location || ''))
+    || !['', 'unknown'].includes(String(device.camera || ''))
+    || device.cameraObservedAt
+    || location.observedAt
+    || location.lng != null
+    || location.lat != null
+    || location.accuracyMeters != null
+    || location.insideFence != null
+    || !['', 'unknown'].includes(String(location.permission || ''))
+    || Number(learning.progress || 0) > 0
+    || Number(learning.evidenceCount || 0) > 0
+    || Number(learning.scaffoldLevel || 0) > 0
+    || Number(learning.timeBalance || 0) > 0
+    || Boolean(String(learning.dialogueSummary || '').trim())
+    || Boolean(String(learning.currentTaskId || learning.currentStepId || '').trim())
+    || learning.lastMeaningfulActionAt
+    || hasOpenAlert
+  );
+}
+
 function formatTime(seconds) {
   const value = Math.max(0, Number(seconds || 0));
   return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
@@ -312,7 +347,11 @@ function renderCommandDrawer(commandId) {
 async function request(path, options = {}) {
   const response = await teacherAuthenticatedFetch(`${API}${path}`, {
     ...options,
-    headers: { 'content-type': 'application/json', 'x-teacher-id': TEACHER_ID, ...(options.headers || {}) },
+    headers: {
+      ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
+      'x-teacher-id': TEACHER_ID,
+      ...(options.headers || {}),
+    },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -618,6 +657,9 @@ function renderStudentDrawer(participantId) {
   const participant = state.snapshot.participants.find((item) => item.id === participantId);
   if (!participant) return;
   const roleLabel = participantRoleLabel(participant);
+  const groupLabel = state.snapshot.groups.find((item) => item.id === participant.groupId)?.name
+    || participantGroupLabel(participant);
+  const hasLearningActivity = participantHasLearningActivity(participant, state.snapshot.alerts);
   const ageLabel = participant.positionStatus === 'fresh' ? `${participant.positionAgeSeconds}秒前更新` : `位置可能过期 · ${Math.floor(participant.positionAgeSeconds / 60)}分钟前`;
   const teacherApprovalAllowed = participant.learning.teacherApprovalAllowed === true;
   const teacherApprovalDescription = participant.learning.teacherApprovalKind === 'ai_max_attempts'
@@ -631,7 +673,7 @@ function renderStudentDrawer(participantId) {
     : awaitingTeacherAdvance
       ? '当前任务已完成，等待老师确认进入下一任务。'
       : '学生仍在完成当前小步，暂不需要教师推进。';
-  openDrawer({ eyebrow: `${roleLabel} · ${state.snapshot.groups.find((item) => item.id === participant.groupId)?.name}`, title: participant.name, html: `
+  openDrawer({ eyebrow: `${roleLabel} · ${groupLabel}`, title: participant.name, html: `
     <div class="detail-block"><div class="metric-grid">
       <div class="metric"><span>当前任务</span><strong>${escapeHtml(participant.learning.currentTask)}</strong></div>
       <div class="metric"><span>学习进度</span><strong>${participant.learning.progress}%</strong></div>
@@ -647,11 +689,37 @@ function renderStudentDrawer(participantId) {
       ${teacherApprovalAllowed ? actionButton('approve_evidence', '人工通过', teacherApprovalDescription, { scope: 'participant', id: participant.id }, {}, true) : ''}
       ${participant.learning.teacherApprovalKind === 'task_teacher_confirm' ? actionButton('reject_evidence', '退回补做', '要求补充证据', { scope: 'participant', id: participant.id }) : ''}
       ${awaitingTeacherAdvance ? actionButton('advance_task', '进入下一任务', '当前任务已完成，确认进入下一任务', { scope: 'participant', id: participant.id }, {}, true) : ''}
-    </div></div>` });
+    </div></div>
+    <div class="detail-block danger-zone"><h3>危险操作</h3><p>清除会话、角色、进度、对话、证据与到课状态；保留名单、分组和专属链接。</p>
+      <button class="action-button is-danger" type="button" data-action="reset-learning" data-participant-id="${escapeHtml(participant.id)}" ${hasLearningActivity ? '' : 'disabled'}><strong>${hasLearningActivity ? '一键清零' : '已经是未到课状态'}</strong><small>${hasLearningActivity ? '点击后立即清零，无需再次确认' : '学生重新进入课程后才会生成新记录'}</small></button>
+    </div>` });
 }
 
 function actionButton(action, label, description, target, payload = {}, danger = false) {
   return `<button class="action-button ${danger ? 'is-danger' : ''}" type="button" data-action="prepare-command" data-command="${action}" data-target='${escapeHtml(JSON.stringify(target))}' data-payload='${escapeHtml(JSON.stringify(payload))}'><strong>${escapeHtml(label)}</strong><small>${escapeHtml(description)}</small></button>`;
+}
+
+async function resetStudentLearning(participantId, button) {
+  const participant = state.snapshot?.participants.find((item) => item.id === participantId);
+  if (!participant || !participantHasLearningActivity(participant, state.snapshot?.alerts || [])) {
+    renderStudentDrawer(participantId);
+    return;
+  }
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  button.textContent = '正在清零…';
+  try {
+    await request(`/teacher/runs/${encodeURIComponent(state.runId)}/participants/${encodeURIComponent(participantId)}/reset-learning`, {
+      method: 'POST',
+    });
+    await refreshSnapshot();
+    renderStudentDrawer(participantId);
+    showToast('已清零，学生刷新后将从课程开头进入');
+  } catch (error) {
+    showToast(error.message || '清零暂未完成，请重试。');
+    await refreshSnapshot();
+    renderStudentDrawer(participantId);
+  }
 }
 
 function renderAlertDrawer(alertId) {
@@ -866,6 +934,7 @@ document.addEventListener('click', async (event) => {
     return showView('live');
   }
   if (action === 'open-command') return renderCommandDrawer(target.dataset.commandId);
+  if (action === 'reset-learning') return resetStudentLearning(target.dataset.participantId, target);
   if (action === 'prepare-rally') return prepareCommand({ action: 'emergency_rally', target: { scope: 'all' }, payload: { rallyPoint: '太和门广场', message: '请立即停止任务，前往太和门广场集合。' } });
   if (action === 'prepare-command') return prepareCommand({ action: target.dataset.command, target: JSON.parse(target.dataset.target), payload: JSON.parse(target.dataset.payload || '{}') });
   if (action === 'confirm-command') return confirmCommand();

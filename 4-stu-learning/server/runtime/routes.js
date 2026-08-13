@@ -109,6 +109,24 @@ export async function registerRuntimeRoutes(app, {
     return runtime.updateParticipant(request.params.runId, request.params.participantId, { ...body, actorId: actor(request) });
   });
 
+  app.post('/api/teacher/runs/:runId/participants/:participantId/reset-learning', {
+    onRequest: async (request) => {
+      // 共享教师 request 层会给无 body 的 POST 加 JSON content-type。
+      // 本路由不读 body，解析前改为文本以允许空请求体。
+      if (String(request.headers['content-type'] || '').startsWith('application/json')) {
+        request.headers['content-type'] = 'text/plain';
+      }
+    },
+  }, async (request, reply) => {
+    await authorize(request);
+    reply.header('cache-control', 'no-store');
+    return runtime.resetParticipantLearning(
+      request.params.runId,
+      request.params.participantId,
+      { actorId: actor(request) },
+    );
+  });
+
   app.patch('/api/teacher/runs/:runId/alerts/:alertId', async (request) => {
     await authorize(request);
     const body = z.object({

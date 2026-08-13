@@ -46,7 +46,7 @@ export function createCourseRunStore({ baseDir }) {
   function transaction(mutator) {
     const operation = writeQueue.then(async () => {
       const state = await load();
-      const result = await mutator(state);
+      const result = await mutator(state, { kind: 'file' });
       await persist(state);
       return result;
     });
@@ -54,5 +54,5 @@ export function createCourseRunStore({ baseDir }) {
     return operation;
   }
 
-  return { read, transaction };
+  return { read, transaction, kind: 'file' };
 }

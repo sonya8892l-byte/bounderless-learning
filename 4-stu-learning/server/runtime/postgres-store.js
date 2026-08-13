@@ -162,7 +162,44 @@ export function createPostgresCourseRunStore({ pool: providedPool }) {
       const result = await client.query('select payload from runtime_state where id = $1 for update', ['course-runs']);
       if (!result.rows[0]) throw new DatabaseSchemaError('数据库缺少 course-runs 兼容状态行。');
       const state = structuredClone(result.rows[0].payload || EMPTY_STATE);
-      const value = await mutator(state);
+      const value = await mutator(state, {
+        kind: 'postgres',
+        async assertLearnerSessionExists({ sessionId, runId, participantId }) {
+          const existing = await client.query(`
+            select 1
+            from learner_sessions
+            where id = $1
+              and run_id = $2
+              and participant_id = $3
+          `, [sessionId, runId, participantId]);
+          if (existing.rowCount !== 1) {
+            throw new CourseRunMutationConflictError(
+              'COURSE_SESSION_RESET',
+              '该学习会话已被老师清零，请刷新后重新进入。',
+            );
+          }
+          return true;
+        },
+        async deleteLearnerSessionsForParticipant({ runId, participantId }) {
+          // 规范化回执表对 learner_sessions 是 ON DELETE RESTRICT。
+          // 历史回执仍保留，只断开已重置会话的可逆向引用。
+          await client.query(`
+            update command_deliveries
+            set learner_session_id = null,
+                updated_at = now()
+            where run_id = $1
+              and participant_id = $2
+              and learner_session_id is not null
+          `, [runId, participantId]);
+          const deleted = await client.query(`
+            delete from learner_sessions
+            where run_id = $1
+              and participant_id = $2
+            returning id
+          `, [runId, participantId]);
+          return (deleted.rows || []).map((row) => String(row.id)).filter(Boolean);
+        },
+      });
       const update = await client.query(
         'update runtime_state set payload = $1::jsonb, updated_at = now() where id = $2',
         [JSON.stringify(state), 'course-runs'],

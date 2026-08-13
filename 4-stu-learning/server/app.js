@@ -594,6 +594,32 @@ export async function buildApp({
     getCourse,
     realtime,
     requireJoinCredential: hostedJoinCredentialRequired || testJoinCredentialRequired,
+    listLearnerSessionsForParticipant: async ({ runId, participantId }) => {
+      if (typeof store.listForParticipant === 'function') {
+        return store.listForParticipant({ runId, participantId });
+      }
+      if (store.sessions instanceof Map) {
+        return [...store.sessions.values()]
+          .filter((session) => session?.runId === runId && session?.participantId === participantId)
+          .map((session) => session.id);
+      }
+      return [];
+    },
+    removeLearnerSessionsForParticipant: async ({ runId, participantId, sessionIds = [] }) => {
+      if (typeof store.removeForParticipant === 'function') {
+        return store.removeForParticipant({ runId, participantId });
+      }
+      const matchingSessionIds = store.sessions instanceof Map
+        ? [...store.sessions.values()]
+          .filter((session) => session?.runId === runId && session?.participantId === participantId)
+          .map((session) => session.id)
+        : sessionIds;
+      const removed = [];
+      for (const sessionId of new Set(matchingSessionIds.filter(Boolean))) {
+        if (typeof store.remove === 'function' && await store.remove(sessionId)) removed.push(sessionId);
+      }
+      return removed;
+    },
   });
   const roleClaimQueues = new Map();
 
@@ -889,7 +915,11 @@ export async function buildApp({
     try {
       // 会话创建与场次绑定分属两个存储；最终绑定会在事务内
       // 重查结束/角色锁。若教师在两步之间改变状态，删除还未对学生暴露的孤儿会话。
-      binding = await runtime.bindLearnerSession({ ...input, sessionId: session.id });
+      binding = await runtime.bindLearnerSession({
+        ...input,
+        sessionId: session.id,
+        expectedLearningResetGeneration: validatedBinding?.learningResetGeneration,
+      });
     } catch (error) {
       await store.remove?.(session.id);
       throw error;
