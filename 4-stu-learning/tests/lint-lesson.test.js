@@ -40,9 +40,9 @@ test('5 门真课程通过结构与语义质量门禁，包括显式声明的静
   assert.equal(knowledgeRefs, 403);
   assert.equal(restrictionRefs, 217);
   // 各课 Phase 1 入口任务的能力标签与角色任务一并校验。
-  assert.equal(competencyTags, 125);
+  assert.equal(competencyTags, 124);
   // 五门课的可执行入口任务和明确 `通过后` 一并进图。
-  assert.equal(nextEdges, 214);
+  assert.equal(nextEdges, 213);
   assert.equal(stats.reduce((sum, item) => sum + item.missingAcceptance, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.deadKnowledgeRefs, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.deadRestrictionRefs, 0), 0);

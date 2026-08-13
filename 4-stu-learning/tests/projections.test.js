@@ -47,12 +47,12 @@ test('toPublic 裁掉全部私有字段，且不改动入参', async () => {
   }
 });
 
-test('toPublic 产物里没有课程答案：1142 一次都不出现', async () => {
+test('toPublic 产物里没有课程限制规则保存的答案：1142 一次都不出现', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
 
-  // 全量结构里确实有这个答案，正是它今天没漏出去全靠"没人整体序列化"的那一个。
-  assert.ok(JSON.stringify(course.lesson).includes('1142'), '前提：全量产物含该答案');
+  // 答案保存在服务端私有的课程限制命名空间，公开投影只接收脱敏规则，不下发原文。
+  assert.ok(course.restrictionMarkdown.includes('1142'), '前提：私有课程限制规则含该答案');
 
   const serialized = JSON.stringify(toPublic(course.lesson, course.restrictionMarkdown));
   assert.equal(serialized.includes('1142'), false, '公开投影绝不能含答案');

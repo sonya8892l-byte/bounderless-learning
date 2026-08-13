@@ -44,6 +44,30 @@ function append(target, key, value) {
 }
 
 /**
+ * Phase 开场是课程作者已经定稿的学生话术，不交给模型改写。这里只移除 Markdown
+ * 的展示外壳，并替换运行时明确支持的三个占位符；正文与段落换行保持原顺序。
+ */
+export function renderPhaseOpening(policy = null, {
+  roleName = '',
+  firstLocation = '',
+  studentName = '',
+} = {}) {
+  const source = String(policy?.opening || '').replace(/\r\n?/g, '\n').trim();
+  if (!source) return '';
+
+  const body = source
+    .replace(/^[ \t]*```[^\n]*(?:\n|$)/gm, '')
+    .replace(/^[ \t]*###[ \t]+([^\n]*)(?=\n|$)/gm, '$1')
+    .trim();
+  if (!body) return '';
+
+  return body
+    .replaceAll('{角色名}', String(roleName || '当前角色'))
+    .replaceAll('{首个地点}', String(firstLocation || '当前任务地点'))
+    .replaceAll('{学生名字}', String(studentName || '同学'));
+}
+
+/**
  * 把 Phase Markdown 编译成运行时真正消费的语义字段。
  *
  * 旧课程若没有二级标题，保留全文兼容，不再用字符下标硬切；同时返回 warning，

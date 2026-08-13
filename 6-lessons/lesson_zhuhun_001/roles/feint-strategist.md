@@ -12,7 +12,6 @@
 - 角色徽章图：assets/roles/badge-feint-strategist.png
 - 收集物：行动层
 - 收集物图：assets/tokens/layer-action.png
-- 关键数据：行动的空间、时间、可见信号和真正目标共同构成虚实行动链
 
 ## 任务列表
 
@@ -36,7 +35,6 @@
 - 通过条件：至少1张展项来源照片 + 4张行动卡 + 顺序、地点和来源完整
 - 目标关联：K3(四次渡河), S3(史料实证), S6(因果表达)
 - 能力标签：DK-03, DS-03, DS-06
-- AI引导方向：帮助核对卡片依据和时间顺序；若后续行动尚未解锁，仅提示回看展项位置，不直接补出路线
 
 ##### 引导
 **引导目标**
@@ -71,7 +69,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"minCount":2,"maxCount":4,"accept":"image/*","recognition":"deployment-sequence-source","prompt":"先拍展项全景，再拍能够支持先后顺序的日期、文字或图例局部。"}}
 - 知识引用：K-03, K-04
-- 限制引用：restrictions.md#核心路线限制
+- 限制引用：course.md#课程限制规则/核心路线限制
 - 常见误区：只拍路线终点或结果，没有保留判断行动先后的材料线索
 - 最大尝试：3
 - 失败处理：指出缺少全景来源或顺序线索中的哪一张照片，请学生补拍
@@ -94,7 +92,7 @@
 - 功能模块：A02(排序答题)
 - 工具参数：{"quiz":{"type":"ordering","question":"根据现场材料，排列一条行动产生战略窗口的基本逻辑。","options":["敌方根据可见信号调整部署","原计划遇到新的现实约束","我方获得重新选择方向的窗口","我方采取可被观察的阶段行动"],"answer":["原计划遇到新的现实约束","我方采取可被观察的阶段行动","敌方根据可见信号调整部署","我方获得重新选择方向的窗口"],"explanation":"这条顺序用于检查因果结构，不等于提前公布四渡赤水的完整路线。","retryMessage":"先找起点：现实约束变化后才需要行动；窗口通常出现在敌方反应之后。"}}
 - 知识引用：K-04, K-15
-- 限制引用：restrictions.md#三渡完整方案, restrictions.md#四渡完整方案
+- 限制引用：course.md#课程限制规则/三渡完整方案, course.md#课程限制规则/四渡完整方案
 - 常见误区：用已知结局直接排列完整史实路线，或把敌方反应放在可见行动之前
 - 最大尝试：3
 - 失败处理：只提示相邻两张卡的因果冲突，请学生回看照片中的先后词后调整
@@ -117,7 +115,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"constraint-source","label":"现实约束卡｜现场线索与来源","type":"long_text","required":true},{"id":"action-source","label":"可见行动卡｜地点或信号与来源","type":"long_text","required":true},{"id":"reaction-source","label":"敌方反应卡｜材料依据或待核说明","type":"long_text","required":true},{"id":"window-source","label":"新窗口卡｜材料依据或待核说明","type":"long_text","required":true}]}}
 - 知识引用：K-04, K-15
-- 限制引用：restrictions.md#核心路线限制
+- 限制引用：course.md#课程限制规则/核心路线限制
 - 常见误区：为补齐卡片而虚构部队番号、日期、地点或敌方心理
 - 最大尝试：3
 - 失败处理：指出缺少来源的一张卡；找不到材料时允许写“待核”，不自动生成历史细节
@@ -150,7 +148,6 @@
 - 通过条件：完成三栏虚实图 + 1种替代解释 + 至少2条证据引用
 - 目标关联：K4(情报与信息差), K6(虚实行动链), S4(信息不对称分析), C2(战略思维)
 - 能力标签：DK-04, DK-06, DS-04, DC-02
-- AI引导方向：通过问题促使学生找到信号、判断和目标的差异，完成前不说出三渡四渡的虚实结论
 
 ##### 引导
 **引导目标**
@@ -185,7 +182,7 @@
 - 功能模块：A03(分类搭建)
 - 工具参数：{"builder":{"mode":"flow","prompt":"把同一组行动线索拆成四栏，先区分信号和解释，再讨论真正需要。","items":[{"id":"visible","label":"任务1·可被观察的行动信号"},{"id":"enemy-judgment","label":"敌方可能形成的判断"},{"id":"our-need","label":"我方希望获得的时间或空间窗口"},{"id":"alternative","label":"同一信号的另一种解释"}],"zones":[{"id":"seen","label":"敌方看见什么"},{"id":"judge","label":"敌方可能怎么判断"},{"id":"need","label":"我方真正需要什么"},{"id":"other","label":"替代解释"}],"bindings":{"visible":{"taskId":"task-1","stepId":"feint-source-action-cards","toolId":"text","fieldId":"action-source","prefix":"行动信号："}},"correctMapping":{"visible":"seen","enemy-judgment":"judge","our-need":"need","alternative":"other"},"retryMessage":"依次核对：可见信号、敌方判断、我方需要和替代解释要放进不同栏。"}}
 - 知识引用：K-14, K-15
-- 限制引用：restrictions.md#三四渡虚实关系
+- 限制引用：course.md#课程限制规则/三四渡虚实关系
 - 常见误区：把敌方看到的动作直接等同于我方真正目标
 - 最大尝试：3
 - 失败处理：追问“对方直接看到的是哪一张卡”，只要求先纠正信号栏
@@ -209,7 +206,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"interpretation-a","label":"解释A：敌方可能相信什么","type":"long_text","required":true},{"id":"evidence-a","label":"解释A：依据或成立条件","type":"long_text","required":true},{"id":"interpretation-b","label":"解释B：另一种可能","type":"long_text","required":true},{"id":"evidence-b","label":"解释B：依据或待核条件","type":"long_text","required":true}]}}
 - 知识引用：K-14, K-15
-- 限制引用：restrictions.md#三四渡虚实关系
+- 限制引用：course.md#课程限制规则/三四渡虚实关系
 - 常见误区：把后来敌方实际反应写成当时唯一可能的解释
 - 最大尝试：3
 - 失败处理：提示两种解释中语义重复的一项，请学生改变观察渠道、敌方前提或时间条件
@@ -233,7 +230,7 @@
 - 功能模块：A02(多选答题)
 - 工具参数：{"quiz":{"type":"multiple_choice","question":"示形可能影响敌方判断，至少需要检查哪些条件？","options":["信号能够被敌方观察","信号符合敌方已有判断","敌方调动可能留下我方可利用窗口","行动最后成功，所以此前条件无需核验"],"answer":["信号能够被敌方观察","信号符合敌方已有判断","敌方调动可能留下我方可利用窗口"],"explanation":"示形能否发挥作用取决于观察、认知和窗口条件；最后结果不能替代当时检验。","retryMessage":"再检查前三个环节：信号怎样被看见、怎样被解释、反应是否留下窗口。"}}
 - 知识引用：K-15
-- 限制引用：restrictions.md#三四渡虚实关系
+- 限制引用：course.md#课程限制规则/三四渡虚实关系
 - 常见误区：把历史结果成功当作示形在当时必然有效的证据
 - 最大尝试：3
 - 失败处理：提示学生沿“被看见—被解释—留下窗口”重新检查选项
@@ -266,7 +263,6 @@
 - 通过条件：1条四环行动链 + 2种敌方反应分支 + 1项失败风险 + 保留运行记录
 - 目标关联：K6(虚实行动链), S4(信息不对称分析), S5(决策矩阵), C2(战略思维)
 - 能力标签：DK-06, DS-04, DS-05, DC-02
-- AI引导方向：避免把敌方反应固定为单一路径，提醒学生评估示形被识破后的后果
 
 ##### 引导
 **引导目标**
@@ -301,7 +297,7 @@
 - 功能模块：A04(沙盘推演)
 - 工具参数：{"simulation":{"rounds":2,"allowRepeat":false,"prompt":"运行两个不同反应分支，检查行动链在不利条件下是否仍有出口。","roundPrompts":["第1轮：选择敌方对行动信号的一种反应。","第2轮：改选另一种反应，检查备用方案和退出条件。"],"resources":{"行动卡":4,"备用出口":1},"choices":[{"id":"believe","label":"敌方相信信号并调动兵力","publicFeedback":"可能出现行动窗口；仍需判断窗口长度和信号成本。","effects":{"window":2,"exposure":1}},{"id":"detect","label":"敌方识破信号并保留部署","publicFeedback":"原窗口缩小；需要备用方案、退出条件或新情报。","effects":{"window":-2,"exposure":2}},{"id":"delay","label":"敌方迟疑并延后反应","publicFeedback":"局势仍不确定；时间消耗可能同时影响双方。","effects":{"window":0,"time":-1}}],"metrics":[{"id":"window","label":"行动窗口","initial":0,"initialLabel":"未形成"},{"id":"exposure","label":"暴露风险","initial":0,"initialLabel":"待判断"},{"id":"time","label":"时间变化","initial":0,"initialLabel":"待判断"}]}}
 - 知识引用：K-15
-- 限制引用：restrictions.md#四渡完整方案
+- 限制引用：course.md#课程限制规则/四渡完整方案
 - 常见误区：两轮都运行成功分支，忽略示形被识破或敌方另作反应
 - 最大尝试：3
 - 失败处理：提醒第二轮改用失败或偏离预期的反应分支
@@ -325,7 +321,7 @@
 - 功能模块：A05(团队讨论)
 - 工具参数：{"team":{"mode":"discussion","prompt":"根据两轮运行记录，分别写下备用方案和退出条件；保留不同意见，不讨论现实冲突操作。","minimumEntries":2,"roles":["行动链说明人","风险提醒人","记录人"],"recordTypes":["备用方案","退出条件","不同意见"],"requiredRecordTypes":["备用方案","退出条件"]}}
 - 知识引用：K-15
-- 限制引用：restrictions.md#安全限制
+- 限制引用：course.md#课程限制规则/安全限制
 - 常见误区：备用方案仍依赖敌方一定按原预测行动，没有真正处理失败分支
 - 最大尝试：3
 - 失败处理：提示小组分别补“如果被识破怎么办”和“何时停止”中的缺失项
@@ -348,7 +344,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"our-action","label":"我方行动信号","type":"long_text","required":true},{"id":"enemy-reaction","label":"敌方可能的第一反应","type":"long_text","required":true},{"id":"window","label":"我方可能获得的后续窗口","type":"long_text","required":true},{"id":"failure-risk","label":"失败风险","type":"long_text","required":true},{"id":"invalidating-info","label":"使行动链失效的新信息","type":"short_text","required":true}]}}
 - 知识引用：K-15
-- 限制引用：restrictions.md#四渡完整方案, restrictions.md#安全限制
+- 限制引用：course.md#课程限制规则/四渡完整方案, course.md#课程限制规则/安全限制
 - 常见误区：省略失败风险，或把模拟中的敌方反应写成唯一历史事实
 - 最大尝试：3
 - 失败处理：指出四环中断的位置，只要求补充缺失环节或风险
@@ -360,11 +356,3 @@
 - S4 信息差分析 — 能指出至少一个敌我判断不对称及其行动影响
 - S5 决策矩阵 — 同时比较目标、收益、风险、信息可靠度和可逆性
 - C2 战略思维 — 能区分局部战斗和整体脱困目标，并预测二阶反应
-
-## Phase 3 行为
-- 向小组贡献：行动时间线、可见信号和敌方反应分支
-- 拼合贡献：五层战图中的“行动层”
-- 需要其他角色：情报参谋评估敌方认知，决策参谋评估风险是否可承受
-
-## Phase 4 璇玑参数
-- 负责说明：宏观行动设计如何转化为基层能够执行的局部步骤

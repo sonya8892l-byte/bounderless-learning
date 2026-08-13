@@ -47,7 +47,7 @@
 - 功能模块：A01(目标表单)
 - 工具参数：{"text":{"fields":[{"id":"target","label":"目标对象","type":"short_text","required":true},{"id":"change","label":"希望出现的变化","type":"long_text","required":true},{"id":"time","label":"期限","type":"short_text","required":true},{"id":"measure","label":"怎样判断","type":"long_text","required":true}]}}
 - 知识引用：K-13, K-17
-- 限制引用：restrictions.md#方案效力
+- 限制引用：course.md#课程限制规则/方案效力
 - 常见误区：写“提高大家意识”但无法观察
 - 最大尝试：3
 - 失败处理：追问谁、改变什么、何时看、用什么看
@@ -68,7 +68,7 @@
 - 功能模块：A03(证据需求板)
 - 工具参数：{"builder":{"mode":"board","prompt":"列出目标成立前需要的四类证据，并分配给角色。","minimumItems":4,"categories":["风险证据","措施证据","相关者证据","资源证据"]}}
 - 知识引用：K-17
-- 限制引用：restrictions.md#AI代写
+- 限制引用：course.md#课程限制规则/AI代写
 - 常见误区：提前锁定行动，再选择性找证据
 - 最大尝试：2
 - 失败处理：要求至少写一项可能改变方案的证据
@@ -110,7 +110,7 @@
 - 功能模块：A04(资源模拟)
 - 工具参数：{"simulation":{"mode":"budget","prompt":"在100点预算内配置至少3项行动，每项绑定风险链或保护缺口。","budget":100,"minimumItems":3}}
 - 知识引用：K-12, K-16
-- 限制引用：restrictions.md#风险排序
+- 限制引用：course.md#课程限制规则/风险排序
 - 常见误区：平均分配以回避优先级
 - 最大尝试：3
 - 失败处理：要求说明哪一项先做会带来最大可验证变化
@@ -130,7 +130,7 @@
 - 功能模块：A04(情境推演), A01(文字)
 - 工具参数：{"simulation":{"mode":"scenario","prompt":"从预算减少、关键证据降级、相关者成本上升中抽取一项约束。","scenarios":["预算减少30%","一条关键证据降为待核","一类相关者成本显著上升"]},"text":{"fields":[{"id":"revision","label":"调整与理由","type":"long_text","required":true,"minLength":80}]}}
 - 知识引用：K-15, K-16
-- 限制引用：restrictions.md#方案效力
+- 限制引用：course.md#课程限制规则/方案效力
 - 常见误区：只减少数字，行动逻辑不变
 - 最大尝试：3
 - 失败处理：追问哪些行动依赖被改变的条件
@@ -173,7 +173,7 @@
 - 功能模块：A01(结构化文档)
 - 工具参数：{"text":{"fields":[{"id":"action-book","label":"物种守护行动书二稿","type":"long_text","required":true,"minLength":350},{"id":"ai-disclosure","label":"AI使用与人工核验","type":"long_text","required":true,"minLength":30}]}}
 - 知识引用：K-13, K-17, K-19
-- 限制引用：restrictions.md#表达与决策
+- 限制引用：course.md#课程限制规则/表达与决策
 - 常见误区：每个行动都合理，但没有责任主体或指标
 - 最大尝试：3
 - 失败处理：一次只提示一个缺失要素
@@ -193,7 +193,7 @@
 - 功能模块：A05(版本对照)
 - 工具参数：{"team":{"mode":"revision","prompt":"登记意见、采纳状态、修改位置与理由；完成后交由教师核对来源、效力表述、安全边界和AI披露。","minimumEntries":3}}
 - 知识引用：K-15, K-17, K-19
-- 限制引用：restrictions.md#方案效力
+- 限制引用：course.md#课程限制规则/方案效力
 - 常见误区：把课堂通过写成机构采纳
 - 最大尝试：1
 - 失败处理：退回具体问题位置修改，未核项保留待核

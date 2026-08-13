@@ -47,7 +47,7 @@
 - 功能模块：A03(变量表)
 - 工具参数：{"builder":{"mode":"research_variables","prompt":"区分事件指标、风险变量、控制记录和可能反证。","minimumItems":9,"categories":["事件指标","风险变量","控制记录","可能反证"]}}
 - 知识引用：K-01, K-02, K-06
-- 限制引用：restrictions.md#风险点位
+- 限制引用：course.md#课程限制规则/风险点位
 - 常见误区：把反射照片当作已发生鸟撞
 - 最大尝试：3
 - 失败处理：逐项追问“看到它说明风险，还是说明事件”
@@ -68,7 +68,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"route","label":"路线、点位、时段与替代点","type":"long_text","required":true,"minLength":100},{"id":"safety","label":"陪同、安全和事件报告流程","type":"long_text","required":true,"minLength":60}]}}
 - 知识引用：K-03, K-05
-- 限制引用：restrictions.md#安全、隐私与伦理
+- 限制引用：course.md#课程限制规则/安全、隐私与伦理
 - 常见误区：只画路线，没有退出条件
 - 最大尝试：1
 - 失败处理：修改高风险点或改用教师提供的替代范围
@@ -112,7 +112,7 @@
 - 功能模块：A01(拍照), A01(调查数据)
 - 工具参数：{"photo":{"prompt":"拍玻璃与环境关系，避开人脸、门牌、工位和无关室内信息。","minCount":3,"maxCount":18},"text":{"fields":[{"id":"survey-log","label":"重复调查记录","type":"long_text","required":true,"minLength":180}]}}
 - 知识引用：K-03, K-04, K-05
-- 限制引用：restrictions.md#安全、隐私与伦理
+- 限制引用：course.md#课程限制规则/安全、隐私与伦理
 - 常见误区：只记录发现，不记零发现
 - 最大尝试：3
 - 失败处理：补录可确认的元数据；不可补录的明确标记缺失
@@ -133,7 +133,7 @@
 - 功能模块：A01(风险图画板)
 - 工具参数：{"sketch":{"prompt":"在批准路线示意图上标注风险变量、事件/零发现、等级理由和编号。","width":960,"height":640,"backgroundImage":"assets/placeholders/navigation-map.svg","brushColors":["#b91c1c","#d97706","#15803d","#475569"]}}
 - 知识引用：K-02, K-04, K-06
-- 限制引用：restrictions.md#风险点位
+- 限制引用：course.md#课程限制规则/风险点位
 - 常见误区：没有事件的点位一律标低风险
 - 最大尝试：3
 - 失败处理：提示区分事件记录和代理变量
@@ -176,7 +176,7 @@
 - 功能模块：A01(研究摘要)
 - 工具参数：{"text":{"fields":[{"id":"science-brief","label":"科学证据摘要","type":"long_text","required":true,"minLength":300},{"id":"limits","label":"局限与不可判断事项","type":"long_text","required":true,"minLength":80}]}}
 - 知识引用：K-01, K-02, K-06
-- 限制引用：restrictions.md#AI代替研究
+- 限制引用：course.md#课程限制规则/AI代替研究
 - 常见误区：为支持规则删去零发现和局限
 - 最大尝试：3
 - 失败处理：要求恢复与结论不一致的证据
@@ -197,7 +197,7 @@
 - 功能模块：A05(同行评议)
 - 工具参数：{"team":{"mode":"peer_review","prompt":"质疑一个变量、推断或推广范围；记录证据化回应。","minimumEntries":2,"recordTypes":["质疑","回应与处置"]}}
 - 知识引用：K-06, K-22
-- 限制引用：restrictions.md#规则模板
+- 限制引用：course.md#课程限制规则/规则模板
 - 常见误区：用权威身份代替证据回应
 - 最大尝试：2
 - 失败处理：允许降低结论强度或列为待核

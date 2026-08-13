@@ -47,7 +47,7 @@
 - 功能模块：A03(证据墙)
 - 工具参数：{"builder":{"mode":"evidence-wall","prompt":"按当前实际完成状态归位；缺失不要假装到齐。","items":[{"id":"identity","label":"身份与特征"},{"id":"sources","label":"事实与来源"},{"id":"ecology","label":"生态关系图"},{"id":"voice","label":"角色脚本与录音"}],"zones":[{"id":"ready","label":"已到齐"},{"id":"pending","label":"待补或待核"}],"zoneMinimums":{"ready":3,"pending":1}}}
 - 知识引用：K-20, K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：为了进入下一步把缺失成果标为完成
 - 最大尝试：2
 - 失败处理：允许明确保留一项待补
@@ -68,7 +68,7 @@
 - 功能模块：A03(档案搭建)
 - 工具参数：{"builder":{"mode":"card-layout","prompt":"正面回答它是谁，背面回答怎样生活、面临什么和需要什么。","items":[{"id":"identity","label":"物种名与学名"},{"id":"home","label":"家园"},{"id":"role","label":"生态角色"},{"id":"risk","label":"主要风险"},{"id":"need","label":"基本需要"},{"id":"measure","label":"保障措施"},{"id":"sources","label":"证据编号"}],"zones":[{"id":"front","label":"ID正面"},{"id":"back","label":"ID背面"}],"correctMapping":{"identity":"front","home":"front","role":"front","risk":"back","need":"back","measure":"back","sources":"back"},"retryMessage":"正面先回答身份，背面再放风险、需要、措施和来源。"}}
 - 知识引用：K-20
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把角色期待放进物种事实区
 - 最大尝试：3
 - 失败处理：提示先区分“它是谁”和“我们建议什么”
@@ -112,7 +112,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"name","label":"物种名/学名","type":"short_text","required":true},{"id":"feature","label":"代表特征+来源","type":"short_text","required":true},{"id":"home","label":"家园+来源","type":"short_text","required":true},{"id":"ecology-role","label":"生态角色+来源/待核","type":"short_text","required":true},{"id":"life","label":"生活方式+来源","type":"long_text","required":true},{"id":"risk","label":"主要风险+来源/待核","type":"long_text","required":true},{"id":"need","label":"基本需要","type":"short_text","required":true},{"id":"expectation","label":"角色期待","type":"long_text","required":true},{"id":"measure","label":"人类保障措施","type":"long_text","required":true}]}}
 - 知识引用：K-20, K-16
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：措施写成“大家一起保护”
 - 最大尝试：3
 - 失败处理：只指出缺失或过于笼统的字段
@@ -135,7 +135,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"sources","label":"来源编号（至少3个）","type":"long_text","required":true,"minLength":15},{"id":"date","label":"访问日期","type":"short_text","required":true},{"id":"ai","label":"AI参与和人工修改","type":"long_text","required":true,"minLength":15},{"id":"reviewer","label":"事实复核人","type":"short_text","required":true}]}}
 - 知识引用：K-22
-- 限制引用：restrictions.md#物种动态信息
+- 限制引用：course.md#课程限制规则/物种动态信息
 - 常见误区：来源只写“网络”
 - 最大尝试：2
 - 失败处理：要求补充具体来源编号
@@ -179,7 +179,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"facts","label":"事实与来源检查","type":"short_text","required":true},{"id":"labels","label":"推断/期待标签检查","type":"short_text","required":true},{"id":"privacy","label":"隐私与授权检查","type":"short_text","required":true},{"id":"ai","label":"AI披露检查","type":"short_text","required":true},{"id":"change","label":"本轮修改及理由","type":"long_text","required":true}]}}
 - 知识引用：K-20, K-22
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：只检查错别字
 - 最大尝试：2
 - 失败处理：提示遗漏的检查类别
@@ -200,7 +200,7 @@
 - 功能模块：A05(提交审核)
 - 工具参数：{"team":{"mode":"review","prompt":"提交ID Card、来源清单和发布范围。","minimumEntries":3,"roles":["ID设计员","教师"],"recordTypes":["ID Card","来源清单","发布范围"],"requiredRecordTypes":["ID Card","来源清单","发布范围"]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：学生自行宣布已获馆方认可
 - 最大尝试：1
 - 失败处理：停留当前步骤，按教师意见修改

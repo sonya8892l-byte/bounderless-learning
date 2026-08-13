@@ -55,7 +55,7 @@ function parseNamedTableRows(section) {
 /**
  * Parse only named level-2/level-3 restriction sections. A section ends at the
  * next heading of the same or a higher level, so resolving one reference never
- * pulls the remainder of restrictions.md into a model prompt.
+ * pulls the remainder of the course restriction namespace into a model prompt.
  */
 export function parseRestrictionDocument(markdown = '') {
   const source = String(markdown || '');
@@ -89,7 +89,7 @@ export function restrictionReferenceTitles(references = '') {
   const values = Array.isArray(references) ? references : String(references || '').split(/[,\uff0c\n]/);
   const titles = [];
   for (const value of values) {
-    const match = String(value).trim().match(/(?:^|\/)restrictions\.md#(.+)$/i);
+    const match = String(value).trim().match(/(?:^|\/)(?:restrictions\.md#|course\.md#课程限制规则\/)(.+)$/i);
     if (!match) continue;
     let title = match[1].trim();
     try { title = decodeURIComponent(title); } catch { /* Keep the course-authored value. */ }
@@ -100,7 +100,8 @@ export function restrictionReferenceTitles(references = '') {
 }
 
 /**
- * Resolve exact `restrictions.md#title` references to the smallest named unit:
+ * Resolve the canonical `course.md#课程限制规则/title` reference, while keeping
+ * the legacy `restrictions.md#title` form readable during migration, to the smallest named unit:
  * a matching table row first, otherwise the matching ##/### section.
  */
 export function resolveRestrictionReferences(documentOrMarkdown, references = '') {
@@ -112,7 +113,7 @@ export function resolveRestrictionReferences(documentOrMarkdown, references = ''
 
   return restrictionReferenceTitles(references).flatMap((title) => {
     const item = rows.get(title) || sections.get(title);
-    return item ? [{ reference: `restrictions.md#${title}`, ...item }] : [];
+    return item ? [{ reference: `course.md#课程限制规则/${title}`, ...item }] : [];
   });
 }
 

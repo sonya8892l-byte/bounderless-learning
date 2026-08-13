@@ -47,7 +47,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"questions","label":"档案问题","type":"long_text","required":true,"minLength":40,"placeholder":"例：资料所说的分布范围对应哪一年？"}]}}
 - 知识引用：K-01, K-04
-- 限制引用：restrictions.md#动态信息
+- 限制引用：course.md#课程限制规则/动态信息
 - 常见误区：直接写一段百科式介绍
 - 最大尝试：3
 - 失败处理：提示把介绍句改成“要查什么、用什么来源”
@@ -68,7 +68,7 @@
 - 功能模块：A03(来源配对)
 - 工具参数：{"builder":{"mode":"mapping","prompt":"把每个档案字段连到最合适的来源类型；动态字段增加日期和人工核验。","minimumItems":4,"categories":["现场展签","馆方资料","权威名录或数据库","监测或研究材料"]}}
 - 知识引用：K-04, K-05
-- 限制引用：restrictions.md#动态信息
+- 限制引用：course.md#课程限制规则/动态信息
 - 常见误区：所有字段只写“上网查”
 - 最大尝试：2
 - 失败处理：追问这个来源是否适合该主张
@@ -111,7 +111,7 @@
 - 功能模块：A01(拍照), A01(文字)
 - 工具参数：{"photo":{"prompt":"拍摄展品主体和可定位的展签区域，避开他人正脸。","minCount":1,"maxCount":4},"text":{"fields":[{"id":"facts","label":"三条现场事实与来源编号","type":"long_text","required":true,"minLength":50}]}}
 - 知识引用：K-05, K-18
-- 限制引用：restrictions.md#调查伦理
+- 限制引用：course.md#课程限制规则/调查伦理
 - 常见误区：照片和文字无法对应
 - 最大尝试：3
 - 失败处理：只要求补齐缺失的编号或来源画面
@@ -131,7 +131,7 @@
 - 功能模块：A01(档案表单)
 - 工具参数：{"text":{"fields":[{"id":"claim","label":"动态主张","type":"long_text","required":true},{"id":"date","label":"发布日期或版本","type":"short_text","required":true},{"id":"scope","label":"空间范围","type":"short_text","required":true},{"id":"limit","label":"局限与待核办法","type":"long_text","required":true}]}}
 - 知识引用：K-04, K-07
-- 限制引用：restrictions.md#动态信息
+- 限制引用：course.md#课程限制规则/动态信息
 - 常见误区：把单个年份的数量称为趋势
 - 最大尝试：3
 - 失败处理：提示缺少时间、空间、局限中的哪一项
@@ -173,7 +173,7 @@
 - 功能模块：A01(结构化文档)
 - 工具参数：{"text":{"fields":[{"id":"profile","label":"物种档案","type":"long_text","required":true,"minLength":180},{"id":"unknown","label":"仍待核验","type":"long_text","required":true,"minLength":15}]}}
 - 知识引用：K-01, K-04, K-07
-- 限制引用：restrictions.md#表达与决策
+- 限制引用：course.md#课程限制规则/表达与决策
 - 常见误区：删掉不确定信息让档案显得完整
 - 最大尝试：2
 - 失败处理：要求恢复至少一个局限或待核项
@@ -193,7 +193,7 @@
 - 功能模块：A05(团队核验)
 - 工具参数：{"team":{"mode":"review","prompt":"分别核对保护身份/趋势和威胁背景，写明依据。","minimumEntries":2,"roles":["名录核验员","威胁链分析员"],"recordTypes":["确认","修订","待核"]}}
 - 知识引用：K-06, K-19
-- 限制引用：restrictions.md#表达与决策
+- 限制引用：course.md#课程限制规则/表达与决策
 - 常见误区：只有“同意”没有理由
 - 最大尝试：2
 - 失败处理：提醒补写核对的字段与证据编号

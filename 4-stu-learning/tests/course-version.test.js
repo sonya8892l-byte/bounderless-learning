@@ -53,6 +53,27 @@ test('改课程 md 后不重启也能拿到新版本：缓存按内容失效', a
   }
 });
 
+test('作者说明文档不进入课程版本，也不进入运行时 sourceFiles', async () => {
+  const root = await scratchLessons();
+  try {
+    clearCourseCache();
+    const before = await compileCourse({ lessonsRoot: root, courseId: 'lesson_gewu_001' });
+    assert.equal(before.sourceFiles['README.md'], undefined);
+    assert.equal(before.sourceFiles['assets-checklist.md'], undefined);
+
+    const readmePath = resolve(root, 'lesson_gewu_001/README.md');
+    const markdown = await readFile(readmePath, 'utf8');
+    await writeFile(readmePath, `${markdown}\n<!-- 作者说明更新 -->\n`, 'utf8');
+
+    const after = await compileCourse({ lessonsRoot: root, courseId: 'lesson_gewu_001' });
+    assert.equal(after, before, '只改作者说明应继续命中运行时课程缓存');
+    assert.equal(after.courseVersion, before.courseVersion);
+    assert.equal(after.contentVersion, before.contentVersion);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('课程 md 没变时命中缓存，返回同一个对象', async () => {
   clearCourseCache();
   const first = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });

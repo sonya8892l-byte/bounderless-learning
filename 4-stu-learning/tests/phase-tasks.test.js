@@ -21,6 +21,7 @@ function lintFixture(course) {
     roles: course.roles,
     lesson: { phases: course.lesson.phases },
     files: { 'phases.md': course.files['phases.md'] },
+    documentSources: course.documentSources,
   });
 }
 
@@ -135,17 +136,16 @@ test('5 门课的角色任务节点数与终止节点数不受阶段任务影响
   assert.equal(roleNodes, 87, '角色任务仍是 87 个节点');
 });
 
-test('lesson_gewu_001 的 Phase 1 有两个领角色前任务，其余阶段仍为空', async () => {
+test('lesson_gewu_001 的 Phase 1 保留一个领角色前任务，其余阶段仍为空', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const [first, ...rest] = course.lesson.phases;
 
-  assert.equal(first.tasks.length, 2);
-  assert.deepEqual(first.tasks.map((task) => task.executor), ['全班', '个人']);
+  assert.equal(first.tasks.length, 1);
+  assert.deepEqual(first.tasks.map((task) => task.executor), ['全班']);
   assert.equal(first.tasks[0].tools[0].id, 'media');
   assert.equal(first.tasks[0].tools[0].config.url, '', '正式短片素材仍缺失，lint 必须保持发布红灯');
-  assert.equal(first.tasks[1].completionMode, 'ai_evaluation');
-  assert.equal(first.flow.length, 6, '原有流程叙述保留');
+  assert.equal(first.flow.length, 0, '流程文字已从结构化阶段配置清理');
   assert.equal(first.duration, '20min');
   assert.deepEqual(rest.map((phase) => phase.tasks.length), [0, 0, 0, 0, 0], '只迁移了 Phase 1');
 });
@@ -153,13 +153,13 @@ test('lesson_gewu_001 的 Phase 1 有两个领角色前任务，其余阶段仍�
 test('阶段任务的就地教学内容与能力标签不进浏览器包', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
-  const task = course.lesson.phases[0].tasks[1];
+  const task = course.lesson.phases[0].tasks[0];
   // 前提：源文件里这些字段确实有内容，否则这条测试是空转。
-  assert.ok(task.inlineAcceptance, '前提：阶段任务2 写了就地验收标准');
-  assert.ok(task.inlineGuidance, '前提：阶段任务2 写了就地引导');
-  assert.ok(task.competencyTags.length > 0, '前提：阶段任务2 写了能力标签');
+  assert.ok(task.inlineAcceptance, '前提：阶段任务写了就地验收标准');
+  assert.ok(task.guide, '前提：阶段任务写了 AI 引导方向');
+  assert.ok(task.toolParameters, '前提：阶段任务写了工具参数');
 
-  const publicTask = toPublic(course.lesson, course.restrictionMarkdown).phases[0].tasks[1];
+  const publicTask = toPublic(course.lesson, course.restrictionMarkdown).phases[0].tasks[0];
   for (const key of ['inlineGuidance', 'inlineScaffold', 'inlineAcceptance', 'competencyTags', 'guide', 'toolParameters']) {
     assert.equal(key in publicTask, false, `公开投影仍带 ${key}`);
   }
@@ -187,14 +187,14 @@ test('其他课程只在有真实入场活动时配置 Phase 1 可执行任务',
   }
 });
 
-test('lint 在阶段任务缺验收时仍报到 phases.md 的正确行号', async () => {
+test('lint 在阶段任务缺验收时仍报到 course.md 阶段编排的正确行号', async () => {
   clearCourseCache();
   const course = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
   const fixture = lintFixture(course);
   fixture.lesson.phases[0].tasks[0].acceptance = '';
   fixture.lesson.phases[0].tasks[0].inlineAcceptance = '';
   const { issues } = lintCourse(fixture, { lessonsRoot, courseId: course.id });
-  const missing = issues.filter((item) => item.code === 'missing_acceptance' && item.file.endsWith('phases.md'));
+  const missing = issues.filter((item) => item.code === 'missing_acceptance' && item.file.endsWith('course.md'));
 
   assert.equal(missing.length, 1);
   const phasesMarkdown = course.files['phases.md'].split('\n');
@@ -213,7 +213,7 @@ test('执行单位非法报 error 并指到那一行', async () => {
   const bad = issues.filter((item) => item.code === 'bad_executor');
   assert.equal(bad.length, 1);
   assert.equal(bad[0].level, 'error', '静默落回默认最难查，必须是 error 不是 warning');
-  assert.equal(bad[0].file, '6-lessons/lesson_gewu_001/phases.md');
+  assert.equal(bad[0].file, '6-lessons/lesson_gewu_001/course.md');
   assert.equal(course.files['phases.md'].split('\n')[bad[0].line - 1].trim(), '- 执行单位：全班');
   assert.equal(stats.badExecutors, 1);
   assert.equal(exitCodeForIssues(issues), 1);
@@ -246,7 +246,7 @@ test('阶段任务的死素材引用报 error', async () => {
   const missing = issues.filter((item) => item.code === 'missing_asset');
   assert.equal(missing.length, 1);
   assert.equal(missing[0].level, 'error');
-  assert.equal(missing[0].file, '6-lessons/lesson_gewu_001/phases.md');
+  assert.equal(missing[0].file, '6-lessons/lesson_gewu_001/course.md');
 });
 
 test('已生成的浏览器课程包里不含阶段任务的答案性内容', async () => {
@@ -255,5 +255,5 @@ test('已生成的浏览器课程包里不含阶段任务的答案性内容', as
   for (const forbidden of ['有明确判断', '只收猜想不做对错评判', '先不管对不对', 'DS-01', 'DC-01']) {
     assert.equal(source.includes(forbidden), false, `公开课程包包含阶段任务的私有内容 ${forbidden}`);
   }
-  assert.ok(source.includes('写下你最初的猜想'), '任务名本身应该下发，学生要看得到');
+  assert.ok(source.includes('查看\\"暴雨将至\\"情境图'), '任务名本身应该下发，学生要看得到');
 });

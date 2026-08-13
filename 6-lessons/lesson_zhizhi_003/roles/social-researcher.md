@@ -47,7 +47,7 @@
 - 功能模块：A01(样本计划)
 - 工具参数：{"text":{"fields":[{"id":"sample","label":"样本与招募计划","type":"long_text","required":true,"minLength":120},{"id":"fields","label":"最少数据字段及用途","type":"long_text","required":true,"minLength":80}]}}
 - 知识引用：K-17
-- 限制引用：restrictions.md#安全、隐私与伦理
+- 限制引用：course.md#课程限制规则/安全、隐私与伦理
 - 常见误区：为了“以后可能有用”收集个人信息
 - 最大尝试：3
 - 失败处理：逐字段追问与研究问题的直接关系
@@ -68,7 +68,7 @@
 - 功能模块：A05(试访谈)
 - 工具参数：{"team":{"mode":"pilot","prompt":"标记诱导、双重、含糊、过度隐私或无法回答的问题；完成后交由教师核对同意、最少采集、未成年人要求、退出和公开边界。","minimumEntries":2}}
 - 知识引用：K-17
-- 限制引用：restrictions.md#访谈录音
+- 限制引用：course.md#课程限制规则/访谈录音
 - 常见误区：默认同意录音
 - 最大尝试：1
 - 失败处理：取消录音或删减高风险字段后重新送审
@@ -112,7 +112,7 @@
 - 功能模块：A01(匿名表单), A01(同意记录)
 - 工具参数：{"text":{"fields":[{"id":"consent-log","label":"同意与退出状态汇总（不含身份）","type":"long_text","required":true,"minLength":40},{"id":"anonymous-data","label":"匿名研究数据","type":"long_text","required":true,"minLength":160}]}}
 - 知识引用：K-17
-- 限制引用：restrictions.md#安全、隐私与伦理
+- 限制引用：course.md#课程限制规则/安全、隐私与伦理
 - 常见误区：在匿名回答里保留具体岗位与姓名组合
 - 最大尝试：2
 - 失败处理：暂停分析，去标识并由教师检查
@@ -133,7 +133,7 @@
 - 功能模块：A03(编码墙)
 - 工具参数：{"builder":{"mode":"qualitative_coding","prompt":"两人独立编码后比较分歧，记录定义修订和反例。","minimumItems":6,"categories":["知识与认知","支持理由","担忧与成本","执行条件","例外","其他"]}}
 - 知识引用：K-18, K-22
-- 限制引用：restrictions.md#社调结论
+- 限制引用：course.md#课程限制规则/社调结论
 - 常见误区：AI先生成主题，两人只确认
 - 最大尝试：3
 - 失败处理：回到一小批材料独立编码，AI暂不参与
@@ -177,7 +177,7 @@
 - 功能模块：A01(社会调查报告)
 - 工具参数：{"text":{"fields":[{"id":"social-report","label":"社会调查报告","type":"long_text","required":true,"minLength":350},{"id":"limitations","label":"样本与伦理局限","type":"long_text","required":true,"minLength":100}]}}
 - 知识引用：K-17, K-18
-- 限制引用：restrictions.md#社调结论
+- 限制引用：course.md#课程限制规则/社调结论
 - 常见误区：写“大家都支持”而样本有限
 - 最大尝试：3
 - 失败处理：改成“在本次样本中”，补未代表群体
@@ -198,7 +198,7 @@
 - 功能模块：A05(匿名复核)
 - 工具参数：{"team":{"mode":"ethical_review","prompt":"只使用匿名编号，核对主题、反例、代表性和重新识别风险；完成后交由教师确认公开材料去标识、同意范围匹配、撤回已执行。","minimumEntries":3}}
 - 知识引用：K-17, K-18, K-22
-- 限制引用：restrictions.md#安全、隐私与伦理
+- 限制引用：course.md#课程限制规则/安全、隐私与伦理
 - 常见误区：为保留精彩引文忽略识别风险
 - 最大尝试：1
 - 失败处理：删除高风险引文或改为汇总描述

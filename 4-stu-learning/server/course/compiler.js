@@ -2,6 +2,12 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseLesson } from '../../src/engine/lesson-parser.js';
+import {
+  courseDocumentSource,
+  courseDocumentSources,
+  materializeCourseDocuments,
+  runtimeCourseFiles,
+} from '../../src/engine/course-documents.js';
 import { compilePlatformRules } from './platform-rules.js';
 import {
   loadPlatformDefaults,
@@ -95,7 +101,7 @@ function structuredCompilerWarning(warning = {}, context = {}) {
 
 function parserWarningContext(warning = {}, files = {}) {
   if (warning.code === 'bad_phase_task_executor') {
-    return { source: 'phases.md', field: '执行单位' };
+    return { source: courseDocumentSource(files, 'phases.md').sourceFile, field: '执行单位' };
   }
   if (warning.file && OVERRIDE_SECTION_BY_PLATFORM_FILE[warning.file]) {
     return { source: 'course.md', field: OVERRIDE_SECTION_BY_PLATFORM_FILE[warning.file] };
@@ -108,7 +114,10 @@ function parserWarningContext(warning = {}, files = {}) {
       if (filename !== 'phases.md' && !filename.startsWith('roles/')) continue;
       if (!fieldPattern.test(markdown)) continue;
       if (value && !String(markdown).includes(value)) continue;
-      return { source: filename, field };
+      return {
+        source: filename === 'phases.md' ? courseDocumentSource(files, filename).sourceFile : filename,
+        field,
+      };
     }
   }
   return {
@@ -174,6 +183,25 @@ function parseRestrictionRows(markdown = '') {
       unlockWhen: cells[3],
       protectedTerms,
       protectedMatchers: restrictionProtectedMatchers(cells[0], cells[1], protectedTerms),
+    });
+  }
+  return rows;
+}
+
+function parseObjectiveRows(markdown = '') {
+  const rows = [];
+  let category = '';
+  for (const line of String(markdown || '').split('\n')) {
+    const heading = line.match(/^##\s+(.+)$/);
+    if (heading) category = clean(heading[1]);
+    const match = line.match(/^[-*]\s*((?:DK|DS|DC)-\d+)\s+([^：:]+)[：:]\s*(.+)$/);
+    if (!match) continue;
+    rows.push({
+      id: match[1],
+      type: match[1].split('-')[0],
+      category,
+      name: clean(match[2]),
+      description: clean(match[3]),
     });
   }
   return rows;
@@ -279,12 +307,14 @@ export async function compileCourse({ lessonsRoot, courseId }) {
   const platformRules = await compilePlatformRules({ lessonsRoot: resolvedLessonsRoot });
   const platformDefaults = await loadPlatformDefaults({ lessonsRoot: resolvedLessonsRoot });
   const directory = path.resolve(resolvedLessonsRoot, courseId);
-  const files = await collectMarkdown(directory);
-  if (!files['course.md']) throw new Error(`课程 ${courseId} 缺少 course.md`);
+  const sourceFiles = runtimeCourseFiles(await collectMarkdown(directory));
+  if (!sourceFiles['course.md']) throw new Error(`课程 ${courseId} 缺少 course.md`);
+  const files = materializeCourseDocuments(sourceFiles);
+  const documentSources = courseDocumentSources(files);
 
   // 缓存按内容失效：课程 md ＋ 平台包三者任一变化就重编译，改 md 不必重启。
   // 读文件本身很便宜（几十个 md），真正贵的是下面的解析与装配。
-  const courseVersion = courseVersionFor(files);
+  const courseVersion = courseVersionFor(sourceFiles);
   const cached = CACHE.get(cacheKey);
   if (cached?.platformRules?.version === platformRules.version
     && cached?.platformDefaults?.version === platformDefaults.version
@@ -413,7 +443,9 @@ export async function compileCourse({ lessonsRoot, courseId }) {
 
   // 任务图：角色任务运行时由 task-advance.js 读取拓扑顺序与前置门禁。
   // 阶段任务（非角色任务）一并进图做编译检查，但不带 roleId，所以不进角色遍历。
-  const taskGraph = buildTaskGraph(roles, lesson.phases);
+  const taskGraph = buildTaskGraph(roles, lesson.phases, {
+    phaseSource: documentSources['phases.md']?.sourceFile || 'phases.md',
+  });
   defaultWarnings.push(...taskGraph.warnings.map((warning) => structuredCompilerWarning(warning)));
 
   const restrictionMarkdown = files['restrictions.md'] || '';
@@ -450,6 +482,7 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     roles,
     phaseTracks,
     taskGraph,
+    objectives: parseObjectiveRows(files['objectives.md']),
     knowledge: parseKnowledge(files),
     restrictions,
     restrictionMarkdown,
@@ -457,6 +490,8 @@ export async function compileCourse({ lessonsRoot, courseId }) {
     phasePrompts,
     phasePolicies,
     evaluation: files['evaluation.md'] || '',
+    documentSources,
+    sourceFiles,
     files,
   };
   CACHE.set(cacheKey, course);

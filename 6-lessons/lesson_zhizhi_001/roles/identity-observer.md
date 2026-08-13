@@ -48,7 +48,7 @@
 - 功能模块：A07(实物识别)
 - 工具参数：{"scanner":{"mode":"object","prompt":"请同时拍入标本主体和展签标题区域；识别失败时保留人工记录。","allowManualEntry":true}}
 - 知识引用：K-01, K-23, K-24
-- 限制引用：restrictions.md#观察优先
+- 限制引用：course.md#课程限制规则/观察优先
 - 常见误区：只拍动物局部，无法确认展项来源
 - 最大尝试：3
 - 失败处理：提示补入标本全景或展签标题；仍失败时由教师确认点位
@@ -70,7 +70,7 @@
 - 功能模块：A01(拍照), A01(文字)
 - 工具参数：{"photo":{"prompt":"拍下标本全景和展签相对位置，不拍其他参观者正脸。","minCount":1,"maxCount":2},"text":{"fields":[{"id":"source-id","label":"来源编号","type":"short_text","required":true,"placeholder":"例：展签01"}]}}
 - 知识引用：K-01, K-24
-- 限制引用：restrictions.md#场馆与隐私
+- 限制引用：course.md#课程限制规则/场馆与隐私
 - 常见误区：照片有标本但没有来源编号
 - 最大尝试：2
 - 失败处理：只补拍或补填缺失项
@@ -114,7 +114,7 @@
 - 功能模块：A01(画板标注)
 - 工具参数：{"sketch":{"prompt":"圈出两个你能直接看见的身体特征，并在旁边写照片编号。","width":720,"height":520,"backgroundImage":"assets/placeholders/task.svg","brushColors":["#2f6f5e","#c65f3d","#1f2937"]}}
 - 知识引用：K-01
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把“很可爱”“很勇敢”当作身体特征
 - 最大尝试：3
 - 失败处理：请学生改写为颜色、形状、位置或结构
@@ -135,7 +135,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"observation","label":"我看到","type":"long_text","required":true,"minLength":10},{"id":"inference","label":"我推测","type":"long_text","required":true,"minLength":10},{"id":"verify","label":"还需怎样核验","type":"long_text","required":true,"minLength":10}]}}
 - 知识引用：K-03
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把推断写成确定事实
 - 最大尝试：3
 - 失败处理：只指出缺少观察、推断或核验中的哪一项
@@ -179,7 +179,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"name","label":"物种名","type":"short_text","required":true},{"id":"scientific-name","label":"学名或待核","type":"short_text","required":true},{"id":"feature-1","label":"特征1","type":"short_text","required":true},{"id":"feature-2","label":"特征2","type":"short_text","required":true},{"id":"source","label":"来源编号","type":"short_text","required":true}]}}
 - 知识引用：K-20
-- 限制引用：restrictions.md#物种动态信息
+- 限制引用：course.md#课程限制规则/物种动态信息
 - 常见误区：为填满字段而猜学名
 - 最大尝试：2
 - 失败处理：允许保留“待核”，但必须提供现场来源
@@ -201,7 +201,7 @@
 - 功能模块：A05(团队核验)
 - 工具参数：{"team":{"mode":"discussion","prompt":"核对物种名、显著特征和来源；无法确认时记录待核。","minimumEntries":2,"roles":["身份观察员","展签记录员"],"recordTypes":["身份资料","确认或待核意见"],"requiredRecordTypes":["身份资料","确认或待核意见"]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：只口头说“没问题”而不留下记录
 - 最大尝试：2
 - 失败处理：提醒补记确认依据

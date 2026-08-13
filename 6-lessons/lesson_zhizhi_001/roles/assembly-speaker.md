@@ -47,7 +47,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"claim","label":"我们的核心判断","type":"long_text","required":true},{"id":"evidence-1","label":"证据1+来源","type":"short_text","required":true},{"id":"evidence-2","label":"证据2+来源","type":"short_text","required":true},{"id":"boundary","label":"仍待核或适用边界","type":"short_text","required":true}]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：用“大家都知道”代替证据
 - 最大尝试：3
 - 失败处理：追问证据编号或待核边界
@@ -69,7 +69,7 @@
 - 功能模块：A05(质询练习)
 - 工具参数：{"team":{"mode":"discussion","prompt":"只提出一个最关键的证据问题；回答可以承认待核。","minimumEntries":2,"roles":["议事发言人","质询同伴"],"recordTypes":["证据问题","证据回应"],"requiredRecordTypes":["证据问题","证据回应"]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：面对质疑时临时编出来源
 - 最大尝试：2
 - 失败处理：提醒使用“待核”或回到来源清单
@@ -113,7 +113,7 @@
 - 功能模块：A01(录音)
 - 工具参数：{"audio":{"prompt":"记录小组发布，用自己的话说明判断、证据和边界。","minSeconds":30,"maxSeconds":90,"language":"zh-CN","transcribe":true}}
 - 知识引用：K-21, K-22
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：只介绍动物知识，没有证据和小组判断
 - 最大尝试：1
 - 失败处理：由教师决定是否补充一次简短说明
@@ -135,7 +135,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"question","label":"现场问题","type":"long_text","required":true},{"id":"answer","label":"我们的回答与证据","type":"long_text","required":true},{"id":"revision","label":"保留/修改/待核及理由","type":"long_text","required":true}]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：把提问理解为必须坚持原答案
 - 最大尝试：2
 - 失败处理：追问“哪条证据支持回答”
@@ -179,7 +179,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"action","label":"我要做什么","type":"long_text","required":true},{"id":"target","label":"面向什么对象或场景","type":"short_text","required":true},{"id":"time","label":"何时做","type":"short_text","required":true},{"id":"check","label":"一周后怎样检查","type":"long_text","required":true}]}}
 - 知识引用：K-17, K-18
-- 限制引用：restrictions.md#场馆与隐私
+- 限制引用：course.md#课程限制规则/场馆与隐私
 - 常见误区：写“以后保护动物”
 - 最大尝试：3
 - 失败处理：追问具体动作和时间
@@ -200,7 +200,7 @@
 - 功能模块：A05(行动墙)
 - 工具参数：{"team":{"mode":"commitment","prompt":"每人提交一条匿名行动，不比较难度。","minimumEntries":6,"roles":["全体组员"],"recordTypes":["个人行动"],"requiredRecordTypes":["个人行动"]}}
 - 知识引用：K-17
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：由发言人代写全组行动
 - 最大尝试：2
 - 失败处理：提醒缺少行动记录的成员亲自提交

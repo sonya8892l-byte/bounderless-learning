@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { buildApp } from '../server/app.js';
 import { createAgentService } from '../server/agent/service.js';
 import { clearCourseCache, compileCourse } from '../server/course/compiler.js';
+import { renderPhaseOpening } from '../server/course/phase-policy.js';
 import { createSessionRecord } from '../server/services/session-factory.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -77,6 +78,69 @@ async function harness({ evaluationLlm = null } = {}) {
   return { course, store, modelCalls, agent };
 }
 
+function assistantText(result) {
+  return result.events
+    .filter((event) => event.type === 'assistant.completed')
+    .map((event) => event.data.text)
+    .join('');
+}
+
+function occurrences(text, expected) {
+  if (!expected) return 0;
+  return String(text).split(expected).length - 1;
+}
+
+function renderedPhaseOpening(course, phaseId, replacements = {}) {
+  return renderPhaseOpening(course.phasePolicies?.[phaseId], {
+    roleName: replacements['角色名'],
+    firstLocation: replacements['首个地点'],
+    studentName: replacements['学生名字'],
+  });
+}
+
+test('Phase 1 开场只在首次 phase_started 中出现，先于阶段卡和工具且不调用模型', async () => {
+  const { agent, course, modelCalls } = await harness();
+  const { session } = await agent.createSession({
+    courseId: course.id,
+    studentId: 'phase-opening-student',
+    groupId: 'phase-opening-group',
+  });
+  const opening = renderedPhaseOpening(course, 'phase-1');
+  assert.ok(opening, 'Phase 1 必须提供开场白模板');
+
+  const first = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'phase-opening-first',
+    input: { type: 'lifecycle_event', event: 'phase_started', data: { phaseId: 'phase-1' } },
+  });
+  const firstText = assistantText(first);
+  const visible = first.events.filter((event) => (
+    ['assistant.completed', 'stage.started', 'tool.requested'].includes(event.type)
+  ));
+  const stageIndex = visible.findIndex((event) => event.type === 'stage.started');
+  const toolIndex = visible.findIndex((event) => event.type === 'tool.requested');
+
+  assert.equal(occurrences(firstText, opening), 1, '首次进入 Phase 1 应完整展示一次阶段开场');
+  assert.equal(visible[0]?.type, 'assistant.completed', '阶段开场应先于阶段卡展示');
+  assert.ok(stageIndex > 0, '阶段卡应排在阶段开场之后');
+  assert.ok(toolIndex > stageIndex, '任务工具应排在阶段开场和阶段卡之后');
+  assert.equal(modelCalls.length, 0, '确定性阶段开场不得调用主模型');
+
+  const repeated = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'phase-opening-repeated',
+    input: { type: 'lifecycle_event', event: 'phase_started', data: { phaseId: 'phase-1' } },
+  });
+  const persistedAssistantText = repeated.session.messages
+    .filter((message) => message.role === 'assistant')
+    .map((message) => message.content)
+    .join('\n');
+
+  assert.equal(occurrences(assistantText(repeated), opening), 0, '重复阶段事件不能重播开场');
+  assert.equal(occurrences(persistedAssistantText, opening), 1, '会话历史只持久化一份阶段开场');
+  assert.equal(modelCalls.length, 0, '重复阶段事件也不得调用模型');
+});
+
 test('roleId 为空时从第一段阶段任务建会话，并能直接打开阶段工具', async () => {
   const { agent } = await harness();
   const { session, role } = await agent.createSession({
@@ -89,7 +153,7 @@ test('roleId 为空时从第一段阶段任务建会话，并能直接打开阶�
   assert.equal(session.phaseId, 'phase-1');
   assert.equal(session.taskState.taskId, 'phase-1-task-1');
   assert.equal(role.scope, 'phase');
-  assert.equal(role.tasks.length, 2);
+  assert.equal(role.tasks.length, 1);
 
   const started = await agent.runTurn({
     sessionId: session.id,
@@ -104,7 +168,7 @@ test('roleId 为空时从第一段阶段任务建会话，并能直接打开阶�
   assert.equal(state.data.roleId, '');
 });
 
-test('短片播放完成即自动完成任务并打开猜想任务，不出现整包提交层', async () => {
+test('短片播放完成即自动完成当前唯一阶段任务，不出现整包提交层', async () => {
   const { agent, course } = await harness();
   const mediaTask = course.phaseTracks['phase-1'].tasks[0];
   mediaTask.tools[0].config.url = 'https://example.test/course-intro.mp4';
@@ -139,12 +203,13 @@ test('短片播放完成即自动完成任务并打开猜想任务，不出现�
   });
 
   assert.ok(completed.session.completedTaskIds.includes('phase-1:phase-1-task-1'));
-  assert.equal(completed.session.currentTaskIndex, 1);
-  assert.equal(completed.session.taskState.taskId, 'phase-1-task-2');
+  assert.equal(completed.session.currentTaskIndex, 0);
+  assert.equal(completed.session.taskState.taskId, 'phase-1-task-1');
+  assert.equal(completed.session.taskState.finalization.status, 'completed');
   const taskTools = completed.events
     .filter((event) => event.type === 'tool.requested')
     .map((event) => event.data.payload.taskId);
-  assert.deepEqual(taskTools, ['phase-1-task-2']);
+  assert.deepEqual(taskTools, []);
   const replies = completed.events
     .filter((event) => event.type === 'assistant.completed')
     .map((event) => event.data.text)
@@ -188,7 +253,8 @@ test('显式 posterOnly 情境图确认后可完成任务，无需伪造视频�
   });
 
   assert.ok(completed.session.completedTaskIds.includes('phase-1:phase-1-task-1'));
-  assert.equal(completed.session.taskState.taskId, 'phase-1-task-2');
+  assert.equal(completed.session.taskState.taskId, 'phase-1-task-1');
+  assert.equal(completed.session.taskState.finalization.status, 'completed');
 });
 
 test('正式媒体没有播放源时，客户端 completed 标记不能绕过服务端', async () => {
@@ -257,141 +323,8 @@ test('无角色会话可使用平台絮絮对话，且不会偷偷补绑某个�
   assert.doesNotMatch(modelCalls.at(-1).instructions, /你是.*数龙官/);
 });
 
-test('阶段猜想的 AI 小步通过后自动收口，不要求整包再提交', async () => {
-  const evaluationCalls = [];
-  const { agent, store, modelCalls } = await harness({
-    evaluationLlm: mainLlm(evaluationCalls),
-  });
-  const { session } = await agent.createSession({
-    courseId: 'lesson_gewu_001',
-    studentId: 'evaluation-student',
-    groupId: 'evaluation-group',
-  });
-  const stored = await store.get(session.id);
-  stored.currentTaskIndex = 1;
-  stored.completedTaskIds = ['phase-1:phase-1-task-1'];
-  stored.taskState = {
-    taskId: 'phase-1-task-2',
-    guidanceStepIndex: 0,
-    stageAnnounced: true,
-  };
-  stored.pendingTools = {
-    tool_guess: {
-      name: 'open_task_tool',
-      payload: {
-        taskId: 'phase-1-task-2',
-        config: { minEvidenceCount: 0 },
-      },
-    },
-  };
-  await store.save(stored);
-
-  const result = await agent.runTurn({
-    sessionId: session.id,
-    requestId: 'complete-initial-guess-step',
-    input: {
-      type: 'lifecycle_event',
-      event: 'task_step_completed',
-      data: {
-        taskId: 'phase-1-task-2',
-        stepId: 'phase-1-task-2-step-1',
-        stepIndex: 0,
-        completionMode: 'ai_evaluation',
-        toolValues: {
-          'phase-1-task-2-step-1': {
-            text: {
-              fields: {
-                'initial-hypothesis': '我猜不会积水，因为排水口可能很多。',
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  assert.ok(evaluationCalls.some((call) => call.instructions.includes('[小步验收器职责]')));
-  assert.equal(evaluationCalls[0].maxRetries, 1);
-  assert.equal(modelCalls.length, 0, '验收通过后应复用结构化反馈，不再调用一次主对话模型');
-  assert.ok(result.session.completedTaskIds.includes('phase-1:phase-1-task-2'));
-  assert.equal(result.session.currentTaskIndex, 1, '最终阶段任务完成后停在末项，等待角色选择');
-  assert.equal(result.session.completedTaskIds.length, 2);
-  assert.equal(result.events.some((event) => event.type === 'tool.requested'), false);
-  assert.equal(result.session.taskState.finalization.status, 'completed');
-  const reply = result.events.find((event) => event.type === 'assistant.completed').data.text;
-  assert.match(reply, /任务已经完成/);
-  assert.doesNotMatch(reply, /整理|再次提交/);
-});
-
-test('验收超时后返回可重试错误，任务进度保持不动', async () => {
-  const evaluationCalls = [];
-  const timeoutLlm = {
-    capabilities: () => ({ nativeTools: false, vision: false, streaming: false }),
-    async generate(input) {
-      evaluationCalls.push(input);
-      const error = new Error('模型响应超时。');
-      error.name = 'LLMTimeoutError';
-      error.code = 'LLM_TIMEOUT';
-      throw error;
-    },
-  };
-  const { agent, store } = await harness({ evaluationLlm: timeoutLlm });
-  const { session } = await agent.createSession({
-    courseId: 'lesson_gewu_001',
-    studentId: 'timeout-student',
-    groupId: 'timeout-group',
-  });
-  const stored = await store.get(session.id);
-  stored.currentTaskIndex = 1;
-  stored.completedTaskIds = ['phase-1:phase-1-task-1'];
-  stored.taskState = {
-    taskId: 'phase-1-task-2',
-    guidanceStepIndex: 0,
-    stageAnnounced: true,
-  };
-  stored.pendingTools = {
-    tool_guess_timeout: {
-      name: 'open_task_tool',
-      payload: { taskId: 'phase-1-task-2', config: { minEvidenceCount: 0 } },
-    },
-  };
-  await store.save(stored);
-
-  await assert.rejects(
-    agent.runTurn({
-      sessionId: session.id,
-      requestId: 'complete-timeout-guess-step',
-      input: {
-        type: 'lifecycle_event',
-        event: 'task_step_completed',
-        data: {
-          taskId: 'phase-1-task-2',
-          stepId: 'phase-1-task-2-step-1',
-          stepIndex: 0,
-          completionMode: 'ai_evaluation',
-          toolValues: {
-            'phase-1-task-2-step-1': {
-              text: {
-                fields: {
-                  'initial-hypothesis': '我猜不会积水，因为排水口可能很多。',
-                },
-              },
-            },
-          },
-        },
-      },
-    }),
-    (error) => error.code === 'STEP_AI_TIMEOUT' && error.details.retryable === true,
-  );
-
-  assert.equal(evaluationCalls[0].maxRetries, 1);
-  assert.equal(stored.currentTaskIndex, 1);
-  assert.deepEqual(stored.completedTaskIds, ['phase-1:phase-1-task-1']);
-  assert.ok(stored.pendingTools.tool_guess_timeout, '超时后保留原工具调用，允许用同一份草稿重试');
-});
-
 test('阶段任务未完成不能领角色；完成后在同一 session 上补绑并保留阶段快照', async () => {
-  const { agent, course, store } = await harness();
+  const { agent, course, store, modelCalls } = await harness();
   const { session } = await agent.createSession({
     courseId: course.id,
     studentId: 'binding-student',
@@ -432,11 +365,34 @@ test('阶段任务未完成不能领角色；完成后在同一 session 上补�
   assert.equal(bound.session.currentTaskIndex, 0);
   assert.deepEqual(bound.session.completedTaskIds, []);
   assert.equal(bound.session.phaseTaskState.phaseId, 'phase-1');
-  assert.equal(bound.session.phaseTaskState.completedTaskIds.length, 2);
+  assert.equal(bound.session.phaseTaskState.completedTaskIds.length, 1);
   assert.deepEqual(bound.session.phaseTaskState.learningState.evidenceIds, ['ev_phase_1']);
   assert.equal(bound.session.phaseTaskState.dialogueState.pendingQuestion.id, 'phase-question');
   assert.deepEqual(bound.session.learningState.evidenceIds, ['ev_phase_1']);
   assert.ok(bound.session.events.includes('dragon-counter:role-assigned'));
+
+  const role = course.roles.find((item) => item.id === 'dragon-counter');
+  const opening = renderedPhaseOpening(course, 'phase-2', {
+    角色名: role.name,
+    首个地点: role.tasks[0].location?.name || role.location,
+  });
+  const boundText = assistantText(bound);
+  assert.equal(occurrences(boundText, opening), 1, '角色补绑时应完整展示一次 Phase 2 开场');
+  assert.doesNotMatch(boundText, /\{[^}]+\}/u, 'Phase 2 开场不能残留模板占位符');
+  assert.equal(modelCalls.length, 0, '角色分配与阶段开场均走确定性流程');
+
+  const rebound = await agent.runTurn({
+    sessionId: session.id,
+    requestId: 'bind-after-phase-repeated',
+    input: { type: 'lifecycle_event', event: 'role_assigned', data: { roleId: 'dragon-counter' } },
+  });
+  const persistedAssistantText = rebound.session.messages
+    .filter((message) => message.role === 'assistant')
+    .map((message) => message.content)
+    .join('\n');
+  assert.equal(occurrences(assistantText(rebound), opening), 0, '重复角色事件不能重播 Phase 2 开场');
+  assert.equal(occurrences(persistedAssistantText, opening), 1, '会话历史只保留一份 Phase 2 开场');
+  assert.equal(modelCalls.length, 0, '重复角色事件也不得调用模型');
 });
 
 test('会话阶段后来变化时，领取仍只验收最早的选择前任务轨道', async () => {

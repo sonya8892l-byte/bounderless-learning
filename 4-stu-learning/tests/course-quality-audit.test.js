@@ -108,19 +108,20 @@ function assertIssueShape(issue) {
   assert.match(issue.message, /修复：/);
 }
 
-test('unknown_course_section 接受显式教研说明，只报告未登记的二级标题', () => {
+test('unknown_course_section 拒绝所有未登记二级标题，教研说明应移到 README', () => {
   const unknown = fakeCourse({ extraCourseSections: '## 临时想法\n\n- 开场：测试\n' });
   const hit = auditCourseQuality(unknown).issues.filter((issue) => issue.code === 'unknown_course_section');
   assert.equal(hit.length, 1);
   assert.match(hit[0].message, /临时想法/);
   assertIssueShape(hit[0]);
 
-  const known = fakeCourse({ extraCourseSections: [
+  const mixed = fakeCourse({ extraCourseSections: [
     '## 学段规范\n\n- 初中字数：80',
     '## 叙事框架\n\n> 教研说明：不作为运行时配置。\n\n- 开场：测试',
-    '## 史料边界\n\n> 教研说明：具体限制写入 restrictions.md。',
+    '## 史料边界\n\n> 教研说明：具体限制写入 course.md / 课程限制规则。',
   ].join('\n\n') });
-  assert.equal(auditCourseQuality(known).issues.filter((issue) => issue.code === 'unknown_course_section').length, 0);
+  const mixedHits = auditCourseQuality(mixed).issues.filter((issue) => issue.code === 'unknown_course_section');
+  assert.deepEqual(mixedHits.map((issue) => issue.message.match(/「(.+?)」/)?.[1]), ['叙事框架', '史料边界']);
 });
 
 test('protected_scaffold_leak 由 restrictions.md 正式保护项触发', () => {

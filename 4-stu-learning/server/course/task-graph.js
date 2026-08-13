@@ -63,7 +63,7 @@ export function parseNextRef(value = '') {
  * 课程若显式写了 `前置`，以它为权威；只有 `前置` 为空时才用 `通过后` 推导。
  * 这正是 D2 说的"`通过后` 保留为线性语法糖，编译期转换"。
  */
-export function buildTaskGraph(roles = [], phases = []) {
+export function buildTaskGraph(roles = [], phases = [], { phaseSource = 'phases.md' } = {}) {
   const nodes = new Map();
   const warnings = [];
   // 显式声明了 `前置` 的节点：它们的入边由课程作者决定，不接受语法糖回填。
@@ -102,7 +102,7 @@ export function buildTaskGraph(roles = [], phases = []) {
       const key = phaseNodeKey(phase.id, task.id);
       if (nodes.has(key)) warnings.push({
         code: 'duplicate_task',
-        source: 'phases.md',
+        source: phaseSource,
         field: 'id',
         phaseId: phase.id,
         taskId: task.id,
@@ -208,7 +208,7 @@ export function buildTaskGraph(roles = [], phases = []) {
     roleId: role.id,
   });
   for (const phase of phases) linkEdges(phase.id, phase.tasks, {
-    source: 'phases.md',
+    source: phaseSource,
     phaseId: phase.id,
   });
 

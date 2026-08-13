@@ -11,9 +11,7 @@
 - 角色卡图：assets/roles/role-card-river-guide.png
 - 角色徽章图：assets/roles/badge-river-guide.png
 - 收集物：S
-- 密符奖励：字母 S（水）
 - 收集物图：assets/tokens/mifu-S.png
-- 关键数据：内金水河全长2100m，宽约5-6m，深约1.5m
 
 ## 任务列表
 
@@ -36,7 +34,6 @@
 - 通过条件：4张有效照片 + 标注上下游方向
 - 目标关联：K5(明暗沟系统), K2(设计归纳), S2(流向判断)
 - 能力标签：DK-05, DK-02, DS-02
-- AI引导方向：引导观察水流方向——"水从哪里来？往哪里去？"
 
 ##### 引导
 **引导目标**
@@ -69,7 +66,7 @@
 - 功能模块：A01(拍照), A01(文字)
 - 工具参数：{"photo":{"prompt":"请安全拍摄。让河道全景和桥、岸线等固定参照入镜。","minCount":1,"maxCount":2,"accept":"image/*"},"text":{"fields":[{"id":"inflow-basis","label":"来水方向与判断依据","type":"long_text","required":true,"minLength":25}]}}
 - 知识引用：K-11
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：只根据地图记忆判断方向，没有记录当前河段的现场参照
 - 最大尝试：3
 - 失败处理：只指出缺少定位参照或方向依据中的首要一项，并给出下一步补证动作
@@ -99,7 +96,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"prompt":"请安全拍摄。在两个不同节点记录桥下、弯道或岸线变化，并保留定位参照。","minCount":2,"maxCount":4,"accept":"image/*"}}
 - 知识引用：K-11, K-13
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：在同一位置连续拍摄近似画面，无法表示河道路径
 - 最大尝试：3
 - 失败处理：指出两张照片重复之处，请学生在教师允许的下一个节点补拍
@@ -129,7 +126,7 @@
 - 功能模块：A01(拍照), A01(文字)
 - 工具参数：{"photo":{"prompt":"请安全拍摄。补充一个可能的后续节点，并保留岸线或桥位参照。","minCount":1,"maxCount":2,"accept":"image/*"},"text":{"fields":[{"id":"sequence","label":"照片顺序与节点标注","type":"long_text","placeholder":"按观察顺序标注照片位置、方向依据和不确定处","required":true,"minLength":40}]}}
 - 知识引用：K-11
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：照片数量足够，但排序只凭猜测且没有位置参照
 - 最大尝试：3
 - 失败处理：指出缺少照片数量、节点标注或方向依据中的哪一项，让学生只补缺项
@@ -171,7 +168,6 @@
 - 通过条件：给出估测方法说明 + 估测值
 - 目标关联：S1(估算), S3(实验设计), C1(证据意识), C4(科学精神)
 - 能力标签：DS-01, DS-03, DC-01, DC-04
-- AI引导方向：引导设计简易测量方案——"你能想到什么办法估测流速？"
 
 ##### 引导
 **引导目标**
@@ -205,7 +201,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"method","label":"流速观察方法","type":"long_text","required":true,"minLength":35},{"id":"safety","label":"安全边界","type":"long_text","required":true,"minLength":15}]}}
 - 知识引用：K-11, K-12
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：缺少固定参照或距离来源，仅凭感觉给出流速数值
 - 最大尝试：3
 - 失败处理：只指出固定参照或计时方法中的首要缺口，请从教师指定观察点修改
@@ -235,7 +231,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"width","label":"估测河宽（米）","type":"number","required":true},{"id":"depth","label":"估测河深（米）","type":"number","required":true},{"id":"speed","label":"估测流速（米/秒）","type":"number","required":true},{"id":"basis","label":"三项数据的观察或推算依据","type":"long_text","required":true,"minLength":45}]}}
 - 知识引用：K-11, K-12
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：把无法直接测得的河深写成精确实测值，或漏写单位
 - 最大尝试：3
 - 失败处理：指出缺少单位、依据或数据性质说明中的哪一项，不直接提供参考值
@@ -266,7 +262,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"flow","label":"估算流量（立方米/秒）","type":"number","required":true},{"id":"calculation","label":"计算过程与单位","type":"long_text","required":true,"minLength":25},{"id":"uncertain-input","label":"最大不确定性及影响","type":"long_text","required":true,"minLength":25}]}}
 - 知识引用：K-11, K-12
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：只给流量数字，没有计算式、单位或不确定性说明
 - 最大尝试：3
 - 失败处理：指出计算中首个无法复算的输入或单位，请学生先修正这一项
@@ -306,7 +302,6 @@
 - 通过条件：描述"正常/中雨/暴雨"三种情况下河道状态变化
 - 目标关联：K2(设计归纳), C2(系统思维), S5(系统分级)
 - 能力标签：DK-02, DC-02, DS-05
-- AI引导方向：引导思考"如果暴雨来了，这条河能装得下吗？多出来的水去哪？"
 
 ##### 引导
 **引导目标**
@@ -338,7 +333,7 @@
 - 功能模块：A04(沙盘推演)
 - 工具参数：{"simulation":{"rounds":3,"allowRepeat":false,"prompt":"依次运行三种降雨情景，观察河道压力怎样变化。","roundPrompts":["第1轮：选择常规降雨，建立基线。","第2轮：选择中雨，比较指标变化。","第3轮：选择暴雨，寻找容量边界。"],"resources":{"河道容量":"固定","上游来水":"随降雨增加"},"choices":[{"id":"normal","label":"常规降雨","publicFeedback":"河道处于基线状态；记录水位、流速和剩余空间。","effects":{"water-level":1,"flow-speed":1,"overflow-risk":0}},{"id":"medium","label":"中雨","publicFeedback":"来水增加；观察水位和流速中哪一项变化更明显。","effects":{"water-level":2,"flow-speed":2,"overflow-risk":1}},{"id":"storm","label":"暴雨","publicFeedback":"系统压力达到高位；检查哪个环节最先接近容量边界。","effects":{"water-level":4,"flow-speed":3,"overflow-risk":4}}],"metrics":[{"id":"water-level","label":"水位压力","initial":0,"initialLabel":"基线待测"},{"id":"flow-speed","label":"流速变化","initial":0,"initialLabel":"基线待测"},{"id":"overflow-risk","label":"溢流风险","initial":0,"initialLabel":"未观察"}]}}
 - 知识引用：K-12, K-17
-- 限制引用：restrictions.md#暴雨模拟结果
+- 限制引用：course.md#课程限制规则/暴雨模拟结果
 - 常见误区：只运行最强降雨，缺少可比较的常规基线
 - 最大尝试：3
 - 失败处理：只指出首个未完成的情景，并请学生运行这一轮，不解释结果
@@ -368,7 +363,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"first-change","label":"最先明显变化的环节","type":"long_text","required":true,"minLength":20},{"id":"comparison","label":"对应轮次与比较证据","type":"long_text","required":true,"minLength":35},{"id":"alternative","label":"另一种可能解释","type":"long_text","required":true,"minLength":15}]}}
 - 知识引用：K-12, K-17, K-19
-- 限制引用：restrictions.md#暴雨模拟结果
+- 限制引用：course.md#课程限制规则/暴雨模拟结果
 - 常见误区：把推演动画中的最终状态直接当成真实历史结论
 - 最大尝试：3
 - 失败处理：请学生先比较相邻两轮，再指出哪个指标从何时开始明显变化
@@ -399,7 +394,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"three-scenarios","label":"三种降雨状态对比","type":"long_text","required":true,"minLength":60},{"id":"capacity-boundary","label":"容量边界与多余水去向","type":"long_text","required":true,"minLength":45},{"id":"uncertainty","label":"仍需核验的内容","type":"long_text","required":true,"minLength":20}]}}
 - 知识引用：K-12, K-16, K-17, K-19
-- 限制引用：restrictions.md#暴雨模拟结果
+- 限制引用：course.md#课程限制规则/暴雨模拟结果
 - 常见误区：把“容量有限”写成“必然积水”，没有说明降雨条件、下游承接和不确定性
 - 最大尝试：3
 - 失败处理：只指出说明中的首要证据缺口，并请学生定向补充这一项
@@ -420,11 +415,3 @@
 - C1 证据意识 — 自觉用证据支撑每个结论
 - C2 系统思维 — 能从局部到整体还原系统
 - C4 科学精神 — 带边界的结论+承认不确定性
-
-## Phase 3 行为
-- 向小组贡献：内金水河流量数据 + 容量极限分析
-- 拼合贡献：水系图中"沟渠汇入→内金水河→流向护城河"环节
-- 需要其他角色：寻沟官的沟渠数据（输入量），护城官的护城河数据（输出量）
-
-## Phase 4 璇玑参数
-- 负责设置：内金水河容量参数（截面积×长度→蓄水体积，溢出阈值）

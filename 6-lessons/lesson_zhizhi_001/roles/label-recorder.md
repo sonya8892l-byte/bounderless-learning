@@ -48,7 +48,7 @@
 - 功能模块：A01(拍照), A01(文字)
 - 工具参数：{"photo":{"prompt":"拍下展签全貌，避免只拍一句话。","minCount":0,"maxCount":2},"text":{"fields":[{"id":"title","label":"展签标题","type":"short_text","required":true},{"id":"location","label":"展厅/点位","type":"short_text","required":true}]}}
 - 知识引用：K-02, K-24
-- 限制引用：restrictions.md#场馆与隐私
+- 限制引用：course.md#课程限制规则/场馆与隐私
 - 常见误区：只拍一句局部文字，失去来源上下文
 - 最大尝试：2
 - 失败处理：改为抄录标题和点位
@@ -70,7 +70,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"source-id","label":"来源编号","type":"short_text","required":true,"placeholder":"例：展签01"},{"id":"source-type","label":"来源类型","type":"select","options":["标本观察","展签","馆方资料","补充知识卡"],"required":true},{"id":"date","label":"访问日期","type":"short_text","required":true}]}}
 - 知识引用：K-02
-- 限制引用：restrictions.md#物种动态信息
+- 限制引用：course.md#课程限制规则/物种动态信息
 - 常见误区：同一编号用于不同来源
 - 最大尝试：2
 - 失败处理：提示每个来源只使用一个编号
@@ -113,7 +113,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"fact-1","label":"事实1+来源","type":"long_text","required":true},{"id":"fact-2","label":"事实2+来源","type":"long_text","required":true},{"id":"fact-3","label":"事实3+来源","type":"long_text","required":true}]}}
 - 知识引用：K-02
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把“我觉得它很孤独”写成展签事实
 - 最大尝试：3
 - 失败处理：指出哪一条含推断，要求改写或改标签
@@ -135,7 +135,7 @@
 - 功能模块：A03(分类搭建)
 - 工具参数：{"builder":{"mode":"evidence-wall","prompt":"按信息从哪里来分类。","items":[{"id":"fur-color","label":"照片显示毛色"},{"id":"label-habitat","label":"展签写明栖息地"},{"id":"guess-mood","label":"它看起来很难过"},{"id":"hope-home","label":"我希望家园保持连通"},{"id":"source-food","label":"知识卡说明食物"},{"id":"guess-number","label":"馆里只有一件所以野外很少"}],"zones":[{"id":"observation","label":"亲眼观察"},{"id":"source","label":"资料事实"},{"id":"inference","label":"合理推断"},{"id":"expectation","label":"角色期待"}],"correctMapping":{"fur-color":"observation","label-habitat":"source","guess-mood":"inference","hope-home":"expectation","source-food":"source","guess-number":"inference"},"retryMessage":"先看每张卡的信息来源，再决定类别。"}}
 - 知识引用：K-01, K-02, K-03, K-04
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把有道理的推断直接当成资料事实
 - 最大尝试：3
 - 失败处理：只反馈分类依据，不直接公布整张映射
@@ -178,7 +178,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"observation","label":"观察来源","type":"short_text","required":true},{"id":"label","label":"展签来源","type":"short_text","required":true},{"id":"card","label":"知识卡来源","type":"short_text","required":true},{"id":"date","label":"访问日期","type":"short_text","required":true}]}}
 - 知识引用：K-02, K-22
-- 限制引用：restrictions.md#物种动态信息
+- 限制引用：course.md#课程限制规则/物种动态信息
 - 常见误区：只写“百度”“AI说”
 - 最大尝试：2
 - 失败处理：要求写清具体展签或知识卡编号
@@ -200,7 +200,7 @@
 - 功能模块：A05(证据汇总)
 - 工具参数：{"team":{"mode":"evidence-merge","prompt":"逐条提交事实与来源，并保留至少一条待核或证据边界。","minimumEntries":5,"roles":["展签记录员","身份观察员","ID设计员"],"recordTypes":["事实","来源","待核项"],"requiredRecordTypes":["事实","来源","待核项"]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：为了显得完整而删除待核信息
 - 最大尝试：2
 - 失败处理：提醒保留不确定性

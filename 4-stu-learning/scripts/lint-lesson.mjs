@@ -152,8 +152,9 @@ function roleFilePath(courseId, roleId) {
   return `6-lessons/${courseId}/roles/${roleId}.md`;
 }
 
-function phasesFilePath(courseId) {
-  return `6-lessons/${courseId}/phases.md`;
+function phasesFilePath(courseId, course = null) {
+  const source = course?.documentSources?.['phases.md']?.sourceFile || 'phases.md';
+  return `6-lessons/${courseId}/${source}`;
 }
 
 /**
@@ -342,7 +343,7 @@ export function lintCourse(course, options = {}) {
     const role = (course?.roles || []).find((item) => item.id === roleId);
     // 阶段任务不属于任何角色，落点是 phases.md；角色任务落 roles/<id>.md。
     const resolvedFile = file
-      || (phaseTask ? phasesFilePath(courseId) : '')
+      || (phaseTask ? phasesFilePath(courseId, course) : '')
       || (roleId ? roleFilePath(courseId, roleId) : `6-lessons/${courseId}/course.md`);
     const resolvedLine = line
       || (phaseTask ? findPhaseTaskLine(phasesMarkdown, phaseTask, field) : 0)
@@ -471,7 +472,7 @@ export function lintCourse(course, options = {}) {
             pushIssue({
               level: 'error',
               code: 'dead_restriction_ref',
-              message: `限制引用无法解析：restrictions.md#${title}`,
+              message: `限制引用无法解析：course.md#课程限制规则/${title}`,
               ...where,
               stepId: step.id,
             });
@@ -566,14 +567,14 @@ export function lintCourse(course, options = {}) {
     pushIssue({
       level: 'error',
       code: 'bad_executor',
-      message: `执行单位非法：${invalid.value || '(空)'}（允许 ${PHASE_TASK_EXECUTORS.join(' / ')}）。修复：直接改 phases.md 的原字段，不能依赖 parser 回落。`,
-      file: phasesFilePath(courseId),
+      message: `执行单位非法：${invalid.value || '(空)'}（允许 ${PHASE_TASK_EXECUTORS.join(' / ')}）。修复：直接改阶段编排的原字段，不能依赖 parser 回落。`,
+      file: phasesFilePath(courseId, course),
       line: invalid.line,
       field: '执行单位',
     });
   }
 
-  for (const invalid of findUnsupportedToolDeclarations(course?.files || {})) {
+  for (const invalid of findUnsupportedToolDeclarations(course?.sourceFiles || course?.files || {})) {
     if (invalid.code === 'unknown_activity_module') stats.unknownActivityModules += 1;
     else stats.unsupportedToolParameters += 1;
     pushIssue({
@@ -648,7 +649,7 @@ export function lintCourse(course, options = {}) {
       pushIssue({
         level: 'error',
         code: 'phase_task_in_role_file',
-        message: `阶段任务写在角色文件里不会被解析：${text}（应移到 phases.md 的对应 Phase 下）`,
+        message: `阶段任务写在角色文件里不会被解析：${text}（应移到课程阶段编排的对应 Phase 下）`,
         roleId: role.id,
         line,
       });

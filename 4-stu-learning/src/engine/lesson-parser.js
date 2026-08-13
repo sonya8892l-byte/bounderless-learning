@@ -8,6 +8,7 @@ import {
 } from './task-finalization.js';
 import { resolveToolDefaults } from './tool-defaults.js';
 import { resolveActivityTools } from './tool-registry.js';
+import { materializeCourseDocuments } from './course-documents.js';
 
 function clean(value = '') {
   const result = value.trim();
@@ -132,6 +133,10 @@ function headingTitle(markdown) {
 
 function blockquote(markdown) {
   return clean(markdown.match(/^>\s*(.+)$/m)?.[1] || '');
+}
+
+function leadingBlockquote(markdown) {
+  return blockquote(String(markdown || '').split(/^##\s+/m)[0] || '');
 }
 
 function parseListValue(value = '') {
@@ -596,7 +601,8 @@ function resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning) 
 }
 
 export function parseLesson(source, { platformDefaults = null, onWarning = null } = {}) {
-  const courseMarkdown = source.files['course.md'];
+  const files = materializeCourseDocuments(source.files);
+  const courseMarkdown = files['course.md'];
   const taskDefaults = resolveCourseTaskDefaults(courseMarkdown, platformDefaults, onWarning);
   const toolOverrides = courseOverrideSection(courseMarkdown, '工具默认');
   const { toolDefaults, warnings: toolWarnings } = resolveToolDefaults(
@@ -610,7 +616,7 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
   const learningView = parseKeyValues(courseMarkdown, '## 学习视图');
   const visualAssets = parseKeyValues(courseMarkdown, '## 学生端视觉素材');
   const assetBase = source.assetBase;
-  const roleFiles = Object.entries(source.files)
+  const roleFiles = Object.entries(files)
     .filter(([path]) => path.startsWith('roles/') && path.endsWith('.md'));
   const roles = roleFiles
     .map(([path, markdown], index) => parseRole(
@@ -631,7 +637,7 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
   return {
     id: source.id,
     title: headingTitle(courseMarkdown),
-    subtitle: blockquote(courseMarkdown),
+    subtitle: leadingBlockquote(courseMarkdown),
     series: courseInfo['系列'] || '',
     seriesCode: courseInfo['系列代码'] || '',
     themeTemplate: requiredField(courseInfo['主题模板'], 'course.md / 基本信息 / 主题模板'),
@@ -647,7 +653,7 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
       ? clean(courseInfo['遍历模式']).toLowerCase()
       : 'sequential',
     coreQuestion: clean(sectionAfter(courseMarkdown, '## 核心问题').split('\n').find(Boolean) || ''),
-    phases: parsePhases(source.files['phases.md'], {
+    phases: parsePhases(files['phases.md'], {
       assetBase, defaults: taskDefaults, toolDefaults, onWarning,
     }),
     roleSystem: {
@@ -670,7 +676,7 @@ export function parseLesson(source, { platformDefaults = null, onWarning = null 
       ),
     },
     roles,
-    timeBank: parseTimeBank(source.files['time-bank.md']),
+    timeBank: parseTimeBank(files['time-bank.md']),
     assets: {
       cover: resolveAssetPath(assetBase, visualAssets['课程封面'], 'backgrounds/cover.png'),
       chat: resolveAssetPath(assetBase, visualAssets['对话背景'], 'backgrounds/chat-bg.png'),

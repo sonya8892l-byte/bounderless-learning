@@ -47,7 +47,7 @@
 - 功能模块：A03(评估框架)
 - 工具参数：{"builder":{"mode":"evaluation_framework","prompt":"为风险、建筑使用、成本、执行定义指标、单位、时间和来源。","minimumItems":4,"categories":["鸟类风险","建筑使用","成本维护","执行管理"]}}
 - 知识引用：K-02, K-19
-- 限制引用：restrictions.md#风险点位
+- 限制引用：course.md#课程限制规则/风险点位
 - 常见误区：用“更环保”作为不可测结果
 - 最大尝试：3
 - 失败处理：补单位、期限和观察办法
@@ -68,7 +68,7 @@
 - 功能模块：A01(参数账本)
 - 工具参数：{"text":{"fields":[{"id":"assumptions","label":"成本效果参数与假设账本","type":"long_text","required":true,"minLength":180}]}}
 - 知识引用：K-19, K-22
-- 限制引用：restrictions.md#AI代替研究
+- 限制引用：course.md#课程限制规则/AI代替研究
 - 常见误区：把网络估价当本校实际成本
 - 最大尝试：3
 - 失败处理：将无可靠来源数值改为区间或待核
@@ -111,7 +111,7 @@
 - 功能模块：A04(成本效果模拟)
 - 工具参数：{"simulation":{"mode":"cost_effectiveness","prompt":"比较基础、重点、强化三种组合；所有参数标来源或课程假设。","minimumItems":3,"dimensions":["覆盖","风险变化","初始成本","维护成本","执行负担"]}}
 - 知识引用：K-19, K-20
-- 限制引用：restrictions.md#规则模板
+- 限制引用：course.md#课程限制规则/规则模板
 - 常见误区：使用伪精确数字掩盖假设
 - 最大尝试：3
 - 失败处理：改用范围并显示参数来源
@@ -132,7 +132,7 @@
 - 功能模块：A04(敏感性模拟), A01(影响记录)
 - 工具参数：{"simulation":{"mode":"sensitivity","prompt":"分别改变预算、预期效果或维护负担，观察排序是否改变。","variables":["预算","风险变化","维护负担"]},"text":{"fields":[{"id":"equity","label":"相关者影响、例外与调整","type":"long_text","required":true,"minLength":100}]}}
 - 知识引用：K-16, K-19
-- 限制引用：restrictions.md#规则模板
+- 限制引用：course.md#课程限制规则/规则模板
 - 常见误区：只变数字，不重新解释选择
 - 最大尝试：3
 - 失败处理：追问哪条规则依赖被改变的参数
@@ -175,7 +175,7 @@
 - 功能模块：A01(影响评估报告)
 - 工具参数：{"text":{"fields":[{"id":"impact-report","label":"影响评估报告","type":"long_text","required":true,"minLength":350},{"id":"uncertainty","label":"不确定性与复核触发","type":"long_text","required":true,"minLength":80}]}}
 - 知识引用：K-19, K-20
-- 限制引用：restrictions.md#AI代替研究
+- 限制引用：course.md#课程限制规则/AI代替研究
 - 常见误区：把模拟结果写成实际成效
 - 最大尝试：3
 - 失败处理：将“将减少”改为带条件的“模型估计/课程假设”
@@ -196,7 +196,7 @@
 - 功能模块：A05(听证)
 - 工具参数：{"team":{"mode":"hearing","prompt":"分别从预算可行性和成本公平性提出质询。","minimumEntries":2,"recordTypes":["预算质询","公平性质询"],"requiredRecordTypes":["预算质询","公平性质询"]}}
 - 知识引用：K-19, K-21
-- 限制引用：restrictions.md#规则效力
+- 限制引用：course.md#课程限制规则/规则效力
 - 常见误区：用“保护最重要”回避实施条件
 - 最大尝试：2
 - 失败处理：回到参数、受影响群体和替代方案

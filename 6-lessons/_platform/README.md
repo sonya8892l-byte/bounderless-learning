@@ -73,7 +73,7 @@
 3. `lesson_xxx/course.md` → 人设侧重与课程元数据
 4. `lesson_xxx/prompts/phaseN.md` → 当前阶段提示词（阶段氛围与全班节奏）
 5. 当前任务单元的**就地引导与脚手架**（v2 起写在 `roles/<role>.md` 内）
-6. `lesson_xxx/restrictions.md` → 命中的最小限制片段
+6. `lesson_xxx/course.md / ## 课程限制规则` → 命中的最小限制片段
 
 ## 运行边界
 

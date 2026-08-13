@@ -67,7 +67,7 @@ const ACTIVE_FIELD_CONSUMERS = Object.freeze({
   }],
   常见误区: [{ file: '4-stu-learning/server/agent/prompt.js', contains: ['currentStep?.commonMisconception'] }],
   前置: [{ file: '4-stu-learning/server/agent/task-advance.js', contains: ['node.prerequisites'] }],
-  '### 阶段任务N': [{
+  '#### 阶段任务N': [{
     file: '4-stu-learning/src/engine/entry-phase.js',
     contains: ['phases.slice(0, rolePhaseIndex + 1)', 'phase.tasks.length > 0'],
   }],

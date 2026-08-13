@@ -11,9 +11,7 @@
 - 角色卡图：assets/roles/role-card-slope-surveyor.png
 - 角色徽章图：assets/roles/badge-slope-surveyor.png
 - 收集物：I
-- 密符奖励：字母 I（因）
 - 收集物图：assets/tokens/mifu-I.png
-- 关键数据：北高南低约2m落差，整体坡度约2%
 
 ## 任务列表
 
@@ -36,7 +34,6 @@
 - 通过条件：拍照完成 + 描述观察到的高差线索
 - 目标关联：K4(坡度与排水), S2(坡度与流向判断)
 - 能力标签：DK-04, DS-02
-- AI引导方向：引导注意台阶数量差异、排水沟方向、积水痕迹位置
 
 ##### 引导
 **引导目标**
@@ -69,7 +66,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"prompt":"请安全拍摄。分别记录可能的高点和低点，并保留台阶、墙根或沟渠等固定参照。","minCount":2,"maxCount":3,"accept":"image/*"}}
 - 知识引用：K-05
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：只凭远近或拍摄俯仰角判断高低，没有固定参照
 - 最大尝试：3
 - 失败处理：只指出当前画面缺少固定参照，并请学生任选一种可见参照补拍
@@ -99,7 +96,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"prompt":"请安全拍摄。补拍第三个位置，尽量保持与前两张相近的拍摄高度和方向。","minCount":1,"maxCount":2,"accept":"image/*"}}
 - 知识引用：K-05
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：第三张照片改变了相机高度或朝向，无法与前两张对照
 - 最大尝试：3
 - 失败处理：说明当前照片与原照片在高度或方向上的差异，请学生只调整构图补拍
@@ -128,7 +125,7 @@
 - 功能模块：A01(画板标注), A01(文字)
 - 工具参数：{"sketch":{"prompt":"在图上标出高点、低点和你判断的水流方向。","width":720,"height":520,"backgroundImage":"assets/maps/drainage-profile.png","brushColors":["#b42318","#2563eb","#1f2937"]},"text":{"fields":[{"id":"clue","label":"流向判断依据","type":"long_text","placeholder":"写明对应哪张照片和哪一种高差线索","required":true,"minLength":25}]}}
 - 知识引用：K-05
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：直接写出结论，却没有把方向箭头与现场照片对应
 - 最大尝试：3
 - 失败处理：只指出缺少高点、低点、箭头或照片依据中的哪一项，请学生补标
@@ -170,7 +167,6 @@
 - 通过条件：正确判断坡度方向（北高南低）+ 给出估算值
 - 目标关联：K4(坡度与排水), S2(坡度判断), S1(估算), C1(证据意识)
 - 能力标签：DK-04, DS-02, DS-01, DC-01
-- AI引导方向：从"看起来平"到"其实在倾斜"的认知转变
 
 ##### 引导
 **引导目标**
@@ -203,7 +199,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"high-point","label":"高点位置特征","type":"long_text","required":true,"minLength":15},{"id":"low-point","label":"低点位置特征","type":"long_text","required":true,"minLength":15},{"id":"why","label":"区间选择与安全说明","type":"long_text","required":true,"minLength":20}]}}
 - 知识引用：K-05
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：选择的两个点无法互相参照，或需要穿越非开放区域
 - 最大尝试：3
 - 失败处理：只指出区间或参照中的首要问题，并给出下一步修改动作
@@ -233,7 +229,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"height-difference","label":"估测高差（米）","type":"number","required":true},{"id":"horizontal-distance","label":"估测水平距离（米）","type":"number","required":true},{"id":"method","label":"步测或目测过程","type":"long_text","placeholder":"记录步数、步长换算或参照物","required":true,"minLength":30}]}}
 - 知识引用：K-05, K-06
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：只填两个数字，没有单位和测量过程
 - 最大尝试：3
 - 失败处理：指出缺少数值、单位或换算过程中的哪一项，保留已有记录后补填
@@ -264,7 +260,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"slope","label":"计算坡度（%）","type":"number","required":true},{"id":"direction","label":"水流方向判断","type":"short_text","required":true,"placeholder":"从哪个观察点流向哪个观察点"},{"id":"calculation","label":"计算过程","type":"long_text","required":true,"minLength":20},{"id":"uncertainty","label":"一项不确定性","type":"long_text","required":true,"minLength":15}]}}
 - 知识引用：K-05, K-06, K-07
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：把高差直接当作坡度，或计算方向与自己选定的高低点相反
 - 最大尝试：3
 - 失败处理：指出算式中首个无法复算的步骤，请学生从该步修改，不给参考值
@@ -303,7 +299,6 @@
 - 通过条件：示意图标注正确的流向 + 文字解释逻辑通顺
 - 目标关联：K2(设计归纳), C2(系统思维), S2(坡度判断)
 - 能力标签：DK-02, DC-02, DS-02
-- AI引导方向：连接“坡度”和“水的自然流向”，请学生自行归纳并命名设计思路
 
 ##### 引导
 **引导目标**
@@ -335,7 +330,7 @@
 - 功能模块：A01(画板标注)
 - 工具参数：{"sketch":{"prompt":"先标高点、低点和两处排水设施，再在旁边写对应照片编号。","width":720,"height":520,"backgroundImage":"assets/maps/drainage-profile.png","brushColors":["#b42318","#2563eb","#1f2937"]}}
 - 知识引用：K-05, K-06
-- 限制引用：restrictions.md#系统全景限制
+- 限制引用：course.md#课程限制规则/系统全景限制
 - 常见误区：把设施画在图上，却没有说明它来自哪张现场证据
 - 最大尝试：3
 - 失败处理：只指出缺少高点、低点、设施或照片编号中的哪一类
@@ -366,7 +361,7 @@
 - 功能模块：A01(画板标注)
 - 工具参数：{"sketch":{"prompt":"用实线画现场能够支持的水路，用虚线或“待核”标出推测连接。","width":720,"height":520,"backgroundImage":"assets/maps/drainage-profile.png","brushColors":["#2563eb","#64748b","#1f2937"]}}
 - 知识引用：K-05, K-06, K-07
-- 限制引用：restrictions.md#系统全景限制
+- 限制引用：course.md#课程限制规则/系统全景限制
 - 常见误区：为了让线路完整而把未观察到的连接画成确定事实
 - 最大尝试：3
 - 失败处理：指出首条缺乏证据的箭头，请学生补证或改标为“待核”
@@ -397,7 +392,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"explanation","label":"坡度与排水解释","type":"long_text","placeholder":"结合你的测量、照片和示意图说明","required":true,"minLength":60,"maxLength":300}]}}
 - 知识引用：K-05, K-06, K-07, K-18
-- 限制引用：restrictions.md#系统全景限制
+- 限制引用：course.md#课程限制规则/系统全景限制
 - 常见误区：只说“水往低处流”，没有解释现场坡度、设施和证据之间的关系
 - 最大尝试：3
 - 失败处理：指出解释中缺少高差、设施、证据或边界中的哪一项，请学生定向补充
@@ -418,11 +413,3 @@
 - S2 坡度判断 — 独立设计方案+正确判断方向
 - C2 系统思维 — 能从局部到整体还原系统
 - C4 科学精神 — 带边界的结论+承认不确定性
-
-## Phase 3 行为
-- 向小组贡献：坡度数据 + 水流方向图
-- 拼合贡献：水系图中"地势驱动→水流方向"的基础层
-- 需要其他角色：寻沟官的沟渠走向（验证水流终点）
-
-## Phase 4 璇玑参数
-- 负责设置：地形坡度参数（影响水流速度和方向）

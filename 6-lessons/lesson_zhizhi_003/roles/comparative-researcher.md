@@ -47,7 +47,7 @@
 - 功能模块：A01(来源登记)
 - 工具参数：{"text":{"fields":[{"id":"toronto","label":"多伦多官方来源","type":"long_text","required":true},{"id":"new-york","label":"纽约官方来源","type":"long_text","required":true},{"id":"san-francisco","label":"旧金山官方来源","type":"long_text","required":true},{"id":"access","label":"访问日期","type":"short_text","required":true}]}}
 - 知识引用：K-12, K-13, K-14
-- 限制引用：restrictions.md#域外结论
+- 限制引用：course.md#课程限制规则/域外结论
 - 常见误区：搜索摘要或媒体报道作为唯一来源
 - 最大尝试：3
 - 失败处理：要求回到制定或执行机构页面
@@ -68,7 +68,7 @@
 - 功能模块：A03(比较框架)
 - 工具参数：{"builder":{"mode":"comparison_schema","prompt":"设置规范层级、适用对象、风险触发、玻璃措施、照明措施、例外替代、审查执行七列。","minimumItems":7},"text":{"fields":[{"id":"translation","label":"翻译与双人复核规则","type":"long_text","required":true,"minLength":60}]}}
 - 知识引用：K-15, K-22
-- 限制引用：restrictions.md#域外结论
+- 限制引用：course.md#课程限制规则/域外结论
 - 常见误区：三座城市各摘自己觉得有趣的内容
 - 最大尝试：2
 - 失败处理：要求所有城市回答同一组问题
@@ -111,7 +111,7 @@
 - 功能模块：A01(原文摘录卡)
 - 工具参数：{"text":{"fields":[{"id":"extracts","label":"三城原文摘录、位置与译文","type":"long_text","required":true,"minLength":450},{"id":"reviewer","label":"第二复核人","type":"short_text","required":true}]}}
 - 知识引用：K-12, K-13, K-14
-- 限制引用：restrictions.md#域外结论
+- 限制引用：course.md#课程限制规则/域外结论
 - 常见误区：摘录脱离适用条件
 - 最大尝试：3
 - 失败处理：要求把前后适用对象或例外一并记录
@@ -132,7 +132,7 @@
 - 功能模块：A03(比较法矩阵)
 - 工具参数：{"builder":{"mode":"comparison_matrix","prompt":"三城按七项同列比较，空白须写未找到、不适用或待核。","minimumItems":21},"text":{"fields":[{"id":"analysis","label":"异同、原因假设与不可比说明","type":"long_text","required":true,"minLength":180}]}}
 - 知识引用：K-15
-- 限制引用：restrictions.md#域外结论
+- 限制引用：course.md#课程限制规则/域外结论
 - 常见误区：用措施数量评价城市优劣
 - 最大尝试：3
 - 失败处理：把价值判断改为字段差异与制度情境
@@ -175,7 +175,7 @@
 - 功能模块：A03(可借鉴性矩阵)
 - 工具参数：{"builder":{"mode":"transfer_matrix","prompt":"对3项做法回答本地问题、主体权限、实施条件、试点例外。","minimumItems":12}}
 - 知识引用：K-16, K-19
-- 限制引用：restrictions.md#法律效力
+- 限制引用：course.md#课程限制规则/法律效力
 - 常见误区：只写“值得借鉴”
 - 最大尝试：3
 - 失败处理：提示补本地责任主体和资源条件
@@ -196,7 +196,7 @@
 - 功能模块：A01(比较报告), A05(团队复核)
 - 工具参数：{"text":{"fields":[{"id":"report","label":"三城比较与可借鉴性报告","type":"long_text","required":true,"minLength":350}]},"team":{"mode":"review","prompt":"中国规范研究员与影响评估员核对权限和实施条件。","minimumEntries":2,"roles":["中国规范研究员","影响评估员"]}}
 - 知识引用：K-15, K-16, K-22
-- 限制引用：restrictions.md#法律与公共表达
+- 限制引用：course.md#课程限制规则/法律与公共表达
 - 常见误区：把比较报告写成城市排名
 - 最大尝试：2
 - 失败处理：删去无依据排名，恢复制度情境

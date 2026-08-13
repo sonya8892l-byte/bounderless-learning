@@ -35,6 +35,9 @@ export const KNOWN_COURSE_SECTIONS = Object.freeze([
   '学生端角色体系',
   '学习视图',
   '学生端视觉素材',
+  '课程目标体系',
+  '阶段编排',
+  '课程限制规则',
   '人设侧重',
   '话术覆盖',
   '脚手架',
@@ -44,23 +47,6 @@ export const KNOWN_COURSE_SECTIONS = Object.freeze([
   '工具缺省',
   '数值默认',
   '数值缺省',
-]);
-
-/**
- * 课程总览里允许保留的教研说明。它们进入课程内容指纹，供课程作者与审核者阅读，
- * 但 parser/compiler 不把正文解释成运行时配置；真正的运行约束仍写入 restrictions、
- * Phase Prompt 或 Step。按标题显式列出，避免任意未知章节被静默接受。
- */
-export const AUTHORING_ONLY_COURSE_SECTIONS = Object.freeze([
-  '叙事框架',
-  '密符机制',
-  '默认物种池',
-  '信息边界',
-  '调查边界',
-  '默认议题与成果',
-  '研究与效力边界',
-  '五层战图机制',
-  '史料边界',
 ]);
 
 const UNSAFE_ACTION_PATTERNS = Object.freeze([
@@ -93,8 +79,9 @@ function roleFile(courseId, roleId) {
   return `6-lessons/${courseId}/roles/${roleId}.md`;
 }
 
-function phasesFile(courseId) {
-  return `6-lessons/${courseId}/phases.md`;
+function phasesFile(courseId, course = null) {
+  const source = course?.documentSources?.['phases.md']?.sourceFile || 'phases.md';
+  return `6-lessons/${courseId}/${source}`;
 }
 
 function findLine(markdown = '', needle = '') {
@@ -366,10 +353,7 @@ export function auditCourseQuality(course, options = {}) {
     issues.push(issueBase(courseId, { line: 1, ...fields }));
   };
 
-  const knownSections = new Set([
-    ...KNOWN_COURSE_SECTIONS,
-    ...AUTHORING_ONLY_COURSE_SECTIONS,
-  ]);
+  const knownSections = new Set(KNOWN_COURSE_SECTIONS);
   for (const match of courseMarkdown.matchAll(/^##\s+(.+?)\s*$/gm)) {
     const title = clean(match[1]);
     if (!title || knownSections.has(title)) continue;
@@ -400,7 +384,7 @@ export function auditCourseQuality(course, options = {}) {
         push({
           level: 'error',
           code: 'protected_scaffold_leak',
-          message: `学生可见引导或任务文案泄露受保护内容「${protectedLabel}」。修复：改为观察问题或证据框架，待 restrictions.md 的解除条件满足后再揭示。`,
+          message: `学生可见引导或任务文案泄露受保护内容「${protectedLabel}」。修复：改为观察问题或证据框架，待 course.md / 课程限制规则的解除条件满足后再揭示。`,
           file: sourceFile || roleFile(courseId, roleId),
           line: findLine(sourceMarkdown, leaked || clean(fragment).slice(0, 40)),
           roleId,
@@ -462,21 +446,21 @@ export function auditCourseQuality(course, options = {}) {
       ];
       auditLeak({
         roleId: '', task, step: null, sourceMarkdown: phasesMarkdown,
-        sourceFile: phasesFile(courseId), refs: taskRefs,
+        sourceFile: phasesFile(courseId, course), refs: taskRefs,
       });
       auditUnsafe({
         roleId: '', task, step: null, sourceMarkdown: phasesMarkdown,
-        sourceFile: phasesFile(courseId),
+        sourceFile: phasesFile(courseId, course),
       });
       for (const step of task.steps || []) {
         auditLeak({
           roleId: '', task, step, sourceMarkdown: phasesMarkdown,
-          sourceFile: phasesFile(courseId),
+          sourceFile: phasesFile(courseId, course),
           refs: [step.restrictionRef || task.restrictionRef],
         });
         auditUnsafe({
           roleId: '', task, step, sourceMarkdown: phasesMarkdown,
-          sourceFile: phasesFile(courseId),
+          sourceFile: phasesFile(courseId, course),
         });
       }
     }
@@ -543,10 +527,7 @@ export function auditCourseQuality(course, options = {}) {
 
   const capabilitySources = [
     ...promptEntries,
-    { phaseId: '', file: phasesFile(courseId), markdown: phasesMarkdown },
-    // course.md 的 authoring-only 章节是教研意图，不承诺运行时能力；对应正文已经由
-    // AUTHORING_ONLY_COURSE_SECTIONS 白名单和显式“教研说明”边界约束。
-    // 运行时课程字段中的陈旧能力仍由 parser/compiler 与其字段 lint 负责。
+    { phaseId: '', file: phasesFile(courseId, course), markdown: phasesMarkdown },
   ];
   for (const entry of capabilitySources) {
     for (const pattern of STALE_CAPABILITY_PATTERNS) {
@@ -568,7 +549,7 @@ export function auditCourseQuality(course, options = {}) {
 
   const narrativeSources = [
     ...promptEntries,
-    { phaseId: '', file: phasesFile(courseId), markdown: phasesMarkdown },
+    { phaseId: '', file: phasesFile(courseId, course), markdown: phasesMarkdown },
   ];
   for (const source of narrativeSources) {
     for (const mention of idleMentions(source.markdown)) {

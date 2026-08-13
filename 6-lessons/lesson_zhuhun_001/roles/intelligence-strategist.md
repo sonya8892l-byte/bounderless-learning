@@ -12,7 +12,6 @@
 - 角色徽章图：assets/roles/badge-intelligence-strategist.png
 - 收集物：情报层
 - 收集物图：assets/tokens/layer-intelligence.png
-- 关键数据：情报来源、可靠度、时效和敌我判断差共同影响行动窗口
 
 ## 任务列表
 
@@ -36,7 +35,6 @@
 - 通过条件：至少2张有效照片 + 1条展项来源 + 至少3项信息字段；无法确认的字段标记“未知”
 - 目标关联：K4(情报与信息差), S3(史料实证), C3(证据边界)
 - 能力标签：DK-04, DS-03, DC-03
-- AI引导方向：提醒学生从展项说明读取信息，不依据照片模糊字迹补写内容
 
 ##### 引导
 **引导目标**
@@ -71,7 +69,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"minCount":2,"maxCount":4,"accept":"image/*","recognition":"message-source-fields","prompt":"先拍展项全景，再拍说明文字局部；文字模糊时换角度，不要凭印象补写。"}}
 - 知识引用：K-13
-- 限制引用：restrictions.md#史料与表达限制
+- 限制引用：course.md#课程限制规则/史料与表达限制
 - 常见误区：只拍电台或物件外观，没有保留展项标题和信息来源
 - 最大尝试：3
 - 失败处理：指出缺少全景或文字局部中的哪一张，请学生只补拍缺失照片
@@ -94,7 +92,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"sender","label":"发送者","type":"short_text","required":true,"placeholder":"无法确认时填“未知”"},{"id":"receiver","label":"接收者","type":"short_text","required":true,"placeholder":"无法确认时填“未知”"},{"id":"time","label":"时间","type":"short_text","required":true,"placeholder":"按展项原文记录；未知可保留"},{"id":"content","label":"能够确认的信息内容","type":"long_text","required":true,"placeholder":"只转述清晰可见的内容"},{"id":"source","label":"展项标题或来源","type":"short_text","required":true,"placeholder":"填写展项标题、照片编号或说明牌"}]}}
 - 知识引用：K-13
-- 限制引用：restrictions.md#史料与表达限制
+- 限制引用：course.md#课程限制规则/史料与表达限制
 - 常见误区：把OCR候选文字、个人猜测或现代网络摘要当作电文原文
 - 最大尝试：3
 - 失败处理：标出缺少来源或越界补写的字段，让学生对照照片改为转述或“未知”
@@ -117,7 +115,7 @@
 - 功能模块：A02(单选答题)
 - 工具参数：{"quiz":{"type":"single_choice","question":"照片中有一处字迹模糊，哪种记录方式符合本课证据规则？","options":["按上下文补出最可能的原句","写“该字段未知”，并保留照片编号供复核","请AI生成一条意思接近的电文原文"],"answer":"写“该字段未知”，并保留照片编号供复核","explanation":"无法确认的史料字段需要保留为空白或未知，不能由AI或学生补造成原文。","retryMessage":"回想任务要求：看不清的字段可以保留“未知”，并留下可复核的来源。"}}
 - 知识引用：K-13, K-21
-- 限制引用：restrictions.md#史料与表达限制
+- 限制引用：course.md#课程限制规则/史料与表达限制
 - 常见误区：认为记录“未知”意味着任务没有完成
 - 最大尝试：2
 - 失败处理：提示学生比较“可复核记录”和“无法追溯补写”的差异后重选
@@ -149,7 +147,6 @@
 - 通过条件：四个象限均有记录 + 至少5条信息卡 + 每条含来源和可靠度
 - 目标关联：K4(情报与信息差), S4(信息不对称分析), C2(战略思维)
 - 能力标签：DK-04, DS-04, DC-02
-- AI引导方向：区分“敌方确实知道”和“我们推测敌方知道”，发现越界断言时要求降低可靠度或补证据
 
 ##### 引导
 **引导目标**
@@ -184,7 +181,7 @@
 - 功能模块：A03(分类搭建)
 - 工具参数：{"builder":{"mode":"evidence-wall","prompt":"把来自任务1的字段卡与一个行动信号卡放入四象限；分类依据是当时各方能否获得信息。","items":[{"id":"sender-card","label":"任务1·发送者字段"},{"id":"receiver-card","label":"任务1·接收者字段"},{"id":"time-card","label":"任务1·时间字段"},{"id":"content-card","label":"任务1·内容字段"},{"id":"signal-card","label":"展项中可被观察的行动信号"}],"zones":[{"id":"ours","label":"我方已知"},{"id":"enemy-maybe","label":"敌方可能已知"},{"id":"unknown","label":"双方未知"},{"id":"misread","label":"敌方可能误判"}],"bindings":{"sender-card":{"taskId":"task-1","stepId":"intel-confirm-fields","toolId":"text","fieldId":"sender","prefix":"发送者："},"receiver-card":{"taskId":"task-1","stepId":"intel-confirm-fields","toolId":"text","fieldId":"receiver","prefix":"接收者："},"time-card":{"taskId":"task-1","stepId":"intel-confirm-fields","toolId":"text","fieldId":"time","prefix":"时间："},"content-card":{"taskId":"task-1","stepId":"intel-confirm-fields","toolId":"text","fieldId":"content","prefix":"内容："}},"zoneMinimums":{"ours":1,"enemy-maybe":1,"unknown":1,"misread":1}}}
 - 知识引用：K-13, K-14
-- 限制引用：restrictions.md#跨角色隔离
+- 限制引用：course.md#课程限制规则/跨角色隔离
 - 常见误区：看到一条信息对己方重要，就默认敌方也已经知道
 - 最大尝试：3
 - 失败处理：提醒学生先问“哪一方通过什么渠道能得到它”，再移动一张最有争议的卡
@@ -207,7 +204,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"sender-rating","label":"发送者字段：可靠度与理由","type":"short_text","required":true,"placeholder":"高/中/低 + 照片或来源"},{"id":"receiver-rating","label":"接收者字段：可靠度与理由","type":"short_text","required":true},{"id":"time-rating","label":"时间字段：可靠度与理由","type":"short_text","required":true},{"id":"content-rating","label":"内容字段：可靠度与理由","type":"short_text","required":true},{"id":"signal-rating","label":"行动信号：可靠度与理由","type":"short_text","required":true},{"id":"verification-method","label":"一条低可靠度信息的核验办法","type":"long_text","required":true,"placeholder":"回看展项、寻找独立来源或请教师核验"}]}}
 - 知识引用：K-13, K-14
-- 限制引用：restrictions.md#史料与表达限制
+- 限制引用：course.md#课程限制规则/史料与表达限制
 - 常见误区：把重复出现的同一转述当作多个独立来源，从而全部评为高可靠度
 - 最大尝试：3
 - 失败处理：絮絮只指出缺少来源、可靠度或核验办法的一项，请学生补齐
@@ -231,7 +228,7 @@
 - 功能模块：A02(单选答题)
 - 工具参数：{"quiz":{"type":"single_choice","question":"只有一条行动信号证据时，怎样记录敌方是否已经知道？","options":["敌方一定已经知道，并会按我们预想行动","根据这条信号，敌方可能知道；还需说明观察渠道和其他解释","只要我方看得到，敌方就必然看得到"],"answer":"根据这条信号，敌方可能知道；还需说明观察渠道和其他解释","explanation":"敌方认知通常属于推测，需要说明渠道、可靠度和替代解释。","retryMessage":"注意“敌方已知”需要证据；当前更合适的是保留“可能”与其他解释。"}}
 - 知识引用：K-14
-- 限制引用：restrictions.md#跨角色隔离
+- 限制引用：course.md#课程限制规则/跨角色隔离
 - 常见误区：把“可能观察到信号”写成“必然形成某种判断”
 - 最大尝试：2
 - 失败处理：请学生回看四象限中“敌方可能已知”的措辞后重选
@@ -264,7 +261,6 @@
 - 通过条件：提交2种敌方判断 + 每种至少1条依据 + 1项利用窗口 + 1项失败风险
 - 目标关联：K4(情报与信息差), K6(虚实行动链), S5(决策矩阵), C2(战略思维)
 - 能力标签：DK-04, DK-06, DS-05, DC-02
-- AI引导方向：帮助学生形成多种解释，避免把敌方反应写成必然结果
 
 ##### 引导
 **引导目标**
@@ -299,7 +295,7 @@
 - 功能模块：A02(单选答题)
 - 工具参数：{"quiz":{"type":"single_choice","question":"选择一个准备测试的行动信号：","options":["公开可观察的行军方向","渡口附近出现的行动迹象","可能被截获或转述的通信线索"],"answer":null,"explanation":"三种信号都可以进入推演，重点是说明观察渠道和不确定性。"}}
 - 知识引用：K-14, K-15
-- 限制引用：restrictions.md#三四渡虚实关系
+- 限制引用：course.md#课程限制规则/三四渡虚实关系
 - 常见误区：选择与当前证据无关的信号，或直接写出尚未解锁的完整行动链
 - 最大尝试：2
 - 失败处理：提示学生从任务1、任务2已有证据中选择最接近的一类信号
@@ -322,7 +318,7 @@
 - 功能模块：A04(沙盘推演)
 - 工具参数：{"simulation":{"rounds":2,"allowRepeat":false,"prompt":"运行两个不同的敌方反应分支，比较窗口和不确定性。","roundPrompts":["第1轮：选择敌方对信号的一种初始判断。","第2轮：改选另一种反应，检查原判断失效时会发生什么。"],"resources":{"证据卡":5,"时间窗口":"待判断"},"choices":[{"id":"believe","label":"敌方相信信号并调整部署","publicFeedback":"可能形成短暂窗口；需要继续检查信号能否被观察和窗口持续多久。","effects":{"window":2,"exposure":1}},{"id":"doubt","label":"敌方怀疑信号并保留兵力","publicFeedback":"窗口可能缩小；需要准备替代方案并寻找新情报。","effects":{"window":-1,"exposure":1}},{"id":"other","label":"敌方形成另一种解释","publicFeedback":"原有预测失效；请说明还可能出现什么解释。","effects":{"window":0,"uncertainty":2}}],"metrics":[{"id":"window","label":"可利用窗口","initial":0,"initialLabel":"待判断"},{"id":"uncertainty","label":"不确定性","initial":0,"initialLabel":"待判断"},{"id":"exposure","label":"信号暴露","initial":0,"initialLabel":"待判断"}]}}
 - 知识引用：K-15
-- 限制引用：restrictions.md#三四渡虚实关系
+- 限制引用：course.md#课程限制规则/三四渡虚实关系
 - 常见误区：两轮都选择同一反应，或把模拟反馈当作敌方真实行动
 - 最大尝试：3
 - 失败处理：提醒学生第二轮必须选择与第一轮不同的反应，并保留失败可能
@@ -346,7 +342,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"basis-a","label":"判断A及依据","type":"long_text","required":true,"placeholder":"如果敌方相信……依据是……"},{"id":"basis-b","label":"判断B及依据","type":"long_text","required":true,"placeholder":"如果敌方怀疑或另作判断……依据是……"},{"id":"window","label":"我方可能利用的窗口","type":"long_text","required":true},{"id":"risk","label":"判断失败风险","type":"long_text","required":true},{"id":"invalidate","label":"哪条新信息会使判断失效","type":"short_text","required":true}]}}
 - 知识引用：K-13, K-15
-- 限制引用：restrictions.md#三四渡虚实关系
+- 限制引用：course.md#课程限制规则/三四渡虚实关系
 - 常见误区：只写成功窗口，不记录信号未被相信或被识破的失败风险
 - 最大尝试：3
 - 失败处理：絮絮只提示缺少的分支、窗口或风险字段，不补写历史行动结论
@@ -358,11 +354,3 @@
 - S4 信息差分析 — 能指出至少一个敌我判断不对称及其行动影响
 - S5 决策矩阵 — 同时比较目标、收益、风险、信息可靠度和可逆性
 - C2 战略思维 — 能区分局部战斗和整体脱困目标，并预测二阶反应
-
-## Phase 3 行为
-- 向小组贡献：情报四象限、可靠度和敌方可能反应
-- 拼合贡献：五层战图中的“情报层”
-- 需要其他角色：地图参谋提供空间位置，示形参谋提供可被观察的行动信号
-
-## Phase 4 璇玑参数
-- 负责说明：命令经过层级传递后，基层个体实际得到的信息如何缩减

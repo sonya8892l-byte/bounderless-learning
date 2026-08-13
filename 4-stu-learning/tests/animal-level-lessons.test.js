@@ -49,9 +49,11 @@ function referencedKnowledgeIds(files) {
 
 function assertDocumentReference(course, reference, field) {
   for (const raw of String(reference || '').split(/[,，]/).map((value) => value.trim()).filter(Boolean)) {
+    const canonicalRestriction = raw.match(/^course\.md#课程限制规则\/(.+)$/);
     const match = raw.match(/^((?:guidance|scaffolds)\/[^#]+\.md|restrictions\.md|evaluation\.md)#(.+)$/);
-    assert.ok(match, `${course.id} 的 ${field} 引用格式无效：${raw}`);
-    const [, filename, anchor] = match;
+    const filename = canonicalRestriction ? 'restrictions.md' : match?.[1];
+    const anchor = canonicalRestriction?.[1] || match?.[2];
+    assert.ok(canonicalRestriction || match, `${course.id} 的 ${field} 引用格式无效：${raw}`);
     const markdown = course.files[filename];
     assert.ok(markdown, `${course.id} 缺少引用文件 ${filename}`);
     const escaped = anchor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

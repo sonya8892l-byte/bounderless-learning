@@ -242,7 +242,7 @@ test('浏览器课程包不包含课程答案和受保护值', async () => {
   ]) {
     assert.equal(source.includes(forbidden), false, `公开课程包包含 ${forbidden}`);
   }
-  assert.equal(source.includes('1935年1月遵义会议后的初始态势卡'), true, '公开课程包误删了非受保护年份背景');
+  assert.equal(source.includes('阅读教师展示的1935年1月初始态势卡'), true, '公开课程包误删了任务所需的非受保护年份背景');
 });
 
 test('结构化角色阶段小步保留稳定ID、位置和完成方式', () => {

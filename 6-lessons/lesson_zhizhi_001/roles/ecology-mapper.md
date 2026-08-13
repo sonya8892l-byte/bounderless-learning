@@ -48,7 +48,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"food","label":"食物+来源","type":"short_text","required":true},{"id":"habitat","label":"栖息地条件+来源","type":"short_text","required":true},{"id":"animal","label":"相关动物+来源/待核","type":"short_text","required":true},{"id":"human","label":"人类活动+来源/待核","type":"short_text","required":true}]}}
 - 知识引用：K-11, K-12, K-15
-- 限制引用：restrictions.md#观察优先
+- 限制引用：course.md#课程限制规则/观察优先
 - 常见误区：随意添加常识中的动物却不标来源
 - 最大尝试：3
 - 失败处理：允许节点进入待核区
@@ -70,7 +70,7 @@
 - 功能模块：A03(分类搭建), A01(文字)
 - 工具参数：{"builder":{"mode":"evidence-wall","prompt":"先分类，再允许保留待判断。","items":[{"id":"reserve","label":"建设和管理保护地"},{"id":"feeding","label":"游客投喂"},{"id":"monitor","label":"科学监测"},{"id":"road","label":"道路穿过栖息地"},{"id":"rescue","label":"专业救助"}],"zones":[{"id":"help","label":"可能帮助"},{"id":"threat","label":"可能威胁"},{"id":"depends","label":"要看条件"}],"zoneMinimums":{"help":1,"threat":1,"depends":1}},"text":{"fields":[{"id":"reason","label":"选择一张卡说明条件","type":"long_text","required":true,"minLength":20}]}}
 - 知识引用：K-15, K-16
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把所有看起来友善的行为都判为帮助
 - 最大尝试：3
 - 失败处理：追问地点、执行者和方式
@@ -114,7 +114,7 @@
 - 功能模块：A03(关系搭建)
 - 工具参数：{"builder":{"mode":"network","prompt":"把研究动物放在中心，用箭头连接四类节点；未知关系保留待核。","items":[{"id":"animal","label":"研究动物"},{"id":"food","label":"食物"},{"id":"habitat","label":"栖息地条件"},{"id":"other","label":"其他动物"},{"id":"human-help","label":"人类帮助"},{"id":"human-threat","label":"人类威胁"},{"id":"unknown","label":"待核关系"}],"zones":[{"id":"network","label":"生态关系网"},{"id":"pending","label":"待核区"}],"zoneMinimums":{"network":5,"pending":1}}}
 - 知识引用：K-11, K-12, K-13
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：箭头没有方向说明
 - 最大尝试：3
 - 失败处理：指出缺少节点、箭头或来源中的一类
@@ -136,7 +136,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"change","label":"发生什么变化","type":"short_text","required":true},{"id":"direct","label":"直接影响","type":"long_text","required":true},{"id":"next","label":"下一步影响","type":"long_text","required":true},{"id":"boundary","label":"证据或待核点","type":"short_text","required":true}]}}
 - 知识引用：K-14
-- 限制引用：restrictions.md#物种动态信息
+- 限制引用：course.md#课程限制规则/物种动态信息
 - 常见误区：用“所以它会灭绝”跳过中间过程
 - 最大尝试：3
 - 失败处理：只追问缺失的中间环节
@@ -180,7 +180,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"need","label":"基本需要","type":"short_text","required":true},{"id":"evidence","label":"证据编号","type":"short_text","required":true},{"id":"threat","label":"主要威胁","type":"short_text","required":true},{"id":"measure","label":"对应措施","type":"long_text","required":true,"minLength":20}]}}
 - 知识引用：K-12, K-16
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：措施与威胁无关
 - 最大尝试：3
 - 失败处理：追问“这项措施改变威胁链的哪一环”
@@ -201,7 +201,7 @@
 - 功能模块：A05(证据汇总)
 - 工具参数：{"team":{"mode":"evidence-merge","prompt":"共享关系图结论，同时保留待核节点。","minimumEntries":3,"roles":["生态关系员","ID设计员","议事发言人"],"recordTypes":["关系结论","待核点","需要与措施"],"requiredRecordTypes":["关系结论","待核点","需要与措施"]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：发布时删除待核节点
 - 最大尝试：2
 - 失败处理：补充一条待核说明

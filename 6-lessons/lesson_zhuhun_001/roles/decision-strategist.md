@@ -12,7 +12,6 @@
 - 角色徽章图：assets/roles/badge-decision-strategist.png
 - 收集物：决策层
 - 收集物图：assets/tokens/layer-decision.png
-- 关键数据：遵义会议与苟坝会议体现了根据实际调整决策和改进军事指挥机制的过程
 
 ## 任务列表
 
@@ -36,7 +35,6 @@
 - 通过条件：至少1张来源照片 + 2个方案条目 + 每个方案含支持与反对理由
 - 目标关联：K5(遵义与苟坝), S3(史料实证), S5(决策矩阵)
 - 能力标签：DK-05, DS-03, DS-05
-- AI引导方向：只协助整理材料中出现的意见，不提前给出会议结果或给人物贴对错标签
 
 ##### 引导
 **引导目标**
@@ -71,7 +69,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"minCount":1,"maxCount":3,"accept":"image/*","recognition":"meeting-options-source","prompt":"把会议展项与说明牌一起拍下，优先保留讨论背景和材料来源。"}}
 - 知识引用：K-16
-- 限制引用：restrictions.md#苟坝会议结论
+- 限制引用：course.md#课程限制规则/苟坝会议结论
 - 常见误区：只拍人物照片或场景复原，无法确认材料中讨论的具体问题
 - 最大尝试：3
 - 失败处理：指出照片缺少展项主体、讨论对象或来源中的哪一项，请学生补拍
@@ -94,7 +92,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"option-a","label":"方案A：中性转述","type":"long_text","required":true,"placeholder":"材料中明确出现的意见；不要添加人物原话"},{"id":"context-a","label":"方案A：提出背景","type":"short_text","required":true},{"id":"source-a","label":"方案A：来源","type":"short_text","required":true,"placeholder":"展项标题或照片编号"},{"id":"option-b","label":"方案B：中性转述","type":"long_text","required":true},{"id":"context-b","label":"方案B：提出背景","type":"short_text","required":true},{"id":"source-b","label":"方案B：来源","type":"short_text","required":true}]}}
 - 知识引用：K-16
-- 限制引用：restrictions.md#决策与结果限制, restrictions.md#史料与表达限制
+- 限制引用：course.md#课程限制规则/决策与结果限制, course.md#课程限制规则/史料与表达限制
 - 常见误区：先认定谁正确，再把材料改写成支持既定结论的直接引语
 - 最大尝试：3
 - 失败处理：标出缺少中性转述、背景或来源的方案条目，保留已有内容后补充
@@ -118,7 +116,7 @@
 - 功能模块：A02(单选答题)
 - 工具参数：{"quiz":{"type":"single_choice","question":"怎样整理两个方案，才能进入公平的风险比较？","options":["只记录多数人支持方案的优点","给每个方案分别记录支持理由、反对理由和材料来源","先看后来结果，再删除失败方案的合理理由"],"answer":"给每个方案分别记录支持理由、反对理由和材料来源","explanation":"风险比较需要对两个方案使用相同结构，并保留当时材料中的正反理由。","retryMessage":"再想想：两个方案需要接受相同维度的检查，后来结果不能替代当时证据。"}}
 - 知识引用：K-16, K-17
-- 限制引用：restrictions.md#苟坝会议结论
+- 限制引用：course.md#课程限制规则/苟坝会议结论
 - 常见误区：用支持人数代替理由质量，或删除后来没有采用的方案依据
 - 最大尝试：2
 - 失败处理：提示学生检查两个方案是否使用了同一套记录字段后重选
@@ -151,7 +149,6 @@
 - 通过条件：完成2个方案的五维比较 + 1条少数意见保护机制 + 小组提交阶段选择
 - 目标关联：K5(遵义与苟坝), S5(决策矩阵), C1(实事求是), C4(民主与担当)
 - 能力标签：DK-05, DS-05, DC-01, DC-04
-- AI引导方向：追问“如果这一判断错了，代价能否承受”，完成前不揭示史实结论
 
 ##### 引导
 **引导目标**
@@ -186,7 +183,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"a-goal","label":"方案A｜目标一致度及依据","type":"short_text","required":true,"placeholder":"高/中/低 + 依据"},{"id":"a-reliability","label":"方案A｜证据可靠度及依据","type":"short_text","required":true},{"id":"a-benefit","label":"方案A｜成功收益","type":"short_text","required":true},{"id":"a-cost","label":"方案A｜失败代价","type":"short_text","required":true},{"id":"a-reversible","label":"方案A｜可逆性","type":"short_text","required":true},{"id":"b-goal","label":"方案B｜目标一致度及依据","type":"short_text","required":true},{"id":"b-reliability","label":"方案B｜证据可靠度及依据","type":"short_text","required":true},{"id":"b-benefit","label":"方案B｜成功收益","type":"short_text","required":true},{"id":"b-cost","label":"方案B｜失败代价","type":"short_text","required":true},{"id":"b-reversible","label":"方案B｜可逆性","type":"short_text","required":true}]}}
 - 知识引用：K-13, K-17
-- 限制引用：restrictions.md#苟坝会议结论
+- 限制引用：course.md#课程限制规则/苟坝会议结论
 - 常见误区：给出分数却没有证据，或对偏爱的方案使用更宽松的标准
 - 最大尝试：3
 - 失败处理：指出缺少维度或证据依据的一个方案，请学生只补该部分
@@ -210,7 +207,7 @@
 - 功能模块：A04(沙盘推演)
 - 工具参数：{"simulation":{"rounds":2,"allowRepeat":false,"prompt":"用两个不同方案检验失败代价、调整空间和证据可靠度。","roundPrompts":["第1轮：假设一项敌情判断有误，选择应对方式。","第2轮：假设行动窗口缩短，改选另一方案继续检验。"],"resources":{"候选方案":2,"复核机会":1},"choices":[{"id":"continue-a","label":"继续方案A并设置复核点","publicFeedback":"请检查复核点出现前的失败代价是否能够承受。","effects":{"risk":1,"reversible":1}},{"id":"continue-b","label":"继续方案B并设置退出条件","publicFeedback":"请检查退出条件是否清楚，以及何时重新讨论。","effects":{"risk":1,"reversible":2}},{"id":"pause-review","label":"暂缓决定，先补充关键证据","publicFeedback":"补证据会消耗窗口；请比较延误风险与错误行动风险。","effects":{"time":-1,"reliability":2}}],"metrics":[{"id":"risk","label":"失败代价","initial":0,"initialLabel":"待评估"},{"id":"reversible","label":"调整空间","initial":0,"initialLabel":"待评估"},{"id":"time","label":"时间变化","initial":0,"initialLabel":"待评估"},{"id":"reliability","label":"证据可靠度","initial":0,"initialLabel":"待评估"}]}}
 - 知识引用：K-13, K-17
-- 限制引用：restrictions.md#苟坝会议结论
+- 限制引用：course.md#课程限制规则/苟坝会议结论
 - 常见误区：只运行有利于偏爱方案的情形，不检验前提出错或窗口消失
 - 最大尝试：3
 - 失败处理：提示第二轮更换风险情境，比较失败代价和可逆性
@@ -234,7 +231,7 @@
 - 功能模块：A05(团队投票与异议记录)
 - 工具参数：{"team":{"mode":"vote","prompt":"先记录小组选择及证据，再单独记录少数意见、复核办法和重新讨论条件；不要把课程投票写成历史事实。","minimumEntries":3,"roles":["记录人","复核人","风险提醒人"],"recordTypes":["小组选择与证据","少数意见","复核或重议条件"],"requiredRecordTypes":["小组选择与证据","少数意见","复核或重议条件"]}}
 - 知识引用：K-17
-- 限制引用：restrictions.md#苟坝会议结论, restrictions.md#教学限制
+- 限制引用：course.md#课程限制规则/苟坝会议结论, course.md#课程限制规则/教学限制
 - 常见误区：只记录多数选择，省略少数意见、风险证据和复核条件
 - 最大尝试：3
 - 失败处理：提醒小组补齐“选择依据”或“少数意见复核”中的缺失记录，不替小组裁决
@@ -265,7 +262,6 @@
 - 通过条件：三段式复盘完整 + 引用至少2条证据 + 明确1项统一行动安排
 - 目标关联：K5(遵义与苟坝), S6(因果表达), C1(实事求是), C4(民主与担当)
 - 能力标签：DK-05, DS-06, DC-01, DC-04
-- AI引导方向：让学生说明改变的证据与责任安排，避免把少数意见自动视为正确答案
 
 ##### 引导
 **引导目标**
@@ -300,7 +296,7 @@
 - 功能模块：A06(沉浸媒体)
 - 工具参数：{"media":{"type":"image","url":"assets/tasks/decision-review-card.svg","title":"本轮新增课程材料｜复核与决策机制","requireCompletion":true,"prompt":"材料在任务2完成后开放。阅读时寻找改变原方案前提的新信息，并保留课程推演标识。"}}
 - 知识引用：K-17, K-18
-- 限制引用：restrictions.md#苟坝会议结论
+- 限制引用：course.md#课程限制规则/苟坝会议结论
 - 常见误区：把课程推演卡当成历史原件，或只记结论而忽略复核依据和决定形成过程
 - 最大尝试：2
 - 失败处理：重新显示材料，并提示学生只找“改变了哪个前提”的一句证据
@@ -323,7 +319,7 @@
 - 功能模块：A03(版本对照搭建)
 - 工具参数：{"builder":{"mode":"flow","prompt":"保留原判断，再按新信息整理保留、修改、放弃和责任安排。","items":[{"id":"original","label":"任务2·原阶段选择"},{"id":"new-evidence","label":"新增课程材料中的关键信息"},{"id":"keep","label":"仍然保留的判断"},{"id":"change","label":"需要修改的判断"},{"id":"drop","label":"需要放弃的判断"},{"id":"responsibility","label":"统一行动与责任安排"}],"zones":[{"id":"before","label":"原判断"},{"id":"trigger","label":"新信息"},{"id":"after","label":"保留/修改/放弃"},{"id":"action","label":"统一行动"}],"bindings":{"original":{"taskId":"task-2","stepId":"decision-record-team-decision","toolId":"team","property":"entries","prefix":"原讨论："}},"correctMapping":{"original":"before","new-evidence":"trigger","keep":"after","change":"after","drop":"after","responsibility":"action"},"retryMessage":"请保留原判断和触发信息，再把保留、修改、放弃与责任安排放到对应阶段。"}}
 - 知识引用：K-17, K-18
-- 限制引用：restrictions.md#史料与表达限制
+- 限制引用：course.md#课程限制规则/史料与表达限制
 - 常见误区：用新结论覆盖原记录，使判断变化无法追溯
 - 最大尝试：3
 - 失败处理：提醒学生先保留原判断，再补放新证据与行动责任卡
@@ -347,7 +343,7 @@
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"new-evidence","label":"新证据及来源","type":"long_text","required":true,"placeholder":"至少引用两条不同阶段证据"},{"id":"change","label":"判断变化","type":"long_text","required":true,"placeholder":"原来认为……现在保留/修改/放弃……因为……"},{"id":"responsibility","label":"统一行动与责任安排","type":"long_text","required":true,"placeholder":"决定形成后，谁核验、谁执行、何时复盘"}]}}
 - 知识引用：K-17, K-18
-- 限制引用：restrictions.md#教学限制, restrictions.md#史料与表达限制
+- 限制引用：course.md#课程限制规则/教学限制, course.md#课程限制规则/史料与表达限制
 - 常见误区：用后来结果证明原方案毫无价值，或把少数意见本身当作正确证据
 - 最大尝试：3
 - 失败处理：指出复盘缺少证据、变化或责任中的哪一段，请学生补齐原文
@@ -359,11 +355,3 @@
 - S6 因果表达 — 使用“证据—判断—行动—结果—修正”完整表达
 - C1 实事求是 — 新证据出现后能说明为何保留或修正原方案
 - C4 民主与担当 — 能讨论少数意见如何被听见、复核并形成共同执行
-
-## Phase 3 行为
-- 向小组贡献：方案矩阵、异议记录和复核条件
-- 拼合贡献：五层战图中的“决策层”
-- 需要其他角色：情报参谋评估信息可靠度，地图参谋评估路线可行性
-
-## Phase 4 璇玑参数
-- 负责说明：统一行动的形成需要哪些讨论、复核与责任机制

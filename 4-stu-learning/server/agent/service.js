@@ -4,6 +4,7 @@ import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { TOOL_DEFINITIONS, validateClientTool } from './tools.js';
 import { findSpoiler, retrieveKnowledge } from '../course/retrieval.js';
 import { renderVoice } from '../course/voice.js';
+import { renderPhaseOpening } from '../course/phase-policy.js';
 import { resolveStepRestrictions } from '../course/restriction-sections.js';
 import { toLogisticsContext } from '../course/agent-context.js';
 import { evaluateNudge, recordNudge } from './nudge-policy.js';
@@ -218,6 +219,31 @@ function courseConversationTrack(course, phaseId) {
 function phaseTrackFor(course, phaseId) {
   const track = course.phaseTracks?.[phaseId];
   return track?.tasks?.length ? track : courseConversationTrack(course, phaseId);
+}
+
+function takePhaseOpening({ course, session, role, task }) {
+  const phaseId = String(session?.phaseId || '').trim();
+  const marker = phaseId ? `phase-opening:${phaseId}:shown` : '';
+  if (!marker || (session.events || []).includes(marker)) return '';
+
+  const phase = course.lesson.phases.find((item) => item.id === phaseId);
+  const firstLocation = role?.tasks?.[0]?.location?.name
+    || task?.location?.name
+    || role?.location
+    || phase?.location
+    || course.lesson.venue
+    || '';
+  const opening = renderPhaseOpening(course.phasePolicies?.[phaseId], {
+    roleName: role?.scope === 'phase' ? '' : role?.name,
+    firstLocation,
+    // studentId / participantId 是身份键，不当作学生姓名展示。
+    studentName: session.studentName || session.displayName || session.learnerState?.displayName || '',
+  });
+  if (!opening) return '';
+
+  session.events ||= [];
+  session.events.push(marker);
+  return opening;
 }
 
 function entryPhaseTrackFor(course) {
@@ -2100,6 +2126,8 @@ export function createAgentService({
     const role = requestedRoleId
       ? bindRoleToSession({ course, session, roleId: requestedRoleId })
       : roleFor(course, session);
+    let phaseOpeningRequested = input.type === 'lifecycle_event'
+      && ['phase_started', 'role_assigned'].includes(input.event);
     let task = currentTaskOf(role, session);
     ensureSessionRuntime(session, task);
     if (['user_text', 'quick_reply'].includes(input.type)) markMeaningfulAction(session, Date.now(), 'user');
@@ -2316,7 +2344,11 @@ export function createAgentService({
         };
       }
       if (input.event === 'teacher_directive') {
-        applyTeacherDirective({ session, course, task, data: input.data || {} });
+        const previousPhaseId = session.phaseId;
+        const applied = applyTeacherDirective({ session, course, task, data: input.data || {} });
+        if (applied.includes('phase') && session.phaseId !== previousPhaseId) {
+          phaseOpeningRequested = true;
+        }
       }
       if (['teacher_finalize_task', 'teacher_reject_task'].includes(input.event)) {
         if (String(input.data?.taskId || '') !== task.id) {
@@ -2615,6 +2647,9 @@ export function createAgentService({
     const policy = createStudentFacingPolicy({ course, session });
     const policyActions = [...(input.data?.aiEvaluation?.policyActions || [])];
     const responseSource = sourceMeta(knowledge, input, decision);
+    const phaseOpening = phaseOpeningRequested
+      ? takePhaseOpening({ course, session, role, task })
+      : '';
     const primarySelection = selectTurnPrimaryAction({
       toolCalls: (result.toolCalls || []).filter((item) => item.name !== 'retrieve_course_knowledge'),
       quickReplies: result.quickReplies || [],
@@ -2624,6 +2659,40 @@ export function createAgentService({
     policyActions.push(...primarySelection.issues.map((issue) => `turn_plan:${issue}`));
     const messageCreatedAt = new Date().toISOString();
     const studentInputVisible = ['user_text', 'quick_reply'].includes(input.type);
+    if (phaseOpening) {
+      // 开场先于本轮欢迎语、任务阶段卡和小步提示；走 surface 策略可保留作者原文
+      // 与换行，同时仍执行防剧透和危险动作终检，也不会被学段策略拆写或改写。
+      const openingSurface = policy.processSurface(phaseOpening, { channel: 'phase_opening' });
+      const openingText = String(openingSurface.value || '');
+      policyActions.push(...openingSurface.actions);
+      if (openingText) {
+        const openingMessageId = `msg_${crypto.randomUUID()}`;
+        session.messages.push({
+          id: openingMessageId,
+          role: 'assistant',
+          content: openingText,
+          createdAt: messageCreatedAt,
+          inputType: input.type,
+          studentVisible: true,
+          sourceLabel: '',
+        });
+        events.push({
+          type: 'assistant.completed',
+          data: {
+            id: openingMessageId,
+            text: openingText,
+            source: { mode: 'course-config', label: '', citations: [] },
+            intent: 'phase_opening',
+            dialogueMove: 'phase_opening',
+            streamed: false,
+            degraded: false,
+            partIndex: 0,
+            partCount: 1,
+          },
+        });
+        recordDialogueMove(session, { move: 'phase_opening', text: openingText });
+      }
+    }
     if (result.text || studentInputVisible) {
       session.messages.push({
         id: `msg_${crypto.randomUUID()}`,

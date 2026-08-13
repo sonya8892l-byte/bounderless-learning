@@ -1226,6 +1226,10 @@ svg {
   line-height: 1.65;
 }
 
+.message-bubble [data-message-text] {
+  white-space: pre-line;
+}
+
 .message-row--user .message-bubble {
   border-color: #cdded9;
   border-radius: var(--radius-lg) 5px var(--radius-lg) var(--radius-lg);

@@ -47,7 +47,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"identity","label":"身份事实+编号","type":"short_text","required":true},{"id":"life","label":"生活事实+编号","type":"short_text","required":true},{"id":"relation","label":"生态关系+编号","type":"short_text","required":true},{"id":"impact","label":"人类影响+编号","type":"short_text","required":true},{"id":"expectation","label":"角色期待","type":"long_text","required":true}]}}
 - 知识引用：K-04, K-19
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把“我很伤心”当作标本能够证明的事实
 - 最大尝试：3
 - 失败处理：指出需要改成事实、推断或期待的具体一栏
@@ -69,7 +69,7 @@
 - 功能模块：A02(单选)
 - 工具参数：{"quiz":{"type":"single_choice","question":"哪一句最适合进入动物第一人称脚本？","options":["我每天都在想念故乡，心里非常孤独","资料显示我依赖连通的山地森林；作为角色，我期待家园少一些阻断","我很可爱，所以人类必须先保护我"],"answer":"资料显示我依赖连通的山地森林；作为角色，我期待家园少一些阻断","explanation":"这句话同时区分了资料事实和角色期待。","retryMessage":"检查哪一句标明了来源，并把价值表达写成期待。"}}
 - 知识引用：K-04, K-19
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：把情绪强烈等同于表达准确
 - 最大尝试：3
 - 失败处理：提示检查事实与期待标签
@@ -113,7 +113,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"script","label":"动物自述脚本","type":"long_text","required":true,"minLength":80,"maxLength":150,"placeholder":"用自己的话写，事实后标证据编号。"}]}}
 - 知识引用：K-19
-- 限制引用：restrictions.md#事实与角色表达
+- 限制引用：course.md#课程限制规则/事实与角色表达
 - 常见误区：让AI一次生成整段脚本
 - 最大尝试：3
 - 失败处理：只反馈缺失结构或越界句，不重写全文
@@ -135,7 +135,7 @@
 - 功能模块：A01(录音)
 - 工具参数：{"audio":{"prompt":"用自己的声音朗读经核验的脚本；不要模仿或克隆他人声音。","minSeconds":30,"maxSeconds":60,"language":"zh-CN","transcribe":true}}
 - 知识引用：K-22
-- 限制引用：restrictions.md#场馆与隐私
+- 限制引用：course.md#课程限制规则/场馆与隐私
 - 常见误区：录入其他参观者对话
 - 最大尝试：2
 - 失败处理：只重录音量或时长不合格的部分
@@ -178,7 +178,7 @@
 - 功能模块：A05(团队核验)
 - 工具参数：{"team":{"mode":"review","prompt":"逐句核对事实编号，并单独检查角色期待。","minimumEntries":3,"roles":["声音记录员","展签记录员"],"recordTypes":["保留","修改","待核"],"requiredRecordTypes":["保留","修改"]}}
 - 知识引用：K-21
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：只评价声音好不好听
 - 最大尝试：2
 - 失败处理：提醒至少核对一条事实和一条期待
@@ -199,7 +199,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"ai-use","label":"AI参与环节","type":"select","options":["未使用","转写","结构整理","字幕或降噪","多项"],"required":true},{"id":"human-change","label":"我修改或拒绝的建议","type":"long_text","required":true,"minLength":10}]}}
 - 知识引用：K-22
-- 限制引用：restrictions.md#发布边界
+- 限制引用：course.md#课程限制规则/发布边界
 - 常见误区：写“AI没有错误”却没有人工复核记录
 - 最大尝试：2
 - 失败处理：追问一项学生亲自确认的内容

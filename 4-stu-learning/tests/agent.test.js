@@ -152,7 +152,11 @@ test('状态机只接受当前工具调用，并在证据提交后推进任务',
   const { session } = await agent.createSession({ courseId: course.id, roleId: 'dragon-counter', studentId: 's1', groupId: 'g1' });
   const first = await agent.runTurn({ sessionId: session.id, requestId: 'r1', input: { type: 'lifecycle_event', event: 'role_assigned' } });
   assert.equal(first.events.some((event) => event.type === 'tool.requested'), false);
-  const entryMessage = first.events.find((event) => event.type === 'assistant.completed').data.text;
+  const entryMessage = first.events
+    .filter((event) => event.type === 'assistant.completed')
+    .map((event) => event.data.text)
+    .find((text) => /到|到达/.test(text));
+  assert.ok(entryMessage, '阶段开场之后仍应继续显示到达确认');
   assert.match(entryMessage, /到|到达/);
   assert.doesNotMatch(entryMessage, /准备好/);
   const { result: arrived, taskRequest } = await enterFirstStage(agent, session, 'r2');

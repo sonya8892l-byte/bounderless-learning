@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
+import { renderPhaseOpening } from '../server/course/phase-policy.js';
 import { createAgentService } from '../server/agent/service.js';
 import {
   actionForTeacherLifecycleEvent,
@@ -89,6 +90,18 @@ function sendDirective(agent, session, authority, data, requestId) {
   });
 }
 
+function assistantText(result) {
+  return result.events
+    .filter((event) => event.type === 'assistant.completed')
+    .map((event) => event.data.text)
+    .join('');
+}
+
+function occurrences(text, expected) {
+  if (!expected) return 0;
+  return String(text).split(expected).length - 1;
+}
+
 test('教师推进阶段写回 session.phaseId，阶段提示词随之换成新阶段那一份', async () => {
   const { agent, authority, course, session, store } = await directiveAgent();
 
@@ -138,10 +151,16 @@ test('课程里不存在的阶段被忽略，不让「阶段规则」段凭空�
   assert.equal(saved.phaseNumber, 2);
 });
 
-test('教师指令不让絮絮开口，也不调模型', async () => {
-  const { agent, authority, llm, session } = await directiveAgent();
+test('教师推进阶段展示一次新 Phase 开场，调脚手架仍静默，二者都不调模型', async () => {
+  const { agent, authority, course, llm, session } = await directiveAgent();
+  const role = course.roles.find((item) => item.id === session.roleId);
+  const opening = renderPhaseOpening(course.phasePolicies['phase-3'], {
+    roleName: role.name,
+    firstLocation: role.tasks[0].location?.name || role.location,
+  });
+  assert.ok(opening, 'Phase 3 必须提供开场白模板');
 
-  const result = await sendDirective(
+  const advanced = await sendDirective(
     agent,
     session,
     authority,
@@ -150,13 +169,35 @@ test('教师指令不让絮絮开口，也不调模型', async () => {
   );
 
   assert.equal(llm.calls, 0, '状态变更不需要模型参与');
-  const spoke = result.events.find((event) => event.type === 'assistant.completed');
-  assert.equal(spoke, undefined, '学生端已经自己弹了提示，模型再说一句就是重复');
-  assert.deepEqual(result.trace.teacherCommand, {
+  assert.equal(occurrences(assistantText(advanced), opening), 1, '推进阶段应展示一次新阶段开场');
+  assert.deepEqual(advanced.trace.teacherCommand, {
     teacherCommandId: 'cmd-trace-7',
     action: 'advance_phase',
   });
-  assert.doesNotMatch(JSON.stringify(result.trace), /林同学/u);
+  assert.doesNotMatch(JSON.stringify(advanced.trace), /林同学/u);
+
+  const repeated = await sendDirective(
+    agent,
+    session,
+    authority,
+    { phaseId: 'phase-3', teacherCommandId: 'cmd-trace-7-repeat' },
+    'd-7-repeat',
+  );
+  assert.equal(occurrences(assistantText(repeated), opening), 0, '重复推进到同一 Phase 不重播开场');
+
+  const scaffold = await sendDirective(
+    agent,
+    session,
+    authority,
+    { scaffoldLevel: 2, teacherCommandId: 'cmd-trace-scaffold' },
+    'd-7-scaffold',
+  );
+  assert.equal(
+    scaffold.events.some((event) => event.type === 'assistant.completed'),
+    false,
+    '只调整脚手架时保持静默',
+  );
+  assert.equal(llm.calls, 0, '教师阶段与脚手架指令都不得调用模型');
 });
 
 test('教师确认到达经一次性授权写入 Agent 到达状态并解除到达提问', async () => {

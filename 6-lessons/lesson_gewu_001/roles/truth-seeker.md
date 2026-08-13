@@ -11,9 +11,7 @@
 - 角色卡图：assets/roles/role-card-truth-seeker.png
 - 角色徽章图：assets/roles/badge-truth-seeker.png
 - 收集物：U
-- 密符奖励：字母 U（水）
 - 收集物图：assets/tokens/mifu-U.png
-- 关键数据：2023年故宫确实出现过局部积水
 
 ## 任务列表
 
@@ -38,7 +36,6 @@
 - 通过条件：收集≥5条 + 每条有来源标注
 - 目标关联：S4(史料实证), S6(信息整合), C1(证据意识)
 - 能力标签：DS-04, DS-06, DC-01
-- AI引导方向：引导建立"证据清单"——区分一手证据（自己看到的）和二手证据（别人告诉的）
 
 ##### 引导
 **引导目标**
@@ -71,7 +68,7 @@
 - 功能模块：A07(二维码), A05(证据汇总)
 - 工具参数：{"scanner":{"mode":"qr","prompt":"扫描其他角色完成任务后生成的证据摘要二维码；只收集证据摘要。","allowManualEntry":true},"team":{"mode":"evidence_log","prompt":"记录至少5条来自不同角色或不同方法的证据摘要，并标明贡献角色。","minimumEntries":5,"roles":["数龙官","测坡官","寻沟官","引河官","护城官","真相官"],"recordTypes":["现场照片","测量数据","观察记录","角色摘要"]}}
 - 知识引用：K-01, K-05, K-08, K-11, K-14
-- 限制引用：restrictions.md#跨角色隔离
+- 限制引用：course.md#课程限制规则/跨角色隔离
 - 常见误区：只收集结论句，没有记录由谁、在哪里、用什么方法获得
 - 最大尝试：3
 - 失败处理：只指出条数或来源中的首要缺口，请学生补一条证据摘要
@@ -101,7 +98,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"source-1","label":"证据1来源记录","type":"long_text","required":true,"minLength":20},{"id":"source-2","label":"证据2来源记录","type":"long_text","required":true,"minLength":20},{"id":"source-3","label":"证据3来源记录","type":"long_text","required":true,"minLength":20},{"id":"source-4","label":"证据4来源记录","type":"long_text","required":true,"minLength":20},{"id":"source-5","label":"证据5来源记录","type":"long_text","required":true,"minLength":20}]}}
 - 知识引用：K-01, K-05, K-08, K-11, K-14
-- 限制引用：restrictions.md#跨角色隔离
+- 限制引用：course.md#课程限制规则/跨角色隔离
 - 常见误区：用“同学说的”“网上看到的”代替可追溯来源
 - 最大尝试：3
 - 失败处理：只指出当前首条不完整证据缺少的首要字段；无法补证时标“待补”
@@ -131,7 +128,7 @@
 - 功能模块：A03(分类搭建), A01(文字)
 - 工具参数：{"builder":{"mode":"classification","prompt":"根据自己的证据账本，把5条证据按获得方式分类。","items":[{"id":"evidence-1","label":"证据1"},{"id":"evidence-2","label":"证据2"},{"id":"evidence-3","label":"证据3"},{"id":"evidence-4","label":"证据4"},{"id":"evidence-5","label":"证据5"}],"zones":[{"id":"first-hand","label":"一手证据：自己直接获得"},{"id":"second-hand","label":"二手证据：他人提供"},{"id":"unclear","label":"暂无法判断"}]},"text":{"fields":[{"id":"rule","label":"你的分类原则","type":"long_text","required":true,"minLength":30}]}}
 - 知识引用：K-17
-- 限制引用：restrictions.md#跨角色隔离
+- 限制引用：course.md#课程限制规则/跨角色隔离
 - 常见误区：把“可信”直接等同于“一手”，或把同学的照片当成自己的一手观察
 - 最大尝试：3
 - 失败处理：提示按“谁直接观察或测量”重新检查分类，不替学生判断单条证据真假
@@ -172,7 +169,6 @@
 - 通过条件：完成证据评级 + 对"600年不积水"给出带条件的判断
 - 目标关联：C4(科学精神), C1(证据意识), S4(史料实证)
 - 能力标签：DC-04, DC-01, DS-04
-- AI引导方向：从"古人太厉害了"到"事实比传说更有意思"的认知升级
 
 ##### 引导
 **引导目标**
@@ -206,7 +202,7 @@
 - 功能模块：A03(分类搭建), A01(文字)
 - 工具参数：{"builder":{"mode":"classification","prompt":"依据来源、获取方法和可复核性，为5条证据评级。","items":[{"id":"evidence-1","label":"证据1"},{"id":"evidence-2","label":"证据2"},{"id":"evidence-3","label":"证据3"},{"id":"evidence-4","label":"证据4"},{"id":"evidence-5","label":"证据5"}],"zones":[{"id":"strong","label":"强证据"},{"id":"medium","label":"中等证据"},{"id":"weak","label":"弱证据"},{"id":"pending","label":"待核"}]},"text":{"fields":[{"id":"criteria","label":"评级标准","type":"long_text","required":true,"minLength":45}]}}
 - 知识引用：K-17, K-19
-- 限制引用：restrictions.md#反例限制
+- 限制引用：course.md#课程限制规则/反例限制
 - 常见误区：因为结论符合预期就给高等级，忽略证据来源和复核方法
 - 最大尝试：3
 - 失败处理：请学生先写评级标准，再逐条检查证据是否真的符合标准
@@ -236,7 +232,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"conditions","label":"主张成立所需条件","type":"long_text","required":true,"minLength":70},{"id":"evidence-links","label":"对应证据编号与等级","type":"long_text","required":true,"minLength":30}]}}
 - 知识引用：K-17, K-19
-- 限制引用：restrictions.md#反例限制
+- 限制引用：course.md#课程限制规则/反例限制
 - 常见误区：把“排水能力很强”直接改写成“任何时候、任何区域都没有积水”
 - 最大尝试：3
 - 失败处理：只指出当前主张缺少的首要条件维度，并请学生补一条对应证据
@@ -266,7 +262,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"revised-claim","label":"修正后的条件性结论","type":"long_text","required":true,"minLength":70},{"id":"kept-and-revised","label":"保留了什么、收窄了什么","type":"long_text","required":true,"minLength":40}]}}
 - 知识引用：K-17, K-19
-- 限制引用：restrictions.md#反例限制
+- 限制引用：course.md#课程限制规则/反例限制
 - 常见误区：看到一个反例就否定整个系统，或者无视反例继续使用绝对化说法
 - 最大尝试：3
 - 失败处理：只指出支持证据、反例范围或成立条件中的首要缺口，并请学生补这一项
@@ -305,7 +301,6 @@
 - 通过条件：报告包含：系统能力总结 + 已知局限 + 带条件的结论
 - 目标关联：C4(科学精神), C2(系统思维), S6(信息整合), C5(文化认同)
 - 能力标签：DC-04, DC-02, DS-06, DC-05
-- AI引导方向：引导写出"带边界的结论"——不是"从不积水"而是"在X条件下不积水"
 
 ##### 引导
 **引导目标**
@@ -339,7 +334,7 @@
 - 功能模块：A03(证据拼合)
 - 工具参数：{"builder":{"mode":"classification","prompt":"把五个角色的证据贡献放入对应系统功能环节。","items":[{"id":"dragon","label":"数龙官证据"},{"id":"slope","label":"测坡官证据"},{"id":"ditch","label":"寻沟官证据"},{"id":"river","label":"引河官证据"},{"id":"moat","label":"护城官证据"}],"zones":[{"id":"rapid-release","label":"快速排出"},{"id":"gravity","label":"重力驱动"},{"id":"transfer","label":"沟渠转运"},{"id":"river-collection","label":"河道汇流"},{"id":"terminal-storage","label":"终端蓄排"}],"correctMapping":{"dragon":"rapid-release","slope":"gravity","ditch":"transfer","river":"river-collection","moat":"terminal-storage"},"retryMessage":"回到每个角色实际观察的对象，判断它主要承担排出、驱动、转运、汇流还是蓄排。"}}
 - 知识引用：K-17, K-18
-- 限制引用：restrictions.md#系统全景限制
+- 限制引用：course.md#课程限制规则/系统全景限制
 - 常见误区：按角色名称或展项大小分类，没有考虑每类证据在水流链中的功能
 - 最大尝试：3
 - 失败处理：让学生从“水落到台基之后下一步去哪里”开始逐级追踪
@@ -371,7 +366,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"ability-1","label":"能力证据1","type":"long_text","required":true,"minLength":30},{"id":"ability-2","label":"能力证据2","type":"long_text","required":true,"minLength":30},{"id":"ability-3","label":"能力证据3","type":"long_text","required":true,"minLength":30},{"id":"conditions","label":"共同有效条件","type":"long_text","required":true,"minLength":45}]}}
 - 知识引用：K-17, K-18, K-19
-- 限制引用：restrictions.md#系统全景限制
+- 限制引用：course.md#课程限制规则/系统全景限制
 - 常见误区：用参考资料替代所有角色证据，或者只列能力不写成立条件
 - 最大尝试：3
 - 失败处理：只指出报告中的首要证据字段缺口，请学生回到证据账本补这一项
@@ -403,7 +398,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"truth-report","label":"故宫排水真相报告","type":"long_text","placeholder":"用证据说明能力，也写清局限和适用条件","required":true,"minLength":150,"maxLength":800}]}}
 - 知识引用：K-17, K-18, K-19
-- 限制引用：restrictions.md#系统全景限制
+- 限制引用：course.md#课程限制规则/系统全景限制
 - 常见误区：用“从不积水”或“完全无效”替代有证据、有条件的结论
 - 最大尝试：3
 - 失败处理：只指出报告中的首要结构缺口，并请学生定向补写这一部分
@@ -427,12 +422,3 @@
 - C2 系统思维 — 能从局部到整体还原系统
 - C4 科学精神 — 带边界的结论+承认不确定性
 - C5 文化认同 — 理性自豪（非盲目崇拜）
-
-## Phase 3 行为
-- 向小组贡献：证据汇总表 + 可信度评级 + 系统能力边界分析
-- 拼合贡献：为整个水系图标注"可靠性"——哪些环节证据充分，哪些是推测
-- 需要其他角色：所有5个角色的证据（真相官是唯一需要全部其他角色数据的）
-
-## Phase 4 璇玑参数
-- 负责设置：系统可靠性参数——标注哪些环节是实测、哪些是估算
-- 特殊任务：观察模拟结果与预期的偏差，担任"质疑者"角色

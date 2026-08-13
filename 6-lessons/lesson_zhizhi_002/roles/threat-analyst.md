@@ -47,7 +47,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"hypotheses","label":"两条风险假设","type":"long_text","required":true,"minLength":60}]}}
 - 知识引用：K-08
-- 限制引用：restrictions.md#风险排序
+- 限制引用：course.md#课程限制规则/风险排序
 - 常见误区：只列“污染、捕猎”等名词
 - 最大尝试：3
 - 失败处理：提示补出箭头中间发生的变化
@@ -68,7 +68,7 @@
 - 功能模块：A01(调查表)
 - 工具参数：{"text":{"fields":[{"id":"support","label":"要找的支持证据","type":"long_text","required":true},{"id":"counter","label":"可能削弱假设的证据","type":"long_text","required":true}]}}
 - 知识引用：K-05, K-09
-- 限制引用：restrictions.md#事实边界
+- 限制引用：course.md#课程限制规则/事实边界
 - 常见误区：把另一条支持材料当反证
 - 最大尝试：3
 - 失败处理：问“看到什么情况会让你降低信心”
@@ -110,7 +110,7 @@
 - 功能模块：A03(因果链)
 - 工具参数：{"builder":{"mode":"causal_chain","prompt":"按人类活动—环境变化—直接威胁—种群结果连接，每条箭头附证据编号或推断标签。","minimumItems":4,"categories":["人类活动","环境或栖息地变化","直接威胁","种群结果"]}}
 - 知识引用：K-08
-- 限制引用：restrictions.md#事实边界
+- 限制引用：course.md#课程限制规则/事实边界
 - 常见误区：箭头方向与叙述相反
 - 最大尝试：3
 - 失败处理：逐条朗读“什么改变了什么”
@@ -130,7 +130,7 @@
 - 功能模块：A04(风险矩阵)
 - 工具参数：{"simulation":{"mode":"matrix","prompt":"分别给潜在影响与证据强度1—4分，并写评分依据。","axes":["潜在影响","证据强度"],"minimumItems":3},"text":{"fields":[{"id":"alternative","label":"替代解释或未知","type":"long_text","required":true}]}}
 - 知识引用：K-06, K-09
-- 限制引用：restrictions.md#风险排序
+- 限制引用：course.md#课程限制规则/风险排序
 - 常见误区：熟悉的威胁两项都给高分
 - 最大尝试：3
 - 失败处理：要求两项评分分别引用依据
@@ -172,7 +172,7 @@
 - 功能模块：A01(诊断摘要)
 - 工具参数：{"text":{"fields":[{"id":"diagnosis","label":"风险诊断摘要","type":"long_text","required":true,"minLength":160}]}}
 - 知识引用：K-08, K-09
-- 限制引用：restrictions.md#表达与决策
+- 限制引用：course.md#课程限制规则/表达与决策
 - 常见误区：只公布排序，不解释证据强弱
 - 最大尝试：2
 - 失败处理：提示补齐链条、来源或局限
@@ -192,7 +192,7 @@
 - 功能模块：A05(质询)
 - 工具参数：{"team":{"mode":"challenge","prompt":"请质疑一条因果连接或评分；分析员记录处理结果与证据。","minimumEntries":2,"recordTypes":["反例或质疑","处理结果与理由"]}}
 - 知识引用：K-06
-- 限制引用：restrictions.md#事实边界
+- 限制引用：course.md#课程限制规则/事实边界
 - 常见误区：把质询者当作“答错的人”
 - 最大尝试：2
 - 失败处理：允许记录“现有证据无法判断”

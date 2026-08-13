@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { parseLesson } from '../src/engine/lesson-parser.js';
 import { loadPlatformDefaults } from '../server/course/platform-defaults.js';
 import { toPublic } from '../server/course/projections.js';
+import {
+  materializeCourseDocuments,
+  runtimeCourseFiles,
+} from '../src/engine/course-documents.js';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const lessonsRoot = resolve(projectRoot, '../6-lessons');
@@ -68,7 +72,7 @@ for (const lessonId of lessonIds) {
 
   const source = {
     id: lessonId,
-    files: await collectMarkdown(sourceDirectory),
+    files: materializeCourseDocuments(runtimeCourseFiles(await collectMarkdown(sourceDirectory))),
     assetBase: `lessons/${lessonId}/assets`,
   };
   const lesson = parseLesson(source, {

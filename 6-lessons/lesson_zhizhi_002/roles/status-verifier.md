@@ -47,7 +47,7 @@
 - 功能模块：A03(证据分类)
 - 工具参数：{"builder":{"mode":"categorize","prompt":"按主张实际回答的问题分类；信息不足可进入待核。","minimumItems":4,"categories":["国内法律保护身份","IUCN受威胁等级","种群趋势","措施成效","待核"]}}
 - 知识引用：K-01
-- 限制引用：restrictions.md#动态信息
+- 限制引用：course.md#课程限制规则/动态信息
 - 常见误区：把“国家保护动物”直接等同“全球极危”
 - 最大尝试：3
 - 失败处理：逐条问“这句话究竟回答哪个问题”
@@ -67,7 +67,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"boundaries","label":"两条推理边界","type":"long_text","required":true,"minLength":40}]}}
 - 知识引用：K-01, K-02, K-03
-- 限制引用：restrictions.md#事实边界
+- 限制引用：course.md#课程限制规则/事实边界
 - 常见误区：只换词复述，没有说明不能推出什么
 - 最大尝试：3
 - 失败处理：给出句式“知道……仍需另查……”
@@ -109,7 +109,7 @@
 - 功能模块：A01(核验表单)
 - 工具参数：{"text":{"fields":[{"id":"domestic","label":"国内法律或名录记录","type":"long_text","required":true,"minLength":50},{"id":"iucn","label":"IUCN评估记录","type":"long_text","required":true,"minLength":50},{"id":"access","label":"访问日期与人工核验人","type":"short_text","required":true}]}}
 - 知识引用：K-02, K-03, K-04
-- 限制引用：restrictions.md#动态信息
+- 限制引用：course.md#课程限制规则/动态信息
 - 常见误区：只抄等级，不记评估年与范围
 - 最大尝试：3
 - 失败处理：指出缺少来源、版本、范围或日期的哪一项
@@ -129,7 +129,7 @@
 - 功能模块：A01(趋势记录)
 - 工具参数：{"text":{"fields":[{"id":"trend","label":"趋势或无法判断","type":"long_text","required":true},{"id":"time","label":"时间范围","type":"short_text","required":true},{"id":"space","label":"空间范围","type":"short_text","required":true},{"id":"limit","label":"方法线索与局限","type":"long_text","required":true}]}}
 - 知识引用：K-07
-- 限制引用：restrictions.md#动态信息
+- 限制引用：course.md#课程限制规则/动态信息
 - 常见误区：用“数量很少”替代变化趋势
 - 最大尝试：3
 - 失败处理：追问至少两个可比较时点或来源的趋势判断在哪里
@@ -171,7 +171,7 @@
 - 功能模块：A03(状态矩阵)
 - 工具参数：{"builder":{"mode":"matrix","prompt":"四类状态独立成行，填写结论、来源、日期或版本、范围和待核项。","minimumItems":4,"categories":["国内法律身份","IUCN评估","种群趋势","措施成效"]}}
 - 知识引用：K-01, K-04, K-06
-- 限制引用：restrictions.md#表达与决策
+- 限制引用：course.md#课程限制规则/表达与决策
 - 常见误区：为消除冲突而选择性删除来源
 - 最大尝试：2
 - 失败处理：要求恢复冲突或未知，并说明核验计划
@@ -191,7 +191,7 @@
 - 功能模块：A01(文字记录)
 - 工具参数：{"text":{"fields":[{"id":"items","label":"待核条目与来源编号","type":"long_text","required":true,"minLength":40},{"id":"reviewer","label":"核验人及核验日期","type":"text","required":true},{"id":"result","label":"处理结果与仍待核内容","type":"long_text","required":true,"minLength":30}]}}
 - 知识引用：K-02, K-03, K-04
-- 限制引用：restrictions.md#动态信息
+- 限制引用：course.md#课程限制规则/动态信息
 - 常见误区：把AI回答写入“人工核验人”
 - 最大尝试：1
 - 失败处理：保留待核，不阻止其他已核内容发布

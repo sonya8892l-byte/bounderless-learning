@@ -156,7 +156,7 @@ export function matchesProtectedMatchers(text = '', matchers = []) {
   });
 }
 
-/** 从 restrictions.md 的表格里提取需要脱敏的精确答案词。 */
+/** 从 course.md / 课程限制规则的逻辑文档中提取需要脱敏的精确答案词。 */
 export function protectedTerms(markdown = '') {
   const terms = [];
   for (const line of String(markdown).split('\n')) {
@@ -252,7 +252,7 @@ export function sanitizeTaskTools(task) {
  * 全量 lesson → 浏览器可见的公开投影。纯函数：深拷贝后裁剪，不改动入参。
  *
  * @param {object} lesson 全量解析产物（compileCourse 的 course.lesson）
- * @param {string} restrictionMarkdown 该课 restrictions.md 原文，用于提取脱敏词
+ * @param {string} restrictionMarkdown 该课课程限制规则原文，用于提取脱敏词
  */
 export function toPublic(lesson, restrictionMarkdown = '') {
   const publicLesson = structuredClone(lesson);

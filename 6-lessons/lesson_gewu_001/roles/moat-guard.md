@@ -11,9 +11,7 @@
 - 角色卡图：assets/roles/role-card-moat-guard.png
 - 角色徽章图：assets/roles/badge-moat-guard.png
 - 收集物：H
-- 密符奖励：字母 H（水）
 - 收集物图：assets/tokens/mifu-H.png
-- 关键数据：护城河宽52m，深约4.1m，周长3.5km，蓄水量约60万m³
 
 ## 任务列表
 
@@ -35,7 +33,6 @@
 - 通过条件：4张有效照片 + 描述观察到的结构特征
 - 目标关联：K6(护城河水量调节), S4(史料实证), C1(证据意识)
 - 能力标签：DK-06, DS-04, DC-01
-- AI引导方向：引导注意河堤上的排水口——"看看堤岸上有没有什么洞？那是做什么的？"
 
 ##### 引导
 **引导目标**
@@ -67,7 +64,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"prompt":"请安全拍摄。记录河堤与水体的整体关系，并保留城墙、岸线或桥位参照。","minCount":1,"maxCount":2,"accept":"image/*"}}
 - 知识引用：K-14, K-15
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：只拍水面或远景，无法看清河堤结构和相对位置
 - 最大尝试：3
 - 失败处理：只指出缺少河堤边缘或固定参照中的首要一项，请从原观察点补拍
@@ -97,7 +94,7 @@
 - 功能模块：A01(拍照)
 - 工具参数：{"photo":{"prompt":"请安全拍摄。补拍开口、岸壁结构或水位痕迹，避免重复同一画面。","minCount":3,"maxCount":5,"accept":"image/*"}}
 - 知识引用：K-14, K-15, K-16
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：把普通孔洞或颜色变化直接认定为排水口或历史水位线
 - 最大尝试：3
 - 失败处理：指出照片重复或缺少环境参照之处，请学生保留原证据并只补缺项
@@ -127,7 +124,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"record-1","label":"照片1：结构、特征与可能作用","type":"long_text","required":true,"minLength":25},{"id":"record-2","label":"照片2：结构、特征与可能作用","type":"long_text","required":true,"minLength":25},{"id":"record-3","label":"照片3：结构、特征与可能作用","type":"long_text","required":true,"minLength":25}]}}
 - 知识引用：K-14, K-15, K-16
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：从一个孔洞直接推断完整功能，没有保留其他解释
 - 最大尝试：3
 - 失败处理：让学生把每条记录改成“我看到……所以可能……还需……”
@@ -170,7 +167,6 @@
 - 通过条件：给出蓄水量量级估算（万级m³即可）
 - 目标关联：K6(护城河), S1(估算), C1(证据意识), C4(科学精神)
 - 能力标签：DK-06, DS-01, DC-01, DC-04
-- AI引导方向：从"好大的河"到"具体能装多少水"的量化思维
 
 ##### 引导
 **引导目标**
@@ -203,7 +199,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"width","label":"估测河宽（米）","type":"number","required":true},{"id":"method","label":"步数、步长或地图比例换算","type":"long_text","required":true,"minLength":30},{"id":"safety","label":"安全边界说明","type":"long_text","required":true,"minLength":15}]}}
 - 知识引用：K-14
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：沿危险岸边步测，或只写估测值而没有换算过程
 - 最大尝试：3
 - 失败处理：只指出路线或换算中的首要问题；路线不可用时改用地图比例
@@ -233,7 +229,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"depth","label":"估测河深（米）","type":"number","required":true},{"id":"perimeter","label":"估测周长（米）","type":"number","required":true},{"id":"sources","label":"数据性质与估算依据","type":"long_text","required":true,"minLength":40}]}}
 - 知识引用：K-14, K-15
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：把岸壁可见高度直接等同于完整水深，或不说明周长来源
 - 最大尝试：3
 - 失败处理：指出哪一个数值缺少来源，要求改标为观察推测或资料值
@@ -264,7 +260,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"volume","label":"估算蓄水量（立方米）","type":"number","required":true},{"id":"calculation","label":"计算过程与数量级","type":"long_text","required":true,"minLength":30},{"id":"assumption","label":"模型简化与可能偏差","type":"long_text","required":true,"minLength":25}]}}
 - 知识引用：K-14, K-16
-- 限制引用：restrictions.md#核心数据限制
+- 限制引用：course.md#课程限制规则/核心数据限制
 - 常见误区：只给最后数字，没有单位、计算过程或对矩形截面假设的说明
 - 最大尝试：3
 - 失败处理：指出计算中首个无法复算的输入、算式或单位，请学生先修正这一项
@@ -305,7 +301,6 @@
 - 通过条件：列出≥3个有证据支持的功能 + 解释蓄存与排放的关系
 - 目标关联：K6(护城河), K2(设计归纳), C2(系统思维), C5(文化认同)
 - 能力标签：DK-06, DK-02, DC-02, DC-05
-- AI引导方向：引导发现"一物多用"的古人智慧——功能叠加而非单一
 
 ##### 引导
 **引导目标**
@@ -338,7 +333,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"function-1","label":"功能1及解决的问题","type":"long_text","required":true,"minLength":20},{"id":"function-2","label":"功能2及解决的问题","type":"long_text","required":true,"minLength":20},{"id":"function-3","label":"功能3及解决的问题","type":"long_text","required":true,"minLength":20}]}}
 - 知识引用：K-13, K-15, K-16
-- 限制引用：restrictions.md#护城河功能组合
+- 限制引用：course.md#课程限制规则/护城河功能组合
 - 常见误区：把“很宽、很深、很漂亮”等特征直接当成功能
 - 最大尝试：3
 - 失败处理：请学生把每项改写成“它帮助谁，在什么情况下解决什么问题”
@@ -368,7 +363,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"evidence-1","label":"功能1的证据与来源","type":"long_text","required":true,"minLength":25},{"id":"evidence-2","label":"功能2的证据与来源","type":"long_text","required":true,"minLength":25},{"id":"evidence-3","label":"功能3的证据与来源","type":"long_text","required":true,"minLength":25}]}}
 - 知识引用：K-14, K-15, K-16
-- 限制引用：restrictions.md#护城河功能组合
+- 限制引用：course.md#课程限制规则/护城河功能组合
 - 常见误区：三个功能共用一句笼统证据，或没有标出证据来源
 - 最大尝试：3
 - 失败处理：指出哪一项功能仍缺证据，允许把证据不足的主张降级为“待核”
@@ -399,7 +394,7 @@
 - 功能模块：A01(文字)
 - 工具参数：{"text":{"fields":[{"id":"storage-discharge","label":"蓄存与排放关系","type":"long_text","placeholder":"结合你的估算和现场证据说明","required":true,"minLength":60,"maxLength":320}]}}
 - 知识引用：K-14, K-16, K-17, K-18
-- 限制引用：restrictions.md#护城河功能组合
+- 限制引用：course.md#课程限制规则/护城河功能组合
 - 常见误区：把“先蓄后排”理解成永久储水，或忽略容量和下游排放条件
 - 最大尝试：3
 - 失败处理：只指出解释中的首要证据缺口，并请学生补一条对应证据
@@ -420,11 +415,3 @@
 - C1 证据意识 — 自觉用证据支撑每个结论
 - C2 系统思维 — 能从局部到整体还原系统
 - C5 文化认同 — 理性自豪（非盲目崇拜）
-
-## Phase 3 行为
-- 向小组贡献：护城河容量数据 + 多功能分析
-- 拼合贡献：水系图中"内金水河→护城河→城外水系"终端环节
-- 需要其他角色：引河官的内金水河流量（输入量来源）
-
-## Phase 4 璇玑参数
-- 负责设置：护城河蓄水容量参数 + 排水闸门阈值
