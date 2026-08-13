@@ -13,6 +13,7 @@ export const INTENTS = Object.freeze([
   'help_stuck',
   'asking_location',
   'asking_knowledge',
+  'student_discovery',
   // 与本次活动组织有关的问题（时间/集合/流程/规则/场地设施），不是课程知识也不是任务求助。
   'asking_logistics',
   'chat_offtopic',
@@ -49,7 +50,7 @@ export const FALLBACK_UNDERSTANDING = Object.freeze({
 // 这些意图本身就是"带诉求"的，模型漏填 hasTaskRequest 时据此补齐。
 const IMPLIES_TASK_REQUEST = Object.freeze([
   'help_start', 'help_stuck', 'request_answer', 'asking_knowledge',
-  'asking_location', 'asking_logistics', 'claim_done', 'safety_risk',
+  'asking_location', 'asking_logistics', 'student_discovery', 'claim_done', 'safety_risk',
 ]);
 
 const DEFAULT_TIMEOUT_MS = 8_000;
@@ -148,6 +149,7 @@ intent 取值（自上而下判断，命中即停）：
 - answering_question：在回答下面列出的"待答问题"
 - help_start不知从哪开始 | help_stuck过程中卡住 | request_answer直接要答案
 - asking_knowledge：问课程内容本身（这是什么动物、为什么会这样）
+- student_discovery：学生主动陈述当前任务里的观察事实、差异、规律、猜想或暂定推论，例如“我看到嘴巴是张开的”“我发现它们朝向差不多”“我觉得它可能和水有关”。提问仍选 asking_knowledge，求助仍选 help_start/help_stuck/request_answer，说操作完成仍选 claim_done。
 - asking_location：问某个地点在哪里、怎么走、找不到
 - asking_logistics：问本次活动的组织安排——几点结束、什么时候集合、在哪集合、接下来什么流程、分组规则、时间银行怎么算、厕所饮水处出口在哪、带队老师在哪
 - claim_done口头说完成了 | greeting寒暄 | chat_offtopic与本次活动无关的闲聊 | emotional_low情绪低落或累或抱怨 | unknown看不懂

@@ -336,6 +336,17 @@ const TUTOR_ACTION_DECISIONS = Object.freeze({
     allowedTools: [],
     sourceMode: 'course-config',
   }),
+  // student_discovery（学生发现）由主模型结合当前阶段与课程引导回应；
+  // 不带求助脚手架，也不允许通过工具或状态机推进任务。
+  respond_to_discovery: () => base('student_discovery', {
+    includeTaskContext: true,
+    includePhasePrompt: true,
+    includeRestrictions: true,
+    includeScaffoldHint: false,
+    needsKnowledge: false,
+    allowedTools: [],
+    sourceMode: 'course-config',
+  }),
   // L3 组织信息：走模型生成（要按学生问的那一点作答），但取料只给运营切片，
   // 不给课程知识、不给脚手架——它不是教学回合。
   answer_logistics: () => base('activity_logistics', {

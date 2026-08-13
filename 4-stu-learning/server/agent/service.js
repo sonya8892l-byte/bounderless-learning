@@ -1340,6 +1340,7 @@ function degradedReply(decision, role, session, course) {
   const task = currentTaskOf(role, session);
   const voice = course?.platformDefaults?.voice;
   if (decision.intent === 'emotion') return renderVoice(voice, 'degraded.情绪');
+  if (decision.intent === 'student_discovery') return renderVoice(voice, 'degraded.学生发现');
   if (['task_help', 'task_followup', 'course_knowledge', 'tool_result'].includes(decision.intent)) {
     return renderVoice(voice, 'degraded.任务线索', { taskName: task.name });
   }
@@ -2414,7 +2415,7 @@ export function createAgentService({
     if ([
       'greeting', 'gratitude', 'goodbye', 'emotion', 'course_knowledge',
       'safety_help', 'social', 'activity_logistics', 'scaffold_exhausted',
-      'clarify_intent',
+      'student_discovery', 'clarify_intent',
     ].includes(decision.intent)) {
       suspendPendingQuestion(session);
     }

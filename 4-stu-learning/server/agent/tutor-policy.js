@@ -26,6 +26,7 @@ export const TUTOR_ACTIONS = Object.freeze([
   // 新增：分诊链各层各自的确定性出口。
   'call_teacher_safety',
   'answer_knowledge',
+  'respond_to_discovery',
   'answer_logistics',
   'clarify',
   'escalate_teacher',
@@ -62,7 +63,7 @@ function normalizeUnderstanding(value) {
     // 模型漏填时按意图补齐，和 understanding.js 的兜底同一套判断。
     hasTaskRequest: value?.hasTaskRequest === true
       || HELP_INTENTS.includes(intent)
-      || ['asking_knowledge', 'asking_location', 'asking_logistics', 'claim_done', 'safety_risk'].includes(intent),
+      || ['asking_knowledge', 'student_discovery', 'asking_location', 'asking_logistics', 'claim_done', 'safety_risk'].includes(intent),
     locationKind: ['task', 'venue', 'none'].includes(value?.locationKind) ? value.locationKind : 'none',
     confidence: Number.isFinite(confidence) ? confidence : 0,
   };
@@ -130,6 +131,9 @@ function triage(understanding, context) {
   }
   if (understanding.intent === 'asking_knowledge') {
     return { action: 'answer_knowledge', reason: '任务相关的背景知识提问，走课程知识库检索并标注来源。' };
+  }
+  if (understanding.intent === 'student_discovery') {
+    return { action: 'respond_to_discovery', reason: '学生正在分享现场发现，结合当前阶段与任务引导承接并追问证据。' };
   }
   // 任务点问路有确定的工具动作（打开导航）；场地设施问路属于组织信息。
   if (understanding.intent === 'asking_location') {

@@ -4,7 +4,7 @@ import { PLATFORM_COMPANION } from '../../src/engine/platform-config.js';
 import { languageLevelFor } from '../course/platform-defaults.js';
 import { phasePolicyInstructions } from '../course/phase-policy.js';
 
-export const AGENT_PROMPT_VERSION = '2026-08-11.1';
+export const AGENT_PROMPT_VERSION = '2026-08-13.1';
 
 function compactHistory(messages) {
   return messages.slice(-8).map(({ role, content }) => ({
@@ -176,7 +176,8 @@ export function buildAgentPrompt({
 常见误区：${currentStep?.commonMisconception || '按课程证据边界检查'}
 地点：${task.location?.name || '无需指定地点'}；到达：${runtime.location.status || '未知'}；停留：${runtime.location.dwellSeconds || 0}秒
 已进行：${runtime.taskElapsedSeconds}秒；无操作：${runtime.idleSeconds}秒；脚手架：L${scaffoldLevel}`.trim() : '';
-  const taskHint = decision.includeTaskContext
+  const includeScaffoldHint = decision.includeTaskContext && decision.includeScaffoldHint !== false;
+  const taskHint = includeScaffoldHint
     ? taskScaffoldHint(
       task,
       scaffoldLevel,
@@ -187,14 +188,30 @@ export function buildAgentPrompt({
     : '';
   // 就地引导由投影负责 Step 优先于任务级。保留完整语义，
   // 过长内容由课程 lint 在发布前给出定位告警，运行时不做无语义硬切。
-  const guidanceContext = decision.includeTaskContext ? context.guidance : '';
-  const scaffoldSemantic = decision.includeTaskContext
+  const guidanceContext = decision.includeTaskContext
+    ? (decision.intent === 'student_discovery'
+      ? [
+        task?.guidance ? `### 任务引导目标与策略\n${task.guidance}` : '',
+        currentStep?.guidance ? `### 当前小步引导\n${currentStep.guidance}` : '',
+      ].filter(Boolean).join('\n\n')
+      : context.guidance)
+    : '';
+  const scaffoldSemantic = includeScaffoldHint
     ? course?.platformDefaults?.scaffolding?.levels?.[`L${scaffoldLevel}`] || ''
     : '';
   const logisticsContext = decision.includeLogistics
     ? logisticsSection(toLogisticsContext({ course, session, role, teacherName }))
     : '';
   const toneContext = toneRules(decision.params || {}, stepLabel);
+  const discoveryResponsePolicy = decision.intent === 'student_discovery'
+    ? [
+      '学生正在主动分享当前任务中的发现。本轮只做一次教学性回应，不推进任务。',
+      '先具体承接学生说出的可观察内容，避免空泛夸奖。',
+      '再根据当前阶段、任务与小步引导，以及和学生表达相符的条件策略，最多追问一个可观察、可核验的证据问题。',
+      '区分观察事实与学生的猜想；猜想只称为“你的猜想”，不要复述、确认或补全受保护结论。',
+      '不宣布验收通过，不复述验收标准，不替学生下结论，不调用工具，不改变任务或小步进度。',
+    ].join('\n')
+    : '';
   const nudgeContext = decision.intent === 'proactive_nudge'
     ? `提醒原因：${decision.nudge?.reason}；这是第${(session.conversationState?.nudgeCount || 0) + 1}次提醒。用一句关心或轻问句确认学生状态，最多附一个可执行的小提示。避免重复完整任务。`
     : '';
@@ -225,6 +242,7 @@ ${section('活动组织信息', logisticsContext)}
 ${section('任务', taskContext)}
 ${section('阶段规则', phasePrompt)}
 ${section('本步引导方向', guidanceContext)}
+${section('学生发现回应要求', discoveryResponsePolicy)}
 ${section('当前脚手架档位语义（只控制帮助深度，不可逐字念给学生）', scaffoldSemantic)}
 ${section('本轮可用线索', taskHint)}
 ${section('主动提醒', nudgeContext)}

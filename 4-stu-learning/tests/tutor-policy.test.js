@@ -124,6 +124,34 @@ test('L2：问课程知识走知识回答，不落进默认自然回应', () => 
   assert.equal(decision.action, 'answer_knowledge');
 });
 
+test('L2：学生分享发现时进入发现回应，不推进也不升级脚手架', () => {
+  const decision = decideTutorAction(
+    understanding({ intent: 'student_discovery', hasTaskRequest: true }),
+    context(),
+  );
+
+  assert.equal(decision.action, 'respond_to_discovery');
+  assert.equal(decision.params.scaffoldLevelDelta, undefined);
+  assert.ok(TUTOR_ACTIONS.includes(decision.action));
+});
+
+test('学生带着沮丧分享发现时仍回应发现，情绪只改变语气', () => {
+  const decision = decideTutorAction(
+    understanding({ intent: 'student_discovery', emotion: 'frustrated' }),
+    context({
+      recentActions: [
+        { intent: 'student_discovery', action: 'respond_to_discovery' },
+        { intent: 'student_discovery', action: 'respond_to_discovery' },
+      ],
+    }),
+  );
+
+  assert.equal(decision.action, 'respond_to_discovery');
+  assert.equal(decision.params.tone, 'comfort_first');
+  assert.notEqual(decision.params.refocus, true);
+  assert.equal(decision.params.scaffoldLevelDelta, undefined);
+});
+
 test('L2：问任务点位置给导航', () => {
   const decision = decideTutorAction(
     understanding({ intent: 'asking_location', locationKind: 'task' }),

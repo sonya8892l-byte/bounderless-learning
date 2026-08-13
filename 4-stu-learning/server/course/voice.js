@@ -36,6 +36,7 @@ export const VOICE_DEFAULTS = Object.freeze({
   'proactive_nudge.试一小步': '还顺利吗？可以先试这一小步：{hint}',
   'degraded.情绪': '我在听。你可以慢一点说，我会陪你一起理清。',
   'degraded.任务线索': '我收到啦。先从“{taskName}”里最确定的一条现场线索开始，把它告诉我，我继续陪你分析。',
+  'degraded.学生发现': '我收到你的发现了。先把你亲眼看到的线索记下来，我们再一起检查这个猜想。',
   'degraded.没接住': '我想确认一下：你是在问当前任务，还是需要别的帮助？',
   'prelude.求助': '我在。先试一个小步骤：{hint}',
   'prelude.情绪': '我在听，你慢慢说。',

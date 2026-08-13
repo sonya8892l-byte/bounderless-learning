@@ -24,12 +24,42 @@ test('高置信度常见表达本地分诊，歧义和课程外问题仍交给�
     ['还有呢？', 'chat_offtopic'],
     ['记录一个网络来源至少要写哪些信息？', 'asking_knowledge'],
     ['看地图证据时应该先看什么？', 'asking_knowledge'],
+    ['我发现任务卡打不开，不知道怎么继续。', 'help_stuck'],
+    ['我发现螭首有什么作用？', 'asking_knowledge'],
+    ['我发现我已经拍完了。', 'claim_done'],
   ];
   for (const [text, intent] of samples) {
     assert.equal(fastUnderstanding(text, { knowledgeTerms })?.intent, intent, text);
   }
   assert.equal(fastUnderstanding('你们那儿今天下雨了吗', { knowledgeTerms }), null);
   assert.equal(fastUnderstanding('那个到底怎么回事', { knowledgeTerms }), null);
+  assert.equal(
+    fastUnderstanding('我发现它们的嘴都是张开的，朝向也很接近。', { knowledgeTerms }),
+    null,
+    '开放式发现陈述交给语义模型结合当前 Step 判断，不用宽泛正则抢判',
+  );
+});
+
+test('学生发现可以进入结构化意图，并被归一为任务相关表达', async () => {
+  const llm = mockLLM(() => modelReply({
+    intent: 'student_discovery',
+    emotion: 'neutral',
+    answersPendingQuestion: false,
+    want: '分享现场观察和初步猜想',
+    confidence: 0.94,
+  }));
+  const { understandTurn } = createUnderstanding({ llm });
+
+  const result = await understandTurn({
+    ...sampleInput,
+    text: '我发现它们的嘴都是张开的，好像和水有关系。',
+    pendingQuestion: null,
+  });
+
+  assert.equal(result.intent, 'student_discovery');
+  assert.equal(result.hasTaskRequest, true, '学生主动分享发现仍属于当前任务语境');
+  assert.match(llm.calls[0].instructions, /student_discovery/);
+  assert.match(llm.calls[0].instructions, /观察事实、差异、规律、猜想/);
 });
 
 function mockLLM(handler) {
