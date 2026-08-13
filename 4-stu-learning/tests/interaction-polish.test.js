@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   isAuditOnlyTransportEvent,
   PHASE_TRANSITION_DELAY_MS,
+  republishActiveTaskMessage,
   shouldSuppressPassivePresentation,
   visibleEventDelay,
 } from '../src/engine/presentation-timing.js';
@@ -48,6 +49,30 @@ test('前端优先使用服务端 TurnPlan 的揭示间隔', () => {
     350,
     '首条仍保留本地初次入场停顿',
   );
+});
+
+test('Step 提示后移动同一张活动任务卡到消息末尾，并保留卡片状态', () => {
+  const taskMessage = {
+    id: 'task-card-1',
+    type: 'task',
+    status: 'active',
+    callId: 'call-1',
+    payload: { taskId: 'task-1', taskIndex: 0 },
+  };
+  const messages = [
+    taskMessage,
+    { id: 'reply-1', type: 'assistant', text: '还要补一个远景。' },
+    { id: 'reply-2', type: 'assistant', text: '请回到任务卡继续拍摄。' },
+  ];
+
+  const moved = republishActiveTaskMessage(messages, 'task-1');
+
+  assert.equal(moved, taskMessage);
+  assert.deepEqual(messages.map((message) => message.id), ['reply-1', 'reply-2', 'task-card-1']);
+  assert.equal(messages.filter((message) => message === taskMessage).length, 1);
+  assert.equal(taskMessage.callId, 'call-1');
+  assert.equal(taskMessage.payload.taskIndex, 0);
+  assert.equal(republishActiveTaskMessage(messages, 'other-task'), null);
 });
 
 test('完整已批准 delta 只用于传输审计，页面等 TurnPlan 再逐泡揭示', () => {

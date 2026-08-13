@@ -48,3 +48,22 @@ export function visibleEventDelay(event, {
   if (visibleEventCount === 0) return initialEmpty ? FIRST_MESSAGE_REVEAL_DELAY_MS : 0;
   return MESSAGE_REVEAL_DELAY_MS;
 }
+
+/**
+ * Step 反馈读完后，把消息流里原有的当前任务卡移到最下方。
+ * 这里移动原对象，不复制卡片，照片、草稿、callId 和 payload 都继续使用
+ * roleState 中的同一份状态。
+ */
+export function republishActiveTaskMessage(messages = [], taskId = '') {
+  if (!taskId || !Array.isArray(messages)) return null;
+  const matchesTask = (message) => (
+    message?.type === 'task'
+    && message.status === 'active'
+    && message.payload?.taskId === taskId
+  );
+  const messageIndex = messages.findIndex(matchesTask);
+  if (messageIndex < 0) return null;
+  const [message] = messages.splice(messageIndex, 1);
+  messages.push(message);
+  return message;
+}

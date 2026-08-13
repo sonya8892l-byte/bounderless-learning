@@ -86,6 +86,7 @@ import { mergeRoleClaimProjection, roleClaimChoice } from './engine/role-claim.j
 import {
   isAuditOnlyTransportEvent,
   PHASE_TRANSITION_DELAY_MS,
+  republishActiveTaskMessage,
   shouldSuppressPassivePresentation,
   visibleEventDelay,
 } from './engine/presentation-timing.js';
@@ -164,6 +165,7 @@ function makeLearningTrackState() {
     lastRenderableMessages: [],
     taskCallIds: {},
     taskPayloads: {},
+    republishedTaskMessageId: null,
     evidence: {},
     guidanceStepIndices: {},
     entryStarted: false,
@@ -1606,7 +1608,12 @@ function renderMessage(message) {
   if (message.type === 'user') return userMessage(message);
   if (message.type === 'phase') return phaseMessage(message);
   if (message.type === 'navigation') return navigationCard(message);
-  if (message.type === 'task') return taskCard(message);
+  if (message.type === 'task') {
+    const card = taskCard(message);
+    if (!card) return '';
+    const republished = currentRoleState().republishedTaskMessageId === message.id;
+    return `<div class="task-card-placement ${republished ? 'is-republished' : ''}" data-task-message-id="${escapeHtml(message.id || '')}">${card}</div>`;
+  }
   if (message.type === 'token') return tokenReveal();
   if (message.type === 'quick-replies') return quickRepliesMessage(message);
   if (message.type === 'loading') {
@@ -1685,6 +1692,11 @@ function renderChat() {
   if (state.learningView === 'dialogue') hydrateNavigationMaps(mapHydrationVersion);
   window.requestAnimationFrame(() => hydrateCompanionAvatars());
   window.requestAnimationFrame(hydrateSketchCanvases);
+  if (roleState.republishedTaskMessageId) {
+    window.requestAnimationFrame(() => {
+      roleState.republishedTaskMessageId = null;
+    });
+  }
 }
 
 function drawCanvasImage(canvas, source) {
@@ -2045,6 +2057,11 @@ async function runAgentTurn(input, options = {}) {
     requestId = crypto.randomUUID(),
     feedbackTarget = null,
   } = options;
+  const republishTaskId = !passive
+    && input?.type === 'lifecycle_event'
+    && ['task_step_completed', 'task_step_revised'].includes(input.event)
+    ? String(input.data?.taskId || '')
+    : '';
   const roleState = currentRoleState();
   if (!roleState.agentSessionId) return;
   // 暂停、紧急集合和结束都是教师场次的权威门禁。
@@ -2094,6 +2111,7 @@ async function runAgentTurn(input, options = {}) {
       bufferedEvents.push(event);
     });
     let visibleEventCount = 0;
+    let displayedAssistantFeedback = false;
     for (const event of bufferedEvents) {
       if (shouldSuppressPassivePresentation(event, {
         passive,
@@ -2126,6 +2144,7 @@ async function runAgentTurn(input, options = {}) {
         roleState.activeLoadingId = null;
       }
       if (['assistant.completed', 'stage.started', 'tool.requested', 'ui.quick_replies'].includes(event.type)) shouldRender = true;
+      if (event.type === 'assistant.completed') displayedAssistantFeedback = true;
       applyAgentEvent(event, feedbackTarget);
       if (visuallyAddsMessage) {
         visibleEventCount += 1;
@@ -2137,6 +2156,15 @@ async function runAgentTurn(input, options = {}) {
       }
     }
     roleState.lastAgentRequestError = null;
+    if (displayedAssistantFeedback && republishTaskId && !roleState.completed && roleState.progress < currentRole().tasks.length) {
+      const activeTask = currentRole().tasks[roleState.progress];
+      const stepCount = activeTask?.steps?.length || activeTask?.guidanceSteps?.length || 1;
+      if (activeTask?.id === republishTaskId && stepCount > 1) {
+        const republished = republishActiveTaskMessage(roleState.messages, republishTaskId);
+        roleState.republishedTaskMessageId = republished?.id || null;
+        if (republished) shouldRender = true;
+      }
+    }
   } catch (error) {
     const visibleError = studentFacingError(error, '检查暂未完成，请稍后重试。');
     roleState.lastAgentRequestError = {
@@ -2521,6 +2549,10 @@ function completeStandaloneActivityStep({ context, taskId, stepId, feedbackTarge
     roleState.messages.push({
       id: crypto.randomUUID(), type: 'assistant', text, source: '本地课程包',
     });
+    if (steps.length > 1) {
+      const republished = republishActiveTaskMessage(roleState.messages, taskId);
+      roleState.republishedTaskMessageId = republished?.id || null;
+    }
   }
   renderLearningShell();
   window.setTimeout(scrollChatToBottom, 20);
@@ -2574,6 +2606,16 @@ async function completeActivityStep(taskId, stepId) {
           stepId,
           kind: 'revision',
         };
+      }
+      if ((context.task.steps?.length || context.task.guidanceSteps?.length || 1) > 1) {
+        roleState.messages.push({
+          id: crypto.randomUUID(),
+          type: 'assistant',
+          text: '这一步修改后的照片已重新检查并记录。',
+          source: '本地课程包',
+        });
+        const republished = republishActiveTaskMessage(roleState.messages, taskId);
+        roleState.republishedTaskMessageId = republished?.id || null;
       }
       renderLearningShell();
       return true;

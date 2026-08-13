@@ -1331,6 +1331,15 @@ svg {
   box-shadow: var(--shadow-soft);
 }
 
+.task-card-placement.is-republished {
+  animation: task-card-republish 180ms ease-out both;
+}
+
+@keyframes task-card-republish {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .tool-card__visual {
   position: relative;
   height: 150px;
