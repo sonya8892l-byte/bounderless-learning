@@ -678,15 +678,20 @@ function validateStepCompletion({
 }) {
   const step = task.steps?.[stepIndex];
   const mode = step?.completionMode || 'user_confirm';
+  const teacherApproved = input.data?.teacherApproved === true
+    && teacherCommandAuthorization?.action === 'approve_evidence';
   if (input.data?.teacherOverride === true) {
     if (teacherCommandAuthorization?.action === 'skip_step') return;
     throw new AgentActionError('这次跳过指令没有有效的教师授权。', 'TEACHER_COMMAND_UNAUTHORIZED');
   }
+  if (input.data?.teacherApproved === true) {
+    if (teacherApproved && ['teacher_confirm', 'ai_evaluation'].includes(mode)) return;
+    if (!teacherApproved) {
+      throw new AgentActionError('这次人工通过没有有效的教师授权。', 'TEACHER_COMMAND_UNAUTHORIZED');
+    }
+    throw new AgentActionError('当前小步不在等待教师验收的状态。', 'TEACHER_COMMAND_TASK_STATE_MISMATCH');
+  }
   if (mode === 'teacher_confirm') {
-    if (
-      input.data?.teacherApproved === true
-      && teacherCommandAuthorization?.action === 'approve_evidence'
-    ) return;
     throw new AgentActionError('这一步需要老师确认，请先呼叫老师或等待教师端处理。', 'STEP_TEACHER_CONFIRM_REQUIRED');
   }
   if (mode === 'location_event' && session.locationState?.status !== 'arrived') {
@@ -2111,9 +2116,11 @@ export function createAgentService({
             session,
             teacherCommandAuthorization,
           });
+          const teacherApproved = input.data?.teacherApproved === true
+            && teacherCommandAuthorization?.action === 'approve_evidence';
           const teacherSkipped = input.data?.teacherOverride === true
             && teacherCommandAuthorization?.action === 'skip_step';
-          if (completionMode === 'ai_evaluation' && !teacherSkipped) {
+          if (completionMode === 'ai_evaluation' && !teacherSkipped && !teacherApproved) {
             const step = task.steps[currentIndex];
             const evaluation = await evaluateStepSubmission({
               llm, evaluationLlm, course, role, session, task, step, input, signal, logger,
@@ -2138,13 +2145,22 @@ export function createAgentService({
               recordStepFailure(session, task, currentIndex, evaluation.feedback);
             }
           } else {
-            if (completionMode === 'ai_evaluation' && teacherSkipped) {
+            if (completionMode === 'ai_evaluation' && (teacherSkipped || teacherApproved)) {
               const step = task.steps[currentIndex];
               acceptStepEvidence(session, {
                 stepId: step.id,
                 fingerprint: stepEvidenceFingerprint(input.data?.toolValues || {}, step.id),
-                source: 'teacher_override',
+                source: teacherApproved ? 'teacher_approval' : 'teacher_override',
               });
+              if (teacherApproved) {
+                input.data.aiEvaluation = {
+                  passed: true,
+                  feedback: '老师已人工确认当前证据，可以继续。',
+                  missing: [],
+                  safetyIssue: false,
+                  checkedBy: 'teacher_approval',
+                };
+              }
             }
             session.taskState.guidanceStepIndex = currentIndex + 1;
             recordStepCompletion(session, task, currentIndex);

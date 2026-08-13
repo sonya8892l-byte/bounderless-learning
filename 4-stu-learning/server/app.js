@@ -541,6 +541,20 @@ export async function buildApp({
     const task = tasks[taskIndex] || null;
     const stepIndex = Math.max(0, Number(session.taskState?.guidanceStepIndex || 0));
     const step = task?.steps?.[stepIndex] || null;
+    const stepAttempts = step
+      ? Math.max(0, Number(session.taskState?.stepAttempts?.[step.id] || 0))
+      : 0;
+    const stepMaxAttempts = step ? Math.max(0, Number(step.maxAttempts || 0)) : 0;
+    const taskFinalizationStatus = String(session.taskState?.finalization?.status || '');
+    const teacherApprovalKind = step?.completionMode === 'teacher_confirm'
+      ? 'step_teacher_confirm'
+      : step?.completionMode === 'ai_evaluation'
+        && stepMaxAttempts > 0
+        && stepAttempts >= stepMaxAttempts
+        ? 'ai_max_attempts'
+        : taskFinalizationStatus === 'awaiting_teacher_confirm'
+          ? 'task_teacher_confirm'
+          : '';
     const completedPrefix = `${track?.id || session.roleId || session.phaseId}:`;
     const completedCount = (session.completedTaskIds || [])
       .filter((taskId) => taskId.startsWith(completedPrefix)).length;
@@ -555,6 +569,16 @@ export async function buildApp({
       currentTask: task?.name || '待开始',
       currentTaskId: task?.id || session.taskState?.taskId || '',
       currentStepId: step?.id || session.learningState?.stepId || '',
+      currentStepName: step?.name || step?.studentAction || step?.objective || '',
+      currentStepCompletionMode: step?.completionMode || '',
+      currentStepAttempts: stepAttempts,
+      currentStepMaxAttempts: stepMaxAttempts,
+      taskFinalizationStatus,
+      teacherApprovalAllowed: Boolean(teacherApprovalKind),
+      teacherApprovalKind,
+      pendingAdvanceMode: session.pendingAdvance?.taskId === task?.id
+        ? String(session.pendingAdvance.mode || '')
+        : '',
       evidenceCount: Array.isArray(session.learningState?.evidenceIds)
         ? session.learningState.evidenceIds.length
         : 0,

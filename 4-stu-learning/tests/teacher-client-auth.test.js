@@ -226,6 +226,11 @@ test('教师 PWA 源码保持单一鉴权通道，无持久快照凭证和静态
   assert.match(app, /if \(error\.status !== 404\) throw error;/u);
   assert.doesNotMatch(app, /run\.status === 'draft' \? actionButton\('start_phase'/u);
   assert.match(app, /const HIGH_IMPACT = new Set\(\[[^\]]*'start_phase'/u);
+  assert.match(app, /participant\.learning\.teacherApprovalAllowed === true/u);
+  assert.match(app, /participant\.learning\.pendingAdvanceMode === 'teacher'/u);
+  assert.match(app, /teacherApprovalAllowed \? actionButton\('approve_evidence'/u);
+  assert.match(app, /teacherApprovalKind === 'task_teacher_confirm' \? actionButton\('reject_evidence'/u);
+  assert.match(app, /awaitingTeacherAdvance \? actionButton\('advance_task'/u);
   assert.doesNotMatch(qrCode, /fetch\s*\(|api\.qr|quickchart|googleapis/u);
   assert.match(sessionData, /url\.hash = new URLSearchParams/u);
   assert.match(html, /id="teacherCredential"[^>]+type="password"/u);

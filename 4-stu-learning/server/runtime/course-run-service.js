@@ -141,6 +141,14 @@ function makeParticipants(course, groupCount = 5, { demo = false } = {}) {
           currentTask: demo ? (task?.name || '待开始') : '待开始',
           currentTaskId: demo ? (task?.id || '') : '',
           currentStepId: demo ? (task?.steps?.[0]?.id || '') : '',
+          currentStepName: demo ? (task?.steps?.[0]?.name || task?.steps?.[0]?.studentAction || '') : '',
+          currentStepCompletionMode: demo ? (task?.steps?.[0]?.completionMode || '') : '',
+          currentStepAttempts: 0,
+          currentStepMaxAttempts: demo ? Math.max(0, Number(task?.steps?.[0]?.maxAttempts || 0)) : 0,
+          taskFinalizationStatus: '',
+          teacherApprovalAllowed: false,
+          teacherApprovalKind: '',
+          pendingAdvanceMode: '',
           roleStageName: demo ? (task?.name || '现场任务') : '',
           stepName: demo ? (task?.steps?.[0]?.name || task?.requirement || '完成当前观察') : '',
           idleSeconds: demo ? (index === 8 ? 260 : 20 + index * 4) : 0,
@@ -1182,6 +1190,28 @@ export function createCourseRunService({
           participant.learning.currentTask = String(trustedLearningProjection.currentTask || '待开始').slice(0, 200);
           participant.learning.currentTaskId = String(trustedLearningProjection.currentTaskId || '').slice(0, 160);
           participant.learning.currentStepId = String(trustedLearningProjection.currentStepId || '').slice(0, 160);
+          participant.learning.currentStepName = String(trustedLearningProjection.currentStepName || '').slice(0, 300);
+          participant.learning.currentStepCompletionMode = String(
+            trustedLearningProjection.currentStepCompletionMode || '',
+          ).slice(0, 80);
+          participant.learning.currentStepAttempts = Math.max(
+            0,
+            Number(trustedLearningProjection.currentStepAttempts || 0),
+          );
+          participant.learning.currentStepMaxAttempts = Math.max(
+            0,
+            Number(trustedLearningProjection.currentStepMaxAttempts || 0),
+          );
+          participant.learning.taskFinalizationStatus = String(
+            trustedLearningProjection.taskFinalizationStatus || '',
+          ).slice(0, 80);
+          participant.learning.teacherApprovalAllowed = trustedLearningProjection.teacherApprovalAllowed === true;
+          participant.learning.teacherApprovalKind = String(
+            trustedLearningProjection.teacherApprovalKind || '',
+          ).slice(0, 80);
+          participant.learning.pendingAdvanceMode = String(
+            trustedLearningProjection.pendingAdvanceMode || '',
+          ).slice(0, 80);
           participant.learning.idleSeconds = Math.max(0, Number(trustedLearningProjection.idleSeconds || 0));
           participant.learning.lastMeaningfulActionAt = trustedLearningProjection.lastMeaningfulActionAt || null;
         }

@@ -3604,10 +3604,20 @@ function teacherCommandHandlers(roleState) {
       if (!task) throw teacherCommandError('当前没有可确认的任务。', 'TEACHER_COMMAND_TASK_MISSING');
       const stepIndex = Number(roleState.guidanceStepIndices[task.id] || 0);
       const step = task.steps?.[stepIndex];
-      if (step?.completionMode === 'teacher_confirm') {
+      if (['teacher_confirm', 'ai_evaluation'].includes(step?.completionMode)) {
+        const evidence = taskEvidence(task.id);
         await runRequiredTeacherAgentTurn({
           type: 'lifecycle_event', event: 'task_step_completed',
-          data: { taskId: task.id, stepId: step.id, stepIndex, teacherApproved: true, teacherCommandId: command.id },
+          data: {
+            taskId: task.id,
+            stepId: step.id,
+            stepIndex,
+            completionMode: step.completionMode,
+            localEvidenceCount: evidence.imageUrls.length,
+            toolValues: serializableToolValues(evidence),
+            teacherApproved: true,
+            teacherCommandId: command.id,
+          },
         });
       } else if (
         task.finalizationMode === 'teacher_confirm'

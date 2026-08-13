@@ -619,6 +619,18 @@ function renderStudentDrawer(participantId) {
   if (!participant) return;
   const roleLabel = participantRoleLabel(participant);
   const ageLabel = participant.positionStatus === 'fresh' ? `${participant.positionAgeSeconds}秒前更新` : `位置可能过期 · ${Math.floor(participant.positionAgeSeconds / 60)}分钟前`;
+  const teacherApprovalAllowed = participant.learning.teacherApprovalAllowed === true;
+  const teacherApprovalDescription = participant.learning.teacherApprovalKind === 'ai_max_attempts'
+    ? `AI 已达到最大尝试次数（${participant.learning.currentStepAttempts}/${participant.learning.currentStepMaxAttempts}），确认通过当前小步`
+    : participant.learning.teacherApprovalKind === 'task_teacher_confirm'
+      ? '完成教师终审并确认当前任务'
+      : '确认通过当前小步';
+  const awaitingTeacherAdvance = participant.learning.pendingAdvanceMode === 'teacher';
+  const interventionStatus = teacherApprovalAllowed
+    ? '当前可以人工通过。'
+    : awaitingTeacherAdvance
+      ? '当前任务已完成，等待老师确认进入下一任务。'
+      : '学生仍在完成当前小步，暂不需要教师推进。';
   openDrawer({ eyebrow: `${roleLabel} · ${state.snapshot.groups.find((item) => item.id === participant.groupId)?.name}`, title: participant.name, html: `
     <div class="detail-block"><div class="metric-grid">
       <div class="metric"><span>当前任务</span><strong>${escapeHtml(participant.learning.currentTask)}</strong></div>
@@ -627,14 +639,14 @@ function renderStudentDrawer(participantId) {
       <div class="metric"><span>位置精度</span><strong>±${participant.location.accuracyMeters}m</strong></div>
     </div><p class="alert-card__meta">${ageLabel}</p></div>
     <div class="detail-block"><h3>AI对话摘要</h3><p>${escapeHtml(participant.learning.dialogueSummary)}</p><button class="outline-button" type="button" data-action="request-transcript" data-participant-id="${participant.id}">按授权查看原文</button></div>
-    <div class="detail-block"><h3>任务与证据</h3><p>${escapeHtml(participant.learning.stepName)} · 已提交 ${participant.learning.evidenceCount} 项证据</p></div>
+    <div class="detail-block"><h3>任务与证据</h3><p>${escapeHtml(participant.learning.currentStepName || participant.learning.stepName)} · 已提交 ${participant.learning.evidenceCount} 项证据</p><p class="alert-card__meta">${escapeHtml(interventionStatus)}</p></div>
     <div class="detail-block"><h3>学生干预</h3><div class="action-grid">
       ${actionButton('send_notice', '教师提示', '明确标注教师来源', { scope: 'participant', id: participant.id }, { text: '我看到你的尝试了，请先选择一条最有把握的证据继续。' })}
       ${actionButton('set_scaffold', '增强提示', '调整为L2', { scope: 'participant', id: participant.id }, { level: 2 })}
       ${actionButton('confirm_arrival', '确认到达', '教师人工确认位置', { scope: 'participant', id: participant.id })}
-      ${actionButton('approve_evidence', '人工通过', '保留AI原判断记录', { scope: 'participant', id: participant.id }, {}, true)}
-      ${actionButton('reject_evidence', '退回补做', '要求补充证据', { scope: 'participant', id: participant.id })}
-      ${actionButton('advance_task', '进入下一任务', '解开需教师确认的任务', { scope: 'participant', id: participant.id }, {}, true)}
+      ${teacherApprovalAllowed ? actionButton('approve_evidence', '人工通过', teacherApprovalDescription, { scope: 'participant', id: participant.id }, {}, true) : ''}
+      ${participant.learning.teacherApprovalKind === 'task_teacher_confirm' ? actionButton('reject_evidence', '退回补做', '要求补充证据', { scope: 'participant', id: participant.id }) : ''}
+      ${awaitingTeacherAdvance ? actionButton('advance_task', '进入下一任务', '当前任务已完成，确认进入下一任务', { scope: 'participant', id: participant.id }, {}, true) : ''}
     </div></div>` });
 }
 
