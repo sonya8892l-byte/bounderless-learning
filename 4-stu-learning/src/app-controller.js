@@ -78,6 +78,10 @@ import { consumeJoinCredential } from './engine/join-credential.js';
 import { qaForceCompleteEnabled } from './engine/qa-mode.js';
 import { dispatchTeacherCommand } from './engine/teacher-command-dispatch.js';
 import { courseRunGateFromError } from './engine/course-run-gate.js';
+import {
+  restoredDialogueMessages,
+  restoredTrackRuntime,
+} from './engine/session-dialogue-history.js';
 import { mergeRoleClaimProjection, roleClaimChoice } from './engine/role-claim.js';
 import {
   isAuditOnlyTransportEvent,
@@ -642,13 +646,21 @@ function restoreTrackFromAgentSession(track, owner, session) {
   state.gradeSource = session.gradeSource || state.gradeSource;
   state.timeBalance = Number(session.timeBalance ?? state.timeBalance);
   track.progress = Math.max(0, Number(session.currentTaskIndex || 0));
-  track.completed = (session.completedTaskIds || []).length >= owner.tasks.length;
+  const restoredRuntime = restoredTrackRuntime(session, owner.tasks.length);
+  track.completed = restoredRuntime.completed;
   const taskId = session.runtime?.task?.taskId || owner.tasks[track.progress]?.id || '';
   if (taskId) {
     track.guidanceStepIndices[taskId] = Number(session.runtime?.task?.guidanceStepIndex || 0);
     if (session.runtime?.task?.finalization) {
       track.taskFinalizations[taskId] = session.runtime.task.finalization;
     }
+  }
+  track.pendingAdvance = restoredRuntime.pendingAdvance;
+  if (restoredRuntime.activeTool) {
+    track.taskCallIds ||= {};
+    track.taskPayloads ||= {};
+    track.taskCallIds[restoredRuntime.activeTool.taskId] = restoredRuntime.activeTool.callId;
+    track.taskPayloads[restoredRuntime.activeTool.taskId] = restoredRuntime.activeTool.payload;
   }
   const location = session.runtime?.location;
   track.evidenceCount = Array.isArray(session.runtime?.learning?.evidenceIds)
@@ -668,14 +680,16 @@ function restoreTrackFromAgentSession(track, owner, session) {
   track.entryStarted = session.resumeState?.entryStarted === true;
   track.entryReady = track.entryStarted;
   if (track.entryStarted) {
+    const dialogueMessages = restoredDialogueMessages(session.dialogueHistory);
     track.messages = [
+      ...dialogueMessages,
       {
         id: crypto.randomUUID(),
         type: 'assistant',
         text: `已恢复你在“${owner.name}”的学习进度。`,
         source: '本次课程记录',
       },
-      ...currentTaskRecoveryMessages(owner, track),
+      ...(track.completed ? [] : currentTaskRecoveryMessages(owner, track)),
     ];
   }
 }
@@ -770,6 +784,7 @@ async function performStartPhaseLearning() {
         }
         void pollTeacherCommands();
         renderLearningShell();
+        window.requestAnimationFrame(() => scrollChatToBottom());
         return;
       }
       if (resumed) {
@@ -779,6 +794,7 @@ async function performStartPhaseLearning() {
       }
       if (resumed) {
         void pollTeacherCommands();
+        window.requestAnimationFrame(() => scrollChatToBottom());
       } else {
         const session = await createAgentSession({
           courseId: lesson.id,

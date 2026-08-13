@@ -336,6 +336,39 @@ test('Preview 入课和恢复必须验证 participant 专属高熵凭证', async
   assert.equal(JSON.stringify(joined.json()).includes('joinCredential'), false);
   assert.equal(fixture.sessionStore.sessions.get(joined.json().id).joinCredential, undefined);
 
+  const saved = await fixture.sessionStore.get(joined.json().id);
+  saved.messages = [
+    { role: 'user', content: '我刚才观察到龙头数量有规律。', createdAt: '2026-08-13T01:00:00.000Z' },
+    { role: 'assistant', content: '这个发现已经记下来了。', createdAt: '2026-08-13T01:00:01.000Z' },
+    { role: 'user', content: 'tool_result 数龙头', createdAt: '2026-08-13T01:00:02.000Z' },
+    {
+      id: 'visible-quick-reply',
+      role: 'user',
+      content: '继续观察',
+      inputType: 'quick_reply',
+      studentVisible: true,
+      createdAt: '2026-08-13T01:00:03.000Z',
+    },
+  ];
+  saved.pendingAdvance = {
+    mode: 'student',
+    taskId: saved.taskState.taskId,
+    completedId: `phase:${saved.taskState.taskId}`,
+  };
+  saved.learningState.activeToolCallId = 'call-resume-current-tool';
+  saved.pendingTools['call-resume-current-tool'] = {
+    name: 'open_task_tool',
+    arguments: { privateReason: '不可下发的内部参数' },
+    payload: {
+      renderer: 'form',
+      taskId: saved.taskState.taskId,
+      taskIndex: saved.currentTaskIndex,
+      title: '当前任务工具',
+      config: { fields: [{ id: 'observation', label: '观察记录' }] },
+    },
+  };
+  await fixture.sessionStore.save(saved);
+
   const resumeWithoutCredential = await fixture.app.inject({
     method: 'POST',
     url: '/api/sessions/resume',
@@ -347,6 +380,7 @@ test('Preview 入课和恢复必须验证 participant 专属高熵凭证', async
   });
   assert.equal(resumeWithoutCredential.statusCode, 401);
   assert.equal(resumeWithoutCredential.json().code, 'JOIN_CREDENTIAL_REQUIRED');
+  assert.doesNotMatch(resumeWithoutCredential.body, /龙头|继续观察/);
 
   const forgedResume = await fixture.app.inject({
     method: 'POST',
@@ -360,6 +394,7 @@ test('Preview 入课和恢复必须验证 participant 专属高熵凭证', async
   });
   assert.equal(forgedResume.statusCode, 403);
   assert.equal(forgedResume.json().code, 'JOIN_CREDENTIAL_INVALID');
+  assert.doesNotMatch(forgedResume.body, /龙头|继续观察/);
 
   const resumed = await fixture.app.inject({
     method: 'POST',
@@ -374,6 +409,49 @@ test('Preview 入课和恢复必须验证 participant 专属高熵凭证', async
   assert.equal(resumed.statusCode, 200);
   assert.equal(resumed.json().id, joined.json().id);
   assert.equal(JSON.stringify(resumed.json()).includes('joinCredential'), false);
+  assert.equal(resumed.headers['cache-control'], 'no-store');
+  assert.deepEqual(resumed.json().dialogueHistory, [
+    {
+      id: 'dialogue-0',
+      role: 'user',
+      text: '我刚才观察到龙头数量有规律。',
+      source: '',
+      createdAt: '2026-08-13T01:00:00.000Z',
+    },
+    {
+      id: 'dialogue-1',
+      role: 'assistant',
+      text: '这个发现已经记下来了。',
+      source: '',
+      createdAt: '2026-08-13T01:00:01.000Z',
+    },
+    {
+      id: 'visible-quick-reply',
+      role: 'user',
+      text: '继续观察',
+      source: '',
+      createdAt: '2026-08-13T01:00:03.000Z',
+    },
+  ]);
+  assert.deepEqual(resumed.json().pendingAdvance, {
+    mode: 'student',
+    taskId: saved.taskState.taskId,
+  });
+  assert.equal(resumed.json().activeTool.callId, 'call-resume-current-tool');
+  assert.equal(resumed.json().activeTool.name, 'open_task_tool');
+  assert.equal(resumed.json().activeTool.payload.taskId, saved.taskState.taskId);
+  assert.equal(JSON.stringify(resumed.json()).includes('privateReason'), false);
+
+  const publicLookup = await fixture.app.inject({
+    method: 'GET',
+    url: `/api/sessions/${joined.json().id}`,
+  });
+  assert.equal(publicLookup.statusCode, 200);
+  assert.equal('dialogueHistory' in publicLookup.json(), false);
+  assert.equal('activeTool' in publicLookup.json(), false);
+  assert.equal('pendingAdvance' in publicLookup.json(), false);
+  assert.equal('messages' in publicLookup.json(), false);
+  assert.doesNotMatch(publicLookup.body, /龙头|继续观察/);
 });
 
 test('刷新时恢复当前 roleless 阶段会话，重复恢复不新建 session', async (t) => {

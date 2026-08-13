@@ -31,6 +31,7 @@ import { createLearnerRequestStore } from './database/learner-request-store.js';
 import { effectiveAppEnvironment, qaForceCompleteEnabled } from './config/env.js';
 import { GRADE_LEVELS } from '../src/engine/grade-level.js';
 import { entryPhaseForLesson } from '../src/engine/entry-phase.js';
+import { studentDialogueHistory } from './services/student-dialogue-history.js';
 
 const sessionSchema = z.object({
   courseId: z.string().regex(/^[a-zA-Z0-9_-]+$/),
@@ -958,8 +959,30 @@ export async function buildApp({
       await store.save(session);
     }
 
+    const activeToolCallId = String(session.learningState?.activeToolCallId || '');
+    const activePendingTool = activeToolCallId
+      ? session.pendingTools?.[activeToolCallId]
+      : null;
+    const safeActiveTool = activePendingTool?.payload
+      ? {
+          callId: activeToolCallId,
+          name: String(activePendingTool.name || ''),
+          payload: createStudentFacingPolicy({
+            course: await getCourse(session.courseId),
+            session,
+          }).processSurface(activePendingTool.payload, { channel: 'resume_tool' }).value,
+        }
+      : null;
+
     return {
       ...publicSession(session),
+      // 原始 session.messages 也承担 Agent Prompt 上下文，不能直接公开。
+      // 这里只有凭证与场次身份均已通过校验，返回白名单投影供本人刷新恢复。
+      dialogueHistory: studentDialogueHistory(session),
+      pendingAdvance: session.pendingAdvance
+        ? { mode: session.pendingAdvance.mode, taskId: session.pendingAdvance.taskId }
+        : null,
+      activeTool: safeActiveTool,
       teacherRunState: binding.runState,
       resumed: true,
     };

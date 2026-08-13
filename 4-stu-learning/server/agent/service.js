@@ -2600,6 +2600,18 @@ export function createAgentService({
     result.toolCalls = primarySelection.toolCalls;
     result.quickReplies = primarySelection.quickReplies;
     policyActions.push(...primarySelection.issues.map((issue) => `turn_plan:${issue}`));
+    const messageCreatedAt = new Date().toISOString();
+    const studentInputVisible = ['user_text', 'quick_reply'].includes(input.type);
+    if (result.text || studentInputVisible) {
+      session.messages.push({
+        id: `msg_${crypto.randomUUID()}`,
+        role: 'user',
+        content: query,
+        createdAt: messageCreatedAt,
+        inputType: input.type,
+        studentVisible: studentInputVisible,
+      });
+    }
     if (result.text) {
       const mainResponse = policy.processText(result.text, {
         channel: 'assistant',
@@ -2612,8 +2624,15 @@ export function createAgentService({
         onTextDelta(mainResponse.text);
         streamed = true;
       }
-      session.messages.push({ role: 'user', content: query, createdAt: new Date().toISOString() });
-      session.messages.push({ role: 'assistant', content: result.text, createdAt: new Date().toISOString() });
+      session.messages.push({
+        id: `msg_${crypto.randomUUID()}`,
+        role: 'assistant',
+        content: result.text,
+        createdAt: new Date().toISOString(),
+        inputType: input.type,
+        studentVisible: true,
+        sourceLabel: responseSource.label || '',
+      });
       const parts = mainResponse.parts;
       parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
@@ -2650,7 +2669,15 @@ export function createAgentService({
       });
       const timelineText = timelineResponse.text;
       policyActions.push(...timelineResponse.actions.map((action) => `timeline:${action}`));
-      session.messages.push({ role: 'assistant', content: timelineText, createdAt: new Date().toISOString() });
+      session.messages.push({
+        id: `msg_${crypto.randomUUID()}`,
+        role: 'assistant',
+        content: timelineText,
+        createdAt: new Date().toISOString(),
+        inputType: input.type,
+        studentVisible: true,
+        sourceLabel: responseSource.label || '',
+      });
       const parts = timelineResponse.parts;
       parts.forEach((text, partIndex) => events.push({
         type: 'assistant.completed',
