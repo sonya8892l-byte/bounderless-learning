@@ -8,13 +8,22 @@ let loaderPromise = null;
 let map = null;
 let mapContainer = null;
 let activeRunId = null;
+let activeMapCenter = null;
 let groupMarkers = [];
 let participantMarkers = [];
 
-function validPosition(location) {
+export function validMapPosition(location) {
+  if (location?.lng == null || location?.lat == null || location.lng === '' || location.lat === '') return null;
   const lng = Number(location?.lng);
   const lat = Number(location?.lat);
-  return Number.isFinite(lng) && Number.isFinite(lat) ? [lng, lat] : null;
+  return Number.isFinite(lng) && Number.isFinite(lat)
+    && lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90
+    ? [lng, lat]
+    : null;
+}
+
+function validMapCenter(value) {
+  return Array.isArray(value) ? validMapPosition({ lng: value[0], lat: value[1] }) : null;
 }
 
 async function getMapConfig() {
@@ -96,7 +105,7 @@ function markerButton({ label, ariaLabel, group = false, status = 'fresh', alert
 }
 
 function groupPosition(group) {
-  const positions = group.members.map((member) => validPosition(member.location)).filter(Boolean);
+  const positions = group.members.map((member) => validMapPosition(member.location)).filter(Boolean);
   if (!positions.length) return null;
   return [
     positions.reduce((sum, item) => sum + item[0], 0) / positions.length,
@@ -148,7 +157,7 @@ function renderMarkers(AMap, { groups, participants, alerts, onOpenGroup, onOpen
   }).filter(Boolean);
 
   participantMarkers = participants.map((participant) => {
-    const position = validPosition(participant.location);
+    const position = validMapPosition(participant.location);
     if (!position) return null;
     const participantAlerts = alerts.filter((alert) => alert.participantId === participant.id);
     const accuracy = Number(participant.location?.accuracyMeters);
@@ -180,11 +189,13 @@ export async function mountTeacherMap(container, data) {
   try {
     const [config, AMap] = await getMapConfig().then(async (resolved) => [resolved, await loadAmap(resolved)]);
     if (!container.isConnected) return false;
+    activeMapCenter = validMapCenter(data.mapCenter);
     if (!map || mapContainer !== container) {
       map?.destroy();
       mapContainer = container;
       map = new AMap.Map(container, {
         zoom: 15,
+        center: activeMapCenter || undefined,
         mapStyle: 'amap://styles/normal',
         viewMode: '2D',
         features: ['bg', 'road', 'point'],
@@ -208,11 +219,18 @@ export async function mountTeacherMap(container, data) {
 }
 
 export function fitTeacherMap() {
-  if (!map || !groupMarkers.length) {
+  if (!map) {
     setMapStatus('error', '暂无可定位成员', '位置列表仍可用于查看小组状态');
     return false;
   }
-  map.setFitView(groupMarkers, false, [72, 72, 96, 72], 16);
+  if (groupMarkers.length) {
+    map.setFitView(groupMarkers, false, [72, 72, 96, 72], 16);
+  } else if (activeMapCenter) {
+    map.setZoomAndCenter(15, activeMapCenter);
+  } else {
+    setMapStatus('error', '暂无可定位成员', '位置列表仍可用于查看小组状态');
+    return false;
+  }
   return true;
 }
 

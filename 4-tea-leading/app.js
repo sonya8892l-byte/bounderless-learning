@@ -616,6 +616,7 @@ async function renderMarkers(groups, participants, alerts) {
   const renderedRunId = state.runId;
   const ready = await mountTeacherMap($('#teacherMap'), {
     runId: renderedRunId,
+    mapCenter: state.snapshot.run.mapCenter,
     groups,
     participants: participants.map((participant) => ({
       ...participant,

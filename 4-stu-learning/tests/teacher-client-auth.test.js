@@ -13,6 +13,7 @@ import {
   withTeacherAuthorization,
 } from '../../4-tea-leading/teacher-auth.js';
 import { qrCodeDataUrl, qrCodeMatrix } from '../../4-tea-leading/qr-code.js';
+import { validMapPosition } from '../../4-tea-leading/amap-service.js';
 import {
   buildStudentJoinUrl,
   clearTeacherSnapshots,
@@ -22,6 +23,13 @@ import {
 } from '../../4-tea-leading/teacher-session-data.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+test('教师地图忽略未上报的空坐标，避免自动定位到经纬度零点', () => {
+  assert.equal(validMapPosition({ lng: null, lat: null }), null);
+  assert.equal(validMapPosition({ lng: '', lat: '' }), null);
+  assert.equal(validMapPosition({ lng: 'invalid', lat: 39.9 }), null);
+  assert.deepEqual(validMapPosition({ lng: 116.3972, lat: 39.9171 }), [116.3972, 39.9171]);
+});
 
 function memoryStorage() {
   const values = new Map();
@@ -267,6 +275,7 @@ test('教师 PWA 源码保持单一鉴权通道，无持久快照凭证和静态
   assert.doesNotMatch(amap, /(?<!Authenticated)fetch\s*\(/u);
   assert.match(amap, /mapStyle: 'amap:\/\/styles\/normal'/u);
   assert.doesNotMatch(amap, /mapStyle: config\.style/u);
+  assert.match(app, /mapCenter: state\.snapshot\.run\.mapCenter/u);
   assert.match(auth, /sessionStorage/u);
   assert.doesNotMatch(`${app}\n${amap}\n${auth}`, /URLSearchParams|location\.search|[?&](?:token|access_token)=/u);
   assert.doesNotMatch(`${app}\n${amap}\n${auth}\n${html}`, /TEACHER_API_TOKEN\s*[:=]\s*['"][^'"]+/u);
