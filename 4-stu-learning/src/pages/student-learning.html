@@ -166,10 +166,9 @@
     </main>
 
     <div class="learning-mode-fab" id="learningModeFab" hidden>
-      <div class="learning-mode-fab__companion" id="learningModeCompanion" aria-hidden="true"></div>
-      <button type="button" id="learningModeButton" data-action="set-learning-view" data-learning-view="challenge">
-        <i data-lucide="list-checks"></i>
-        <span id="learningModeLabel">切换为闯关模式</span>
+      <button class="learning-mode-fab__toggle" type="button" id="learningModeButton" data-action="set-learning-view" data-learning-view="challenge" aria-label="切换为闯关模式">
+        <span class="learning-mode-fab__companion" id="learningModeCompanion" aria-hidden="true"></span>
+        <span class="learning-mode-fab__tooltip" id="learningModeTooltip" role="tooltip">切换为闯关模式</span>
       </button>
     </div>
 

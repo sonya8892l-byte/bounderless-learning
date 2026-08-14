@@ -1390,6 +1390,7 @@ function renderLearningViewControls() {
   const fab = document.querySelector('#learningModeFab');
   const button = document.querySelector('#learningModeButton');
   const companionMount = document.querySelector('#learningModeCompanion');
+  const tooltip = document.querySelector('#learningModeTooltip');
   const dialogueView = document.querySelector('#dialogueView');
   const challengeView = document.querySelector('#challengeView');
   const switchVisible = Boolean(config.enabled && config.allowStudentSwitch && state.activeTab === 'task');
@@ -1397,11 +1398,9 @@ function renderLearningViewControls() {
   const targetLabel = targetView === 'challenge' ? '切换为闯关模式' : '切换为智能 AI 模式';
   if (!companionMount.hasChildNodes()) companionMount.innerHTML = companionAvatar({ variant: 'floating' });
   fab.hidden = !switchVisible;
-  fab.classList.toggle('is-dialogue', state.learningView === 'dialogue');
-  fab.classList.toggle('is-challenge', state.learningView === 'challenge');
   button.dataset.learningView = targetView;
   button.setAttribute('aria-label', targetLabel);
-  button.innerHTML = `<i data-lucide="${targetView === 'challenge' ? 'list-checks' : 'message-circle-more'}"></i><span>${targetLabel}</span>`;
+  if (tooltip) tooltip.textContent = targetLabel;
   dialogueView.classList.toggle('is-active', state.learningView === 'dialogue');
   challengeView.classList.toggle('is-active', state.learningView === 'challenge');
 }
