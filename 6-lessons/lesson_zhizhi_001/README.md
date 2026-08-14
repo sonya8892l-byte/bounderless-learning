@@ -25,7 +25,7 @@
 - `course.md / ## 阶段编排`：120分钟六阶段流程。
 - `roles/`：六种分工及结构化Step。
 - `knowledge/`：带来源和揭示时机的信息卡。
-- `roles/*.md` 中的 `##### 引导`、`##### 脚手架`：当前任务与 Step 的 AI 引导和 L0—L4 帮助；本课没有单独的 `guidance/`、`scaffolds/` 目录。
+- `roles/*.md` 中的 `##### 引导`、`##### 脚手架`：当前任务与 Step 的 AI 引导和 L0—L4 帮助。
 - `course.md / ## 课程限制规则`、`evaluation.md`：事实边界和验收标准。
 - `time-bank.md`：已启用的观察、证据表达与组内互助支线任务。
 

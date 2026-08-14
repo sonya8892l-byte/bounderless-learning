@@ -1,12 +1,9 @@
 # 行动方案设计员
 
-> 核心问题：在证据、资源和相关者约束下，怎样形成能执行、监测和修订的守护行动？
-
 ## 基本信息
 - 排序：6
 - 地点：教育空间
 - 地理围栏：国家动物博物馆课程允许区域
-- 类型：核心角色
 - 选择说明：整合六线证据，主持资源分配，完成行动书三轮修订与发布。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：定义方案成功
 - id：designer-define-success
-- 阶段：Phase 2 展厅多源取证（角色取证准备）
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -80,7 +76,6 @@
 
 ### 任务2：模拟资源配置
 - id：designer-allocate-resources
-- 阶段：Phase 4 保护措施审计
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：25min
@@ -143,7 +138,6 @@
 ### 任务3：发布守护行动书
 - id：designer-publish-plan
 - 收口方式：teacher_confirm
-- 阶段：Phase 6 行动书发布
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：16min

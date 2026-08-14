@@ -1,12 +1,9 @@
 # 议事发言人
 
-> 核心问题：怎样用证据回应质询，并把认识变成一项能检查的行动？
-
 ## 基本信息
 - 排序：6
 - 地点：教育空间
 - 地理围栏：国家动物博物馆课程允许动线
-- 类型：核心角色
 - 选择说明：负责组织小组发布、回应证据问题，并带领每个人形成行动承诺。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：准备发布
 - id：speaker-prepare-release
-- 阶段：Phase 6 居民发布会
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：4min
@@ -83,7 +79,6 @@
 ### 任务2：完成议事发布
 - id：speaker-present-assembly
 - 收口方式：teacher_confirm
-- 阶段：Phase 6 居民发布会
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：4min
@@ -149,7 +144,6 @@
 
 ### 任务3：形成行动承诺
 - id：speaker-action-commitment
-- 阶段：Phase 6 居民发布会
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：3min

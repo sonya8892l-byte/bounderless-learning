@@ -1,12 +1,9 @@
 # 展签记录员
 
-> 核心问题：怎样把展签信息变成别人能够复核的事实？
-
 ## 基本信息
 - 排序：2
 - 地点：教师分配的动物标本点
 - 地理围栏：国家动物博物馆课程允许动线
-- 类型：核心角色
 - 选择说明：负责展签、来源编号和事实类型，让每条关键信息都能回到出处。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：采集展签
 - id：label-capture-label
-- 阶段：Phase 2 身份与生活取证
 - 地点：动物标本点
 - 位置模式：point
 - 到达验证：teacher
@@ -83,7 +79,6 @@
 
 ### 任务2：提取事实
 - id：label-extract-facts
-- 阶段：Phase 2 身份与生活取证
 - 地点：动物标本点附近
 - 位置模式：inherit_role
 - 建议时长：10min
@@ -148,7 +143,6 @@
 
 ### 任务3：制作事实包
 - id：label-build-fact-pack
-- 阶段：Phase 5 居民证制作
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：8min

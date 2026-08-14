@@ -1,12 +1,9 @@
 # ID设计员
 
-> 核心问题：怎样把不同角色的证据组织成一张清楚、可信的居民证？
-
 ## 基本信息
 - 排序：5
 - 地点：教育空间
 - 地理围栏：国家动物博物馆课程允许动线
-- 类型：核心角色
 - 选择说明：负责汇总事实、关系、需要与来源，制作并审查居民ID Card。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：接收证据
 - id：designer-receive-evidence
-- 阶段：Phase 5 居民证制作
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：6min
@@ -82,7 +78,6 @@
 
 ### 任务2：制作居民证
 - id：designer-make-id
-- 阶段：Phase 5 居民证制作
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -149,7 +144,6 @@
 ### 任务3：发布前审查
 - id：designer-preflight-review
 - 收口方式：teacher_confirm
-- 阶段：Phase 5 居民证制作
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：6min

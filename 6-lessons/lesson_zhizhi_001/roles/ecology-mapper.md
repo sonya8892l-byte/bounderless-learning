@@ -1,12 +1,9 @@
 # 生态关系员
 
-> 核心问题：这种动物怎样与食物、栖息地、其他生命和人类活动相连？
-
 ## 基本信息
 - 排序：3
 - 地点：动物标本点与教育空间
 - 地理围栏：国家动物博物馆课程允许动线
-- 类型：核心角色
 - 选择说明：负责寻找关系节点、画生态关系图，并解释一条人类影响链。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：收集关系节点
 - id：ecology-collect-nodes
-- 阶段：Phase 3 关系与影响
 - 地点：动物标本点附近
 - 位置模式：point
 - 到达验证：teacher
@@ -84,7 +80,6 @@
 
 ### 任务2：绘制关系网
 - id：ecology-draw-network
-- 阶段：Phase 3 关系与影响
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：12min
@@ -150,7 +145,6 @@
 
 ### 任务3：提出基本需要
 - id：ecology-propose-needs
-- 阶段：Phase 5 居民证制作
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：8min

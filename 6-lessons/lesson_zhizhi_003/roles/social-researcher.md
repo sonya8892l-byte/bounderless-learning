@@ -1,12 +1,9 @@
 # 社会调查员
 
-> 核心问题：校园或机构使用者、管理者和相关群体怎样理解问题，会受到什么影响？
-
 ## 基本信息
 - 排序：4
 - 地点：教师批准的线上或线下调查空间
 - 地理围栏：经批准的对象、渠道与时段
-- 类型：核心角色
 - 选择说明：设计匿名调查，实施知情同意，完成双人编码和样本边界说明。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：完成伦理与工具送审
 - id：social-design-study
-- 阶段：Phase 1 问题界定
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：1课时
@@ -81,7 +77,6 @@
 
 ### 任务2：匿名收集与双人编码
 - id：social-collect-code
-- 阶段：Phase 4 社会调查
 - 地点：教师批准的调查空间
 - 位置模式：approved_scope
 - 到达验证：teacher
@@ -147,7 +142,6 @@
 ### 任务3：提交社会调查报告
 - id：social-report-findings
 - 收口方式：teacher_confirm
-- 阶段：Phase 5 起草听证与修订
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：1课时

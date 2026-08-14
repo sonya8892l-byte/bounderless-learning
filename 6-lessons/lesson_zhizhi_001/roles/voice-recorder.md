@@ -1,12 +1,9 @@
 # 声音记录员
 
-> 核心问题：怎样让动物“开口”，同时不替它编造经历？
-
 ## 基本信息
 - 排序：4
 - 地点：动物标本点与安静录音区
 - 地理围栏：国家动物博物馆课程允许动线
-- 类型：核心角色
 - 选择说明：负责把小组证据整理成第一人称脚本，并留下真实的学生声音。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：选择脚本证据
 - id：voice-select-evidence
-- 阶段：Phase 4 角色发声
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：8min
@@ -82,7 +78,6 @@
 
 ### 任务2：完成自述
 - id：voice-record-story
-- 阶段：Phase 4 角色发声
 - 地点：安静录音区
 - 位置模式：point
 - 到达验证：teacher
@@ -148,7 +143,6 @@
 
 ### 任务3：同伴事实核验
 - id：voice-peer-verify
-- 阶段：Phase 4 角色发声
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：8min

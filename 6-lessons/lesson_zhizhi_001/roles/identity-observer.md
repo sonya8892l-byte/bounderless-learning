@@ -1,12 +1,9 @@
 # 身份观察员
 
-> 核心问题：哪些现场特征能够帮助我们确认“它是谁”？
-
 ## 基本信息
 - 排序：1
 - 地点：教师分配的动物标本主点或替代点
 - 地理围栏：国家动物博物馆课程允许动线
-- 类型：核心角色
 - 选择说明：负责确认标本身份、观察身体特征，并把“看到的”和“资料说的”分开。
 - 角色卡图：assets/placeholders/role-card.svg
 - 角色徽章图：assets/placeholders/badge.svg
@@ -17,7 +14,6 @@
 
 ### 任务1：确认居民
 - id：identity-confirm-resident
-- 阶段：Phase 2 身份与生活取证
 - 地点：教师分配的动物标本点
 - 位置模式：point
 - 到达验证：teacher
@@ -84,7 +80,6 @@
 
 ### 任务2：观察特征
 - id：identity-observe-features
-- 阶段：Phase 2 身份与生活取证
 - 地点：动物标本点
 - 位置模式：inherit_role
 - 建议时长：10min
@@ -149,7 +144,6 @@
 
 ### 任务3：整理身份事实
 - id：identity-organize-facts
-- 阶段：Phase 5 居民证制作
 - 地点：教育空间
 - 位置模式：none
 - 建议时长：8min
