@@ -854,10 +854,13 @@ async function loadReview() {
   } catch (error) { showToast(error.message); }
 }
 
-// 课程列表接口挂掉时的兜底课单（与原硬编码两门一致），
+// 课程列表接口挂掉时的兜底课单，
 // 保证"新建开课"永远可用——开课是主流程，不能跟着列表接口一起死。
 const FALLBACK_COURSES = [
   { id: 'lesson_gewu_001', title: '故宫600年不积水的秘密', series: '格物' },
+  { id: 'lesson_zhizhi_001', title: '故宫里的动物朋友', series: '致知' },
+  { id: 'lesson_zhizhi_002', title: '动物园里的动物朋友', series: '致知' },
+  { id: 'lesson_zhizhi_003', title: '城市里的动物朋友', series: '致知' },
   { id: 'lesson_zhuhun_001', title: '四渡赤水研学课程', series: '铸魂' },
 ];
 
@@ -881,7 +884,7 @@ async function loadCourseOptions() {
   const select = $('#newCourseId');
   if (!select) return;
   try {
-    const { courses } = await request('/api/courses');
+    const { courses } = await request('/courses');
     if (!Array.isArray(courses) || !courses.length) throw new Error('empty course list');
     if ($('#newCourseId') !== select) return;
     select.innerHTML = renderCourseOptions(courses);

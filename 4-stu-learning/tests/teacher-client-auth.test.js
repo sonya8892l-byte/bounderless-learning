@@ -287,3 +287,18 @@ test('教师 PWA 源码保持单一鉴权通道，无持久快照凭证和静态
   assert.match(worker, /\.\/teacher-auth\.js/u);
   assert.match(worker, /\.\/teacher-session-data\.js/u);
 });
+
+test('教师场次中心从统一课程接口加载五门课程，接口失败时兜底课单也完整', async () => {
+  const app = await fs.readFile(path.join(projectRoot, '4-tea-leading/app.js'), 'utf8');
+  assert.match(app, /await request\('\/courses'\)/u);
+  assert.doesNotMatch(app, /await request\('\/api\/courses'\)/u);
+  for (const courseId of [
+    'lesson_gewu_001',
+    'lesson_zhizhi_001',
+    'lesson_zhizhi_002',
+    'lesson_zhizhi_003',
+    'lesson_zhuhun_001',
+  ]) {
+    assert.match(app, new RegExp(`id: '${courseId}'`, 'u'));
+  }
+});
