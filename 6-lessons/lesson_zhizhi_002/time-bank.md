@@ -31,7 +31,7 @@ gift_target: same_group_only
   options: [来自不同体系需分别核验, 两者永远完全相同, 只记录更严重的一项]
   answer: 来自不同体系需分别核验
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
   hint: "先看发布机构、适用范围和更新时间"
 
 - id: tb-02
@@ -40,7 +40,7 @@ gift_target: same_group_only
   options: [来源加发布日期加访问日期, 只写网页标题, 只截一张图]
   answer: 来源加发布日期加访问日期
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-03
   type: quiz
@@ -48,7 +48,7 @@ gift_target: same_group_only
   options: [继续核验时间范围和原因证据, 立刻认定唯一威胁, 删除不一致资料]
   answer: 继续核验时间范围和原因证据
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 现场证据
 
@@ -58,7 +58,7 @@ gift_target: same_group_only
   hint: "遵守展馆当日拍摄规定；无法拍摄时请教师人工确认观察记录"
   verify: image_recognition
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 分析与修订
 
@@ -68,7 +68,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 30
   reward: 3min
-  unlock_after: phase3-start
+  unlock_after: phase-3-start
 
 - id: tb-06
   type: quiz
@@ -76,7 +76,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 35
   reward: 3min
-  unlock_after: phase4-start
+  unlock_after: phase-4-start
 
 ## 使用边界
 

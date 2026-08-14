@@ -6,7 +6,7 @@
 - tags：知情同意,匿名,退出
 - source：课程社会调查伦理卡；正式实施遵循学校或机构审批要求
 - roles：社会调查员,规则起草与程序协调员
-- revealWhen： phase_3
+- revealWhen： phase-3
 
 ## K-18 双人编码
 - topic：社会调查
@@ -14,7 +14,7 @@
 - tags：编码,一致性,样本局限
 - source：课程质性分析卡
 - roles：社会调查员,影响评估员
-- revealWhen： phase_4
+- revealWhen： phase-4
 
 ## K-19 成本效果假设
 - topic：影响评估
@@ -22,7 +22,7 @@
 - tags：成本,效果,假设
 - source：课程影响评估卡
 - roles：影响评估员,规则起草与程序协调员
-- revealWhen： phase_4
+- revealWhen： phase-4
 
 ## K-20 规则五问与九要素
 - topic：规则起草
@@ -30,7 +30,7 @@
 - tags：规则五问,九要素
 - source：课程规则起草卡
 - roles：规则起草与程序协调员,全角色共享
-- revealWhen： phase_5
+- revealWhen： phase-5
 
 ## K-21 听证与少数意见
 - topic：程序
@@ -38,7 +38,7 @@
 - tags：听证,表决,少数意见
 - source：课程程序卡
 - roles：规则起草与程序协调员,社会调查员
-- revealWhen： phase_5
+- revealWhen： phase-5
 
 ## K-22 AI研究披露
 - topic：AI素养
@@ -46,7 +46,7 @@
 - tags：AI,研究诚信,隐私
 - source：课程AI研究披露卡
 - roles：全角色共享
-- revealWhen： phase_4
+- revealWhen： phase-4
 
 ## K-23 建议稿效力
 - topic：公开表达
@@ -54,4 +54,4 @@
 - tags：建议稿,效力,真实状态
 - source：课程发布边界卡
 - roles：规则起草与程序协调员,全角色共享
-- revealWhen： phase_5
+- revealWhen： phase-5

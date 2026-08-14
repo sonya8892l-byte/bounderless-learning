@@ -2905,7 +2905,10 @@ export function createAgentService({
     const bank = course.lesson.timeBank;
     const task = bank.tasks.find((item) => item.id === taskId);
     if (!task || session.completedBankTaskIds.includes(taskId)) throw new Error('该时间银行任务不可用。');
-    const requiredPhase = Number.parseInt(task.unlockAfter?.match(/phase(\d+)/i)?.[1], 10);
+    // 规范写法是 phase-N-start（与阶段 id 同源）；兼容旧课程的 phaseN-start / phaseN_start。
+    // 注意必须容忍连字符：只认 phase(\d+) 时，写 phase-2-start 会匹配失败、requiredPhase
+    // 变 NaN，下面的门禁被静默跳过，题目永久解锁且无报错。
+    const requiredPhase = Number.parseInt(task.unlockAfter?.match(/phase[_-]?(\d+)/i)?.[1], 10);
     if (requiredPhase && session.phaseNumber < requiredPhase) throw new Error('该时间银行任务尚未解锁。');
     if (task.answerType === 'open_ended' && String(answer || '').trim().length < task.minLength) {
       throw new Error(`请至少写 ${task.minLength} 个字，再提交回答。`);

@@ -18,7 +18,7 @@
 - source: 中共中央党史和文献研究院《四渡赤水：110天的得意之笔》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2026/0512/c423724-40718269.html
 - roles: 地图参谋, 情报参谋, 全角色共享
-- revealWhen: phase_3
+- revealWhen: phase-3
 
 ## K-07 三渡赤水
 - topic: 三渡赤水
@@ -45,4 +45,4 @@
 - source: 中共中央党史和文献研究院《四渡赤水、佯攻贵阳：高度灵活机动的山地运动战》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2022/1121/c423725-32570961.html
 - roles: 全角色共享
-- revealWhen: phase_5
+- revealWhen: phase-5

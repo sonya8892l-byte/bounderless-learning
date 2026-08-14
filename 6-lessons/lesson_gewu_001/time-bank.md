@@ -31,7 +31,7 @@ gift_target: same_group_only
   options: [21, 28, 54]
   answer: 54
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
   hint: "和一个历史事件的年份有关"
 
 - id: tb-02
@@ -40,7 +40,7 @@ gift_target: same_group_only
   options: [8888, 9999, 9999.5]
   answer: 9999.5
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
   hint: "比天帝的万间少半间"
 
 - id: tb-03
@@ -49,7 +49,7 @@ gift_target: same_group_only
   options: [3, 5, 7]
   answer: 5
   reward: 1min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-04
   type: quiz
@@ -57,7 +57,7 @@ gift_target: same_group_only
   options: [9, 10, 11]
   answer: 10
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
   hint: "一般最多9只，太和殿破例多加了1只"
 
 ### 拍照打卡类
@@ -68,7 +68,7 @@ gift_target: same_group_only
   hint: "太和殿前广场两侧找找看"
   verify: image_recognition
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-06
   type: photo_checkpoint
@@ -76,7 +76,7 @@ gift_target: same_group_only
   hint: "太和殿前月台上"
   verify: image_recognition
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-07
   type: photo_checkpoint
@@ -84,7 +84,7 @@ gift_target: same_group_only
   hint: "太和门前有5座"
   verify: image_recognition
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 定位签到类
 
@@ -94,7 +94,7 @@ gift_target: same_group_only
   location: [116.4003, 39.9203]
   radius: 20m
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-09
   type: location_checkin
@@ -102,7 +102,7 @@ gift_target: same_group_only
   location: [116.3970, 39.9215]
   radius: 15m
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 解锁条件
 
@@ -112,4 +112,4 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 20
   reward: 3min
-  unlock_after: phase3-start
+  unlock_after: phase-3-start

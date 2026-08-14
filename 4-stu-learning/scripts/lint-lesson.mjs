@@ -203,6 +203,27 @@ function findPhaseTaskHeadingLines(markdown = '') {
 }
 
 /**
+ * time-bank.md 里某个任务的字段行：先锚 `- id: <taskId>`，再在同一块内往下找字段。
+ * 与 findPhaseTaskLine 同思路；找不到就报在 id 行上，不退回第 1 行。
+ */
+function findTimeBankTaskLine(markdown = '', taskId = '', field = '') {
+  const lines = String(markdown || '').split('\n');
+  const idPattern = taskId ? new RegExp(`^\\s*-\\s*id\\s*[：:]\\s*${escapeRegExp(taskId)}\\s*$`) : null;
+  let start = -1;
+  for (let index = 0; index < lines.length; index += 1) {
+    if (idPattern?.test(lines[index])) { start = index; break; }
+  }
+  if (start === -1) return 1;
+  if (!field) return start + 1;
+  const fieldPattern = new RegExp(`^\\s*${escapeRegExp(field)}\\s*[：:]`);
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\s*-\s*id\s*[：:]/.test(lines[index])) break;
+    if (fieldPattern.test(lines[index])) return index + 1;
+  }
+  return start + 1;
+}
+
+/**
  * 直接读取 phases.md 的阶段任务执行单位。
  *
  * parser 会把非法值归一为「全班」并只留下 warning；如果 lint 只看编译结果，
@@ -320,6 +341,8 @@ export function lintCourse(course, options = {}) {
     compilerWarnings: 0,
     unknownActivityModules: 0,
     unsupportedToolParameters: 0,
+    timeBankUnlocks: 0,
+    badUnlockAfter: 0,
     qualityIssues: 0,
   };
 
@@ -652,6 +675,33 @@ export function lintCourse(course, options = {}) {
         message: `阶段任务写在角色文件里不会被解析：${text}（应移到课程阶段编排的对应 Phase 下）`,
         roleId: role.id,
         line,
+      });
+    }
+  }
+
+  // time-bank unlock_after：规范写法 phase-N-start（与阶段 id 同源）。
+  // 旧窄正则只认 phaseN-start；写成 phase_2-start 之类会匹配失败、requiredPhase 变 NaN，
+  // 运行时的门禁条件被静默跳过，题目永久解锁且无报错——所以这里必须报 error。
+  // N 还必须在 1..本课 Phase 数之间。
+  const timeBankMarkdown = course?.files?.['time-bank.md'] || '';
+  const definedPhaseCount = (course?.lesson?.phases || []).length;
+  for (const task of course?.lesson?.timeBank?.tasks || []) {
+    const value = String(task.unlockAfter || '').trim();
+    if (!value) continue;
+    stats.timeBankUnlocks += 1;
+    const match = value.match(/^phase-(\d+)-start$/i);
+    const phaseNumber = match ? Number.parseInt(match[1], 10) : 0;
+    if (!match || (definedPhaseCount > 0 && (phaseNumber < 1 || phaseNumber > definedPhaseCount))) {
+      stats.badUnlockAfter += 1;
+      pushIssue({
+        level: 'error',
+        code: 'bad_unlock_after',
+        message: !match
+          ? `unlock_after 写法非法：${value}（规范写法 phase-N-start，例如 phase-2-start；旧写法 phase2-start 请一并改掉）`
+          : `unlock_after 引用了不存在的 Phase ${phaseNumber}（本课只定义了 ${definedPhaseCount} 个 Phase）`,
+        file: `6-lessons/${courseId}/time-bank.md`,
+        line: findTimeBankTaskLine(timeBankMarkdown, task.id, 'unlock_after'),
+        field: 'unlock_after',
       });
     }
   }

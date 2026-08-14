@@ -104,13 +104,14 @@ lesson_<series-code>_<nnn>/
 - **lint 门禁**：缺失或冲突在`npm run lint:lesson -- --strict`中报 error／warning；发布门禁要求 0 error。
 - **规范必填**：本文要求填写，但解析器会静默回落默认值；不填不报错，只会得到错误的默认行为。
 
-Phase 标识符在不同文件中有三种固定拼法，不要混用：
+Phase 标识符全课统一一种拼法：`phase-N`（连字符），不要出现`phase_N`或`phaseN-start`等变体：
 
 | 写法 | 用在哪里 |
 |---|---|
-| `phase-N`（连字符） | `course.md / 学生端角色体系 / 任务阶段`、阶段任务 id |
-| `phase_N`（下划线） | 知识条目`revealWhen` |
-| `phaseN-start`（无连字符） | `time-bank.md / unlock_after` |
+| `phase-N` | `course.md / 学生端角色体系 / 任务阶段`、阶段任务 id、知识条目`revealWhen` |
+| `phase-N-start` | `time-bank.md / unlock_after`，例如`phase-2-start` |
+
+历史说明：知识`revealWhen`曾用`phase_N`、`unlock_after`曾用`phase-2-start`（无连字符）。运行时仍兼容旧写法，但 lint 会把`unlock_after`的非规范写法报成 error——写错格式（如`phase-2-start`）曾导致解锁门禁静默失效、题目永久开放，所以新课程必须统一为带连字符的写法。
 
 ## 4. `course.md`：课程总表
 
@@ -1001,7 +1002,7 @@ JSON 书写规则：
 - tags：排水, 结构, 现场观察
 - source：出版物、官方展签、数据库或可追溯链接
 - roles：角色中文名称, 另一个角色中文名称
-- revealWhen：phase_2
+- revealWhen：phase-2
 ```
 
 | 字段 | 类型 | 必填 | 合法值／格式 | 实际作用 |
@@ -1013,9 +1014,9 @@ JSON 书写规则：
 | `tags` | string[] | 是 | 中英文逗号分隔的检索词 | 检索匹配 |
 | `source` | string | 是 | 可追溯来源名；有公开页面时可包含 URL | AI 回答的来源引用信息 |
 | `roles` | string[] | 否 | 剥离 emoji 后的角色 H1 纯文本名，或单独写`全角色共享`；逗号分隔；缺省即`全角色共享` | 检索角色可见性；不使用 role id |
-| `revealWhen` | enum-like string | 是 | `always`、`after_taskN`或`phase_N` | 最早可检索时机 |
+| `revealWhen` | enum-like string | 是 | `always`、`after_taskN`或`phase-N` | 最早可检索时机 |
 
-`after_taskN`表示当前角色的第 N 个 Task 完成后可用；`phase_N`表示进入 Phase N 后可用。不要写自然语言条件、括号补充或未列出的别名。
+`after_taskN`表示当前角色的第 N 个 Task 完成后可用；`phase-N`表示进入 Phase N 后可用（与阶段 id 同一拼法；旧写法`phase_N`运行时仍兼容，但新课程不要再用）。不要写自然语言条件、括号补充或未列出的别名。
 
 两处静默失败警告：
 
@@ -1082,7 +1083,7 @@ min_gift_amount: 1min
   options: [选项A, 选项B, 选项C]
   answer: 选项A
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
   hint: "答错后的一条提示"
 ```
 
@@ -1112,7 +1113,7 @@ min_gift_amount: 1min
 | `description` | string | 拍照／定位必填 | 单行可执行指令 | 学生端任务标题 |
 | `hint` | string | 否 | 一条不直接泄露答案的提示 | 答错或任务卡的提示 |
 | `reward` | number + unit | 是 | 正数 + `min`，不得超过`max_earn_per_task` | 完成后增加的时间余额 |
-| `unlock_after` | enum-like string | 是 | `phaseN-start`，例如`phase2-start`；N 必须是本课已定义 Phase | 题目最早显示 Phase |
+| `unlock_after` | enum-like string | 是 | `phase-N-start`，例如`phase-2-start`；N 必须是本课已定义 Phase | 题目最早显示 Phase |
 
 `quiz`额外字段：
 

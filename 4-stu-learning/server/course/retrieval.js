@@ -46,7 +46,7 @@ function knowledgeVisible(entry, session, role, course) {
   const spacedPhaseNumber = Number.parseInt(rule.match(/phase\s+(\d+)/)?.[1], 10);
   if (spacedPhaseNumber) return session.phaseNumber >= spacedPhaseNumber;
   // 开题安全培训属于课程进入即生效的全局安全知识。课程作者仍应逐步改用结构化
-  // phase_N；这条兼容现有课程中的自然语言揭示条件，避免安全知识永久不可见。
+  // phase-N；这条兼容现有课程中的自然语言揭示条件，避免安全知识永久不可见。
   if (/开题.*(?:安全)?培训时/.test(rule)) return session.phaseNumber >= 1;
   return false;
 }

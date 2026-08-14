@@ -31,7 +31,7 @@ gift_target: same_group_only
   options: [1934, 1935, 1936]
   answer: 1935
   reward: 1min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-02
   type: quiz
@@ -39,7 +39,7 @@ gift_target: same_group_only
   options: [川黔滇, 湘鄂赣, 陕甘宁]
   answer: 川黔滇
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-03
   type: quiz
@@ -47,7 +47,7 @@ gift_target: same_group_only
   options: [红军始终正好3万人, 红军约3万人且兵力随时点变化, 红军人数不重要]
   answer: 红军约3万人且兵力随时点变化
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-04
   type: quiz
@@ -55,7 +55,7 @@ gift_target: same_group_only
   options: [当时可获得的证据, 已知的最终结果, 网络上最短的答案]
   answer: 当时可获得的证据
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 展项观察
 
@@ -65,7 +65,7 @@ gift_target: same_group_only
   hint: "遵守展馆当日拍摄规定，不使用闪光灯"
   verify: image_recognition
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-06
   type: photo_checkpoint
@@ -73,7 +73,7 @@ gift_target: same_group_only
   hint: "照片之外再写一句文字，说明日期对应的事件"
   verify: image_and_text
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-07
   type: photo_checkpoint
@@ -81,7 +81,7 @@ gift_target: same_group_only
   hint: "只拍允许拍摄的公开展项"
   verify: image_recognition
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 定位签到
 
@@ -91,7 +91,7 @@ gift_target: same_group_only
   location: [116.3953, 40.0071]
   radius: 300m
   reward: 1min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 开放反思
 
@@ -101,7 +101,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 25
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-10
   type: quiz
@@ -109,4 +109,4 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 30
   reward: 3min
-  unlock_after: phase3-start
+  unlock_after: phase-3-start

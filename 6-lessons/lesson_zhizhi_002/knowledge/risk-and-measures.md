@@ -6,7 +6,7 @@
 - tags：种群,趋势,范围
 - source：课程趋势图方法卡
 - roles：物种档案员,名录核验员,威胁链分析员
-- revealWhen： phase_3
+- revealWhen： phase-3
 
 ## K-08 威胁链四层
 - topic：威胁诊断
@@ -14,7 +14,7 @@
 - tags：威胁链,因果
 - source：课程威胁链方法卡
 - roles：威胁链分析员,保护措施审计员
-- revealWhen： phase_3
+- revealWhen： phase-3
 
 ## K-09 重要性与证据强度
 - topic：风险排序
@@ -22,7 +22,7 @@
 - tags：重要性,证据强度,不确定性
 - source：课程风险矩阵
 - roles：威胁链分析员,行动方案设计员
-- revealWhen： phase_3
+- revealWhen： phase-3
 
 ## K-10 措施逻辑链
 - topic：措施审计
@@ -30,7 +30,7 @@
 - tags：措施,逻辑模型
 - source：课程措施审计卡
 - roles：保护措施审计员,行动方案设计员
-- revealWhen： phase_4
+- revealWhen： phase-4
 
 ## K-11 开展与有效
 - topic：措施成效
@@ -38,7 +38,7 @@
 - tags：成效,指标,基线
 - source：课程措施审计卡
 - roles：保护措施审计员,威胁链分析员
-- revealWhen： phase_4
+- revealWhen： phase-4
 
 ## K-12 保护缺口
 - topic：措施审计
@@ -46,7 +46,7 @@
 - tags：保护缺口,覆盖,责任
 - source：课程审计矩阵
 - roles：保护措施审计员,利益相关者观察员,行动方案设计员
-- revealWhen： phase_4
+- revealWhen： phase-4
 
 ## K-13 指标三层
 - topic：效果指标
@@ -54,4 +54,4 @@
 - tags：指标,监测,复盘
 - source：课程行动书方法卡
 - roles：保护措施审计员,行动方案设计员
-- revealWhen： phase_5
+- revealWhen： phase-5

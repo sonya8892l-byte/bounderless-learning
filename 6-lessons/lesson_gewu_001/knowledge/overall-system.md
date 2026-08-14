@@ -8,7 +8,7 @@
 - tags: 排水系统, 五大构成, 全景, 系统
 - source: 综合整理
 - roles: 全角色共享
-- revealWhen: phase_3
+- revealWhen: phase-3
 
 ## K-18 "因势利导"设计思想
 - topic: 因势利导
@@ -16,7 +16,7 @@
 - tags: 因势利导, 设计思想, 自然规律, 海绵城市
 - source: 综合整理
 - roles: 全角色共享
-- revealWhen: phase_3
+- revealWhen: phase-3
 
 ## K-19 系统的局限
 - topic: 排水系统并非完美

@@ -31,7 +31,7 @@ gift_target: same_group_only
   options: [我看见它的前肢有长爪, 它一定很孤独, 它希望人类保护森林]
   answer: 我看见它的前肢有长爪
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
   hint: "只选择眼睛或耳朵能够直接确认的内容"
 
 - id: tb-02
@@ -40,7 +40,7 @@ gift_target: same_group_only
   options: [先标为待核实, 凭感觉补完整, 写成动物亲口告诉我]
   answer: 先标为待核实
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-03
   type: quiz
@@ -48,7 +48,7 @@ gift_target: same_group_only
   options: [事实旁写来源, 只记最有趣的结论, 把观察和猜测混在一起]
   answer: 事实旁写来源
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 现场观察
 
@@ -58,7 +58,7 @@ gift_target: same_group_only
   hint: "遵守展馆当日拍摄规定；不允许拍摄时请教师改为人工确认"
   verify: image_recognition
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 开放表达
 
@@ -68,7 +68,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 20
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-06
   type: quiz
@@ -76,4 +76,4 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 20
   reward: 2min
-  unlock_after: phase5-start
+  unlock_after: phase-5-start

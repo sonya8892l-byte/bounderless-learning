@@ -102,7 +102,7 @@ for (const config of cases) {
     assert.ok(lesson.timeBank.earnRules.maxPerTask > 0);
     assert.ok(lesson.timeBank.earnRules.tasksVisibleAtOnce > 0);
     for (const task of lesson.timeBank.tasks) {
-      assert.match(task.unlockAfter, /^phase[1-6]-start$/, `${course.id}/${task.id} 的解锁阶段无效`);
+      assert.match(task.unlockAfter, /^phase-[1-6]-start$/, `${course.id}/${task.id} 的解锁阶段无效（规范写法 phase-N-start）`);
       assert.ok(task.reward <= lesson.timeBank.earnRules.maxPerTask, `${course.id}/${task.id} 奖励超过单题上限`);
     }
     assert.equal(lesson.roles.length, 6);

@@ -6,7 +6,7 @@
 - tags：多伦多,设计指引,官方原文
 - source：City of Toronto Bird-Friendly Guidelines https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/design-guidelines/bird-friendly-guidelines/；访问2026-07-31；原文版本须人工复核
 - roles：域外制度研究员,影响评估员
-- revealWhen： phase_3
+- revealWhen： phase-3
 
 ## K-13 纽约Local Law 15
 - topic：域外制度
@@ -14,7 +14,7 @@
 - tags：纽约,Local Law 15,玻璃
 - source：New York City Council Legistar官方记录https://legistar.council.nyc.gov/LegislationDetail.aspx?GUID=21B44B73-D7E1-4C55-83BD-1CA254531416&ID=3903501&Options=ID%7CText%7C&Search=bird+glass；访问2026-07-31；原文与现行状态须人工复核
 - roles：域外制度研究员,规则起草与程序协调员
-- revealWhen： phase_3
+- revealWhen： phase-3
 
 ## K-14 旧金山鸟类安全建筑标准
 - topic：域外制度
@@ -22,7 +22,7 @@
 - tags：旧金山,规划标准,适用项目
 - source：San Francisco Planning Bird-Safe Buildings https://sfplanning.org/standards-bird-safe-buildings；访问2026-07-31；现行版本须人工复核
 - roles：域外制度研究员,规则起草与程序协调员
-- revealWhen： phase_3
+- revealWhen： phase-3
 
 ## K-15 比较法矩阵
 - topic：制度比较
@@ -30,7 +30,7 @@
 - tags：比较矩阵,制度移植
 - source：课程三城比较方法卡
 - roles：域外制度研究员,中国规范研究员,规则起草与程序协调员
-- revealWhen： phase_4
+- revealWhen： phase-4
 
 ## K-16 可借鉴性四问
 - topic：制度移植
@@ -38,4 +38,4 @@
 - tags：本地化,权限,可行性
 - source：课程制度转化卡
 - roles：域外制度研究员,影响评估员,规则起草与程序协调员
-- revealWhen： phase_5
+- revealWhen： phase-5

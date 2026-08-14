@@ -24,4 +24,4 @@
 - tags: 分级, 系统, 排水路径, 五级
 - source: 综合整理
 - roles: 寻沟官, 全角色共享
-- revealWhen: phase_3
+- revealWhen: phase-3

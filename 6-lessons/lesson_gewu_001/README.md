@@ -160,7 +160,7 @@ course.md / ## 阶段编排 / ### Phase 2：现场采证
 运行时                                      phase-2
 prompts/phase2-field.md                    阶段提示词
 course.md                                   任务阶段：phase-2
-time-bank.md                                unlock_after: phase2-start
+time-bank.md                                unlock_after: phase-2-start
 ```
 
 角色任务里的 `阶段：Phase 2 现场采证` 当前作为课程文案保存。课程总阶段推进仍由场次状态和教师指令控制。
@@ -701,7 +701,7 @@ gift_target: same_group_only
   options: [选项A, 选项B, 选项C]
   answer: 选项B
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
   hint: "提示"
 ```
 
@@ -714,7 +714,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 20
   reward: 3min
-  unlock_after: phase3-start
+  unlock_after: phase-3-start
 ```
 
 照片打卡与定位签到：
@@ -726,7 +726,7 @@ gift_target: same_group_only
   hint: "遵守场馆拍摄规定"
   verify: image_and_text
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-08
   type: location_checkin
@@ -734,7 +734,7 @@ gift_target: same_group_only
   location: [116.4003, 39.9203]
   radius: 20m
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 ```
 
 当前选择题和开放题可校验。`photo_checkpoint` 会调起相机或图片选择、上传证据；`verify: image_and_text` 还会要求至少 4 个字的补充说明。`verify: image_recognition` 当前只校验照片已上传，尚未判断照片中是否确有课程指定目标物。

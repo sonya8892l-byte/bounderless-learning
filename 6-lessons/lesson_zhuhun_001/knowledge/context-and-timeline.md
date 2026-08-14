@@ -36,4 +36,4 @@
 - source: 中共中央党史和文献研究院《四渡赤水：110天的得意之笔》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2026/0512/c423724-40718269.html
 - roles: 全角色共享
-- revealWhen: phase_3
+- revealWhen: phase-3

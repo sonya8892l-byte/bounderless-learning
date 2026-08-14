@@ -3852,7 +3852,7 @@ export default {
           "answerType": "",
           "hint": "和一个历史事件的年份有关",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3868,7 +3868,7 @@ export default {
           "answerType": "",
           "hint": "比天帝的万间少半间",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3884,7 +3884,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 1,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3900,7 +3900,7 @@ export default {
           "answerType": "",
           "hint": "一般最多9只，太和殿破例多加了1只",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3912,7 +3912,7 @@ export default {
           "answerType": "",
           "hint": "太和殿前广场两侧找找看",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3924,7 +3924,7 @@ export default {
           "answerType": "",
           "hint": "太和殿前月台上",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3936,7 +3936,7 @@ export default {
           "answerType": "",
           "hint": "太和门前有5座",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3948,7 +3948,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3960,7 +3960,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -3972,7 +3972,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase3-start",
+          "unlockAfter": "phase-3-start",
           "minLength": 20,
           "requiresText": false
         }
@@ -5385,7 +5385,7 @@ export default {
           "answerType": "",
           "hint": "和箭与壶有关。",
           "reward": 3,
-          "unlockAfter": "phase1-start",
+          "unlockAfter": "phase-1-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -5400,7 +5400,7 @@ export default {
           "answerType": "",
           "hint": "故宫藏有一幅描绘它的长卷。",
           "reward": 2,
-          "unlockAfter": "phase1-start",
+          "unlockAfter": "phase-1-start",
           "minLength": 0,
           "requiresText": false
         }
@@ -8480,7 +8480,7 @@ export default {
           "answerType": "",
           "hint": "只选择眼睛或耳朵能够直接确认的内容",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -8496,7 +8496,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -8512,7 +8512,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -8524,7 +8524,7 @@ export default {
           "answerType": "",
           "hint": "遵守展馆当日拍摄规定；不允许拍摄时请教师改为人工确认",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -8536,7 +8536,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 20,
           "requiresText": false
         },
@@ -8548,7 +8548,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase5-start",
+          "unlockAfter": "phase-5-start",
           "minLength": 20,
           "requiresText": false
         }
@@ -11679,7 +11679,7 @@ export default {
           "answerType": "",
           "hint": "先看发布机构、适用范围和更新时间",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -11695,7 +11695,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -11711,7 +11711,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -11723,7 +11723,7 @@ export default {
           "answerType": "",
           "hint": "遵守展馆当日拍摄规定；无法拍摄时请教师人工确认观察记录",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -11735,7 +11735,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase3-start",
+          "unlockAfter": "phase-3-start",
           "minLength": 30,
           "requiresText": false
         },
@@ -11747,7 +11747,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase4-start",
+          "unlockAfter": "phase-4-start",
           "minLength": 35,
           "requiresText": false
         }
@@ -15067,7 +15067,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -15083,7 +15083,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -15099,7 +15099,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase3-start",
+          "unlockAfter": "phase-3-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -15111,7 +15111,7 @@ export default {
           "answerType": "",
           "hint": "仅在获准区域、确保人身安全的前提下拍摄；不可拍摄时改画风险草图并由教师确认",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -15123,7 +15123,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 35,
           "requiresText": false
         },
@@ -15135,7 +15135,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase5-start",
+          "unlockAfter": "phase-5-start",
           "minLength": 40,
           "requiresText": false
         }
@@ -19150,7 +19150,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 1,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -19166,7 +19166,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -19182,7 +19182,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -19198,7 +19198,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -19210,7 +19210,7 @@ export default {
           "answerType": "",
           "hint": "遵守展馆当日拍摄规定，不使用闪光灯",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -19222,7 +19222,7 @@ export default {
           "answerType": "",
           "hint": "照片之外再写一句文字，说明日期对应的事件",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": true
         },
@@ -19234,7 +19234,7 @@ export default {
           "answerType": "",
           "hint": "只拍允许拍摄的公开展项",
           "reward": 2,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -19246,7 +19246,7 @@ export default {
           "answerType": "",
           "hint": "",
           "reward": 1,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 0,
           "requiresText": false
         },
@@ -19258,7 +19258,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase2-start",
+          "unlockAfter": "phase-2-start",
           "minLength": 25,
           "requiresText": false
         },
@@ -19270,7 +19270,7 @@ export default {
           "answerType": "open_ended",
           "hint": "",
           "reward": 3,
-          "unlockAfter": "phase3-start",
+          "unlockAfter": "phase-3-start",
           "minLength": 30,
           "requiresText": false
         }

@@ -16,7 +16,7 @@
 - tags: 失散小战士, 课程情境, 出处待核, 组织信任, 证据边界
 - source: 《得意之笔·四渡赤水》参考课程页面，待课程团队完成史料核验
 - roles: 全角色共享
-- revealWhen: phase_4
+- revealWhen: phase-4
 
 ## K-21 四级证据标签
 - topic: 证据等级

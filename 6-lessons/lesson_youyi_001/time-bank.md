@@ -24,7 +24,7 @@ min_gift_amount: 1min
   options: [投壶, 围棋]
   answer: 投壶
   reward: 3min
-  unlock_after: phase1-start
+  unlock_after: phase-1-start
   hint: "和箭与壶有关。"
 - id: tb-02
   type: quiz
@@ -32,5 +32,5 @@ min_gift_amount: 1min
   options: [冰嬉, 龙舟]
   answer: 冰嬉
   reward: 2min
-  unlock_after: phase1-start
+  unlock_after: phase-1-start
   hint: "故宫藏有一幅描绘它的长卷。"

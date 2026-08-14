@@ -3292,7 +3292,8 @@ function bankTaskControl(task) {
 }
 
 function bankTaskIsUnlocked(task) {
-  const requiredPhase = Number.parseInt(task.unlockAfter.match(/phase(\d+)/i)?.[1], 10);
+  // 与 server/agent/service.js 保持同一正则：规范写法 phase-N-start，兼容旧写法 phaseN-start。
+  const requiredPhase = Number.parseInt(task.unlockAfter.match(/phase[_-]?(\d+)/i)?.[1], 10);
   return !requiredPhase || currentPhase()?.number >= requiredPhase;
 }
 

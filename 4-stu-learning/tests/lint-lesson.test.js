@@ -59,6 +59,9 @@ test('6 门真课程通过结构与语义质量门禁，包括显式声明的静
   assert.equal(stats.reduce((sum, item) => sum + item.missingAssets, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.missingMediaSources, 0), 0);
   assert.equal(stats.reduce((sum, item) => sum + item.qualityIssues, 0), 0);
+  // 六门课共 40 个带 unlock_after 的时间银行任务，全部必须是规范写法 phase-N-start。
+  assert.equal(stats.reduce((sum, item) => sum + item.timeBankUnlocks, 0), 40);
+  assert.equal(stats.reduce((sum, item) => sum + item.badUnlockAfter, 0), 0);
 });
 
 test('注入死知识引用必须报 error（负例）', async () => {
@@ -123,4 +126,40 @@ test('注入坏的通过后目标必须报 error', async () => {
   const bad = issues.filter((item) => item.code === 'bad_next_ref');
   assert.ok(bad.length >= 1);
   assert.equal(bad[0].level, 'error');
+});
+
+test('注入非规范 unlock_after 必须报 error（负例）', async () => {
+  clearCourseCache();
+  const compiled = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  // unlock_after 检查需要 lesson.timeBank 和 time-bank.md 原文，cloneCourse 默认不带。
+  const course = {
+    ...cloneCourse(compiled),
+    lesson: structuredClone(compiled.lesson),
+    files: compiled.files,
+  };
+  course.lesson.timeBank.tasks[0].unlockAfter = 'phase_2-start';
+
+  const { issues } = lintCourse(course, { lessonsRoot, courseId: course.id });
+  const bad = issues.filter((item) => item.code === 'bad_unlock_after');
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0].level, 'error');
+  assert.match(bad[0].message, /phase_2-start/);
+  assert.equal(exitCodeForIssues(issues), 1);
+});
+
+test('unlock_after 引用超出本课 Phase 数必须报 error（负例）', async () => {
+  clearCourseCache();
+  const compiled = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  const course = {
+    ...cloneCourse(compiled),
+    lesson: structuredClone(compiled.lesson),
+    files: compiled.files,
+  };
+  course.lesson.timeBank.tasks[0].unlockAfter = 'phase-9-start';
+
+  const { issues } = lintCourse(course, { lessonsRoot, courseId: course.id });
+  const bad = issues.filter((item) => item.code === 'bad_unlock_after');
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0].level, 'error');
+  assert.match(bad[0].message, /Phase 9/);
 });

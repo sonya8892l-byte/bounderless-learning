@@ -153,7 +153,7 @@ course.md / ## 课程限制规则 中的“地图参谋完成任务N后”
 course.md / ## 阶段编排                     ## Phase 3：四渡推演
 运行时                         phase-3
 prompts/phase3-deduction.md   阶段提示词
-time-bank.md                  unlock_after: phase3-start
+time-bank.md                  unlock_after: phase-3-start
 ```
 
 `course.md / 任务阶段` 当前为 `phase-2`，表示角色选择确认后进入展陈采证。
@@ -716,7 +716,7 @@ gift_target: same_group_only
   options: [川黔滇, 湘鄂赣, 陕甘宁]
   answer: 川黔滇
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 ```
 
 开放题：
@@ -728,7 +728,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 30
   reward: 3min
-  unlock_after: phase3-start
+  unlock_after: phase-3-start
 ```
 
 照片打卡与定位签到：
@@ -740,7 +740,7 @@ gift_target: same_group_only
   hint: "照片之外再补一句说明"
   verify: image_and_text
   reward: 2min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-08
   type: location_checkin
@@ -748,7 +748,7 @@ gift_target: same_group_only
   location: [116.3953, 40.0071]
   radius: 300m
   reward: 1min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 ```
 
 任务 ID 必须为 `tb-数字`。`options` 使用半角逗号分隔。当前选择题、开放题、奖励、总上限和赠时可运行。

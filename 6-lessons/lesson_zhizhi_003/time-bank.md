@@ -31,7 +31,7 @@ gift_target: same_group_only
   options: [照实记录零发现及巡查条件, 删除这次记录, 宣布建筑绝对安全]
   answer: 照实记录零发现及巡查条件
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-02
   type: quiz
@@ -39,7 +39,7 @@ gift_target: same_group_only
   options: [这是一个需要继续核验的风险变量, 这里一定发生过鸟撞, 必须立刻拆除整栋建筑]
   answer: 这是一个需要继续核验的风险变量
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-03
   type: quiz
@@ -47,7 +47,7 @@ gift_target: same_group_only
   options: [先比较适用对象和措施再讨论借鉴, 直接复制最严格条文, 只看文件标题]
   answer: 先比较适用对象和措施再讨论借鉴
   reward: 3min
-  unlock_after: phase3-start
+  unlock_after: phase-3-start
 
 ### 风险调查
 
@@ -57,7 +57,7 @@ gift_target: same_group_only
   hint: "仅在获准区域、确保人身安全的前提下拍摄；不可拍摄时改画风险草图并由教师确认"
   verify: image_recognition
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 ### 反证与规则修订
 
@@ -67,7 +67,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 35
   reward: 3min
-  unlock_after: phase2-start
+  unlock_after: phase-2-start
 
 - id: tb-06
   type: quiz
@@ -75,7 +75,7 @@ gift_target: same_group_only
   answer_type: open_ended
   min_length: 40
   reward: 3min
-  unlock_after: phase5-start
+  unlock_after: phase-5-start
 
 ## 使用边界
 
