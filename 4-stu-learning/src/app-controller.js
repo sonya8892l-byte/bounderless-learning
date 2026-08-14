@@ -84,6 +84,7 @@ import {
 } from './engine/session-dialogue-history.js';
 import { mergeRoleClaimProjection, roleClaimChoice } from './engine/role-claim.js';
 import {
+  CONTENT_REVEAL_INTERVAL_MS,
   isAuditOnlyTransportEvent,
   PHASE_TRANSITION_DELAY_MS,
   republishActiveTaskMessage,
@@ -2156,10 +2157,21 @@ async function runAgentTurn(input, options = {}) {
       }
     }
     roleState.lastAgentRequestError = null;
-    if (displayedAssistantFeedback && republishTaskId && !roleState.completed && roleState.progress < currentRole().tasks.length) {
+    const taskCardAlreadyPresented = bufferedEvents.some((event) => (
+      event.type === 'tool.requested'
+      && event.data?.payload?.taskId === republishTaskId
+    ));
+    if (displayedAssistantFeedback && republishTaskId && !taskCardAlreadyPresented
+      && !roleState.completed && roleState.progress < currentRole().tasks.length) {
       const activeTask = currentRole().tasks[roleState.progress];
       const stepCount = activeTask?.steps?.length || activeTask?.guidanceSteps?.length || 1;
       if (activeTask?.id === republishTaskId && stepCount > 1) {
+        const hasActiveTaskCard = roleState.messages.some((message) => (
+          message?.type === 'task'
+          && message.status === 'active'
+          && message.payload?.taskId === republishTaskId
+        ));
+        if (hasActiveTaskCard) await waitFor(CONTENT_REVEAL_INTERVAL_MS);
         const republished = republishActiveTaskMessage(roleState.messages, republishTaskId);
         roleState.republishedTaskMessageId = republished?.id || null;
         if (republished) shouldRender = true;

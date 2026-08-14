@@ -52,7 +52,7 @@ test('TurnPlan 保留消息语义顺序，把工具稳定放到最后并标注�
   ]);
   assert.deepEqual(
     planned.events.map((event) => event.data.presentation.delayMs),
-    [0, 900, 900, 2_000],
+    [0, 3_000, 3_000, 3_000],
   );
   assert.deepEqual(
     planned.events.map((event) => event.data.presentation.sequence),
@@ -74,9 +74,9 @@ test('TurnPlan 保留消息语义顺序，把工具稳定放到最后并标注�
   });
   assert.deepEqual(planned.summary.rhythm, [
     { sequence: 0, kind: 'message', delayMs: 0 },
-    { sequence: 1, kind: 'stage', delayMs: 900 },
-    { sequence: 2, kind: 'message', delayMs: 900 },
-    { sequence: 3, kind: 'tool', delayMs: 2_000 },
+    { sequence: 1, kind: 'stage', delayMs: 3_000 },
+    { sequence: 2, kind: 'message', delayMs: 3_000 },
+    { sequence: 3, kind: 'tool', delayMs: 3_000 },
   ]);
 });
 

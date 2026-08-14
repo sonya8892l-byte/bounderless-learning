@@ -3,7 +3,7 @@ import {
   TOOL_REVEAL_DELAY_MS,
 } from './presentation-timing.js';
 
-export const TURN_PLAN_VERSION = '2026-08-11.2';
+export const TURN_PLAN_VERSION = '2026-08-14.1';
 
 const TOOL_PRIORITY = Object.freeze({
   call_teacher: 40,

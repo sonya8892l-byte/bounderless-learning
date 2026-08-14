@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  CONTENT_REVEAL_INTERVAL_MS,
   isAuditOnlyTransportEvent,
   PHASE_TRANSITION_DELAY_MS,
   republishActiveTaskMessage,
@@ -24,7 +25,7 @@ import {
   validateCompletedTaskSteps,
 } from '../src/components/activity-tools.js';
 
-test('阶段提示逐条出现，工具卡在上一条提示后等待两秒', () => {
+test('阶段提示和工具卡按三秒阅读间隔逐条出现', () => {
   const events = [
     { type: 'stage.started' },
     { type: 'assistant.completed' },
@@ -34,8 +35,12 @@ test('阶段提示逐条出现，工具卡在上一条提示后等待两秒', ()
     visibleEventCount,
     initialEmpty: true,
   }));
-  assert.deepEqual(delays, [350, 900, 2_000]);
-  assert.ok(PHASE_TRANSITION_DELAY_MS >= 2_000, '最终反馈需要读完后再进入角色选择页');
+  assert.equal(CONTENT_REVEAL_INTERVAL_MS, 3_000);
+  assert.deepEqual(delays, [350, 3_000, 3_000]);
+  assert.ok(
+    PHASE_TRANSITION_DELAY_MS >= CONTENT_REVEAL_INTERVAL_MS,
+    '最终反馈需要留足一个完整阅读间隔再切页',
+  );
 });
 
 test('前端优先使用服务端 TurnPlan 的揭示间隔', () => {
@@ -73,6 +78,19 @@ test('Step 提示后移动同一张活动任务卡到消息末尾，并保留卡
   assert.equal(taskMessage.callId, 'call-1');
   assert.equal(taskMessage.payload.taskIndex, 0);
   assert.equal(republishActiveTaskMessage(messages, 'other-task'), null);
+});
+
+test('Step 反馈的原任务卡在三秒阅读间隔后才重新发布', () => {
+  const controllerPath = fileURLToPath(new URL('../src/app-controller.js', import.meta.url));
+  const source = fs.readFileSync(controllerPath, 'utf8');
+  const waitIndex = source.indexOf('if (hasActiveTaskCard) await waitFor(CONTENT_REVEAL_INTERVAL_MS);');
+  const republishIndex = source.indexOf(
+    'const republished = republishActiveTaskMessage(roleState.messages, republishTaskId);',
+    waitIndex,
+  );
+
+  assert.ok(waitIndex >= 0, '任务卡重发前必须等待统一阅读间隔');
+  assert.ok(republishIndex > waitIndex, '必须先等待，再移动原任务卡');
 });
 
 test('完整已批准 delta 只用于传输审计，页面等 TurnPlan 再逐泡揭示', () => {

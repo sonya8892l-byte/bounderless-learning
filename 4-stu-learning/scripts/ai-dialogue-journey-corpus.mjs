@@ -38,7 +38,7 @@ export const journeyScenarios = [
           requiredEvents: ['stage.started', 'assistant.completed', 'tool.requested', 'state.updated'],
           requiredTools: ['open_task_tool'],
           visibleOrder: ['stage.started', 'assistant.completed', 'tool.requested'],
-          minimumToolDelayMs: 2_000,
+          minimumToolDelayMs: 3_000,
         },
       ),
       browser('media_completed', {
@@ -164,14 +164,14 @@ export const journeyScenarios = [
     steps: [
       browser('turn_rendered', {}, {
         visibleOrder: ['stage', 'assistant', 'tool'],
-        minimumAssistantGapMs: 800,
-        minimumToolDelayMs: 2_000,
+        minimumAssistantGapMs: 3_000,
+        minimumToolDelayMs: 3_000,
         simultaneousRevealForbidden: true,
       }),
     ],
   },
 ];
 
-export const journeyFixtureVersion = '2026-08-11.4';
+export const journeyFixtureVersion = '2026-08-14.1';
 export const journeyStepCount = journeyScenarios
   .reduce((sum, scenario) => sum + scenario.steps.length, 0);

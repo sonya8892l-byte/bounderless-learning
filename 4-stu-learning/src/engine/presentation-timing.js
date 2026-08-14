@@ -1,7 +1,8 @@
 export const FIRST_MESSAGE_REVEAL_DELAY_MS = 350;
-export const MESSAGE_REVEAL_DELAY_MS = 900;
-export const TOOL_REVEAL_DELAY_MS = 2_000;
-export const PHASE_TRANSITION_DELAY_MS = 2_400;
+export const CONTENT_REVEAL_INTERVAL_MS = 3_000;
+export const MESSAGE_REVEAL_DELAY_MS = CONTENT_REVEAL_INTERVAL_MS;
+export const TOOL_REVEAL_DELAY_MS = CONTENT_REVEAL_INTERVAL_MS;
+export const PHASE_TRANSITION_DELAY_MS = CONTENT_REVEAL_INTERVAL_MS;
 
 export function isAuditOnlyTransportEvent(event) {
   return event?.type === 'assistant.delta';
@@ -33,8 +34,8 @@ export function shouldSuppressPassivePresentation(event, {
 }
 
 /**
- * 对话中的内容按教学节奏逐条揭示。工具卡需要留出一段更明显的停顿，
- * 让学生先读完絮絮的说明，再把注意力转到操作区。
+ * 对话中的内容按教学节奏逐条揭示。后续消息与任务卡共用统一阅读间隔，
+ * 让学生先读完当前内容，再把注意力转到下一项。
  */
 export function visibleEventDelay(event, {
   visibleEventCount = 0,

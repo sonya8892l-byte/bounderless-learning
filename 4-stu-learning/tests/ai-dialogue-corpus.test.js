@@ -50,7 +50,8 @@ test('关键旅程分别表达 Agent 与浏览器事件，browser_event 不混�
   assert.ok(steps.some((step) => step.transport === 'agent' && step.input.type === 'lifecycle_event'));
   assert.ok(steps.some((step) => step.transport === 'browser' && step.input.type === 'browser_event'));
   assert.ok(steps.some((step) => step.input.event === 'photo_removed'));
-  assert.ok(steps.some((step) => step.expect.minimumToolDelayMs === 2_000));
+  assert.ok(steps.some((step) => step.expect.minimumAssistantGapMs === 3_000));
+  assert.ok(steps.some((step) => step.expect.minimumToolDelayMs === 3_000));
   assert.ok(dialogueScenarios
     .flatMap((scenario) => scenario.prompts)
     .every((prompt) => prompt.input.type === 'user_text'));
