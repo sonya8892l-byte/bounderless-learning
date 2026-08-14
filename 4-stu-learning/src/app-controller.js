@@ -3906,6 +3906,18 @@ const actions = {
   },
   'clear-sketch': (target) => clearSketch(target.dataset.taskId, target.dataset.stepId),
   'move-order-item': (target) => moveOrderItem(target.dataset.taskId, target.dataset.stepId, Number(target.dataset.index), target.dataset.direction),
+  'choose-activity-option': (target) => {
+    const { taskId, stepId, toolId, fieldId, value: selectedValue } = target.dataset;
+    const value = activityValue(taskId, stepId, toolId);
+    if (toolId === 'text') {
+      value.fields ||= {};
+      value.fields[fieldId] = selectedValue;
+    } else {
+      value[fieldId] = selectedValue;
+    }
+    taskEvidence(taskId).validationError = '';
+    renderChat();
+  },
   'choose-simulation': (target) => {
     activityValue(target.dataset.taskId, target.dataset.stepId, 'simulation').pendingChoice = target.dataset.choiceId;
     renderChat();

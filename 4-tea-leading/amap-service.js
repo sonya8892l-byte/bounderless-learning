@@ -185,7 +185,7 @@ export async function mountTeacherMap(container, data) {
       mapContainer = container;
       map = new AMap.Map(container, {
         zoom: 15,
-        mapStyle: config.style || 'amap://styles/normal',
+        mapStyle: 'amap://styles/normal',
         viewMode: '2D',
         features: ['bg', 'road', 'point'],
         showLabel: true,

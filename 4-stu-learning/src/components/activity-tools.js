@@ -26,6 +26,35 @@ function toolShell(tool, body, status = '') {
   `;
 }
 
+function renderActivitySelect({
+  taskId,
+  stepId,
+  toolId,
+  fieldId,
+  value = '',
+  options = [],
+  placeholder = '请选择',
+  label = placeholder,
+}) {
+  const selected = String(value || '');
+  return `<details class="activity-select">
+    <summary aria-label="${escapeHtml(label)}，当前选择：${escapeHtml(selected || '未选择')}">
+      <span class="${selected ? '' : 'is-placeholder'}">${escapeHtml(selected || placeholder)}</span>
+    </summary>
+    <div class="activity-select__options" role="listbox" aria-label="${escapeHtml(label)}">
+      ${(options || []).map((option) => {
+        const optionValue = String(option);
+        const isSelected = optionValue === selected;
+        return `<button type="button" role="option" aria-selected="${isSelected}"
+          data-action="choose-activity-option" data-task-id="${escapeHtml(taskId)}"
+          data-step-id="${escapeHtml(stepId)}" data-tool-id="${escapeHtml(toolId)}"
+          data-field-id="${escapeHtml(fieldId)}" data-value="${escapeHtml(optionValue)}"
+          class="${isSelected ? 'is-selected' : ''}">${escapeHtml(optionValue)}</button>`;
+      }).join('')}
+    </div>
+  </details>`;
+}
+
 function renderPhoto(tool, context) {
   const { evidence, taskId, stepId } = context;
   const config = tool.config || {};
@@ -80,7 +109,15 @@ function renderText(tool, context) {
         const attributes = `data-activity-field data-task-id="${escapeHtml(context.taskId)}" data-step-id="${escapeHtml(context.stepId)}" data-tool-id="text" data-field-id="${escapeHtml(field.id)}"`;
         const lengthLimit = field.maxLength ? `maxlength="${Number(field.maxLength)}"` : '';
         if (field.type === 'select') {
-          return `<label><span>${escapeHtml(field.label)}${field.required ? ' *' : ''}</span><select ${attributes}><option value="">请选择</option>${(field.options || []).map((option) => `<option value="${escapeHtml(option)}" ${String(option) === String(current) ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select></label>`;
+          return `<div class="activity-field"><span>${escapeHtml(field.label)}${field.required ? ' *' : ''}</span>${renderActivitySelect({
+            taskId: context.taskId,
+            stepId: context.stepId,
+            toolId: 'text',
+            fieldId: field.id,
+            value: current,
+            options: field.options,
+            label: field.label,
+          })}</div>`;
         }
         if (field.type === 'number') {
           return `<label><span>${escapeHtml(field.label)}${field.required ? ' *' : ''}</span><input type="number" value="${escapeHtml(current)}" placeholder="${escapeHtml(field.placeholder || '')}" ${attributes} /></label>`;
@@ -191,8 +228,26 @@ function renderTeam(tool, context) {
   return toolShell(tool, `
     <p>${escapeHtml(config.prompt || '把组内讨论结论记录下来，保留不同意见。')}</p>
     <div class="team-tool-compose">
-      ${config.roles?.length ? `<select data-activity-field data-task-id="${escapeHtml(context.taskId)}" data-step-id="${escapeHtml(context.stepId)}" data-tool-id="team" data-field-id="selectedRole"><option value="">选择记录角色</option>${config.roles.map((role) => `<option value="${escapeHtml(role)}" ${value.selectedRole === role ? 'selected' : ''}>${escapeHtml(role)}</option>`).join('')}</select>` : ''}
-      ${config.recordTypes?.length ? `<select data-activity-field data-task-id="${escapeHtml(context.taskId)}" data-step-id="${escapeHtml(context.stepId)}" data-tool-id="team" data-field-id="recordType"><option value="">选择记录类型</option>${config.recordTypes.map((type) => `<option value="${escapeHtml(type)}" ${value.recordType === type ? 'selected' : ''}>${escapeHtml(type)}</option>`).join('')}</select>` : ''}
+      ${config.roles?.length ? renderActivitySelect({
+        taskId: context.taskId,
+        stepId: context.stepId,
+        toolId: 'team',
+        fieldId: 'selectedRole',
+        value: value.selectedRole,
+        options: config.roles,
+        placeholder: '选择记录角色',
+        label: '记录角色',
+      }) : ''}
+      ${config.recordTypes?.length ? renderActivitySelect({
+        taskId: context.taskId,
+        stepId: context.stepId,
+        toolId: 'team',
+        fieldId: 'recordType',
+        value: value.recordType,
+        options: config.recordTypes,
+        placeholder: '选择记录类型',
+        label: '记录类型',
+      }) : ''}
       <textarea rows="2" placeholder="记录一条观点、分工或证据…" data-activity-field data-task-id="${escapeHtml(context.taskId)}" data-step-id="${escapeHtml(context.stepId)}" data-tool-id="team" data-field-id="draft">${escapeHtml(value.draft || '')}</textarea>
       <button type="button" data-action="add-team-entry" data-task-id="${escapeHtml(context.taskId)}" data-step-id="${escapeHtml(context.stepId)}"><i data-lucide="plus"></i>加入记录</button>
     </div>

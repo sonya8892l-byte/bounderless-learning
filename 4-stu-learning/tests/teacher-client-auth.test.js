@@ -265,6 +265,8 @@ test('教师 PWA 源码保持单一鉴权通道，无持久快照凭证和静态
   assert.doesNotMatch(app, /(?<!Authenticated)fetch\s*\(/u);
   assert.match(amap, /teacherAuthenticatedFetch\(CONFIG_URL/u);
   assert.doesNotMatch(amap, /(?<!Authenticated)fetch\s*\(/u);
+  assert.match(amap, /mapStyle: 'amap:\/\/styles\/normal'/u);
+  assert.doesNotMatch(amap, /mapStyle: config\.style/u);
   assert.match(auth, /sessionStorage/u);
   assert.doesNotMatch(`${app}\n${amap}\n${auth}`, /URLSearchParams|location\.search|[?&](?:token|access_token)=/u);
   assert.doesNotMatch(`${app}\n${amap}\n${auth}\n${html}`, /TEACHER_API_TOKEN\s*[:=]\s*['"][^'"]+/u);

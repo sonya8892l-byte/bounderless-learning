@@ -201,6 +201,41 @@ test('照片缩略图提供可访问的删除入口，删后重新触发最低�
   assert.equal(validateActivityStep({ tools, evidence, stepId: 'step' }), '还需要拍摄 1 张照片。');
 });
 
+test('选择字段在控件下方展开大字候选项，并沿用任务值更新链路', () => {
+  const tools = [{
+    id: 'text',
+    name: '现场记录',
+    module: 'A03',
+    config: {
+      fields: [{
+        id: 'direction',
+        label: '水流方向',
+        type: 'select',
+        required: true,
+        options: ['向东', '向西'],
+      }],
+    },
+  }];
+  const html = renderActivityTools({
+    tools,
+    evidence: { toolValues: { step: { text: { fields: { direction: '向东' } } } } },
+    taskId: 'task',
+    stepId: 'step',
+  });
+  const controllerPath = fileURLToPath(new URL('../src/app-controller.js', import.meta.url));
+  const stylesPath = fileURLToPath(new URL('../src/styles.css', import.meta.url));
+  const controller = fs.readFileSync(controllerPath, 'utf8');
+  const styles = fs.readFileSync(stylesPath, 'utf8');
+
+  assert.match(html, /<details class="activity-select">/u);
+  assert.match(html, /class="activity-select__options" role="listbox"/u);
+  assert.match(html, /role="option" aria-selected="true"[\s\S]*data-value="向东"/u);
+  assert.doesNotMatch(html, /<select/u);
+  assert.match(controller, /'choose-activity-option':[\s\S]*value\.fields\[fieldId\] = selectedValue/u);
+  assert.match(styles, /\.activity-select summary \{[\s\S]*min-height: 48px;[\s\S]*font-size: 16px;/u);
+  assert.match(styles, /\.activity-select__options button \{[\s\S]*min-height: 48px;[\s\S]*font-size: 16px;/u);
+});
+
 test('小步全部完成后，整包提交区仍能删除、重拍和补拍原 Step 照片', () => {
   const photo = { id: 'photo', name: '拍照采集', module: 'A01', config: { minCount: 1 } };
   const evidence = {
