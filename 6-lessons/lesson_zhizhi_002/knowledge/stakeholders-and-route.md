@@ -6,7 +6,7 @@
 - tags：利益相关者,参与
 - source：课程利益相关者图方法卡
 - roles：利益相关者观察员,行动方案设计员
-- revealTiming：学生列出相关者名称后
+- revealWhen： phase_3
 
 ## K-15 公平性检查
 - topic：公平性
@@ -14,7 +14,7 @@
 - tags：公平,成本,参与
 - source：课程听证方法卡
 - roles：利益相关者观察员,行动方案设计员
-- revealTiming：资源模拟前
+- revealWhen： phase_4
 
 ## K-16 资源配置
 - topic：决策
@@ -22,7 +22,7 @@
 - tags：资源,取舍,决策
 - source：课程资源分配模拟卡
 - roles：行动方案设计员,保护措施审计员
-- revealTiming：资源模拟开始时
+- revealWhen： phase_4
 
 ## K-17 行动书七要素
 - topic：行动方案
@@ -30,7 +30,7 @@
 - tags：行动书,执行
 - source：课程行动书模板
 - roles：行动方案设计员,全角色共享
-- revealTiming：方案起草时
+- revealWhen： phase_5
 
 ## K-18 馆内公开路线基线
 - topic：馆内点位
@@ -38,7 +38,7 @@
 - tags：国家动物博物馆,路线,踏勘
 - source：中国科学院动物研究所《国家动物博物馆展厅与代表展品》https://ioz.cas.cn/gb2018/xwdt/mtsm/202101/t20210112_5854835.html；发布2021-01-12；访问2026-07-31
 - roles：全角色共享
-- revealTiming：教师完成当日点位说明后
+- revealWhen： phase_1
 
 ## K-19 AI协作披露
 - topic：AI素养
@@ -46,4 +46,4 @@
 - tags：AI,披露,核验
 - source：课程AI协作规范
 - roles：全角色共享
-- revealTiming：首次使用AI整理或比较后
+- revealWhen： phase_3

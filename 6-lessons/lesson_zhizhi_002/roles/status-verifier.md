@@ -16,7 +16,7 @@
 - id：verifier-separate-labels
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：把简报中的保护说法分成法律身份、IUCN等级、趋势和措施成效
@@ -77,7 +77,7 @@
 - id：verifier-check-sources
 - 地点：教育空间或指定资料终端
 - 位置模式：none
-- 建议时长：28min
+- 建议时长：28分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：分别登记国内保护身份、IUCN条目和趋势材料
@@ -138,7 +138,7 @@
 - id：verifier-issue-note
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：向行动书提供四维状态表和效力日期说明

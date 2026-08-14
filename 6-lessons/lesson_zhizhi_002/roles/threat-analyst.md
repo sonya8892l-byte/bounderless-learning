@@ -16,7 +16,7 @@
 - id：threat-frame-hypotheses
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：把先入印象改写为可被证据支持或推翻的风险假设
@@ -78,7 +78,7 @@
 - id：threat-build-chain
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：25min
+- 建议时长：25分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：将现场和资料证据放入四层因果链
@@ -139,7 +139,7 @@
 - id：threat-deliver-diagnosis
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：用一页诊断支持方案答辩，并公开不确定性

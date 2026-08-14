@@ -17,7 +17,7 @@
 - 地点：教师分配的动物标本点
 - 位置模式：point
 - 到达验证：teacher
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：确认标本、展签和小组物种一致，留下可复核的现场证据
@@ -82,7 +82,7 @@
 - id：identity-observe-features
 - 地点：动物标本点
 - 位置模式：inherit_role
-- 建议时长：10min
+- 建议时长：10分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：记录两个能直接观察的身体特征，并说明其可能与生活方式有什么关系
@@ -146,7 +146,7 @@
 - id：identity-organize-facts
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：向小组提交身份、显著特征和一条带边界的结构功能判断

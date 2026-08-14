@@ -6,7 +6,7 @@
 - tags: 观察, 证据, 标本
 - source: 课程方法卡《四类信息》
 - roles: 身份观察员, 展签记录员, 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-02 资料事实
 - topic: 证据类型
@@ -14,7 +14,7 @@
 - tags: 资料, 来源, 日期
 - source: 课程方法卡《四类信息》
 - roles: 展签记录员, 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-03 合理推断
 - topic: 证据类型
@@ -22,7 +22,7 @@
 - tags: 推断, 边界, 条件
 - source: 课程方法卡《四类信息》
 - roles: 生态关系员, 全角色共享
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-04 角色期待
 - topic: 表达边界
@@ -30,4 +30,4 @@
 - tags: 期待, 权利, 角色语言
 - source: 课程伦理表达说明
 - roles: 声音记录员, ID设计员, 议事发言人
-- revealTiming: after_task1
+- revealWhen: after_task1

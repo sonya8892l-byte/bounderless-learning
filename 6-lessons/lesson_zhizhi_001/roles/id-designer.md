@@ -16,7 +16,7 @@
 - id：designer-receive-evidence
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：6min
+- 建议时长：6分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：接收身份、来源、关系和声音四类成果
@@ -80,7 +80,7 @@
 - id：designer-make-id
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：填写ID Card全部核心字段
@@ -146,7 +146,7 @@
 - 收口方式：teacher_confirm
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：6min
+- 建议时长：6分钟
 - 推进方式：teacher
 - 任务图：assets/placeholders/task.svg
 - 配置：完成事实、边界、隐私和授权四项检查

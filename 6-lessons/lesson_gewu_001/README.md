@@ -205,7 +205,7 @@ time-bank.md                                unlock_after: phase2-start
 
 ## 阶段编排
 ### Phase 1：沉浸叙事
-- 时长：20min
+- 时长：20分钟
 - 模式：集体（全班）
 - 地点：集合区域（午门广场或指定教室）
 
@@ -268,7 +268,7 @@ learningView:
 ## 阶段编排
 
 ### Phase 2：现场采证
-- 时长：90min
+- 时长：90分钟
 - 模式：个人（按角色分散）
 - 地点：故宫各区域（由角色决定）
 - 功能模块：A01(多模态采集), A02(答题评测), A07(扫码识别)
@@ -294,12 +294,12 @@ learningView:
 
 | Phase ID | 名称 | 时长 | 阶段提示词 |
 |---|---|---:|---|
-| `phase-1` | 沉浸叙事 | 20min | `prompts/phase1-immersive.md` |
-| `phase-2` | 现场采证 | 90min | `prompts/phase2-field.md` |
-| `phase-3` | 推理推演 | 40min | `prompts/phase3-deduction.md` |
-| `phase-4` | 璇玑时刻 | 30min | `prompts/phase4-xuanji.md` |
-| `phase-5` | 总结汇报 | 20min | `prompts/phase5-summary.md` |
-| `phase-6` | 尾声 | 10min | `prompts/phase6-ending.md` |
+| `phase-1` | 沉浸叙事 | 20分钟 | `prompts/phase1-immersive.md` |
+| `phase-2` | 现场采证 | 90分钟 | `prompts/phase2-field.md` |
+| `phase-3` | 推理推演 | 40分钟 | `prompts/phase3-deduction.md` |
+| `phase-4` | 璇玑时刻 | 30分钟 | `prompts/phase4-xuanji.md` |
+| `phase-5` | 总结汇报 | 20分钟 | `prompts/phase5-summary.md` |
+| `phase-6` | 尾声 | 10分钟 | `prompts/phase6-ending.md` |
 
 提示词文件名必须符合 `prompts/phase数字-名称.md`。编译器根据文件名中的数字绑定 Phase。
 
@@ -342,10 +342,10 @@ learningView:
 - 坐标：
 - 围栏半径：
 - 到达验证：manual
-- 最短停留：0min
-- 建议时长：15min
-- 无操作提醒：8min
-- 提醒冷却：8min
+- 最短停留：0分钟
+- 建议时长：15分钟
+- 无操作提醒：8分钟
+- 提醒冷却：8分钟
 - 最大主动提醒：1
 - 推进方式：auto_after_validation
 - 收口方式：auto_on_last_step
@@ -531,10 +531,10 @@ Step 只配置一个工具时，可以直接填写该工具配置：
 - tags: 螭首, 排水, 工程, 坡度
 - source: 故宫博物院古建研究
 - roles: 数龙官, 测坡官
-- revealTiming: after_task1
+- revealWhen: after_task1
 ```
 
-字段名使用英文小写，区分大小写：`topic`、`content`、`tags`、`source`、`roles`、`revealTiming`。
+字段名使用英文小写，区分大小写：`topic`、`content`、`tags`、`source`、`roles`、`revealWhen`。
 
 `roles` 使用角色显示名，不使用 role slug。可用 `全角色共享` 或 `全部角色`。
 
@@ -873,7 +873,7 @@ npm run build
 
 ### 知识、限制和评估
 
-- [ ] K-01～K-19 无重复 ID，topic、tags、source、roles、revealTiming 完整。
+- [ ] K-01～K-19 无重复 ID，topic、tags、source、roles、revealWhen 完整。
 - [ ] 所有精确受保护数据都出现在 restrictions 四列表格中。
 - [ ] restrictions 中的角色名和任务序号与角色文件一致。
 - [ ] guidance 和 scaffolds 的任务顺序与 roles 一致。

@@ -16,10 +16,10 @@
 - id：task-1
 - 位置模式：inherit_role
 - 到达验证：manual
-- 最短停留：0min
-- 建议时长：15min
-- 无操作提醒：8min
-- 提醒冷却：8min
+- 最短停留：0分钟
+- 建议时长：15分钟
+- 无操作提醒：8分钟
+- 提醒冷却：8分钟
 - 最大主动提醒：1
 - 推进方式：auto_after_validation
 - 任务图：assets/maps/drainage-profile.png
@@ -142,10 +142,10 @@
 - id：task-2
 - 位置模式：inherit_role
 - 到达验证：manual
-- 最短停留：0min
-- 建议时长：15min
-- 无操作提醒：8min
-- 提醒冷却：8min
+- 最短停留：0分钟
+- 建议时长：15分钟
+- 无操作提醒：8分钟
+- 提醒冷却：8分钟
 - 最大主动提醒：1
 - 推进方式：auto_after_validation
 - 配置：
@@ -274,10 +274,10 @@
 - id：task-3
 - 位置模式：inherit_role
 - 到达验证：manual
-- 最短停留：0min
-- 建议时长：15min
-- 无操作提醒：8min
-- 提醒冷却：8min
+- 最短停留：0分钟
+- 建议时长：15分钟
+- 无操作提醒：8分钟
+- 提醒冷却：8分钟
 - 最大主动提醒：1
 - 推进方式：auto_after_validation
 - 配置：画出水流方向示意图 + 文字解释坡度的排水作用

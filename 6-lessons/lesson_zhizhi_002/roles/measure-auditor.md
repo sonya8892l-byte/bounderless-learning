@@ -16,7 +16,7 @@
 - id：auditor-frame-questions
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：为措施建立“目标—活动—结果—证据”问题框架
@@ -78,7 +78,7 @@
 - id：auditor-audit-measures
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：25min
+- 建议时长：25分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：建立措施—威胁矩阵，评估覆盖、成效证据和缺口
@@ -139,7 +139,7 @@
 - id：auditor-report-findings
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：向听证会报告措施覆盖、证据强弱和优先缺口

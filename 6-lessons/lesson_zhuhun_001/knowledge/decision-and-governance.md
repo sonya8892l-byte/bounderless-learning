@@ -9,7 +9,7 @@
 - source: 全国哲学社会科学工作办公室转载《遵义会议坚持用实践标准统一思想认识》
 - sourceUrl: https://www.nopss.gov.cn/GB/219567/219576/17054134.html
 - roles: 决策参谋, 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-17 苟坝会议与方案复核
 - topic: 苟坝会议
@@ -18,7 +18,7 @@
 - source: 贵州省人大《苟坝会议：一盏马灯照亮中国革命的路》；全国哲学社会科学工作办公室相关资料
 - sourceUrl: https://www.gzrd.gov.cn/ztzl/dsxxjyzt/dszdgz/202103/t20210330_77665376.html
 - roles: 决策参谋
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-18 新的三人军事指挥小组
 - topic: 军事指挥机制
@@ -27,4 +27,4 @@
 - source: 全国哲学社会科学工作办公室转载《遵义会议坚持用实践标准统一思想认识》
 - sourceUrl: https://www.nopss.gov.cn/GB/219567/219576/17054134.html
 - roles: 决策参谋
-- revealTiming: after_task2
+- revealWhen: after_task2

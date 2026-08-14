@@ -8,7 +8,7 @@
 - tags: 螭首, 排水, 千龙吐水, 汉白玉
 - source: 故宫博物院官方资料
 - roles: 数龙官
-- revealTiming: content_always_available, number_after_task2
+- revealWhen: always
 
 ## K-02 螭首数量分布
 - topic: 螭首数量分布
@@ -16,7 +16,7 @@
 - tags: 螭首, 数量, 分布, 估算
 - source: 故宫古建部测量数据
 - roles: 数龙官
-- revealTiming: after_task2（学生自己估算后才可出示）
+- revealWhen: after_task2
 
 ## K-03 螭首的工程功能
 - topic: 螭首排水功能
@@ -24,7 +24,7 @@
 - tags: 螭首, 排水, 工程, 坡度
 - source: 故宫博物院古建研究
 - roles: 数龙官, 测坡官
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-04 螭首的文化象征
 - topic: 螭首礼制象征
@@ -32,4 +32,4 @@
 - tags: 螭首, 礼制, 文化, 龙
 - source: 故宫博物院展览资料
 - roles: 数龙官
-- revealTiming: always_available
+- revealWhen: always

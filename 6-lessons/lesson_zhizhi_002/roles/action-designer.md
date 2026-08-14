@@ -16,7 +16,7 @@
 - id：designer-define-success
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：先定义可观察的成功，再等待证据决定行动
@@ -78,7 +78,7 @@
 - id：designer-allocate-resources
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：25min
+- 建议时长：25分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：在有限筹码下选择行动并公开取舍
@@ -140,7 +140,7 @@
 - 收口方式：teacher_confirm
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：16min
+- 建议时长：16分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：整合调查、听证和资源模拟，形成可复盘的课程建议

@@ -16,7 +16,7 @@
 - id：stakeholder-frame-map
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：从威胁和措施出发识别相关者，不替任何群体编造态度
@@ -78,7 +78,7 @@
 - id：stakeholder-evidence-map
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：22min
+- 建议时长：22分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：用已有材料或经同意的匿名记录更新相关者图
@@ -139,7 +139,7 @@
 - id：stakeholder-hearing
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：15min
+- 建议时长：15分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：帮助不同立场基于影响和证据提问，完整记录回应与修订

@@ -8,7 +8,7 @@
 - tags: 情报, 来源, 可靠度, 时效, 独立性
 - source: 课程方法工具《鲁班锁·情报盲区图》
 - roles: 情报参谋, 决策参谋
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-14 信息不对称四象限
 - topic: 信息盲区矩阵
@@ -16,7 +16,7 @@
 - tags: 我方已知, 敌方已知, 双方未知, 误判, 四象限
 - source: 课程方法工具《鲁班锁·情报盲区图》
 - roles: 情报参谋, 示形参谋
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-15 示形成立的条件
 - topic: 示形与判断窗口
@@ -24,4 +24,4 @@
 - tags: 示形, 信号, 敌方判断, 时间窗口, 风险
 - source: 课程团队基于四渡赤水战役资料整理
 - roles: 情报参谋, 示形参谋
-- revealTiming: after_task2
+- revealWhen: after_task2

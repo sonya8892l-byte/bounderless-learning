@@ -8,7 +8,7 @@
 - tags: 川黔滇, 山地, 河谷, 渡口, 交通线
 - source: 中国共产党历史展览馆展陈与权威党史资料，课程团队需按实际展项复核
 - roles: 地图参谋
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-11 地图证据读取顺序
 - topic: 地图判读方法
@@ -16,7 +16,7 @@
 - tags: 地图判读, 图例, 比例, 证据分层, 方法
 - source: 课程方法工具《鲁班锁·地形识别器》
 - roles: 地图参谋
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-12 路线服务于阶段目标
 - topic: 路线与目标
@@ -24,4 +24,4 @@
 - tags: 路线, 阶段目标, 可行性, 风险, 出口
 - source: 课程团队基于四渡赤水决策过程整理
 - roles: 地图参谋, 决策参谋
-- revealTiming: after_task1
+- revealWhen: after_task1

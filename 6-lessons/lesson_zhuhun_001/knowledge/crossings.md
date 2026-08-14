@@ -9,7 +9,7 @@
 - source: 国防部网《土城会议——拉开四渡赤水的序幕》
 - sourceUrl: https://www.mod.gov.cn/gfbw/gfjy_index/js_214151/16440082.html
 - roles: 地图参谋, 决策参谋
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-06 二渡赤水
 - topic: 二渡赤水
@@ -18,7 +18,7 @@
 - source: 中共中央党史和文献研究院《四渡赤水：110天的得意之笔》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2026/0512/c423724-40718269.html
 - roles: 地图参谋, 情报参谋, 全角色共享
-- revealTiming: phase3
+- revealWhen: phase_3
 
 ## K-07 三渡赤水
 - topic: 三渡赤水
@@ -27,7 +27,7 @@
 - source: 中共中央党史和文献研究院《四渡赤水、佯攻贵阳：高度灵活机动的山地运动战》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2022/1121/c423725-32570961.html
 - roles: 示形参谋, 情报参谋
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-08 四渡赤水
 - topic: 四渡赤水
@@ -36,7 +36,7 @@
 - source: 中共中央党史和文献研究院《毛泽东指挥四渡赤水的“神来之笔”》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2016/0426/c218998-28305628.html
 - roles: 示形参谋, 地图参谋
-- revealTiming: after_task3
+- revealWhen: after_task3
 
 ## K-09 后续脱困行动链
 - topic: 四渡后的战略机动
@@ -45,4 +45,4 @@
 - source: 中共中央党史和文献研究院《四渡赤水、佯攻贵阳：高度灵活机动的山地运动战》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2022/1121/c423725-32570961.html
 - roles: 全角色共享
-- revealTiming: phase5
+- revealWhen: phase_5

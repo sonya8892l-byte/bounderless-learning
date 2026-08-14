@@ -6,7 +6,7 @@
 - tags: 展厅, 楼层, 路线
 - source: 中国科学院动物研究所《来这里感受动物别样的美》，2021-01-12，https://ioz.cas.cn/gb2018/xwdt/mtsm/202101/t20210112_5854835.html
 - roles: 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-24 点位复核
 - topic: 场馆方法
@@ -14,4 +14,4 @@
 - tags: 点位, 踏勘, 替代点
 - source: 课程P0踏勘表
 - roles: 全角色共享
-- revealTiming: always_available
+- revealWhen: always

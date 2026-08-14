@@ -16,7 +16,7 @@
 - id：science-design-study
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：区分事件与风险变量，提交路线、变量和安全计划
@@ -80,7 +80,7 @@
 - 地点：教师批准的建筑外围路线
 - 位置模式：route
 - 到达验证：teacher
-- 建议时长：2—3周
+- 建议时长：504小时
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：按相同规则重复观察，形成去标识数据和风险图
@@ -143,7 +143,7 @@
 - id：science-deliver-evidence
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：将文献与现场数据转成条款可引用的证据摘要

@@ -24,7 +24,7 @@ export default {
         "id": "phase-1",
         "number": 1,
         "name": "沉浸叙事",
-        "duration": "20min",
+        "duration": "20分钟",
         "mode": "集体（全班）",
         "location": "集合区域（午门广场或指定教室）",
         "modules": "A06(沉浸媒体)",
@@ -133,7 +133,7 @@ export default {
         "id": "phase-2",
         "number": 2,
         "name": "现场采证",
-        "duration": "90min",
+        "duration": "90分钟",
         "mode": "个人（按角色分散）",
         "location": "故宫各区域（由角色决定）",
         "modules": "",
@@ -146,7 +146,7 @@ export default {
         "id": "phase-3",
         "number": 3,
         "name": "推理推演",
-        "duration": "40min",
+        "duration": "40分钟",
         "mode": "个人→小组过渡",
         "location": "指定集合区域",
         "modules": "",
@@ -159,7 +159,7 @@ export default {
         "id": "phase-4",
         "number": 4,
         "name": "璇玑时刻",
-        "duration": "30min",
+        "duration": "30分钟",
         "mode": "小组协作",
         "location": "集合区域",
         "modules": "",
@@ -172,7 +172,7 @@ export default {
         "id": "phase-5",
         "number": 5,
         "name": "总结汇报",
-        "duration": "20min",
+        "duration": "20分钟",
         "mode": "集体",
         "location": "集合区域",
         "modules": "",
@@ -185,7 +185,7 @@ export default {
         "id": "phase-6",
         "number": 6,
         "name": "尾声",
-        "duration": "10min",
+        "duration": "10分钟",
         "mode": "个人",
         "location": "",
         "modules": "",
@@ -4012,7 +4012,7 @@ export default {
         "id": "phase-1",
         "number": 1,
         "name": "居民招募",
-        "duration": "8min",
+        "duration": "8分钟",
         "mode": "集体导入",
         "location": "入口集合区",
         "modules": "A01(文字表单)",
@@ -4161,7 +4161,7 @@ export default {
         "id": "phase-2",
         "number": 2,
         "name": "身份与生活取证",
-        "duration": "27min",
+        "duration": "27分钟",
         "mode": "角色分工 + 小组汇合",
         "location": "经踏勘确认的展品主点或替代点",
         "modules": "",
@@ -4174,7 +4174,7 @@ export default {
         "id": "phase-3",
         "number": 3,
         "name": "关系与影响",
-        "duration": "27min",
+        "duration": "27分钟",
         "mode": "个人采证 + 小组拼合",
         "location": "展品点位附近允许停留区",
         "modules": "",
@@ -4187,7 +4187,7 @@ export default {
         "id": "phase-4",
         "number": 4,
         "name": "角色发声",
-        "duration": "32min",
+        "duration": "32分钟",
         "mode": "个人创作 + 同伴核验",
         "location": "馆内安静区或教育空间",
         "modules": "",
@@ -4200,7 +4200,7 @@ export default {
         "id": "phase-5",
         "number": 5,
         "name": "居民证制作",
-        "duration": "16min",
+        "duration": "16分钟",
         "mode": "小组协作",
         "location": "教育空间",
         "modules": "",
@@ -4213,7 +4213,7 @@ export default {
         "id": "phase-6",
         "number": 6,
         "name": "居民发布会",
-        "duration": "10min",
+        "duration": "10分钟",
         "mode": "小组发布 + 个人行动",
         "location": "教育空间",
         "modules": "",
@@ -7160,7 +7160,7 @@ export default {
         "id": "phase-1",
         "number": 1,
         "name": "调查开题",
-        "duration": "30min",
+        "duration": "30分钟",
         "mode": "情境导入 + 小组开题",
         "location": "教育空间",
         "modules": "A01(文字表单)",
@@ -7325,7 +7325,7 @@ export default {
         "id": "phase-2",
         "number": 2,
         "name": "展厅多源取证",
-        "duration": "90min",
+        "duration": "90分钟",
         "mode": "角色分线 + 两次汇合",
         "location": "踏勘确认的展厅点位",
         "modules": "",
@@ -7338,7 +7338,7 @@ export default {
         "id": "phase-3",
         "number": 3,
         "name": "风险诊断",
-        "duration": "45min",
+        "duration": "45分钟",
         "mode": "小组建模",
         "location": "教育空间",
         "modules": "",
@@ -7351,7 +7351,7 @@ export default {
         "id": "phase-4",
         "number": 4,
         "name": "保护措施审计",
-        "duration": "45min",
+        "duration": "45分钟",
         "mode": "审计工作坊",
         "location": "教育空间",
         "modules": "",
@@ -7364,7 +7364,7 @@ export default {
         "id": "phase-5",
         "number": 5,
         "name": "方案听证",
-        "duration": "40min",
+        "duration": "40分钟",
         "mode": "利益相关者听证 + 版本修订",
         "location": "教育空间",
         "modules": "",
@@ -7377,7 +7377,7 @@ export default {
         "id": "phase-6",
         "number": 6,
         "name": "行动书发布",
-        "duration": "20min",
+        "duration": "20分钟",
         "mode": "小组发布 + 同伴评议",
         "location": "教育空间",
         "modules": "",
@@ -10359,7 +10359,7 @@ export default {
         "id": "phase-1",
         "number": 1,
         "name": "问题界定",
-        "duration": "第1周",
+        "duration": "168小时",
         "mode": "博物馆导入 + 研究开题",
         "location": "国家动物博物馆或教育空间",
         "modules": "A01(文字表单)",
@@ -10524,7 +10524,7 @@ export default {
         "id": "phase-2",
         "number": 2,
         "name": "科学取证与建筑风险调查",
-        "duration": "第2—4周",
+        "duration": "504小时",
         "mode": "文献研究 + 教师批准的重复调查",
         "location": "资料空间与校园/机构建筑外围",
         "modules": "",
@@ -10537,7 +10537,7 @@ export default {
         "id": "phase-3",
         "number": 3,
         "name": "中国规范与域外比较",
-        "duration": "第3—5周",
+        "duration": "504小时",
         "mode": "规范检索 + 三城比较",
         "location": "资料空间",
         "modules": "",
@@ -10550,7 +10550,7 @@ export default {
         "id": "phase-4",
         "number": 4,
         "name": "社会调查",
-        "duration": "第5—7周",
+        "duration": "504小时",
         "mode": "匿名问卷/访谈 + 主题编码",
         "location": "教师批准的线上或线下空间",
         "modules": "",
@@ -10563,7 +10563,7 @@ export default {
         "id": "phase-5",
         "number": 5,
         "name": "起草听证与修订",
-        "duration": "第7—10周",
+        "duration": "672小时",
         "mode": "成本效果模拟 + 模拟听证 + 三稿修订",
         "location": "教育空间",
         "modules": "",
@@ -10576,7 +10576,7 @@ export default {
         "id": "phase-6",
         "number": 6,
         "name": "表决发布与真实转化",
-        "duration": "第10—12周",
+        "duration": "504小时",
         "mode": "课程表决 + 研究发布 + 可选真实沟通",
         "location": "教育空间或经批准的发布场所",
         "modules": "",
@@ -10734,7 +10734,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -10897,7 +10897,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 2,
+              "suggestedSeconds": 1814400,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -11064,7 +11064,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -11253,7 +11253,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -11436,7 +11436,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 2,
+              "suggestedSeconds": 1209600,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -11546,7 +11546,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -11737,7 +11737,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -11901,7 +11901,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 2,
+              "suggestedSeconds": 1209600,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -12075,7 +12075,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -12254,7 +12254,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -12427,7 +12427,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 2,
+              "suggestedSeconds": 1209600,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -12590,7 +12590,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -12770,7 +12770,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -12956,7 +12956,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 2,
+              "suggestedSeconds": 5400,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -13127,7 +13127,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -13259,7 +13259,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 2700,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -13422,7 +13422,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 3,
+              "suggestedSeconds": 1814400,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -13597,7 +13597,7 @@ export default {
               "minDwellSeconds": 0
             },
             "timing": {
-              "suggestedSeconds": 1,
+              "suggestedSeconds": 5400,
               "idleNudgeSeconds": 480,
               "nudgeCooldownSeconds": 480
             },
@@ -13747,7 +13747,7 @@ export default {
         "id": "phase-1",
         "number": 1,
         "name": "局势入场",
-        "duration": "25min",
+        "duration": "25分钟",
         "mode": "集体（全班）",
         "location": "集合教室或展馆指定教育空间",
         "modules": "A01(文字表单)",
@@ -13904,7 +13904,7 @@ export default {
         "id": "phase-2",
         "number": 2,
         "name": "展陈采证",
-        "duration": "120min",
+        "duration": "120分钟",
         "mode": "个人角色任务 + 同角色短协作",
         "location": "中国共产党历史展览馆长征相关展区",
         "modules": "",
@@ -13917,7 +13917,7 @@ export default {
         "id": "phase-3",
         "number": 3,
         "name": "四渡推演",
-        "duration": "60min",
+        "duration": "60分钟",
         "mode": "小组协作",
         "location": "馆内教育空间或返程后的学习空间",
         "modules": "",
@@ -13930,7 +13930,7 @@ export default {
         "id": "phase-4",
         "number": 4,
         "name": "璇玑时刻",
-        "duration": "30min",
+        "duration": "30分钟",
         "mode": "小组讨论 → 全班交流",
         "location": "学习空间",
         "modules": "",
@@ -13943,7 +13943,7 @@ export default {
         "id": "phase-5",
         "number": 5,
         "name": "得意何在",
-        "duration": "30min",
+        "duration": "30分钟",
         "mode": "小组汇报 + 集体讲解",
         "location": "学习空间",
         "modules": "",
@@ -13956,7 +13956,7 @@ export default {
         "id": "phase-6",
         "number": 6,
         "name": "归档与尾声",
-        "duration": "10min",
+        "duration": "10分钟",
         "mode": "个人",
         "location": "学习空间",
         "modules": "",

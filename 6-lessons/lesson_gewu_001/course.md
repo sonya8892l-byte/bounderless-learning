@@ -62,7 +62,7 @@
 ## 阶段编排
 
 ### Phase 1：沉浸叙事
-- 时长：20min
+- 时长：20分钟
 - 模式：集体（全班）
 - 地点：集合区域（午门广场或指定教室）
 
@@ -70,9 +70,9 @@
 - id：phase-1-task-1
 - 执行单位：全班
 - 功能模块：A06(沉浸媒体)
-- 工具参数：{"media":{"type":"video","poster":"videos/video-storm-coming.png","posterOnly":true,"title":"暴雨将至","requireCompletion":true}}
+- 工具参数：{"media":{"type":"video","poster":"assets/videos/video-storm-coming.png","posterOnly":true,"title":"暴雨将至","requireCompletion":true}}
 - 完成方式：tool_result
-- 建议时长：3min
+- 建议时长：3分钟
 - 收口方式：auto_on_last_step
 - 推进方式：auto_after_validation
 - 通过条件：学生确认已查看情境预览图
@@ -90,7 +90,7 @@
 - 完成方式：tool_result
 - 证据要求：媒体工具返回情境图查看确认
 - 功能模块：A06(沉浸媒体)
-- 工具参数：{"media":{"type":"video","poster":"videos/video-storm-coming.png","posterOnly":true,"title":"暴雨将至","requireCompletion":true}}
+- 工具参数：{"media":{"type":"video","poster":"assets/videos/video-storm-coming.png","posterOnly":true,"title":"暴雨将至","requireCompletion":true}}
 - 失败处理：请先查看情境图，再点击“我已查看情境图”
 - 最大尝试：3
 - 通过后：role-stage:complete
@@ -101,35 +101,35 @@
 ---
 
 ### Phase 2：现场采证
-- 时长：90min
+- 时长：90分钟
 - 模式：个人（按角色分散）
 - 地点：故宫各区域（由角色决定）
 
 ---
 
 ### Phase 3：推理推演
-- 时长：40min
+- 时长：40分钟
 - 模式：个人→小组过渡
 - 地点：指定集合区域
 
 ---
 
 ### Phase 4：璇玑时刻
-- 时长：30min
+- 时长：30分钟
 - 模式：小组协作
 - 地点：集合区域
 
 ---
 
 ### Phase 5：总结汇报
-- 时长：20min
+- 时长：20分钟
 - 模式：集体
 - 地点：集合区域
 
 ---
 
 ### Phase 6：尾声
-- 时长：10min
+- 时长：10分钟
 - 模式：个人
 
 ## 课程限制规则

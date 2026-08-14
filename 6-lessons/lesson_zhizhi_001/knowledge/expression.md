@@ -6,7 +6,7 @@
 - tags: 脚本, 第一人称, 证据
 - source: 课程脚本模板
 - roles: 声音记录员, 议事发言人
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-20 ID Card字段
 - topic: 成果结构
@@ -14,7 +14,7 @@
 - tags: ID Card, 字段, 成果
 - source: 课程ID Card模板
 - roles: ID设计员
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-21 证据质询
 - topic: 公共表达
@@ -22,7 +22,7 @@
 - tags: 质询, 未知, 回应
 - source: 课程发布会话术卡
 - roles: 议事发言人, 全角色共享
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-22 AI使用披露
 - topic: 数字素养
@@ -30,4 +30,4 @@
 - tags: AI, 披露, 人工复核
 - source: 课程AI使用卡
 - roles: ID设计员, 声音记录员, 议事发言人
-- revealTiming: after_task2
+- revealWhen: after_task2

@@ -9,7 +9,7 @@
 - source: 中共中央党史和文献研究院《四渡赤水：110天的得意之笔》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2026/0512/c423724-40718269.html
 - roles: 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-02 敌我力量概括
 - topic: 约3万人对约40万人
@@ -18,7 +18,7 @@
 - source: 国防部网《土城会议——拉开四渡赤水的序幕》及课程材料综合
 - sourceUrl: https://www.mod.gov.cn/gfbw/gfjy_index/js_214151/16440082.html
 - roles: 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-03 原定北渡长江计划
 - topic: 初始战略计划
@@ -27,7 +27,7 @@
 - source: 国防部网《土城会议——拉开四渡赤水的序幕》
 - sourceUrl: https://www.mod.gov.cn/gfbw/gfjy_index/js_214151/16440082.html
 - roles: 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-04 随局势连续调整
 - topic: 四渡赤水的决策性质
@@ -36,4 +36,4 @@
 - source: 中共中央党史和文献研究院《四渡赤水：110天的得意之笔》
 - sourceUrl: https://www.dswxyjy.org.cn/n1/2026/0512/c423724-40718269.html
 - roles: 全角色共享
-- revealTiming: phase3
+- revealWhen: phase_3

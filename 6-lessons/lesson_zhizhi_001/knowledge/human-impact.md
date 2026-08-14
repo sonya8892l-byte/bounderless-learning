@@ -6,7 +6,7 @@
 - tags: 人类影响, 分类, 条件
 - source: 课程方法卡《人类影响三分法》
 - roles: 生态关系员, 议事发言人
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-16 措施必须对应威胁
 - topic: 保护措施
@@ -14,7 +14,7 @@
 - tags: 措施, 威胁, 对应
 - source: 课程方法卡《威胁—措施配对》
 - roles: ID设计员, 议事发言人
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-17 可验证行动
 - topic: 行动
@@ -22,7 +22,7 @@
 - tags: 行动, 指标, 复盘
 - source: 课程行动卡
 - roles: 议事发言人, 全角色共享
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-18 不干扰也是行动
 - topic: 场馆与野外伦理
@@ -30,4 +30,4 @@
 - tags: 不干扰, 安全, 野生动物
 - source: 平台安全规则与课程行动卡
 - roles: 全角色共享
-- revealTiming: always_available
+- revealWhen: always

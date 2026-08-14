@@ -6,7 +6,7 @@
 - tags：规范层级,效力,适用范围
 - source：课程规范核验卡；具体材料由规范核验人确认
 - roles：中国规范研究员,规则起草与程序协调员
-- revealTiming：学生收集到两种不同层级材料后
+- revealWhen： phase_3
 
 ## K-08 野生动物保护法效力记录
 - topic：中国法律
@@ -14,7 +14,7 @@
 - tags：野生动物保护法,效力日期
 - source：中国人大网https://www.npc.gov.cn/c2/c30834/202212/t20221230_321016.html；公布2022-12-30；访问2026-07-31；实施前人工复核
 - roles：中国规范研究员,规则起草与程序协调员
-- revealTiming：学生提交法律原文定位后
+- revealWhen： phase_3
 
 ## K-09 生态环境法典时间状态
 - topic：中国法律
@@ -22,7 +22,7 @@
 - tags：生态环境法典,施行日期,动态核验
 - source：中国人大网生态环境法典专题https://www.npc.gov.cn/npc/c1773/c1848/c21114/sthjfdlf/；访问2026-07-31；实施前人工复核
 - roles：中国规范研究员,规则起草与程序协调员
-- revealTiming：学生已记录公布日和施行日后
+- revealWhen： phase_3
 
 ## K-10 深圳地方标准
 - topic：深圳实践
@@ -30,7 +30,7 @@
 - tags：深圳,地方标准,鸟类友好
 - source：深圳市地方标准批准发布公告（总第185号）https://www.sz.gov.cn/cn/xxgk/zfxxgj/tzgg/content/post_12132309.html；发布2025-04-14；访问2026-07-31；标准原文实施前人工复核
 - roles：中国规范研究员,域外制度研究员,影响评估员
-- revealTiming：学生完成征求意见稿与现行标准版本辨析后
+- revealWhen： phase_3
 
 ## K-11 深圳实践的证据链
 - topic：深圳实践
@@ -38,4 +38,4 @@
 - tags：深圳,政策过程,实践
 - source：深圳市政府2024-04-17材料https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_11249485.html；地方标准公告；访问2026-07-31
 - roles：中国规范研究员,社会调查员,规则起草与程序协调员
-- revealTiming：学生收集到至少三类深圳材料后
+- revealWhen： phase_3

@@ -16,7 +16,7 @@
 - id：profiler-baseline
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：先写已知、未知和需要的来源，不让AI直接填档案
@@ -79,7 +79,7 @@
 - 地点：教师确认的物种展项
 - 位置模式：point
 - 到达验证：teacher
-- 建议时长：28min
+- 建议时长：28分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：用现场观察和展签建立带编号的物种档案
@@ -140,7 +140,7 @@
 - id：profiler-publish-file
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：将档案压缩成行动书可用的事实底稿

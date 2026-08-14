@@ -6,7 +6,7 @@
 - tags：保护身份,IUCN,趋势,成效
 - source：课程方法卡；正式结论须回到各自权威来源
 - roles：全角色共享
-- revealTiming：学生首次把四类结论混写后
+- revealWhen： phase_1
 
 ## K-02 法律保护身份
 - topic：名录读取
@@ -14,7 +14,7 @@
 - tags：法律,名录,版本
 - source：中国人大网《中华人民共和国野生动物保护法》https://www.npc.gov.cn/c2/c30834/202212/t20221230_321016.html；访问日期2026-07-31；实施前人工复核
 - roles：名录核验员,物种档案员
-- revealTiming：学生已记录物种名和待核名录后
+- revealWhen： phase_3
 
 ## K-03 IUCN评估读取
 - topic：IUCN
@@ -22,7 +22,7 @@
 - tags：IUCN,评估年份,范围
 - source：IUCN Red List https://www.iucnredlist.org/；访问日期2026-07-31；具体物种页面须人工复核
 - roles：名录核验员,物种档案员,威胁链分析员
-- revealTiming：学生提交IUCN条目截图或检索记录后
+- revealWhen： phase_3
 
 ## K-04 动态信息五字段
 - topic：来源记录
@@ -30,7 +30,7 @@
 - tags：来源,日期,核验
 - source：课程证据规范
 - roles：全角色共享
-- revealTiming：Phase 1来源计划时
+- revealWhen： phase_1
 
 ## K-05 来源强度
 - topic：多源证据
@@ -38,7 +38,7 @@
 - tags：来源选择,证据强度
 - source：课程方法卡
 - roles：全角色共享
-- revealTiming：学生准备把单一来源用于所有主张时
+- revealWhen： phase_2
 
 ## K-06 冲突信息处理
 - topic：多源证据
@@ -46,4 +46,4 @@
 - tags：冲突,范围,版本
 - source：课程方法卡
 - roles：全角色共享
-- revealTiming：证据墙出现冲突条目后
+- revealWhen： phase_3

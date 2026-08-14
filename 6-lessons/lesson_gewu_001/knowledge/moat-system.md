@@ -8,7 +8,7 @@
 - tags: 护城河, 筒子河, 蓄水, 数据
 - source: 故宫博物院官方资料
 - roles: 护城官
-- revealTiming: after_task2（学生自己估算后才出示精确值）
+- revealWhen: after_task2
 
 ## K-15 护城河的防御功能
 - topic: 护城河防御设计
@@ -16,7 +16,7 @@
 - tags: 护城河, 防御, 军事, 城墙
 - source: 明代军事建筑研究
 - roles: 护城官
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-16 护城河的排水角色
 - topic: 蓄排并用
@@ -24,4 +24,4 @@
 - tags: 护城河, 蓄排并用, 削峰, 蓄水
 - source: 故宫排水研究 + 水利工程分析
 - roles: 护城官, 引河官
-- revealTiming: after_task2
+- revealWhen: after_task2

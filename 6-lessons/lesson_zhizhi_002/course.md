@@ -51,7 +51,7 @@
 ## 阶段编排
 
 ### Phase 1：调查开题
-- 时长：30min
+- 时长：30分钟
 - 模式：情境导入 + 小组开题
 - 地点：教育空间
 
@@ -64,9 +64,9 @@
 - 推进方式：auto_after_validation
 - 位置模式：none
 - 地点：教育空间
-- 建议时长：8min
-- 无操作提醒：8min
-- 提醒冷却：8min
+- 建议时长：8分钟
+- 无操作提醒：8分钟
+- 提醒冷却：8分钟
 - 最大主动提醒：1
 - 功能模块：A01(文字表单)
 - 工具参数：{"text":{"fields":[{"id":"species","label":"调查物种","type":"short_text","required":true,"minLength":2,"maxLength":30},{"id":"question","label":"可调查的核心问题","type":"long_text","required":true,"minLength":20,"maxLength":180},{"id":"plan","label":"六条证据线怎样分工","type":"long_text","required":true,"minLength":60,"maxLength":500},{"id":"source-rule","label":"来源编号规则","type":"long_text","required":true,"minLength":20,"maxLength":180}]}}
@@ -100,27 +100,27 @@
 四项信息齐全；核心问题可调查；六线分工不重复；来源编号规则可以在后续证据墙中执行。
 
 ### Phase 2：展厅多源取证
-- 时长：90min
+- 时长：90分钟
 - 模式：角色分线 + 两次汇合
 - 地点：踏勘确认的展厅点位
 
 ### Phase 3：风险诊断
-- 时长：45min
+- 时长：45分钟
 - 模式：小组建模
 - 地点：教育空间
 
 ### Phase 4：保护措施审计
-- 时长：45min
+- 时长：45分钟
 - 模式：审计工作坊
 - 地点：教育空间
 
 ### Phase 5：方案听证
-- 时长：40min
+- 时长：40分钟
 - 模式：利益相关者听证 + 版本修订
 - 地点：教育空间
 
 ### Phase 6：行动书发布
-- 时长：20min
+- 时长：20分钟
 - 模式：小组发布 + 同伴评议
 - 地点：教育空间
 

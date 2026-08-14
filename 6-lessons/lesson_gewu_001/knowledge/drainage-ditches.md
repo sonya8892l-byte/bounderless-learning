@@ -8,7 +8,7 @@
 - tags: 明沟, 排水, 条石, 院落
 - source: 故宫博物院古建部
 - roles: 寻沟官
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-09 暗沟系统
 - topic: 故宫暗沟
@@ -16,7 +16,7 @@
 - tags: 暗沟, 地下, 分级, 支沟, 干沟
 - source: 故宫排水系统研究报告
 - roles: 寻沟官
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-10 排水分级系统
 - topic: 五级排水
@@ -24,4 +24,4 @@
 - tags: 分级, 系统, 排水路径, 五级
 - source: 综合整理
 - roles: 寻沟官, 全角色共享
-- revealTiming: phase3（推演阶段才呈现完整系统图）
+- revealWhen: phase_3

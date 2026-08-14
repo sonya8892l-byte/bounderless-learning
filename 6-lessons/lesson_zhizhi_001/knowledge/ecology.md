@@ -6,7 +6,7 @@
 - tags: 食物网, 箭头, 能量
 - source: 课程方法卡《生态关系图》
 - roles: 生态关系员, ID设计员
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-12 栖息地不是背景
 - topic: 栖息地
@@ -14,7 +14,7 @@
 - tags: 栖息地, 条件, 家园
 - source: 课程方法卡《家园五条件》
 - roles: 身份观察员, 生态关系员
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-13 生态角色
 - topic: 生态功能
@@ -22,7 +22,7 @@
 - tags: 生态角色, 功能, 保护偏见
 - source: 课程方法卡《关系而非用途》
 - roles: 生态关系员, 议事发言人
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-14 连锁影响
 - topic: 系统思维
@@ -30,4 +30,4 @@
 - tags: 连锁效应, 系统, 因果
 - source: 课程方法卡《三段影响链》
 - roles: 生态关系员, 议事发言人
-- revealTiming: after_task2
+- revealWhen: after_task2

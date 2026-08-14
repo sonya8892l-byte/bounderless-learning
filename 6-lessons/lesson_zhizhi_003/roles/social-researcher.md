@@ -16,7 +16,7 @@
 - id：social-design-study
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：确定最少数据、知情同意、退出机制和不诱导问题
@@ -80,7 +80,7 @@
 - 地点：教师批准的调查空间
 - 位置模式：approved_scope
 - 到达验证：teacher
-- 建议时长：2周
+- 建议时长：336小时
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：按批准工具收集最少数据，去标识后由两人独立编码
@@ -144,7 +144,7 @@
 - 收口方式：teacher_confirm
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：呈现主题、反例、样本边界和对条款的条件化含义

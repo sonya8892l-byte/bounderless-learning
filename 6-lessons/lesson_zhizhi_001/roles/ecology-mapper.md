@@ -17,7 +17,7 @@
 - 地点：动物标本点附近
 - 位置模式：point
 - 到达验证：teacher
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：找到食物、栖息地、其他动物和人类活动四类节点
@@ -82,7 +82,7 @@
 - id：ecology-draw-network
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：12min
+- 建议时长：12分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：把节点连成食物、栖息地和人类影响关系网
@@ -147,7 +147,7 @@
 - id：ecology-propose-needs
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：从关系网推导一项基本需要和一项保障建议

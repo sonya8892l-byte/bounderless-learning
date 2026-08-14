@@ -8,7 +8,7 @@
 - tags: 指挥视角, 基层视角, 有限信息, 命令, 责任
 - source: 课程方法工具《璇玑图·双视角整合台》
 - roles: 通讯兵, 全角色共享
-- revealTiming: always_available
+- revealWhen: always
 
 ## K-20 失散小战士情境边界
 - topic: 失散小战士课程情境
@@ -16,7 +16,7 @@
 - tags: 失散小战士, 课程情境, 出处待核, 组织信任, 证据边界
 - source: 《得意之笔·四渡赤水》参考课程页面，待课程团队完成史料核验
 - roles: 全角色共享
-- revealTiming: phase4
+- revealWhen: phase_4
 
 ## K-21 四级证据标签
 - topic: 证据等级
@@ -24,4 +24,4 @@
 - tags: A级证据, B级证据, C级证据, D级证据, 史料实证
 - source: 本课程evaluation.md证据等级
 - roles: 全角色共享
-- revealTiming: always_available
+- revealWhen: always

@@ -17,7 +17,7 @@
 - 地点：动物标本点
 - 位置模式：point
 - 到达验证：teacher
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：拍摄或抄录展签，建立来源编号
@@ -81,7 +81,7 @@
 - id：label-extract-facts
 - 地点：动物标本点附近
 - 位置模式：inherit_role
-- 建议时长：10min
+- 建议时长：10分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：从展签提取三条事实，不加入个人解释
@@ -145,7 +145,7 @@
 - id：label-build-fact-pack
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：向小组提交三条事实、来源清单和待核项

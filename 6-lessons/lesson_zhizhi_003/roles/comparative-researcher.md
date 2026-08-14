@@ -16,7 +16,7 @@
 - id：comparative-set-protocol
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：限定官方来源，定义统一比较字段和翻译核验方式
@@ -79,7 +79,7 @@
 - id：comparative-build-matrix
 - 地点：资料空间
 - 位置模式：none
-- 建议时长：2周
+- 建议时长：336小时
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：从官方原文提取范围、措施、例外与程序，记录不可比项
@@ -142,7 +142,7 @@
 - id：comparative-localize
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：筛选可借鉴做法，并说明本地权限、条件、调整与试点需求

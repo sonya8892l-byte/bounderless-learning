@@ -23,7 +23,16 @@ function cloneCourse(course) {
 }
 
 test('5 门真课程通过结构与语义质量门禁，包括显式声明的静态情境图', async () => {
-  const { issues, stats } = await lintAllCourses({ lessonsRoot });
+  // 固定已入库的五门课做统计基线：目录里可能出现未提交的 WIP 课程，
+  // 聚合数字只对已知良好基线负责；新课程正式入库时加进列表并更新下方统计。
+  const committedCourseIds = [
+    'lesson_gewu_001',
+    'lesson_zhizhi_001',
+    'lesson_zhizhi_002',
+    'lesson_zhizhi_003',
+    'lesson_zhuhun_001',
+  ];
+  const { issues, stats } = await lintAllCourses({ lessonsRoot, courseIds: committedCourseIds });
   const structural = issues.filter((issue) => !QUALITY_ISSUE_CODES.includes(issue.code));
   const summary = summarizeIssues(structural);
   assert.equal(summary.errors, 0);

@@ -146,7 +146,7 @@ test('lesson_gewu_001 的 Phase 1 保留一个领角色前任务，其余阶段�
   assert.equal(first.tasks[0].tools[0].id, 'media');
   assert.equal(first.tasks[0].tools[0].config.url, '', '正式短片素材仍缺失，lint 必须保持发布红灯');
   assert.equal(first.flow.length, 0, '流程文字已从结构化阶段配置清理');
-  assert.equal(first.duration, '20min');
+  assert.equal(first.duration, '20分钟');
   assert.deepEqual(rest.map((phase) => phase.tasks.length), [0, 0, 0, 0, 0], '只迁移了 Phase 1');
 });
 

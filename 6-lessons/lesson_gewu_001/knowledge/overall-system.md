@@ -8,7 +8,7 @@
 - tags: 排水系统, 五大构成, 全景, 系统
 - source: 综合整理
 - roles: 全角色共享
-- revealTiming: phase3（推演阶段才呈现完整全景）
+- revealWhen: phase_3
 
 ## K-18 "因势利导"设计思想
 - topic: 因势利导
@@ -16,7 +16,7 @@
 - tags: 因势利导, 设计思想, 自然规律, 海绵城市
 - source: 综合整理
 - roles: 全角色共享
-- revealTiming: phase3
+- revealWhen: phase_3
 
 ## K-19 系统的局限
 - topic: 排水系统并非完美
@@ -24,4 +24,4 @@
 - tags: 局限, 积水, 2023, 维护, 科学精神
 - source: 新闻报道 + 故宫维修记录
 - roles: 真相官, 全角色共享
-- revealTiming: phase2_truth_seeker_task2（真相官辨伪任务时出示）
+- revealWhen: after_task2

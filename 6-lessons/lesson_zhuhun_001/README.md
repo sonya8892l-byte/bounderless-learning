@@ -53,14 +53,14 @@
 | 结构化 Step | 已解析 | 本课 15 个角色阶段全部按结构化 Step 配置 |
 | Step 工具合并 | 已接入编译器 | 当前按角色阶段合并工具并去重 |
 | Step 级工具验收 | 已接入基础校验 | 每个 Step 仍需做成功、失败、重试和恢复回归 |
-| 课程知识检索 | 已接入服务端 | 必须配置角色名、来源和 revealTiming |
+| 课程知识检索 | 已接入服务端 | 必须配置角色名、来源和 revealWhen |
 | 防剧透输出检查 | 已接入 | restrictions 四列表格必须覆盖关键路线和结论 |
 | 任务与 Step 就地引导 | 已从 `roles/*.md` 装配 | `##### 引导`按 Step 优先、任务兜底 |
 | 任务与 Step 就地脚手架 | 已从 `roles/*.md` 装配 | `##### 脚手架`使用 L0–L4 |
 | phase prompts | 已按 Phase 结构化装配 | 支持章节完整装配，不做字符截断；模板类章节单独记录，不在普通回合反复注入 |
 | evaluation | 已进入 `ai_evaluation` 验收上下文 | 模型结合 B5 原文、Step 要求、当前 Step 限制、课程知识和工具结果返回通过/重试 |
 | objectives | 课程资料已保留 | 尚未进入运行时解析 |
-| `知识引用` | 已接入 | 按 `K-NN` 定向检索，并继续受角色和 `revealTiming` 约束 |
+| `知识引用` | 已接入 | 按 `K-NN` 定向检索，并继续受角色和 `revealWhen` 约束 |
 | `限制引用` | 已接入精确定位 | `course.md#课程限制规则/标题` 解析到同名表格行或二、三级标题；当前 Step 的最小限制片段进入对话和 AI 验收 |
 | `知识引用`、`限制引用` | 已接入 | 知识按 ID 定向检索；限制按 `course.md#课程限制规则/标题` 精确解析 |
 | `ai_evaluation`、`teacher_confirm`、`location_event`、`compound` | 已进入服务端状态机 | 本课图片、实物识别、画板与开放表达使用 AI 通过/重试；其他模式仍需逐任务端到端验收 |
@@ -253,7 +253,7 @@ time-bank.md                  unlock_after: phase3-start
 
 - `course.md / ## 课程限制规则` 四列表格；
 - 对应角色 guidance 的绝对禁止；
-- 相关 knowledge 的 content、source 与 revealTiming；
+- 相关 knowledge 的 content、source 与 revealWhen；
 - 阶段 prompt 文件开头。
 
 ## 6. `course.md / ## 阶段编排` 与阶段提示词
@@ -262,7 +262,7 @@ time-bank.md                  unlock_after: phase3-start
 
 ```md
 ## Phase 3：四渡推演
-- 时长：60min
+- 时长：60分钟
 - 模式：小组协作
 - 地点：馆内教育空间或返程后的学习空间
 - 功能模块：A03(拼合搭建), A04(兵棋推演), A05(讨论记录)
@@ -276,12 +276,12 @@ time-bank.md                  unlock_after: phase3-start
 
 | Phase ID | 名称 | 时长 | 阶段提示词 |
 |---|---|---:|---|
-| `phase-1` | 局势入场 | 25min | `prompts/phase1-briefing.md` |
-| `phase-2` | 展陈采证 | 120min | `prompts/phase2-evidence.md` |
-| `phase-3` | 四渡推演 | 60min | `prompts/phase3-deduction.md` |
-| `phase-4` | 璇玑时刻 | 30min | `prompts/phase4-xuanji.md` |
-| `phase-5` | 得意何在 | 30min | `prompts/phase5-summary.md` |
-| `phase-6` | 归档与尾声 | 10min | `prompts/phase6-ending.md` |
+| `phase-1` | 局势入场 | 25分钟 | `prompts/phase1-briefing.md` |
+| `phase-2` | 展陈采证 | 120分钟 | `prompts/phase2-evidence.md` |
+| `phase-3` | 四渡推演 | 60分钟 | `prompts/phase3-deduction.md` |
+| `phase-4` | 璇玑时刻 | 30分钟 | `prompts/phase4-xuanji.md` |
+| `phase-5` | 得意何在 | 30分钟 | `prompts/phase5-summary.md` |
+| `phase-6` | 归档与尾声 | 10分钟 | `prompts/phase6-ending.md` |
 
 prompt 文件必须符合 `prompts/phase数字-名称.md`。运行时只按数字绑定。
 
@@ -321,10 +321,10 @@ prompt 文件必须符合 `prompts/phase数字-名称.md`。运行时只按数�
 - 配置：确认地图展项，采集水系证据，并在底图中标出可确认内容
 - 位置模式：inherit_role
 - 到达验证：manual
-- 最短停留：0min
-- 建议时长：20min
-- 无操作提醒：3min
-- 提醒冷却：2min
+- 最短停留：0分钟
+- 建议时长：20分钟
+- 无操作提醒：3分钟
+- 提醒冷却：2分钟
 - 最大主动提醒：2
 - 推进方式：auto_after_validation
 - 完成方式：compound
@@ -563,10 +563,10 @@ choices[].score, choices[].correct
 - tags: 我方已知, 敌方已知, 双方未知, 误判, 四象限
 - source: 课程方法工具《鲁班锁·情报盲区图》
 - roles: 情报参谋, 示形参谋
-- revealTiming: always_available
+- revealWhen: always
 ```
 
-字段名使用英文小写且区分大小写：`topic`、`content`、`tags`、`source`、`roles`、`revealTiming`。
+字段名使用英文小写且区分大小写：`topic`、`content`、`tags`、`source`、`roles`、`revealWhen`。
 
 `roles` 写角色显示名，可使用逗号分隔，也可写 `全角色共享`。揭示时机当前支持：
 
@@ -587,7 +587,7 @@ choices[].score, choices[].correct
 
 党史条目必须写明可核验来源。来源存在差异时，在 content 中说明资料边界，不将单一二手表述写成唯一结论。
 
-知识检索先按当前角色和 `revealTiming` 过滤可见条目，再用 title、topic、tags 与当前问题计算相关度。Step 的 `知识引用` 会为对应 ID 增加优先级，但不会绕过角色或揭示时机。学生可能使用的简称、地名和同义表达应进入 tags。
+知识检索先按当前角色和 `revealWhen` 过滤可见条目，再用 title、topic、tags 与当前问题计算相关度。Step 的 `知识引用` 会为对应 ID 增加优先级，但不会绕过角色或揭示时机。学生可能使用的简称、地名和同义表达应进入 tags。
 
 ## 12. 任务与 Step 的就地引导
 
@@ -918,7 +918,7 @@ npm run build
 
 ### 知识、限制和评估
 
-- [ ] K-01～K-21 无重复 ID，来源、角色和 revealTiming 完整。
+- [ ] K-01～K-21 无重复 ID，来源、角色和 revealWhen 完整。
 - [ ] 一渡、二渡、三渡、四渡、苟坝结论、后续路径和璇玑情境均受 restrictions 保护。
 - [ ] restrictions 中角色任务解除条件仍对应 `task-N`。
 - [ ] 未核验情境始终显示“课程情境材料｜史料出处待核”。

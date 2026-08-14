@@ -16,7 +16,7 @@
 - id：voice-select-evidence
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：从小组证据中选出身份、生活、关系、影响和期待五类材料
@@ -81,7 +81,7 @@
 - 地点：安静录音区
 - 位置模式：point
 - 到达验证：teacher
-- 建议时长：14min
+- 建议时长：14分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：写80—150字第一人称脚本并录制30—60秒
@@ -145,7 +145,7 @@
 - id：voice-peer-verify
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：8min
+- 建议时长：8分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：邀请同伴逐句核验脚本并记录修改

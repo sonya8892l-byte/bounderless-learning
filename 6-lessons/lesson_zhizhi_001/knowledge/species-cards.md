@@ -8,7 +8,7 @@
 - tags: 大熊猫, 竹林, 栖息地
 - source: 国家动物博物馆秦岭景窗公开介绍；实施前由馆方或动物学专家复核
 - roles: 全角色共享
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-06 川金丝猴
 - topic: 川金丝猴
@@ -16,7 +16,7 @@
 - tags: 川金丝猴, 群居, 山地森林
 - source: 国家动物博物馆秦岭景窗公开介绍；实施前由馆方或动物学专家复核
 - roles: 全角色共享
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-07 朱鹮
 - topic: 朱鹮
@@ -24,7 +24,7 @@
 - tags: 朱鹮, 湿地, 鸟类
 - source: 国家动物博物馆秦岭景窗与鸟类展厅公开介绍；实施前由馆方或鸟类专家复核
 - roles: 全角色共享
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-08 羚牛
 - topic: 羚牛
@@ -32,7 +32,7 @@
 - tags: 羚牛, 山地, 有蹄类
 - source: 国家动物博物馆秦岭景窗公开介绍；实施前由馆方或动物学专家复核
 - roles: 全角色共享
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-09 中华穿山甲
 - topic: 中华穿山甲
@@ -40,7 +40,7 @@
 - tags: 中华穿山甲, 食虫, 鳞片
 - source: 中国科学院动物研究所国家动物博物馆濒危动物展厅公开介绍，2021-01-12；实施前复核动态信息
 - roles: 全角色共享
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-10 长江江豚
 - topic: 长江江豚
@@ -48,4 +48,4 @@
 - tags: 长江江豚, 长江, 淡水
 - source: 中国科学院动物研究所国家动物博物馆濒危动物展厅公开介绍，2021-01-12；实施前复核动态信息
 - roles: 全角色共享
-- revealTiming: after_task1
+- revealWhen: after_task1

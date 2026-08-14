@@ -16,7 +16,7 @@
 - id：drafting-set-procedure
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：提前确定证据进入、利益冲突、听证、修订、表决与AI披露规则
@@ -79,7 +79,7 @@
 - id：drafting-three-drafts
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：3周
+- 建议时长：504小时
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：用规则五问和九要素起草，每条绑定证据，完成公开听证与版本处置
@@ -143,7 +143,7 @@
 - 收口方式：teacher_confirm
 - 地点：教育空间或经批准的发布场所
 - 位置模式：approved_scope
-- 建议时长：1—2课时
+- 建议时长：90分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：完成终审、课程表决、少数意见、AI披露和真实状态记录

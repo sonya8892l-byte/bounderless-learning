@@ -8,7 +8,7 @@
 - tags: 坡度, 北高南低, 地势, 排水
 - source: 故宫古建部测量数据
 - roles: 测坡官
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-06 台基微坡设计
 - topic: 台基表面坡度
@@ -16,7 +16,7 @@
 - tags: 坡度, 台基, 微坡, 排水设计
 - source: 故宫古建研究论文
 - roles: 测坡官, 数龙官
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-07 坡度与排水效率
 - topic: 坡度对排水的影响
@@ -24,4 +24,4 @@
 - tags: 坡度, 排水效率, 工程平衡
 - source: 水利工程教科书 + 故宫数据
 - roles: 测坡官
-- revealTiming: after_task2
+- revealWhen: after_task2

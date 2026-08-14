@@ -8,7 +8,7 @@
 - tags: 内金水河, 水系, 弓形, 五桥
 - source: 故宫博物院官方资料
 - roles: 引河官
-- revealTiming: after_task1
+- revealWhen: after_task1
 
 ## K-12 内金水河的排水功能
 - topic: 内金水河排水角色
@@ -16,7 +16,7 @@
 - tags: 内金水河, 排水, 中央干线, 蓄洪
 - source: 故宫排水研究
 - roles: 引河官
-- revealTiming: after_task2
+- revealWhen: after_task2
 
 ## K-13 内金水河的多重功能
 - topic: 内金水河功能叠加
@@ -24,4 +24,4 @@
 - tags: 内金水河, 多功能, 消防, 景观, 风水
 - source: 故宫博物院展览资料
 - roles: 引河官
-- revealTiming: always_available
+- revealWhen: always

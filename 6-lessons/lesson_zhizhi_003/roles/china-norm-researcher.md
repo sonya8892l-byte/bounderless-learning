@@ -16,7 +16,7 @@
 - id：china-frame-norms
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：先区分层级、效力与研究问题，再开展检索
@@ -79,7 +79,7 @@
 - id：china-build-map
 - 地点：资料空间
 - 位置模式：none
-- 建议时长：2周
+- 建议时长：336小时
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：核验野生动物保护法、生态环境法典时间状态和深圳地方标准
@@ -142,7 +142,7 @@
 - id：china-deliver-map
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：说明哪些材料提供原则、技术参考或本地程序依据

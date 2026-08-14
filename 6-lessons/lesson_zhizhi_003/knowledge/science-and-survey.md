@@ -6,7 +6,7 @@
 - tags：玻璃,反射,通透,照明
 - source：国家林业和草原局《防鸟撞，我们在行动》https://www.forestry.gov.cn/c/www/lcdt/637148.jhtml；访问日期2026-07-31；实施前复核
 - roles：科学证据研究员,影响评估员,规则起草与程序协调员
-- revealTiming：学生先写出自己的机制假设后
+- revealWhen： phase_2
 
 ## K-02 事件与风险指标
 - topic：研究设计
@@ -14,7 +14,7 @@
 - tags：事件,风险变量,零发现
 - source：课程研究设计卡；参考国家林草局鸟撞研究介绍
 - roles：科学证据研究员,影响评估员
-- revealTiming：学生开始定义调查变量时
+- revealWhen： phase_2
 
 ## K-03 重复调查
 - topic：研究设计
@@ -22,7 +22,7 @@
 - tags：重复调查,方法,零发现
 - source：课程建筑风险调查规范
 - roles：科学证据研究员,社会调查员,影响评估员
-- revealTiming：路线首次获教师确认后
+- revealWhen： phase_2
 
 ## K-04 玻璃照片标注
 - topic：建筑风险
@@ -30,7 +30,7 @@
 - tags：照片,反射,通透,隐私
 - source：课程风险照片卡
 - roles：科学证据研究员,影响评估员
-- revealTiming：学生提交首张合规照片后
+- revealWhen： phase_2
 
 ## K-05 现场安全与鸟类处置
 - topic：调查安全
@@ -38,7 +38,7 @@
 - tags：安全,报告,野生动物
 - source：深圳市政府《守护迁徙候鸟，共建鸟类友好城市》https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_11249485.html；发布2024-04-17；访问2026-07-31
 - roles：全角色共享
-- revealTiming：开题安全培训时
+- revealWhen： phase_1
 
 ## K-06 科学结论的边界
 - topic：证据语言
@@ -46,4 +46,4 @@
 - tags：因果,局限,证据强度
 - source：课程科学写作卡
 - roles：科学证据研究员,影响评估员,规则起草与程序协调员
-- revealTiming：学生准备把现场个案推广到所有建筑时
+- revealWhen： phase_5

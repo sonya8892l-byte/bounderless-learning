@@ -16,7 +16,7 @@
 - id：impact-define-framework
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：明确基线、措施单位、成本、效果、公平和不确定性字段
@@ -79,7 +79,7 @@
 - id：impact-model-options
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：2课时
+- 建议时长：90分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：比较玻璃、照明、监测与管理组合，并测试预算和建筑例外
@@ -142,7 +142,7 @@
 - id：impact-deliver-assessment
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：1课时
+- 建议时长：45分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：向听证会公开推荐、假设、成本承担、例外与复核触发

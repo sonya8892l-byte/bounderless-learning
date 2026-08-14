@@ -16,7 +16,7 @@
 - id：speaker-prepare-release
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：4min
+- 建议时长：4分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：从ID Card中选出一个核心判断和两条证据
@@ -81,7 +81,7 @@
 - 收口方式：teacher_confirm
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：4min
+- 建议时长：4分钟
 - 推进方式：teacher
 - 任务图：assets/placeholders/task.svg
 - 配置：发布ID Card、自述和证据陈述，回应一次质询
@@ -146,7 +146,7 @@
 - id：speaker-action-commitment
 - 地点：教育空间
 - 位置模式：none
-- 建议时长：3min
+- 建议时长：3分钟
 - 推进方式：auto_after_validation
 - 任务图：assets/placeholders/task.svg
 - 配置：带领每名组员提交一周内可观察的行动
