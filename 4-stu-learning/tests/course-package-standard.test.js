@@ -102,6 +102,8 @@ test('五门课程的目标、角色、Task、Step、知识、限制与验收均
     const steps = tasks.flatMap((task) => task.steps);
 
     assert.ok(course.objectives.length > 0, `${courseId} 没有解析出课程目标`);
+    assert.equal(course.lesson.mapCenter?.length, 2, `${courseId} 缺少可创建教师场次的坐标中心`);
+    assert.ok(course.lesson.mapCenter.every(Number.isFinite), `${courseId} 的坐标中心格式无效`);
     assert.equal(course.lesson.phases.length, 6, `${courseId} 应有 6 个 Phase`);
     assert.equal(Object.keys(course.phasePolicies).length, 6, `${courseId} 应有 6 份 Phase policy`);
     assert.ok(course.roles.length > 0, `${courseId} 没有角色`);

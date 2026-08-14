@@ -3996,7 +3996,10 @@ export default {
     "seriesCode": "zhizhi",
     "themeTemplate": "zhizhi",
     "venue": "国家动物博物馆",
-    "mapCenter": null,
+    "mapCenter": [
+      116.381429,
+      40.002551
+    ],
     "duration": "120分钟",
     "grades": "小学3—6年级 / 亲子",
     "groupRule": "6人一组，共同代言一种动物",
@@ -7141,7 +7144,10 @@ export default {
     "seriesCode": "zhizhi",
     "themeTemplate": "zhizhi",
     "venue": "国家动物博物馆及教育空间",
-    "mapCenter": null,
+    "mapCenter": [
+      116.381429,
+      40.002551
+    ],
     "duration": "270分钟",
     "grades": "小学高年级—高中",
     "groupRule": "6人一组，共同调查一种物种",
@@ -10337,7 +10343,10 @@ export default {
     "seriesCode": "zhizhi",
     "themeTemplate": "zhizhi",
     "venue": "国家动物博物馆、校园或机构建筑、教育空间",
-    "mapCenter": null,
+    "mapCenter": [
+      116.381429,
+      40.002551
+    ],
     "duration": "8—12周",
     "grades": "初中—高中",
     "groupRule": "6人一组，围绕同一校园或机构开展研究",
