@@ -1016,7 +1016,7 @@ JSON 书写规则：
 | `roles` | string[] | 否 | 剥离 emoji 后的角色 H1 纯文本名，或单独写`全角色共享`；逗号分隔；缺省即`全角色共享` | 检索角色可见性；不使用 role id |
 | `revealWhen` | enum-like string | 是 | `always`、`after_taskN`或`phase-N` | 最早可检索时机 |
 
-`after_taskN`表示当前角色的第 N 个 Task 完成后可用；`phase-N`表示进入 Phase N 后可用（与阶段 id 同一拼法；旧写法`phase_N`运行时仍兼容，但新课程不要再用）。不要写自然语言条件、括号补充或未列出的别名。
+`after_taskN`表示当前角色的第 N 个 Task 完成后可用；`phase-N`表示进入 Phase N 后可用（与阶段 id 同一拼法；旧写法`phase_N`运行时仍兼容，但新课程不要再用）。不要写自然语言条件、括号补充或未列出的别名。拼写和 Phase 编号范围由 lint 强校验：写成`phase_2`、自然语言、或 N 超出本课 Phase 数都会报 error。
 
 两处静默失败警告：
 
@@ -1113,7 +1113,7 @@ min_gift_amount: 1min
 | `description` | string | 拍照／定位必填 | 单行可执行指令 | 学生端任务标题 |
 | `hint` | string | 否 | 一条不直接泄露答案的提示 | 答错或任务卡的提示 |
 | `reward` | number + unit | 是 | 正数 + `min`，不得超过`max_earn_per_task` | 完成后增加的时间余额 |
-| `unlock_after` | enum-like string | 是 | `phase-N-start`，例如`phase-2-start`；N 必须是本课已定义 Phase | 题目最早显示 Phase |
+| `unlock_after` | enum-like string | 是 | `phase-N-start`，例如`phase-2-start`；N 必须是本课已定义 Phase；写法与编号由 lint 强校验，非法报 error | 题目最早显示 Phase |
 
 `quiz`额外字段：
 

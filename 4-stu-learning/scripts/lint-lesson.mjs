@@ -203,6 +203,29 @@ function findPhaseTaskHeadingLines(markdown = '') {
 }
 
 /**
+ * 知识条目字段行：在 knowledge/*.md 里锚 `## K-XX` 标题，再在块内找字段。
+ * parseKnowledge 不保留来源文件，lint 需要自己反查；找不到退回标题行。
+ */
+function findKnowledgeEntryLine(files = {}, entryId = '', field = '') {
+  for (const [filename, markdown] of Object.entries(files)) {
+    if (!filename.startsWith('knowledge/')) continue;
+    const lines = String(markdown).split('\n');
+    const headingPattern = entryId ? new RegExp(`^##\\s+${escapeRegExp(entryId)}\\s`) : null;
+    for (let index = 0; index < lines.length; index += 1) {
+      if (!headingPattern?.test(lines[index])) continue;
+      if (!field) return { file: filename, line: index + 1 };
+      const fieldPattern = new RegExp(`^\\s*[-*]\\s*${escapeRegExp(field)}\\s*[：:]`);
+      for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+        if (/^##\s/.test(lines[cursor])) break;
+        if (fieldPattern.test(lines[cursor])) return { file: filename, line: cursor + 1 };
+      }
+      return { file: filename, line: index + 1 };
+    }
+  }
+  return { file: '', line: 1 };
+}
+
+/**
  * time-bank.md 里某个任务的字段行：先锚 `- id: <taskId>`，再在同一块内往下找字段。
  * 与 findPhaseTaskLine 同思路；找不到就报在 id 行上，不退回第 1 行。
  */
@@ -343,6 +366,8 @@ export function lintCourse(course, options = {}) {
     unsupportedToolParameters: 0,
     timeBankUnlocks: 0,
     badUnlockAfter: 0,
+    knowledgeRevealWhen: 0,
+    badRevealWhen: 0,
     qualityIssues: 0,
   };
 
@@ -704,6 +729,34 @@ export function lintCourse(course, options = {}) {
         field: 'unlock_after',
       });
     }
+  }
+
+  // 知识 revealWhen：合法值只有 always / after_taskN / phase-N。
+  // 运行时检索是宽松匹配（phase_2、phase 2 都能撞上），写错不会报错，
+  // 条目只是静默按意外时机可见、或永远不可见——所以这里报 error。
+  // phase-N 的 N 还必须在 1..本课 Phase 数之间。
+  const knowledgePhaseCount = (course?.lesson?.phases || []).length;
+  for (const entry of course?.knowledge || []) {
+    const value = String(entry.revealWhen || '').trim();
+    stats.knowledgeRevealWhen += 1;
+    let valid = /^always$/i.test(value) || /^after_task\d+$/i.test(value);
+    const phaseMatch = value.match(/^phase-(\d+)$/i);
+    if (phaseMatch) {
+      const phaseNumber = Number.parseInt(phaseMatch[1], 10);
+      valid = knowledgePhaseCount === 0 || (phaseNumber >= 1 && phaseNumber <= knowledgePhaseCount);
+    }
+    if (valid) continue;
+    stats.badRevealWhen += 1;
+    const location = findKnowledgeEntryLine(course?.files || {}, entry.id, 'revealWhen');
+    pushIssue({
+      level: 'error',
+      code: 'bad_reveal_when',
+      message: `知识 ${entry.id} 的 revealWhen 写法非法：${value || '(空)'}`
+        + '（合法值：always、after_taskN、phase-N，例如 phase-2；phase-N 的 N 须是本课已定义 Phase）',
+      file: location.file ? `6-lessons/${courseId}/${location.file}` : `6-lessons/${courseId}/knowledge/`,
+      line: location.line,
+      field: 'revealWhen',
+    });
   }
 
   // 素材：扫 roles（含字段里的 lessons/… 路径），落盘路径对 6-lessons/<id>/ 校验；不走 lesson.assets

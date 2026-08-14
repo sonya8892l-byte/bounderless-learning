@@ -62,6 +62,9 @@ test('6 门真课程通过结构与语义质量门禁，包括显式声明的静
   // 六门课共 40 个带 unlock_after 的时间银行任务，全部必须是规范写法 phase-N-start。
   assert.equal(stats.reduce((sum, item) => sum + item.timeBankUnlocks, 0), 40);
   assert.equal(stats.reduce((sum, item) => sum + item.badUnlockAfter, 0), 0);
+  // 知识条目的 revealWhen 同样全量校验：合法值只有 always / after_taskN / phase-N。
+  assert.equal(stats.reduce((sum, item) => sum + item.knowledgeRevealWhen, 0), 110);
+  assert.equal(stats.reduce((sum, item) => sum + item.badRevealWhen, 0), 0);
 });
 
 test('注入死知识引用必须报 error（负例）', async () => {
@@ -162,4 +165,30 @@ test('unlock_after 引用超出本课 Phase 数必须报 error（负例）', asy
   assert.equal(bad.length, 1);
   assert.equal(bad[0].level, 'error');
   assert.match(bad[0].message, /Phase 9/);
+});
+
+test('知识 revealWhen 注入旧写法 phase_N 必须报 error（负例）', async () => {
+  clearCourseCache();
+  const course = cloneCourse(await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' }));
+  course.knowledge[0].revealWhen = 'phase_2';
+
+  const { issues } = lintCourse(course, { lessonsRoot, courseId: course.id });
+  const bad = issues.filter((item) => item.code === 'bad_reveal_when');
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0].level, 'error');
+  assert.match(bad[0].message, /phase_2/);
+  assert.equal(exitCodeForIssues(issues), 1);
+});
+
+test('知识 revealWhen 引用超出本课 Phase 数必须报 error（负例）', async () => {
+  clearCourseCache();
+  const compiled = await compileCourse({ lessonsRoot, courseId: 'lesson_gewu_001' });
+  // 越界检查需要 lesson.phases，cloneCourse 默认不带。
+  const course = { ...cloneCourse(compiled), lesson: structuredClone(compiled.lesson) };
+  course.knowledge[0].revealWhen = 'phase-9';
+
+  const { issues } = lintCourse(course, { lessonsRoot, courseId: course.id });
+  const bad = issues.filter((item) => item.code === 'bad_reveal_when');
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0].level, 'error');
 });
