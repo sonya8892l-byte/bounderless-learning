@@ -117,9 +117,9 @@ test('阶段任务进任务图，但不进任何角色的遍历', () => {
   assert.deepEqual(graph.warnings, []);
 });
 
-test('5 门课的角色任务节点数与终止节点数不受阶段任务影响', async () => {
+test('6 门课的角色任务节点数与终止节点数不受阶段任务影响', async () => {
   clearCourseCache();
-  const courseIds = ['lesson_gewu_001', 'lesson_zhizhi_001', 'lesson_zhizhi_002', 'lesson_zhizhi_003', 'lesson_zhuhun_001'];
+  const courseIds = ['lesson_gewu_001', 'lesson_youyi_001', 'lesson_zhizhi_001', 'lesson_zhizhi_002', 'lesson_zhizhi_003', 'lesson_zhuhun_001'];
   let roleNodes = 0;
 
   for (const courseId of courseIds) {
@@ -133,7 +133,7 @@ test('5 门课的角色任务节点数与终止节点数不受阶段任务影响
       );
     }
   }
-  assert.equal(roleNodes, 87, '角色任务仍是 87 个节点');
+  assert.equal(roleNodes, 103, '角色任务仍是 103 个节点');
 });
 
 test('lesson_gewu_001 的 Phase 1 保留一个领角色前任务，其余阶段仍为空', async () => {
@@ -168,6 +168,7 @@ test('阶段任务的就地教学内容与能力标签不进浏览器包', async
 test('其他课程只在有真实入场活动时配置 Phase 1 可执行任务', async () => {
   clearCourseCache();
   const expectedCounts = {
+    lesson_youyi_001: 0,
     lesson_zhizhi_001: 1,
     lesson_zhizhi_002: 1,
     lesson_zhizhi_003: 1,

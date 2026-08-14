@@ -216,9 +216,10 @@ test('同一结构化命名空间重复出现时明确拒绝，不能静默丢�
   }
 });
 
-test('五门真课程都以内嵌三命名空间作为唯一课程数据源', async () => {
+test('六门真课程都以内嵌三命名空间作为唯一课程数据源', async () => {
   const courseIds = [
     'lesson_gewu_001',
+    'lesson_youyi_001',
     'lesson_zhizhi_001',
     'lesson_zhizhi_002',
     'lesson_zhizhi_003',
@@ -239,7 +240,9 @@ test('五门真课程都以内嵌三命名空间作为唯一课程数据源', as
       },
       `${courseId} 不应继续维护外置目标、阶段或限制双源`,
     );
-    assert.equal(course.lesson.phases.length, 6);
+    // 五门正式课都是 6 个 Phase；游艺课是单阶段工具测试课。
+    const expectedPhases = courseId === 'lesson_youyi_001' ? 1 : 6;
+    assert.equal(course.lesson.phases.length, expectedPhases, `${courseId} Phase 数不符合课程定位`);
     assert.equal(course.sourceFiles['README.md'], undefined);
     assert.equal(course.sourceFiles['assets-checklist.md'], undefined);
   }

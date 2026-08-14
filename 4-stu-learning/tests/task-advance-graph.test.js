@@ -6,7 +6,7 @@ import { advanceToNextTask } from '../server/agent/task-advance.js';
 import { buildTaskGraph, nodeKey, traversalOrder } from '../server/course/task-graph.js';
 
 const lessonsRoot = resolve(import.meta.dirname, '../../6-lessons');
-const COURSE_IDS = ['lesson_gewu_001', 'lesson_zhizhi_001', 'lesson_zhizhi_002', 'lesson_zhizhi_003', 'lesson_zhuhun_001'];
+const COURSE_IDS = ['lesson_gewu_001', 'lesson_youyi_001', 'lesson_zhizhi_001', 'lesson_zhizhi_002', 'lesson_zhizhi_003', 'lesson_zhuhun_001'];
 
 function makeRole(tasks, roleId = 'scout') {
   return { id: roleId, tasks };

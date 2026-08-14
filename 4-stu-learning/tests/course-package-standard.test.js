@@ -8,6 +8,7 @@ import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
 const lessonsRoot = fileURLToPath(new URL('../../6-lessons/', import.meta.url));
 const courseIds = Object.freeze([
   'lesson_gewu_001',
+  'lesson_youyi_001',
   'lesson_zhizhi_001',
   'lesson_zhizhi_002',
   'lesson_zhizhi_003',
@@ -32,7 +33,7 @@ async function assertMissing(file) {
   await assert.rejects(access(file));
 }
 
-test('五门课程统一使用 course.md 三大命名空间与五段 Phase Prompt', async () => {
+test('六门课程统一使用 course.md 三大命名空间与五段 Phase Prompt', async () => {
   for (const courseId of courseIds) {
     const root = path.join(lessonsRoot, courseId);
     const courseMarkdown = await readFile(path.join(root, 'course.md'), 'utf8');
@@ -94,8 +95,12 @@ test('课程源不再提交没有运行消费者的字段和空位置占位', as
   }
 });
 
-test('五门课程的目标、角色、Task、Step、知识、限制与验收均可编译', async () => {
-  for (const courseId of courseIds) {
+test('五门正式课程的目标、角色、Task、Step、知识、限制与验收均可编译', async () => {
+  // 逐步"引导/脚手架/知识引用/限制引用"全覆盖是五门正式课的作者标准；
+  // 游艺课是单阶段工具测试课（答案写在题干、从简），不进入这条全口径断言，
+  // 它的结构与门禁由 lint 和上面的命名空间测试覆盖。
+  const fullCourseIds = courseIds.filter((id) => id !== 'lesson_youyi_001');
+  for (const courseId of fullCourseIds) {
     clearCourseCache();
     const course = await compileCourse({ lessonsRoot, courseId });
     const tasks = course.roles.flatMap((role) => role.tasks);

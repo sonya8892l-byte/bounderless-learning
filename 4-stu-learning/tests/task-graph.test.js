@@ -5,7 +5,7 @@ import { compileCourse, clearCourseCache } from '../server/course/compiler.js';
 import { buildTaskGraph, nodeKey, parseNextRef, traversalOrder } from '../server/course/task-graph.js';
 
 const lessonsRoot = resolve(import.meta.dirname, '../../6-lessons');
-const COURSE_IDS = ['lesson_gewu_001', 'lesson_zhizhi_001', 'lesson_zhizhi_002', 'lesson_zhizhi_003', 'lesson_zhuhun_001'];
+const COURSE_IDS = ['lesson_gewu_001', 'lesson_youyi_001', 'lesson_zhizhi_001', 'lesson_zhizhi_002', 'lesson_zhizhi_003', 'lesson_zhuhun_001'];
 
 test('通过后的三种前缀都能解析', () => {
   assert.deepEqual(parseNextRef('step:task-1-step-2'), { kind: 'step', target: 'task-1-step-2' });
@@ -32,8 +32,8 @@ test('跨角色重名的 task id 不会塌成一个节点', async () => {
 
 // 数字不变，口径收窄：图里现在还有阶段任务节点（非角色任务，见 tests/phase-tasks.test.js），
 // 所以这里数的是 scope==='role' 的节点，而不是 graph.nodes.size。
-// 87 这个数必须钉死——它是"阶段任务不污染角色任务"的那道保险。
-test('5 门课共 87 个角色任务节点、29 个终止节点，零告警', async () => {
+// 103 这个数必须钉死——它是"阶段任务不污染角色任务"的那道保险。
+test('6 门课共 103 个角色任务节点、30 个终止节点，零告警', async () => {
   clearCourseCache();
   let nodes = 0;
   let terminals = 0;
@@ -53,9 +53,9 @@ test('5 门课共 87 个角色任务节点、29 个终止节点，零告警', as
     assert.deepEqual(graphIssues, [], `${courseId} 的任务图不该有告警`);
   }
 
-  assert.equal(nodes, 87);
-  assert.equal(roles, 29);
-  assert.equal(terminals, 29);
+  assert.equal(nodes, 103);
+  assert.equal(roles, 30);
+  assert.equal(terminals, 30);
 });
 
 test('图的遍历顺序与今天的 currentTaskIndex += 1 完全一致', async () => {

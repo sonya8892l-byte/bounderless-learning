@@ -3988,6 +3988,1434 @@ export default {
       "simulationPlaceholder": "lessons/lesson_gewu_001/assets/videos/video-simulation.png"
     }
   },
+  "lesson_youyi_001": {
+    "id": "lesson_youyi_001",
+    "title": "灯影游艺·宫里游戏局",
+    "subtitle": "",
+    "series": "游艺",
+    "seriesCode": "youyi",
+    "themeTemplate": "youyi",
+    "venue": "故宫博物院",
+    "mapCenter": [
+      116.397026,
+      39.918058
+    ],
+    "duration": "60分钟",
+    "grades": "小学3—6年级 / 亲子",
+    "groupRule": "1人一组，每人领取唯一的游艺师角色",
+    "level": "",
+    "levelCode": "",
+    "traversalMode": "sequential",
+    "coreQuestion": "古人的游戏里，藏着哪些规则、智慧与乐趣？",
+    "phases": [
+      {
+        "id": "phase-1",
+        "number": 1,
+        "name": "游艺闯关",
+        "duration": "60分钟",
+        "mode": "个人",
+        "location": "故宫博物院箭亭广场（测试课程，可室内完成）",
+        "modules": "",
+        "trigger": "",
+        "endCondition": "",
+        "flow": [],
+        "tasks": []
+      }
+    ],
+    "roleSystem": {
+      "collectionName": "游艺师",
+      "itemName": "身份",
+      "pickerEyebrow": "{roleCount}种身份 · {roleCount}段游艺体验",
+      "pickerTitle": "选择你的{collectionName}身份",
+      "pickerDescription": "每位成员领取一个本组尚未占用的角色，依次完成全部游艺小关卡。",
+      "collectionItemName": "宫灯",
+      "collectionPanelName": "小组宫灯",
+      "unlockTarget": "游艺通关",
+      "phaseId": "phase-1"
+    },
+    "learningView": {
+      "enabled": true,
+      "default": "dialogue",
+      "allowStudentSwitch": true
+    },
+    "roles": [
+      {
+        "id": "game-player",
+        "order": 1,
+        "name": "游艺师",
+        "question": "",
+        "selectionDescription": "依次体验十六个游艺小关卡，测试拍照、答题、拼合、推演等全部活动工具。",
+        "location": "故宫博物院箭亭广场",
+        "geofence": "",
+        "type": "核心角色",
+        "collectionItem": "宫灯",
+        "collectionItemImage": "lessons/lesson_youyi_001/assets/tokens/token-palace-lantern.png",
+        "tasks": [
+          {
+            "id": "task-1",
+            "roleStageId": "task-1",
+            "name": "看情境",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "查看开场情境图并点击确认",
+            "guidanceSteps": [
+              "查看情境图并点击\"我已查看情境图\""
+            ],
+            "steps": [
+              {
+                "id": "task-1-step-1",
+                "title": "查看开场情境",
+                "objective": "获得开场情境图的查看确认",
+                "studentAction": "查看情境图并点击\"我已查看情境图\"",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "媒体工具返回查看确认",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A06(沉浸媒体)",
+                "next": "role-stage:task-2",
+                "tools": [
+                  {
+                    "id": "media",
+                    "module": "A06",
+                    "name": "沉浸媒体",
+                    "icon": "play",
+                    "output": "playback",
+                    "config": {
+                      "type": "video",
+                      "url": "",
+                      "poster": "lessons/lesson_youyi_001/assets/videos/opening-poster.png",
+                      "title": "灯影游艺",
+                      "requireCompletion": true,
+                      "posterOnly": true,
+                      "prompt": "查看情境图后点击确认。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "媒体工具返回查看确认",
+            "passCondition": "媒体工具返回查看确认",
+            "goals": "K1(传统游艺), S1(规则理解), C1(体验与分享)",
+            "prerequisites": [],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-2",
+            "roleStageId": "task-2",
+            "name": "扫课程码",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "识别或手动输入课程码",
+            "guidanceSteps": [
+              "扫描任意二维码，或直接手动输入课程码 YOUYI-001"
+            ],
+            "steps": [
+              {
+                "id": "task-2-step-1",
+                "title": "扫描游艺课程码",
+                "objective": "获得一个合法课程码的识别结果",
+                "studentAction": "扫描任意二维码，或直接手动输入课程码 YOUYI-001",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "识别或输入的码值为 YOUYI-001",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A07(扫码)",
+                "next": "role-stage:task-3",
+                "tools": [
+                  {
+                    "id": "scanner",
+                    "module": "A07",
+                    "name": "扫码识别",
+                    "icon": "scan-line",
+                    "output": "scanResult",
+                    "config": {
+                      "mode": "qr",
+                      "allowManualEntry": true,
+                      "prompt": "测试关：直接点手动输入，填 YOUYI-001 即可过关。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "识别结果或手动输入等于 YOUYI-001",
+            "passCondition": "识别结果或手动输入等于 YOUYI-001",
+            "goals": "S1(规则理解)",
+            "prerequisites": [
+              "task-1"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-3",
+            "roleStageId": "task-3",
+            "name": "单选题",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "完成一道单选题",
+            "guidanceSteps": [
+              "读题并选择一个选项"
+            ],
+            "steps": [
+              {
+                "id": "task-3-step-1",
+                "title": "投壶是什么",
+                "objective": "答对一道单选题",
+                "studentAction": "读题并选择一个选项",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "选中正确选项\"投壶\"",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A02(单选题)",
+                "next": "role-stage:task-4",
+                "tools": [
+                  {
+                    "id": "quiz",
+                    "module": "A02",
+                    "name": "答题评测",
+                    "icon": "list-checks",
+                    "output": "answers",
+                    "config": {
+                      "type": "single_choice",
+                      "question": "（测试关，答案就是第一个）古人宴饮时把箭投入壶中助兴的游戏叫什么？",
+                      "options": [
+                        "投壶",
+                        "蹴鞠",
+                        "拔河"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "选中正确选项",
+            "passCondition": "选中正确选项",
+            "goals": "K1(传统游艺)",
+            "prerequisites": [
+              "task-2"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 120,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-4",
+            "roleStageId": "task-4",
+            "name": "多选题",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "完成一道多选题",
+            "guidanceSteps": [
+              "选出所有正确选项"
+            ],
+            "steps": [
+              {
+                "id": "task-4-step-1",
+                "title": "哪些是传统游戏",
+                "objective": "答对一道多选题",
+                "studentAction": "选出所有正确选项",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "三个选项全部选中",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A02(多选题)",
+                "next": "role-stage:task-5",
+                "tools": [
+                  {
+                    "id": "quiz",
+                    "module": "A02",
+                    "name": "答题评测",
+                    "icon": "list-checks",
+                    "output": "answers",
+                    "config": {
+                      "type": "multiple_choice",
+                      "question": "（测试关，本题全选）以下哪些是可以玩的传统游戏？",
+                      "options": [
+                        "投壶",
+                        "猜灯谜",
+                        "冰嬉"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "选中全部正确选项",
+            "passCondition": "选中全部正确选项",
+            "goals": "K1(传统游艺)",
+            "prerequisites": [
+              "task-3"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 120,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-5",
+            "roleStageId": "task-5",
+            "name": "判断题",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "完成一道判断题",
+            "guidanceSteps": [
+              "判断对错并选择"
+            ],
+            "steps": [
+              {
+                "id": "task-5-step-1",
+                "title": "投壶判断",
+                "objective": "答对一道判断题",
+                "studentAction": "判断对错并选择",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "选择\"正确\"",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A02(判断题)",
+                "next": "role-stage:task-6",
+                "tools": [
+                  {
+                    "id": "quiz",
+                    "module": "A02",
+                    "name": "答题评测",
+                    "icon": "list-checks",
+                    "output": "answers",
+                    "config": {
+                      "type": "true_false",
+                      "question": "（测试关，选「正确」）投壶是一种把箭投进壶里的游戏。",
+                      "options": []
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "选择\"正确\"",
+            "passCondition": "选择\"正确\"",
+            "goals": "K1(传统游艺)",
+            "prerequisites": [
+              "task-4"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 120,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-6",
+            "roleStageId": "task-6",
+            "name": "排序题",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "完成一道排序题",
+            "guidanceSteps": [
+              "用上下按钮把条目排成正确顺序"
+            ],
+            "steps": [
+              {
+                "id": "task-6-step-1",
+                "title": "闯关顺序",
+                "objective": "答对一道排序题",
+                "studentAction": "用上下按钮把条目排成正确顺序",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "顺序为\"领任务、玩游戏、得宫灯\"",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A02(排序题)",
+                "next": "role-stage:task-7",
+                "tools": [
+                  {
+                    "id": "quiz",
+                    "module": "A02",
+                    "name": "答题评测",
+                    "icon": "list-checks",
+                    "output": "answers",
+                    "config": {
+                      "type": "ordering",
+                      "question": "（测试关，保持现在的顺序即可）把游艺闯关的顺序排一排。",
+                      "options": [
+                        "领任务",
+                        "玩游戏",
+                        "得宫灯"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "按正确顺序排列",
+            "passCondition": "按正确顺序排列",
+            "goals": "S1(规则理解)",
+            "prerequisites": [
+              "task-5"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 120,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-7",
+            "roleStageId": "task-7",
+            "name": "填空题",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "完成一道填空题",
+            "guidanceSteps": [
+              "在输入框中填入答案"
+            ],
+            "steps": [
+              {
+                "id": "task-7-step-1",
+                "title": "灯谜写在哪",
+                "objective": "答对一道填空题",
+                "studentAction": "在输入框中填入答案",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "填入\"灯\"",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A02(填空题)",
+                "next": "role-stage:task-8",
+                "tools": [
+                  {
+                    "id": "quiz",
+                    "module": "A02",
+                    "name": "答题评测",
+                    "icon": "list-checks",
+                    "output": "answers",
+                    "config": {
+                      "type": "fill_blank",
+                      "question": "（测试关，答案就是「灯」）灯谜的谜面通常写在什么上面？请填一个字。",
+                      "options": [],
+                      "placeholder": "填一个字"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "填入正确答案",
+            "passCondition": "填入正确答案",
+            "goals": "K1(传统游艺)",
+            "prerequisites": [
+              "task-6"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 120,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-8",
+            "roleStageId": "task-8",
+            "name": "拼合分类",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "把三张游戏卡放进对应区域",
+            "guidanceSteps": [
+              "选择卡片并点击\"放到这里\""
+            ],
+            "steps": [
+              {
+                "id": "task-8-step-1",
+                "title": "游戏卡分类",
+                "objective": "完成三张卡片的分类",
+                "studentAction": "选择卡片并点击\"放到这里\"",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "三张卡全部放置且区域正确",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A03(分类拼合)",
+                "next": "role-stage:task-9",
+                "tools": [
+                  {
+                    "id": "builder",
+                    "module": "A03",
+                    "name": "拼合搭建",
+                    "icon": "blocks",
+                    "output": "layout",
+                    "config": {
+                      "mode": "evidence-wall",
+                      "items": [
+                        {
+                          "id": "touhu",
+                          "label": "投壶（放·宴饮游戏）"
+                        },
+                        {
+                          "id": "dengmi",
+                          "label": "猜灯谜（放·宴饮游戏）"
+                        },
+                        {
+                          "id": "bingxi",
+                          "label": "冰嬉（放·冰上游戏）"
+                        }
+                      ],
+                      "zones": [
+                        {
+                          "id": "feast",
+                          "label": "宴饮游戏"
+                        },
+                        {
+                          "id": "ice",
+                          "label": "冰上游戏"
+                        }
+                      ],
+                      "connections": [],
+                      "prompt": "测试关：按卡片名括号里的提示放置即可。",
+                      "zoneMinimums": {
+                        "feast": 1,
+                        "ice": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "全部卡片放到正确区域",
+            "passCondition": "全部卡片放到正确区域",
+            "goals": "K1(传统游艺), S1(规则理解)",
+            "prerequisites": [
+              "task-7"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-9",
+            "roleStageId": "task-9",
+            "name": "沙盘推演",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "运行两轮游艺会推演，比较两种组织方式",
+            "guidanceSteps": [
+              "每轮选一个方案并点击\"运行第 N 轮\""
+            ],
+            "steps": [
+              {
+                "id": "task-9-step-1",
+                "title": "办一场游艺会",
+                "objective": "完成两轮沙盘推演",
+                "studentAction": "每轮选一个方案并点击\"运行第 N 轮\"",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "两轮都运行完成；每轮选择不同方案",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A04(沙盘推演)",
+                "next": "role-stage:task-10",
+                "tools": [
+                  {
+                    "id": "simulation",
+                    "module": "A04",
+                    "name": "沙盘推演",
+                    "icon": "waves",
+                    "output": "rounds",
+                    "config": {
+                      "rounds": 2,
+                      "resources": {
+                        "灯笼": "3盏",
+                        "场地": "箭亭广场"
+                      },
+                      "choices": [
+                        {
+                          "id": "free",
+                          "label": "自由玩耍",
+                          "publicFeedback": "乐趣上升，秩序略降。",
+                          "effects": {
+                            "fun": 3,
+                            "order": -1
+                          }
+                        },
+                        {
+                          "id": "rules",
+                          "label": "按规则比赛",
+                          "publicFeedback": "乐趣和秩序都上升。",
+                          "effects": {
+                            "fun": 2,
+                            "order": 2
+                          }
+                        }
+                      ],
+                      "metrics": [
+                        {
+                          "id": "fun",
+                          "label": "乐趣值",
+                          "initial": 0,
+                          "initialLabel": "待运行"
+                        },
+                        {
+                          "id": "order",
+                          "label": "秩序值",
+                          "initial": 0,
+                          "initialLabel": "待运行"
+                        }
+                      ],
+                      "allowRepeat": false,
+                      "prompt": "测试关：两轮各选一个不同方案即可过关。",
+                      "roundPrompts": [
+                        "第1轮：先随便选一种组织方式。",
+                        "第2轮：换成另一种方式再跑一次。"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "完成两轮推演且每轮选择不同方案",
+            "passCondition": "完成两轮推演且每轮选择不同方案",
+            "goals": "S1(规则理解), C1(体验与分享)",
+            "prerequisites": [
+              "task-8"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 240,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-10",
+            "roleStageId": "task-10",
+            "name": "团队记录",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "记录一条游艺感受",
+            "guidanceSteps": [
+              "选择记录类型\"感受\"，写一句话并提交"
+            ],
+            "steps": [
+              {
+                "id": "task-10-step-1",
+                "title": "记一条感受",
+                "objective": "提交一条团队记录",
+                "studentAction": "选择记录类型\"感受\"，写一句话并提交",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "至少1条记录，且包含\"感受\"类型",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A05(讨论记录)",
+                "next": "role-stage:task-11",
+                "tools": [
+                  {
+                    "id": "team",
+                    "module": "A05",
+                    "name": "团队协作",
+                    "icon": "users",
+                    "output": "teamLog",
+                    "config": {
+                      "mode": "discussion",
+                      "prompt": "测试关：记录类型选「感受」，随便写一句即可。",
+                      "minimumEntries": 1,
+                      "roles": [
+                        "游艺师"
+                      ],
+                      "recordTypes": [
+                        "感受",
+                        "建议"
+                      ],
+                      "requiredRecordTypes": [
+                        "感受"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "至少一条\"感受\"类型记录",
+            "passCondition": "至少一条\"感受\"类型记录",
+            "goals": "C1(体验与分享)",
+            "prerequisites": [
+              "task-9"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-11",
+            "roleStageId": "task-11",
+            "name": "语音记录",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "录一段几秒的语音",
+            "guidanceSteps": [
+              "点击开始，说一句话，点击停止"
+            ],
+            "steps": [
+              {
+                "id": "task-11-step-1",
+                "title": "说一句感受",
+                "objective": "获得一段有效录音",
+                "studentAction": "点击开始，说一句话，点击停止",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "录音不少于3秒、不超过30秒",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(语音记录)",
+                "next": "role-stage:task-12",
+                "tools": [
+                  {
+                    "id": "audio",
+                    "module": "A01",
+                    "name": "语音记录",
+                    "icon": "mic",
+                    "output": "recording",
+                    "config": {
+                      "minSeconds": 3,
+                      "maxSeconds": 30,
+                      "language": "zh-CN",
+                      "transcribe": true,
+                      "prompt": "测试关：随便说一句话，几秒即可。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "录音时长达到3秒",
+            "passCondition": "录音时长达到3秒",
+            "goals": "C1(体验与分享)",
+            "prerequisites": [
+              "task-10"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-12",
+            "roleStageId": "task-12",
+            "name": "文字表单",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "填写一个一句话表单",
+            "guidanceSteps": [
+              "在输入框写一句话并提交"
+            ],
+            "steps": [
+              {
+                "id": "task-12-step-1",
+                "title": "写一句感受",
+                "objective": "提交一份有效表单",
+                "studentAction": "在输入框写一句话并提交",
+                "completionMode": "tool_result",
+                "evidenceRequirement": "必填字段不少于2个字",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(文字表单)",
+                "next": "role-stage:task-13",
+                "tools": [
+                  {
+                    "id": "text",
+                    "module": "A01",
+                    "name": "文字表单",
+                    "icon": "notebook-pen",
+                    "output": "fields",
+                    "config": {
+                      "fields": [
+                        {
+                          "id": "feeling",
+                          "label": "一句话感受",
+                          "type": "short_text",
+                          "required": true,
+                          "placeholder": "测试关：写几个字即可",
+                          "minLength": 2,
+                          "maxLength": 50
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "必填字段达到最少字数",
+            "passCondition": "必填字段达到最少字数",
+            "goals": "C1(体验与分享)",
+            "prerequisites": [
+              "task-11"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 120,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-13",
+            "roleStageId": "task-13",
+            "name": "拍照采集",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "拍摄任意一张照片",
+            "guidanceSteps": [
+              "拍摄或选择任意一张照片并提交"
+            ],
+            "steps": [
+              {
+                "id": "task-13-step-1",
+                "title": "随手拍一张",
+                "objective": "获得一张可辨认的照片",
+                "studentAction": "拍摄或选择任意一张照片并提交",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "至少1张照片，画面可辨认即可",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(拍照)",
+                "next": "role-stage:task-14",
+                "tools": [
+                  {
+                    "id": "photo",
+                    "module": "A01",
+                    "name": "拍照采集",
+                    "icon": "camera",
+                    "output": "files",
+                    "config": {
+                      "minCount": 1,
+                      "maxCount": 2,
+                      "accept": "image/*",
+                      "recognition": "course-evidence",
+                      "prompt": "测试关：随手拍任何内容，一张即可过关。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "AI 确认照片可辨认",
+            "passCondition": "AI 确认照片可辨认",
+            "goals": "C1(体验与分享)",
+            "prerequisites": [
+              "task-12"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-14",
+            "roleStageId": "task-14",
+            "name": "画板标注",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "在画板上画一笔",
+            "guidanceSteps": [
+              "选一种画笔颜色，在画布上画任意一笔并提交"
+            ],
+            "steps": [
+              {
+                "id": "task-14-step-1",
+                "title": "随手画一笔",
+                "objective": "获得一份有内容的画板结果",
+                "studentAction": "选一种画笔颜色，在画布上画任意一笔并提交",
+                "completionMode": "ai_evaluation",
+                "evidenceRequirement": "画布上有任意一笔痕迹即可",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A01(画板标注)",
+                "next": "role-stage:task-15",
+                "tools": [
+                  {
+                    "id": "sketch",
+                    "module": "A01",
+                    "name": "画板标注",
+                    "icon": "pen-tool",
+                    "output": "image",
+                    "config": {
+                      "width": 720,
+                      "height": 420,
+                      "brushColors": [
+                        "#8d211f",
+                        "#245c4f",
+                        "#1f2937"
+                      ],
+                      "backgroundImage": "",
+                      "prompt": "测试关：随便画一笔即可过关。"
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "AI 确认画布上有绘制痕迹",
+            "passCondition": "AI 确认画布上有绘制痕迹",
+            "goals": "C1(体验与分享)",
+            "prerequisites": [
+              "task-13"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-15",
+            "roleStageId": "task-15",
+            "name": "教师审核",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "写一句话提交教师审核",
+            "guidanceSteps": [
+              "写一句想对老师说的话并提交"
+            ],
+            "steps": [
+              {
+                "id": "task-15-step-1",
+                "title": "写给老师的一句话",
+                "objective": "提交一句开放回答并等待教师通过",
+                "studentAction": "写一句想对老师说的话并提交",
+                "completionMode": "teacher_confirm",
+                "evidenceRequirement": "提交不少于4个字的回答，由教师人工审核",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "A02(开放问答)",
+                "next": "role-stage:task-16",
+                "tools": [
+                  {
+                    "id": "quiz",
+                    "module": "A02",
+                    "name": "答题评测",
+                    "icon": "list-checks",
+                    "output": "answers",
+                    "config": {
+                      "type": "open_response",
+                      "question": "测试关：写一句想对老师说的话，由教师在教师端点击通过。",
+                      "options": [],
+                      "placeholder": "写一句即可",
+                      "minLength": 4
+                    }
+                  }
+                ]
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "教师在教师端人工通过",
+            "passCondition": "教师在教师端人工通过",
+            "goals": "C1(体验与分享)",
+            "prerequisites": [
+              "task-14"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 180,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          },
+          {
+            "id": "task-16",
+            "roleStageId": "task-16",
+            "name": "通关确认",
+            "phase": "课程任务",
+            "modules": "",
+            "tools": [],
+            "requirement": "阅读通关语并确认完成",
+            "guidanceSteps": [
+              "阅读\"恭喜你点亮宫灯，完成游艺闯关！\"并点击确认完成"
+            ],
+            "steps": [
+              {
+                "id": "task-16-step-1",
+                "title": "点亮宫灯",
+                "objective": "确认已读通关语，完成全部关卡",
+                "studentAction": "阅读\"恭喜你点亮宫灯，完成游艺闯关！\"并点击确认完成",
+                "completionMode": "user_confirm",
+                "evidenceRequirement": "",
+                "location": {
+                  "mode": "none",
+                  "name": "",
+                  "coordinates": null,
+                  "radiusMeters": null,
+                  "minDwellSeconds": 0,
+                  "verification": "none"
+                },
+                "modules": "",
+                "next": "role-stage:complete",
+                "tools": []
+              }
+            ],
+            "completionMode": "tool_result",
+            "finalizationMode": "auto_on_last_step",
+            "evidenceRequirement": "学生点击确认完成",
+            "passCondition": "学生点击确认完成",
+            "goals": "C1(体验与分享)",
+            "prerequisites": [
+              "task-15"
+            ],
+            "toolType": "text",
+            "image": "",
+            "location": {
+              "mode": "none",
+              "legacyMode": "none",
+              "name": "",
+              "coordinates": null,
+              "radiusMeters": null,
+              "geofence": "",
+              "verification": "none",
+              "minDwellSeconds": 0
+            },
+            "timing": {
+              "suggestedSeconds": 60,
+              "idleNudgeSeconds": 480,
+              "nudgeCooldownSeconds": 480
+            },
+            "nudgePolicy": {
+              "maxNudges": 1
+            },
+            "advanceMode": "auto_after_validation"
+          }
+        ],
+        "cardImage": "lessons/lesson_youyi_001/assets/roles/role-card-game-player.png",
+        "badgeImage": "lessons/lesson_youyi_001/assets/roles/badge-game-player.png"
+      }
+    ],
+    "timeBank": {
+      "enabled": true,
+      "initialBalance": 0,
+      "currencyUnit": "分钟",
+      "earnRules": {
+        "maxTotal": 10,
+        "maxPerTask": 3,
+        "tasksVisibleAtOnce": 3
+      },
+      "giftRules": {
+        "allowGiftToSelf": false,
+        "maxPerAction": 5,
+        "minAmount": 1,
+        "target": "same_group_only"
+      },
+      "tasks": [
+        {
+          "id": "tb-01",
+          "type": "quiz",
+          "question": "（答案：投壶）古人宴饮时把箭投入壶中的游戏叫什么？",
+          "options": [
+            "投壶",
+            "围棋"
+          ],
+          "answerType": "",
+          "hint": "和箭与壶有关。",
+          "reward": 3,
+          "unlockAfter": "phase1-start",
+          "minLength": 0,
+          "requiresText": false
+        },
+        {
+          "id": "tb-02",
+          "type": "quiz",
+          "question": "（答案：冰嬉）清代宫廷冬季在冰上举行的游戏叫什么？",
+          "options": [
+            "冰嬉",
+            "龙舟"
+          ],
+          "answerType": "",
+          "hint": "故宫藏有一幅描绘它的长卷。",
+          "reward": 2,
+          "unlockAfter": "phase1-start",
+          "minLength": 0,
+          "requiresText": false
+        }
+      ]
+    },
+    "assets": {
+      "cover": "lessons/lesson_youyi_001/assets/backgrounds/cover.png",
+      "chat": "lessons/lesson_youyi_001/assets/backgrounds/chat-bg.png",
+      "transition": "lessons/lesson_youyi_001/assets/backgrounds/phase-transition.png",
+      "certificate": "lessons/lesson_youyi_001/assets/backgrounds/certificate-bg.png",
+      "navigationMap": "lessons/lesson_youyi_001/assets/maps/navigation-map.png",
+      "importPlaceholder": "lessons/lesson_youyi_001/assets/videos/video-storm-coming.png",
+      "simulationPlaceholder": "lessons/lesson_youyi_001/assets/videos/video-simulation.png"
+    }
+  },
   "lesson_zhizhi_001": {
     "id": "lesson_zhizhi_001",
     "title": "万兽城议事厅Ⅰ：地球村居民ID Card",
