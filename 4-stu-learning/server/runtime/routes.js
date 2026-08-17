@@ -84,7 +84,16 @@ export async function registerRuntimeRoutes(app, {
       reason: z.string().default('创建新的教学场次'),
     }).parse(request.body);
     reply.code(201);
-    return runtime.createRun({ ...body, teacherId: actor(request) });
+    return runtime.createRun({
+      ...body,
+      teacherId: actor(request),
+      ...(request.teacherAccount?.experiencePack === true ? {
+        experiencePack: true,
+        groupCount: 1,
+        teacherName: request.teacherAccount.name,
+        participantName: '体验学生',
+      } : {}),
+    });
   });
 
   app.get('/api/teacher/runs/:runId/snapshot', async (request) => { await authorize(request); return runtime.getSnapshot(request.params.runId); });

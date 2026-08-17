@@ -595,6 +595,13 @@ export async function buildApp({
     getCourse,
     realtime,
     requireJoinCredential: hostedJoinCredentialRequired || testJoinCredentialRequired,
+    listCourseIds: async () => {
+      const entries = await fs.readdir(lessonsRoot, { withFileTypes: true });
+      return entries
+        .filter((entry) => entry.isDirectory() && entry.name.startsWith('lesson_'))
+        .map((entry) => entry.name)
+        .sort();
+    },
     listLearnerSessionsForParticipant: async ({ runId, participantId }) => {
       if (typeof store.listForParticipant === 'function') {
         return store.listForParticipant({ runId, participantId });

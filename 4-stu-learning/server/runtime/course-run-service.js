@@ -597,6 +597,7 @@ export function createCourseRunService({
   getCourse,
   realtime,
   requireJoinCredential = false,
+  listCourseIds = null,
   listLearnerSessionsForParticipant = null,
   removeLearnerSessionsForParticipant = null,
 }) {
@@ -653,7 +654,11 @@ export function createCourseRunService({
     let publishedEvent;
     await store.transaction((state) => {
       if (experiencePack) {
-        const existing = state.runs.find((item) => item.teacherId === run.teacherId && item.experiencePack === true);
+        const existing = state.runs.find((item) => (
+          item.teacherId === run.teacherId
+          && item.experiencePack === true
+          && item.courseId === run.courseId
+        ));
         if (existing) {
           created = existing;
           return;
@@ -671,25 +676,64 @@ export function createCourseRunService({
     return persistRun(input);
   }
 
+  async function resolveExperienceCourseIds(input = {}) {
+    if (typeof input.courseId === 'string' && input.courseId.trim()) {
+      return [input.courseId.trim()];
+    }
+    if (Array.isArray(input.courseIds) && input.courseIds.length) {
+      return [...new Set(input.courseIds.map((id) => String(id).trim()).filter(Boolean))];
+    }
+    if (typeof listCourseIds === 'function') {
+      const ids = await listCourseIds();
+      if (Array.isArray(ids) && ids.length) {
+        return [...new Set(ids.map((id) => String(id).trim()).filter(Boolean))];
+      }
+    }
+    return ['lesson_gewu_001'];
+  }
+
   async function ensureExperienceRun(input = {}) {
     const teacherId = String(input.teacherId || '').trim();
     if (!teacherId) throw httpError(400, '体验场次缺少教师身份。');
-    const state = await store.read();
-    const existing = state.runs.find((run) => run.teacherId === teacherId && run.experiencePack === true);
-    if (existing) return teacherRunView(existing);
     const teacherName = String(input.teacherName || '体验教师').trim() || '体验教师';
-    return persistRun({
-      teacherId,
-      teacherName,
-      className: input.className || `${teacherName} · 体验场次`,
-      courseId: input.courseId || 'lesson_gewu_001',
-      courseVersion: input.courseVersion,
-      groupCount: 1,
-      experiencePack: true,
-      participantName: input.participantName || '体验学生',
-      status: 'active',
-      reason: input.reason || '初始化体验场次',
-    });
+    const courseIds = await resolveExperienceCourseIds(input);
+    let first = null;
+    for (const courseId of courseIds) {
+      const state = await store.read();
+      const existing = state.runs.find((run) => (
+        run.teacherId === teacherId
+        && run.experiencePack === true
+        && run.courseId === courseId
+      ));
+      if (existing) {
+        first ||= teacherRunView(existing);
+        continue;
+      }
+      let courseTitle = '';
+      try {
+        const course = await getCourse(courseId);
+        courseTitle = String(course.lesson?.title || '').trim();
+      } catch {
+        continue;
+      }
+      const created = await persistRun({
+        teacherId,
+        teacherName,
+        className: courseIds.length === 1 && input.className
+          ? input.className
+          : `${teacherName} · ${courseTitle || courseId}`,
+        courseId,
+        courseVersion: input.courseVersion,
+        groupCount: 1,
+        experiencePack: true,
+        participantName: input.participantName || '体验学生',
+        status: 'active',
+        reason: input.reason || '初始化体验场次',
+      });
+      first ||= created;
+    }
+    if (!first) throw httpError(422, '没有可初始化的体验课程。');
+    return first;
   }
 
   async function ensureDemoRun() {

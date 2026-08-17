@@ -898,3 +898,38 @@ test('体验场次按教师隔离，每人只有一名体验学生', async (t) =
   assert.equal(preflight.joinCredentials[0].participantId, 'student-1-1');
   assert.ok(preflight.joinCredentials[0].joinCredential.length >= 32);
 });
+
+test('体验账号为每门课各建一场，进度按教师隔离', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const courseIds = ['lesson_gewu_001', 'lesson_zhizhi_001', 'lesson_zhuhun_001'];
+
+  await service.ensureExperienceRun({
+    teacherId: 'exp-1',
+    teacherName: '体验教师1',
+    courseIds,
+  });
+  await service.ensureExperienceRun({
+    teacherId: 'exp-2',
+    teacherName: '体验教师2',
+    courseIds,
+  });
+
+  const firstRuns = await service.listRuns('exp-1');
+  const secondRuns = await service.listRuns('exp-2');
+  assert.equal(firstRuns.length, 3);
+  assert.equal(secondRuns.length, 3);
+  assert.deepEqual(firstRuns.map((run) => run.courseId).sort(), [...courseIds].sort());
+  assert.deepEqual(secondRuns.map((run) => run.courseId).sort(), [...courseIds].sort());
+  assert.equal(firstRuns.every((run) => run.experiencePack === true), true);
+  assert.equal(
+    firstRuns.some((run) => secondRuns.some((other) => other.id === run.id)),
+    false,
+  );
+
+  const gewu = firstRuns.find((run) => run.courseId === 'lesson_gewu_001');
+  await assert.rejects(
+    service.assertTeacherAccess(gewu.id, 'exp-2'),
+    (error) => error.statusCode === 403,
+  );
+});
