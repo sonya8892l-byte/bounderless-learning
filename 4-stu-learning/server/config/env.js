@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { parseTeacherAccounts } from './teacher-accounts.js';
 
 const defaultProjectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -28,6 +29,9 @@ const schema = z.object({
   // 正式开放给多人前，应切换为组织账号登录或高强度凭证。
   TEACHER_API_TOKEN: z.string().min(6).optional(),
   TEACHER_ID: z.string().min(1).max(100).default('teacher-primary'),
+  // 多套教师体验账号：JSON 数组 [{id, token, name, experiencePack?}]。
+  // 与 TEACHER_API_TOKEN 并存时合并；JSON 条目默认会自动建 1 人体验场次。
+  TEACHER_ACCOUNTS: z.string().optional(),
   OPENAI_BASE_URL: z.string().url(),
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_MODEL: z.string().min(1),
@@ -121,6 +125,7 @@ export function loadEnv({
     ...parsed.data,
     projectRoot: path.resolve(projectRoot),
     lessonsRoot: path.resolve(lessonsRoot),
+    teacherAccounts: parseTeacherAccounts(parsed.data),
   };
   if (['preview', 'production'].includes(effectiveAppEnvironment(values))) {
     values.ENABLE_DEMO = false;

@@ -29,6 +29,8 @@ const MANAGED = [
   'AI_TURN_TIMEOUT_MS',
   'AI_REQUEST_LEASE_MS',
   'TEACHER_API_TOKEN',
+  'TEACHER_ID',
+  'TEACHER_ACCOUNTS',
 ];
 
 function withEnv(values, run) {
@@ -85,10 +87,53 @@ test('托管与手工环境声明按最高安全级别归一', () => {
 test('当前原型允许六位易记教师访问凭证', () => {
   const env = withEnv({ TEACHER_API_TOKEN: 'sonyal' }, () => loadEnv());
   assert.equal(env.TEACHER_API_TOKEN, 'sonyal');
+  assert.deepEqual(env.teacherAccounts, [{
+    id: 'teacher-primary',
+    token: 'sonyal',
+    name: '带队教师',
+    experiencePack: false,
+  }]);
 
   assert.throws(
     () => withEnv({ TEACHER_API_TOKEN: 'short' }, () => loadEnv()),
     /TEACHER_API_TOKEN/,
+  );
+});
+
+test('TEACHER_ACCOUNTS 解析为多套教师身份，并与旧单凭证合并', () => {
+  const env = withEnv({
+    TEACHER_API_TOKEN: 'admin-token',
+    TEACHER_ID: 'teacher-primary',
+    TEACHER_ACCOUNTS: JSON.stringify([
+      { id: 'exp-1', token: 'experience-one', name: '体验教师1' },
+      { id: 'exp-2', token: 'experience-two', name: '体验教师2', experiencePack: false },
+    ]),
+  }, () => loadEnv());
+
+  assert.deepEqual(env.teacherAccounts.map((account) => ({
+    id: account.id,
+    name: account.name,
+    experiencePack: account.experiencePack,
+  })), [
+    { id: 'exp-1', name: '体验教师1', experiencePack: true },
+    { id: 'exp-2', name: '体验教师2', experiencePack: false },
+    { id: 'teacher-primary', name: '带队教师', experiencePack: false },
+  ]);
+});
+
+test('TEACHER_ACCOUNTS 非法 JSON 或重复凭证时启动失败', () => {
+  assert.throws(
+    () => withEnv({ TEACHER_ACCOUNTS: '{not-json' }, () => loadEnv()),
+    /TEACHER_ACCOUNTS/,
+  );
+  assert.throws(
+    () => withEnv({
+      TEACHER_ACCOUNTS: JSON.stringify([
+        { id: 'exp-1', token: 'same-token' },
+        { id: 'exp-2', token: 'same-token' },
+      ]),
+    }, () => loadEnv()),
+    /不能重复/,
   );
 });
 

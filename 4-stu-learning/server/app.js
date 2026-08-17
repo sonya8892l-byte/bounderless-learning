@@ -29,6 +29,7 @@ import { createDatabasePool, probeDatabase } from './database/pool.js';
 import { CourseRunMutationConflictError, DatabaseConfigurationError } from './database/errors.js';
 import { createLearnerRequestStore } from './database/learner-request-store.js';
 import { effectiveAppEnvironment, qaForceCompleteEnabled } from './config/env.js';
+import { resolveTeacherAccount, teacherAccountsFromEnv } from './config/teacher-accounts.js';
 import { GRADE_LEVELS } from '../src/engine/grade-level.js';
 import { entryPhaseForLesson } from '../src/engine/entry-phase.js';
 import { studentDialogueHistory } from './services/student-dialogue-history.js';
@@ -804,6 +805,7 @@ export async function buildApp({
       required: hostedEnvironment,
       token: env.TEACHER_API_TOKEN || '',
       teacherId: env.TEACHER_ID || 'teacher-primary',
+      accounts: teacherAccountsFromEnv(env),
     },
     resolveLearnerProjection,
   });
@@ -835,10 +837,11 @@ export async function buildApp({
 
   app.get('/api/map-config', async (request, reply) => {
     if (hostedEnvironment) {
-      if (!String(env.TEACHER_API_TOKEN || '')) {
+      const accounts = teacherAccountsFromEnv(env);
+      if (!accounts.length) {
         return reply.code(503).send({ error: '教师端认证尚未配置。' });
       }
-      if (!secureTokenMatches(env.TEACHER_API_TOKEN, bearerToken(request))) {
+      if (!resolveTeacherAccount(accounts, bearerToken(request))) {
         reply.header('www-authenticate', 'Bearer');
         return reply.code(401).send({ error: '教师端认证失败。' });
       }
@@ -1383,13 +1386,12 @@ export async function buildApp({
     if (requesterSessionId) {
       const requesterSession = await store.get(requesterSessionId);
       authorized = Boolean(requesterSession && requesterSession.id === owner.sessionId);
-    } else if (
-      owner.runId
-      && String(env.TEACHER_API_TOKEN || '')
-      && secureTokenMatches(env.TEACHER_API_TOKEN, bearerToken(request))
-    ) {
-      await runtime.assertTeacherAccess(owner.runId, env.TEACHER_ID || 'teacher-primary');
-      authorized = true;
+    } else if (owner.runId) {
+      const teacher = resolveTeacherAccount(teacherAccountsFromEnv(env), bearerToken(request));
+      if (teacher) {
+        await runtime.assertTeacherAccess(owner.runId, teacher.id);
+        authorized = true;
+      }
     }
     if (!authorized) {
       const status = requesterSessionId || request.headers.authorization ? 403 : 401;

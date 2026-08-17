@@ -11,6 +11,8 @@ import {
   clearTeacherSnapshots,
   loadTeacherSnapshot,
   saveTeacherSnapshot,
+  buildStudentJoinUrl,
+  resolveStudentAppBase,
 } from './teacher-session-data.js';
 
 const API = '/api';
@@ -584,6 +586,7 @@ function renderRuns() {
       </div>
       <div class="run-card__actions">
         <button class="outline-button" type="button" data-action="preflight" data-run-id="${run.id}">课前检查</button>
+        ${run.experiencePack ? `<button class="outline-button" type="button" data-action="copy-join-link" data-run-id="${run.id}">复制体验学生链接</button>` : ''}
         <button class="primary-button" type="button" data-action="switch-run" data-run-id="${run.id}">${run.id === state.runId ? '进入当前场次' : '打开场次'}</button>
       </div>
     </article>
@@ -703,6 +706,9 @@ function renderStudentDrawer(participantId) {
       <div class="metric"><span>提示等级</span><strong>L${participant.learning.scaffoldLevel}</strong></div>
       <div class="metric"><span>位置精度</span><strong>±${participant.location.accuracyMeters}m</strong></div>
     </div><p class="alert-card__meta">${ageLabel}</p></div>
+    <div class="detail-block"><h3>入课</h3><p>专属链接只在复制时向服务端领取，不会写入页面或快照缓存。</p>
+      <button class="outline-button" type="button" data-action="copy-join-link" data-participant-id="${escapeHtml(participant.id)}">复制学习链接</button>
+    </div>
     <div class="detail-block"><h3>AI对话摘要</h3><p>${escapeHtml(participant.learning.dialogueSummary)}</p><button class="outline-button" type="button" data-action="request-transcript" data-participant-id="${participant.id}">按授权查看原文</button></div>
     <div class="detail-block"><h3>任务与证据</h3><p>${escapeHtml(participant.learning.currentStepName || participant.learning.stepName)} · 已提交 ${participant.learning.evidenceCount} 项证据</p><p class="alert-card__meta">${escapeHtml(interventionStatus)}</p></div>
     <div class="detail-block"><h3>学生干预</h3><div class="action-grid">
@@ -720,6 +726,44 @@ function renderStudentDrawer(participantId) {
 
 function actionButton(action, label, description, target, payload = {}, danger = false) {
   return `<button class="action-button ${danger ? 'is-danger' : ''}" type="button" data-action="prepare-command" data-command="${action}" data-target='${escapeHtml(JSON.stringify(target))}' data-payload='${escapeHtml(JSON.stringify(payload))}'><strong>${escapeHtml(label)}</strong><small>${escapeHtml(description)}</small></button>`;
+}
+
+async function copyStudentJoinLink(runId, participantId, button) {
+  const original = button?.textContent;
+  if (button) {
+    button.disabled = true;
+    button.textContent = '正在复制…';
+  }
+  try {
+    const run = state.runs.find((item) => item.id === runId) || state.snapshot?.run;
+    if (!run?.courseId || !runId) throw new Error('当前场次信息不完整，无法生成入课链接。');
+    const preflight = await request(`/teacher/runs/${encodeURIComponent(runId)}/preflight`);
+    const item = (preflight.joinCredentials || []).find((entry) => entry.participantId === participantId)
+      || (preflight.joinCredentials || [])[0];
+    if (!item?.joinCredential || !item.participantId || !item.groupId) {
+      throw new Error('还没有签发该学生的入课凭证。');
+    }
+    const href = buildStudentJoinUrl({
+      baseUrl: resolveStudentAppBase(),
+      courseId: run.courseId,
+      runId,
+      participant: {
+        id: item.participantId,
+        groupId: item.groupId,
+        joinCredential: item.joinCredential,
+      },
+    });
+    if (!navigator.clipboard?.writeText) throw new Error('当前浏览器无法复制，请改用课前检查接口。');
+    await navigator.clipboard.writeText(href);
+    showToast('已复制专属学习链接');
+  } catch (error) {
+    showToast(error.message || '复制失败，请重试。');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
 }
 
 async function resetStudentLearning(participantId, button) {
@@ -949,6 +993,13 @@ document.addEventListener('click', async (event) => {
   }
   if (action === 'new-run') return newRunDrawer();
   if (action === 'preflight') return renderPreflight(target.dataset.runId);
+  if (action === 'copy-join-link') {
+    return copyStudentJoinLink(
+      target.dataset.runId || state.runId,
+      target.dataset.participantId,
+      target,
+    );
+  }
   if (action === 'recheck-device') {
     await request(`/teacher/runs/${encodeURIComponent(target.dataset.runId)}/participants/${encodeURIComponent(target.dataset.participantId)}`, { method: 'PATCH', body: JSON.stringify({ recheckDevice: true, reason: '教师发起设备权限重新检测' }) });
     showToast('设备状态已重新检测。'); await refreshSnapshot(); return renderPreflight(target.dataset.runId);

@@ -155,7 +155,58 @@ function insideTaskFence(course, taskId, lng, lat) {
   return distanceMeters <= radiusMeters;
 }
 
-function makeParticipants(course, groupCount = 5, { demo = false } = {}) {
+function makeExperienceRoster(course, { participantName = '体验学生' } = {}) {
+  const center = courseCenter(course);
+  if (!center) throw httpError(422, `课程「${course.lesson.title}」缺少坐标中心，无法创建安全场次。`);
+  const groupId = 'group-1';
+  const participantId = 'student-1-1';
+  return {
+    center,
+    groups: [{
+      id: groupId,
+      name: '第 1 小组',
+      memberIds: [participantId],
+      progress: 0,
+      timeRemainingSeconds: 5400,
+      bankBalance: 0,
+      collectionCount: 0,
+    }],
+    participants: [{
+      id: participantId,
+      name: participantName,
+      rosterAssigned: true,
+      groupId,
+      roleId: '',
+      roleName: '',
+      learnerSessionId: null,
+      retiredLearnerSessionIds: [],
+      learningResetGeneration: 0,
+      online: false,
+      presenceObservedAt: null,
+      device: {
+        loggedIn: false,
+        location: 'unknown',
+        camera: 'unknown',
+        cameraObservedAt: null,
+        network: 'offline',
+        roleClaimed: false,
+      },
+      location: {
+        lng: null,
+        lat: null,
+        accuracyMeters: null,
+        insideFence: null,
+        permission: 'unknown',
+        observedAt: null,
+      },
+      learning: emptyParticipantLearning(),
+      latestDirective: null,
+    }],
+  };
+}
+
+function makeParticipants(course, groupCount = 5, { demo = false, experience = false, participantName } = {}) {
+  if (experience) return makeExperienceRoster(course, { participantName });
   const center = courseCenter(course);
   if (!center) throw httpError(422, `课程「${course.lesson.title}」缺少坐标中心，无法创建安全场次。`);
   const participants = [];
@@ -558,10 +609,11 @@ export function createCourseRunService({
 
   async function persistRun(input = {}, { demo = false } = {}) {
     const course = await getCourse(input.courseId || 'lesson_gewu_001');
+    const experiencePack = input.experiencePack === true;
     const { groups, participants, center } = makeParticipants(
       course,
-      Number(input.groupCount || 5),
-      { demo },
+      Number(input.groupCount || (experiencePack ? 1 : 5)),
+      { demo, experience: experiencePack, participantName: input.participantName },
     );
     const createdAt = nowIso();
     const run = {
@@ -569,11 +621,12 @@ export function createCourseRunService({
       joinCredentialSecret: crypto.randomBytes(JOIN_CREDENTIAL_BYTES).toString('base64url'),
       teacherId: input.teacherId || 'teacher-demo',
       demoMode: demo,
-      teacherName: input.teacherName || '带队教师',
+      experiencePack,
+      teacherName: input.teacherName || (experiencePack ? '体验教师' : '带队教师'),
       courseId: course.id,
       courseVersion: input.courseVersion || '1.0.0',
       courseTitle: course.lesson.title,
-      className: input.className || '故宫研学班',
+      className: input.className || (experiencePack ? '体验场次' : '故宫研学班'),
       // 当前原型创建后即可体验；课前检查继续提示问题，不再成为二次开课门禁。
       status: input.status || 'active',
       phaseId: course.lesson.phases[0]?.id || 'phase-1',
@@ -596,18 +649,47 @@ export function createCourseRunService({
       createdAt,
       updatedAt: createdAt,
     };
+    let created = run;
     let publishedEvent;
     await store.transaction((state) => {
+      if (experiencePack) {
+        const existing = state.runs.find((item) => item.teacherId === run.teacherId && item.experiencePack === true);
+        if (existing) {
+          created = existing;
+          return;
+        }
+      }
       state.runs.push(run);
       audit(state, run.id, run.teacherId, 'run.created', { runId: run.id }, input.reason || '创建场次');
       publishedEvent = eventFor(state, run.id, 'run.created', { runId: run.id });
     });
-    realtime.publish(run.id, publishedEvent);
-    return teacherRunView(run);
+    if (publishedEvent) realtime.publish(created.id, publishedEvent);
+    return teacherRunView(created);
   }
 
   async function createRun(input = {}) {
     return persistRun(input);
+  }
+
+  async function ensureExperienceRun(input = {}) {
+    const teacherId = String(input.teacherId || '').trim();
+    if (!teacherId) throw httpError(400, '体验场次缺少教师身份。');
+    const state = await store.read();
+    const existing = state.runs.find((run) => run.teacherId === teacherId && run.experiencePack === true);
+    if (existing) return teacherRunView(existing);
+    const teacherName = String(input.teacherName || '体验教师').trim() || '体验教师';
+    return persistRun({
+      teacherId,
+      teacherName,
+      className: input.className || `${teacherName} · 体验场次`,
+      courseId: input.courseId || 'lesson_gewu_001',
+      courseVersion: input.courseVersion,
+      groupCount: 1,
+      experiencePack: true,
+      participantName: input.participantName || '体验学生',
+      status: 'active',
+      reason: input.reason || '初始化体验场次',
+    });
   }
 
   async function ensureDemoRun() {
@@ -1669,7 +1751,7 @@ export function createCourseRunService({
   return {
     activateLearnerSession, assertCommandTargetCurrent, assertTeacherAccess, bindLearnerSession, claimRoleForSession,
     commandsForSession, confirmCommand, createRun,
-    ensureDemoRun, getEvents,
+    ensureDemoRun, ensureExperienceRun, getEvents,
     getReview, getSnapshot, importRoster, listRuns, preflight, publishRoleClaimed, realtime, recordAudit, reportPresence, requestHelp, sendCommand,
     resetParticipantLearning, resumeLearnerSession, runStateForSession, updateAlert, updateParticipant, validateLearnerBinding,
   };

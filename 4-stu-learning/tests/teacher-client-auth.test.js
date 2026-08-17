@@ -283,6 +283,9 @@ test('教师 PWA 源码保持单一鉴权通道，无持久快照凭证和静态
   assert.match(app, /saveTeacherSnapshot\(state\.runId, state\.snapshot\)/u);
   assert.match(app, /clearTeacherSnapshots\(\)/u);
   assert.doesNotMatch(app, /data-join-credential/u);
+  assert.match(app, /data-action="copy-join-link"/u);
+  assert.match(app, /buildStudentJoinUrl\(/u);
+  assert.match(app, /navigator\.clipboard\?\.writeText/u);
   assert.match(app, /if \(error\.status !== 404\) throw error;/u);
   assert.doesNotMatch(app, /run\.status === 'draft' \? actionButton\('start_phase'/u);
   assert.match(app, /const HIGH_IMPACT = new Set\(\[[^\]]*'start_phase'/u);

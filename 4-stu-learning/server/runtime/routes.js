@@ -1,17 +1,11 @@
 import { z } from 'zod';
-import { timingSafeEqual } from 'node:crypto';
+import { normalizeTeacherAccess, resolveTeacherAccount } from '../config/teacher-accounts.js';
 
 const actor = (request) => request.teacherActorId || request.headers['x-teacher-id'] || 'teacher-demo';
 
 function bearerToken(request) {
   const authorization = String(request.headers.authorization || '');
   return authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
-}
-
-function secureEqual(expected = '', actual = '') {
-  const left = Buffer.from(String(expected));
-  const right = Buffer.from(String(actual));
-  return left.length === right.length && left.length > 0 && timingSafeEqual(left, right);
 }
 
 const targetSchema = z.object({
@@ -50,21 +44,36 @@ export async function registerRuntimeRoutes(app, {
     // an unregistered endpoint into a misleading configuration error.
     if (!enableDemo && requestPath === '/api/teacher/demo') return;
     if (teacherAccess.required !== true) return;
-    if (!String(teacherAccess.token || '')) {
+    const accounts = normalizeTeacherAccess(teacherAccess);
+    if (!accounts.length) {
       return reply.code(503).send({ error: '教师端认证尚未配置。' });
     }
-    if (!secureEqual(teacherAccess.token, bearerToken(request))) {
+    const account = resolveTeacherAccount(accounts, bearerToken(request));
+    if (!account) {
       reply.header('www-authenticate', 'Bearer');
       return reply.code(401).send({ error: '教师端认证失败。' });
     }
-    request.teacherActorId = String(teacherAccess.teacherId || 'teacher-primary');
+    request.teacherActorId = account.id;
+    request.teacherAccount = account;
   });
   const authorize = (request) => runtime.assertTeacherAccess(request.params.runId, actor(request));
   if (enableDemo) {
     app.post('/api/teacher/demo', async () => runtime.ensureDemoRun());
   }
 
-  app.get('/api/teacher/runs', async (request) => runtime.listRuns(actor(request)));
+  app.get('/api/teacher/runs', async (request) => {
+    const teacherId = actor(request);
+    if (
+      request.teacherAccount?.experiencePack === true
+      && typeof runtime.ensureExperienceRun === 'function'
+    ) {
+      await runtime.ensureExperienceRun({
+        teacherId,
+        teacherName: request.teacherAccount.name,
+      });
+    }
+    return runtime.listRuns(teacherId);
+  });
 
   app.post('/api/teacher/runs', async (request, reply) => {
     const body = z.object({

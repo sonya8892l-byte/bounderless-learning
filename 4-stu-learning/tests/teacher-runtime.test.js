@@ -859,3 +859,42 @@ test('非法教师参数在写入场次、指令和回执之前被拒绝', async
   assert.equal(after.participants[0].learning.timeBalance, participant.learning.timeBalance);
   assert.equal(after.participants[0].learning.scaffoldLevel, participant.learning.scaffoldLevel);
 });
+
+test('体验场次按教师隔离，每人只有一名体验学生', async (t) => {
+  const { directory, service } = await fixture();
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+
+  const first = await service.ensureExperienceRun({ teacherId: 'exp-1', teacherName: '体验教师1' });
+  const firstAgain = await service.ensureExperienceRun({ teacherId: 'exp-1', teacherName: '体验教师1' });
+  const second = await service.ensureExperienceRun({ teacherId: 'exp-2', teacherName: '体验教师2' });
+
+  assert.equal(first.id, firstAgain.id);
+  assert.notEqual(first.id, second.id);
+  assert.equal(first.experiencePack, true);
+  assert.equal(first.teacherId, 'exp-1');
+  assert.equal(second.teacherId, 'exp-2');
+
+  const firstSnapshot = await service.getSnapshot(first.id);
+  const secondSnapshot = await service.getSnapshot(second.id);
+  assert.equal(firstSnapshot.groups.length, 1);
+  assert.equal(firstSnapshot.participants.length, 1);
+  assert.equal(firstSnapshot.participants[0].name, '体验学生');
+  assert.equal(firstSnapshot.participants[0].id, 'student-1-1');
+  assert.equal(secondSnapshot.participants[0].id, 'student-1-1');
+
+  await assert.rejects(
+    service.assertTeacherAccess(first.id, 'exp-2'),
+    (error) => error.statusCode === 403,
+  );
+  await service.assertTeacherAccess(first.id, 'exp-1');
+
+  const listed = await service.listRuns('exp-1');
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].id, first.id);
+  assert.equal((await service.listRuns('exp-2'))[0].id, second.id);
+
+  const preflight = await service.preflight(first.id);
+  assert.equal(preflight.joinCredentials.length, 1);
+  assert.equal(preflight.joinCredentials[0].participantId, 'student-1-1');
+  assert.ok(preflight.joinCredentials[0].joinCredential.length >= 32);
+});
