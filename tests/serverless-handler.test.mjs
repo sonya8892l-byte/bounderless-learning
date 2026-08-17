@@ -103,3 +103,35 @@ test('builds and readies one app for concurrent and subsequent requests', async 
   assert.equal(emitted[0].response, responseA);
   assert.equal(emitted[1].response, responseB);
 });
+
+test('启动失败时返回 JSON 503，并允许后续请求重试', async () => {
+  let loadEnvCalls = 0;
+  const chunks = [];
+  const response = {
+    headersSent: false,
+    statusCode: 200,
+    headers: {},
+    setHeader(name, value) { this.headers[name] = value; },
+    end(chunk) { chunks.push(chunk); this.headersSent = true; },
+  };
+  const handler = createServerlessHandler({
+    loadEnv() {
+      loadEnvCalls += 1;
+      throw new Error('TEACHER_ACCOUNTS 必须是 JSON 数组。');
+    },
+    async buildApp() { throw new Error('should not build'); },
+  });
+
+  await handler({ url: '/api/serverless?path=health' }, response);
+  assert.equal(response.statusCode, 503);
+  assert.match(chunks[0], /TEACHER_ACCOUNTS/);
+  assert.equal(loadEnvCalls, 1);
+
+  await handler({ url: '/api/serverless?path=health' }, {
+    headersSent: false,
+    statusCode: 200,
+    setHeader() {},
+    end() {},
+  });
+  assert.equal(loadEnvCalls, 2);
+});

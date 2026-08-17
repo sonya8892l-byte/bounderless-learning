@@ -137,6 +137,19 @@ test('TEACHER_ACCOUNTS 非法 JSON 或重复凭证时启动失败', () => {
   );
 });
 
+test('托管环境教师账号 JSON 损坏时回退单凭证，不拖垮整站', () => {
+  const env = withEnv({
+    APP_ENV: 'production',
+    VERCEL_ENV: 'production',
+    TEACHER_API_TOKEN: 'sonyal1',
+    TEACHER_ACCOUNTS: '{not-json',
+  }, () => loadEnv());
+
+  assert.equal(env.teacherAccounts.length, 1);
+  assert.equal(env.teacherAccounts[0].token, 'sonyal1');
+  assert.match(env.teacherAccountsError, /TEACHER_ACCOUNTS/);
+});
+
 test('配置了轻量理解模型与预算时按配置读出', () => {
   const env = withEnv({
     OPENAI_UNDERSTAND_MODEL: 'test-small-model',

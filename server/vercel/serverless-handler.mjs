@@ -20,6 +20,18 @@ export function restoreApiRequestUrl(request) {
   return request.url;
 }
 
+function sendBootFailure(response, error) {
+  if (response.headersSent || typeof response.end !== 'function') throw error;
+  const message = String(error?.message || error || '服务端启动失败。').slice(0, 300);
+  response.statusCode = 503;
+  response.setHeader?.('content-type', 'application/json; charset=utf-8');
+  response.setHeader?.('cache-control', 'no-store');
+  response.end(JSON.stringify({
+    error: '服务端配置尚未就绪，请检查 TEACHER_ACCOUNTS 等环境变量后重新部署。',
+    details: message,
+  }));
+}
+
 export function createServerlessHandler({ buildApp, loadEnv }) {
   let appPromise;
 
@@ -35,6 +47,10 @@ export function createServerlessHandler({ buildApp, loadEnv }) {
         .then(async (app) => {
           await app.ready();
           return app;
+        })
+        .catch((error) => {
+          appPromise = undefined;
+          throw error;
         });
     }
     return appPromise;
@@ -42,7 +58,11 @@ export function createServerlessHandler({ buildApp, loadEnv }) {
 
   return async function serverlessHandler(request, response) {
     restoreApiRequestUrl(request);
-    const app = await getApp();
-    app.server.emit('request', request, response);
+    try {
+      const app = await getApp();
+      app.server.emit('request', request, response);
+    } catch (error) {
+      sendBootFailure(response, error);
+    }
   };
 }

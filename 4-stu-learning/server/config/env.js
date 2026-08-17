@@ -31,7 +31,16 @@ const schema = z.object({
   TEACHER_ID: z.string().min(1).max(100).default('teacher-primary'),
   // 多套教师体验账号：JSON 数组 [{id, token, name, experiencePack?}]。
   // 与 TEACHER_API_TOKEN 并存时合并；JSON 条目默认会自动建 1 人体验场次。
-  TEACHER_ACCOUNTS: z.string().optional(),
+  // Vercel 仪表盘有时会把 JSON 先解析再注入，这里统一收成字符串。
+  TEACHER_ACCOUNTS: z.preprocess((value) => {
+    if (value == null || value === '') return undefined;
+    if (typeof value === 'string') return value;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return value;
+    }
+  }, z.string().optional()),
   OPENAI_BASE_URL: z.string().url(),
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_MODEL: z.string().min(1),
@@ -125,8 +134,18 @@ export function loadEnv({
     ...parsed.data,
     projectRoot: path.resolve(projectRoot),
     lessonsRoot: path.resolve(lessonsRoot),
-    teacherAccounts: parseTeacherAccounts(parsed.data),
   };
+  try {
+    values.teacherAccounts = parseTeacherAccounts(parsed.data);
+  } catch (error) {
+    // 托管环境不要因为教师账号 JSON 损坏而让学生端和 health 一起 500。
+    if (!['preview', 'production'].includes(effectiveAppEnvironment(values))) throw error;
+    values.teacherAccountsError = error.message;
+    values.teacherAccounts = parseTeacherAccounts({
+      TEACHER_API_TOKEN: parsed.data.TEACHER_API_TOKEN,
+      TEACHER_ID: parsed.data.TEACHER_ID,
+    });
+  }
   if (['preview', 'production'].includes(effectiveAppEnvironment(values))) {
     values.ENABLE_DEMO = false;
   }

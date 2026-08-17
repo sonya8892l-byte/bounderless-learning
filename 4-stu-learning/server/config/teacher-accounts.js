@@ -27,15 +27,45 @@ function normalizeAccount(account, { experiencePackDefault = false, fallbackName
   };
 }
 
+function decodeTeacherAccountsJson(raw) {
+  if (Array.isArray(raw)) return raw;
+  let text = String(raw || '').replace(/^\uFEFF/, '').trim();
+  if (!text) return null;
+  text = text
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'");
+  const candidates = [text];
+  if (text.includes('\\n') || text.includes('\\t')) {
+    candidates.push(text.replace(/\\n/g, '\n').replace(/\\t/g, '\t'));
+  }
+  let lastError;
+  for (const candidate of candidates) {
+    let current = candidate;
+    for (let round = 0; round < 3; round += 1) {
+      try {
+        const parsed = JSON.parse(current);
+        if (typeof parsed === 'string') {
+          current = parsed.trim();
+          continue;
+        }
+        return parsed;
+      } catch (error) {
+        lastError = error;
+        break;
+      }
+    }
+  }
+  throw lastError || new Error('TEACHER_ACCOUNTS 必须是 JSON 数组。');
+}
+
 function parseJsonAccounts(raw) {
-  const text = String(raw || '').trim();
-  if (!text) return [];
   let parsed;
   try {
-    parsed = JSON.parse(text);
+    parsed = decodeTeacherAccountsJson(raw);
   } catch {
     throw new Error('TEACHER_ACCOUNTS 必须是 JSON 数组。');
   }
+  if (parsed == null) return [];
   if (!Array.isArray(parsed) || parsed.length === 0) {
     throw new Error('TEACHER_ACCOUNTS 必须是非空 JSON 数组。');
   }
